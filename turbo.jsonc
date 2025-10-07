@@ -1,0 +1,187 @@
+{
+  "$schema": "https://turbo.build/schema.json",
+  "globalEnv": ["npm_execpath"],
+  "globalDependencies": ["babel.config.mjs", "dprint.json", "eslint.config.mjs", "tsconfig.base.json"],
+  "tasks": {
+    "build": {
+      "outputLogs": "new-only",
+      "dependsOn": ["transpile", "transpileTypes", "typecheck"],
+      "inputs": ["src/**", "tsconfig.json"],
+      "outputs": []
+    },
+
+    "clean": {
+      "cache": false
+    },
+
+    "//#clean:turbo": {
+      "cache": false
+    },
+
+    "typecheck": {
+      "outputLogs": "new-only",
+      "dependsOn": [
+        "^transpileTypes"
+      ]
+    },
+
+    "transpile": {
+      "outputLogs": "new-only",
+      "dependsOn": [
+        "^transpile",
+        "^typecheck",
+        "transpileCjs",
+        "transpileEsm",
+        "transpileBrowser"
+      ],
+      "inputs": ["bin/**"]
+    },
+
+    "transpileTypes": {
+      "outputLogs": "new-only",
+      "dependsOn": ["^transpileTypes"],
+      "inputs": [
+        "bin/**",
+        "src/**",
+        "templates/**",
+        "tsconfig.json"
+      ],
+      "outputs": [
+        "build/types/**"
+      ]
+    },
+
+    "transpileEsm": {
+      "outputLogs": "new-only",
+      "dependsOn": [
+        // Because some of these tasks bundle other projects we need to
+        // prepare their dependencies first. In the future we can decouple
+        // transpile from bundling which should allow us to remove this
+        // for everyone but the bundled packages
+        "^transpileEsm"
+      ],
+      "inputs": [
+        "bin/**",
+        "src/**",
+        "templates/**",
+        "tsup.config.js",
+        "tsconfig.json"
+      ],
+      "outputs": [
+        "build/esm/**"
+      ]
+    },
+
+    "transpileBrowser": {
+      "outputLogs": "new-only",
+      "dependsOn": [
+        "^transpileBrowser"
+      ],
+      "inputs": [
+        "bin/**",
+        "src/**",
+        "templates/**",
+        "tsconfig.json"
+      ],
+      "outputs": [
+        "build/browser/**"
+      ]
+    },
+
+    // This one both transpiles to CJS and it creates the .d.ts files
+    // to let cjs work. As a result, we need to rely on our dependency's
+    // transpileCjs tasks too.
+    "transpileCjs": {
+      "outputLogs": "new-only",
+      "dependsOn": [
+        "^transpileCjs",
+
+        // tsup may be trying to resolve the module types and not the cjs types
+        "^transpileTypes"
+      ],
+      "inputs": [
+        "bin/**",
+        "src/**",
+        "templates/**",
+        "tsup.config.js",
+        "tsconfig.json"
+      ],
+      "outputs": [
+        "build/cjs/**"
+      ]
+    },
+    "test": {
+      "outputLogs": "new-only",
+      "env": ["FORCE_COLOR", "CI"],
+      "dependsOn": [
+        "^transpile"
+      ]
+    },
+    "lint": {
+      "dependsOn": ["typecheck"],
+      "inputs": [
+        "package.json",
+        "src/**/*"
+      ],
+      "outputs": []
+    },
+    // Root docs lint task
+    "//#lint:docs": {
+      "dependsOn": []
+    },
+    // Root docs lint fix task
+    "//#lint:docs:fix": {},
+    "lint:fix": {
+      "dependsOn": ["typecheck"],
+      "inputs": [
+        "package.json",
+        "src/**/*"
+      ],
+      "outputs": []
+    },
+    "check": {
+      "dependsOn": ["build", "test", "lint", "//#mrl:check"],
+      "outputs": []
+    },
+
+    "//#mrl:check": {
+      "inputs": [
+        "package.json",
+        ".monorepolint.config.mjs",
+        "packages/*/*/package.json",
+        "packages/*/*/tsconfig.json",
+        "packages/*/*/vitest.config.json",
+        "packages/*/*/src/public/*",
+        "templates/*"
+      ]
+    },
+
+    // Example tasks - dependencies handled by sequential execution in package.json
+    "//#examples:clean": {
+      "cache": false
+    },
+    "//#examples:build": {
+      "outputLogs": "new-only",
+      "cache": false,
+      "dependsOn": ["//#examples:rebuild:schema"]
+    },
+    "//#examples:rebuild:schema": {
+      "outputLogs": "new-only",
+      "dependsOn": ["@palantir/pack.sdkgen#build", "@palantir/pack.sdkgen-template#build"],
+      "cache": true
+    },
+    "//#examples:lint": {
+      "cache": false
+    },
+    "//#examples:lint:fix": {
+      "cache": false
+    },
+    "//#examples:test": {
+      "outputLogs": "new-only",
+      "cache": false
+    },
+    "//#examples:check": {
+      "cache": false
+    }
+  }
+}

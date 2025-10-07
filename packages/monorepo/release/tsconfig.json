@@ -1,0 +1,11 @@
+{
+  "extends": "@palantir/pack.monorepo.tsconfig/base.json",
+  "compilerOptions": {
+    "rootDir": "src",
+    "outDir": "build/esm"
+  },
+  "include": [
+    "./src/**/*"
+  ],
+  "references": []
+}
