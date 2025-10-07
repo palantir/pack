@@ -1,3 +1,20 @@
+prefer-workspace-packages: true
 packages:
-  - "packages/*"
-  - "examples/*"
+  - packages/*/*
+catalog:
+  "@osdk/api": "~2.4.2"
+  "@osdk/client": "~2.4.2"
+  "@osdk/foundry.admin": "~2.32.0"
+  "@osdk/oauth": "~1.4.0"
+  "@osdk/react": "~0.6.0"
+  "@osdk/shared.client2": "~1.0.0"
+  "@types/node": ^20.19.17
+  commander: ^14.0.0
+  cometd: ^7.0.18
+  remeda: ^2.32.0
+  tsx: ^4.20.6
+  typescript: 5.9.2
+  zod: ^4.1.11
+onlyBuiltDependencies:
+  - dprint
+  - esbuild
