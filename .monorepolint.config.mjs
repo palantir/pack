@@ -11,11 +11,6 @@ import * as Rules from "@monorepolint/rules";
 
 const archetypeConfig = archetypes(
   (shared, rules) => {
-    // TODO(FIRST_BUILD): Re-enable MRL for build tools
-    if (rules.isBuildTools) {
-      return [];
-    }
-
     const baseScripts = {
       clean: "rimraf .turbo build dist lib test-output *.tgz tsconfig.tsbuildinfo",
       lint: "eslint ./src ; dprint check --config $(find-up dprint.json) --allow-no-files",
@@ -48,16 +43,88 @@ const archetypeConfig = archetypes(
       transpileTypes: "tsc --emitDeclarationOnly",
     };
 
-    return [
-      // Package scripts - different for CLI vs library vs sdkgen template
-      Rules.packageScript({
-        ...shared,
+    // Package scripts - different for CLI vs library vs sdkgen template
+    const scriptsRule = Rules.packageScript({
+      ...shared,
+      options: {
+        scripts: rules.isSdkgenTemplate
+          ? sdkgenTemplateScripts
+          : (rules.isCli ? cliScripts : libraryScripts),
+      },
+    });
+
+    // Required dependencies - CLI packages need @types/node
+    const requiredScriptsDependenciesRule = 
+    Rules.requireDependency({
+      ...shared,
+      options: {
+        devDependencies: {
+          rimraf: "^6.0.1",
+          typescript: "^5.9.2",
+          tslib: "^2.8.1",
+          ...(rules.isCli ? { "@types/node": "catalog:" } : {}),
+        },
+      },
+    });
+
+    // Rules that apply to all packages
+    const baseRules = [
+      Rules.packageOrder({
         options: {
-          scripts: rules.isSdkgenTemplate
-            ? sdkgenTemplateScripts
-            : (rules.isCli ? cliScripts : libraryScripts),
+          order: [
+            "name",
+            "private",
+            "version",
+            "description",
+            "access",
+            "author",
+            "license",
+            "repository",
+            "bin",
+            "exports",
+            "file",
+            "scripts",
+            "dependencies",
+            "peerDependencies",
+            "peerDependenciesMeta",
+            "devDependencies",
+            "publishConfig",
+            "imports",
+            "keywords",
+            "files",
+            // since these are just for fallback support we can drop to bottom
+            "main",
+            "module",
+            "types",
+          ],
         },
       }),
+      Rules.alphabeticalDependencies({ includeWorkspaceRoot: true }),
+      Rules.consistentDependencies({}),
+      Rules.alphabeticalScripts({ includeWorkspaceRoot: true }),
+
+      // Banned dependencies
+      Rules.bannedDependencies({
+        ...shared,
+        options: {
+          bannedDependencies: ["lodash", "lodash-es"],
+        },
+      }),
+    ];
+
+    if (rules.isBuildTools) {
+      if (!rules.isCli) {
+        return baseRules;
+      }
+      return [
+        scriptsRule,
+        requiredScriptsDependenciesRule,
+        ...baseRules
+      ];
+    }
+
+    return [
+      scriptsRule,
 
       // Vitest config
       Rules.fileContents({
@@ -129,61 +196,8 @@ const archetypeConfig = archetypes(
         },
       }),
 
-      // Required dependencies - CLI packages need @types/node
-      Rules.requireDependency({
-        ...shared,
-        options: {
-          devDependencies: {
-            rimraf: "^6.0.1",
-            typescript: "^5.9.2",
-            tslib: "^2.8.1",
-            ...(rules.isCli ? { "@types/node": "catalog:" } : {}),
-          },
-        },
-      }),
-
-      // Rules that apply to all packages
-      Rules.packageOrder({
-        options: {
-          order: [
-            "name",
-            "private",
-            "version",
-            "description",
-            "access",
-            "author",
-            "license",
-            "repository",
-            "bin",
-            "exports",
-            "file",
-            "scripts",
-            "dependencies",
-            "peerDependencies",
-            "peerDependenciesMeta",
-            "devDependencies",
-            "publishConfig",
-            "imports",
-            "keywords",
-            "files",
-            // since these are just for fallback support we can drop to bottom
-            "main",
-            "module",
-            "types",
-          ],
-        },
-      }),
-      Rules.alphabeticalDependencies({ includeWorkspaceRoot: true }),
-      Rules.consistentDependencies({}),
-      Rules.alphabeticalScripts({ includeWorkspaceRoot: true }),
-
-      // Banned dependencies
-      Rules.bannedDependencies({
-        ...shared,
-        options: {
-          bannedDependencies: ["lodash", "lodash-es"],
-        },
-      }),
+      requiredScriptsDependenciesRule,
+      ...baseRules,
     ];
   },
   { unmatched: "error" }, // Error if any package doesn't match an archetype
@@ -191,9 +205,18 @@ const archetypeConfig = archetypes(
   .addArchetype(
     "build-tools",
     [
-      "@palantir/pack.monorepo.*",
+      "@palantir/pack.monorepo.tsconfig",
+      "@palantir/pack.monorepo.cspell",
     ],
     { isBuildTools: true },
+  )
+  .addArchetype(
+    "build-tools-clis",
+    [
+      "@palantir/pack.monorepo.release",
+      "@palantir/pack.monorepo.transpile",
+    ],
+    { isBuildTools: true, isCli: true },
   )
   .addArchetype(
     "cli",

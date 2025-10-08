@@ -86,7 +86,7 @@ export async function getVersionPrBody({
     messageHeader,
     messagePreState,
     messageReleasesHeading,
-    ...changedPackagesInfo.map((info) => `${info.header}\n\n${info.content}`),
+    ...changedPackagesInfo.map(info => `${info.header}\n\n${info.content}`),
   ].join("\n");
 
   // Check that the message does not exceed the size limit.
@@ -97,7 +97,7 @@ export async function getVersionPrBody({
       messagePreState,
       messageReleasesHeading,
       `\n> The changelog information of each package has been omitted from this message, as the content exceeds the size limit.\n`,
-      ...changedPackagesInfo.map((info) => `${info.header}\n\n`),
+      ...changedPackagesInfo.map(info => `${info.header}\n\n`),
     ].join("\n");
   }
 

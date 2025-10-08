@@ -87,8 +87,7 @@ export const switchToMaybeExistingBranch = async (
   const { stderr } = await getExecOutput("git", ["checkout", branch], {
     ignoreReturnCode: true,
   });
-  const isCreatingBranch =
-    !stderr.includes(`Switched to a new branch '${branch}'`)
+  const isCreatingBranch = !stderr.includes(`Switched to a new branch '${branch}'`)
     && !stderr.includes(`Switched to branch '${branch}'`);
   // eslint-disable-next-line no-console
   console.log("stderr: " + stderr);

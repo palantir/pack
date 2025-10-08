@@ -127,7 +127,7 @@ async function getContext(
         description: "Custom commit SHA to use for tagging releases",
       },
     })
-    .check((argv) => {
+    .check(argv => {
       if (argv.mode === "publish" && !argv.publishCmd) {
         throw new Error(
           "You must provide a publish command when running in publish mode",
@@ -173,7 +173,7 @@ async function getContext(
 
   const hasChangesets = changesets.length !== 0;
   const hasNonEmptyChangesets = changesets.some(
-    (changeset) => changeset.releases.length > 0,
+    changeset => changeset.releases.length > 0,
   );
   if (args.mode === "simulateMinorBump") {
     simulateMinorBump();
@@ -212,7 +212,7 @@ async function getContext(
         userNpmrcPath,
         "utf8",
       );
-      const authLine = userNpmrcContent.split("\n").find((line) => {
+      const authLine = userNpmrcContent.split("\n").find(line => {
         // check based on https://github.com/npm/cli/blob/8f8f71e4dd5ee66b3b17888faad5a7bf6c657eed/test/lib/adduser.js#L103-L105
         return /^\s*\/\/registry\.npmjs\.org\/:[_-]authToken=/i.test(line);
       });
@@ -243,7 +243,7 @@ async function getContext(
       createGithubReleases: false,
     });
   }
-})().catch((err) => {
+})().catch(err => {
   if (err instanceof FailedWithUserMessage) {
     consola.error(err);
   } else if (err instanceof Error) {

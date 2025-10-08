@@ -46,9 +46,7 @@ export function mutateReleasePlan(
           }:\n`;
           errorStarted = true;
         }
-        bulkErrorMsg += `  - ${
-          chalk.red(`${release.name}: ${release.type}`)
-        }\n`;
+        bulkErrorMsg += `  - ${chalk.red(`${release.name}: ${release.type}`)}\n`;
       }
 
       if (release.type === "major") {

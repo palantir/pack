@@ -45,12 +45,12 @@ export async function publishPackages(
   const releaseTag = tag && tag.length > 0 ? tag : "latest";
   const { packages, tool } = await getPackages(cwd);
 
-  const publicPackages = packages.filter((pkg) => !pkg.packageJson.private);
+  const publicPackages = packages.filter(pkg => !pkg.packageJson.private);
   const unpublishedPackagesInfo = await getUnpublishedPackages(publicPackages);
 
   const r = await pMap(
     unpublishedPackagesInfo,
-    async (pkg) => await publishSinglePackage(pkg, config.access, releaseTag),
+    async pkg => await publishSinglePackage(pkg, config.access, releaseTag),
     { concurrency: 4 },
   );
 
@@ -59,7 +59,7 @@ export async function publishPackages(
     path.join(cwd, "pnpm-publish-summary.json"),
     JSON.stringify(
       {
-        publishedPackages: r.filter((x) => x.published).map(x => ({
+        publishedPackages: r.filter(x => x.published).map(x => ({
           name: x.name,
           version: x.newVersion,
         })),
@@ -127,7 +127,7 @@ export async function packageVersionsOrEmptySet(
 }
 
 async function getUnpublishedPackages(packages: Array<Package>) {
-  return pFilter(packages, async (pkg) => {
+  return pFilter(packages, async pkg => {
     const { name, version } = pkg.packageJson;
     const versions = await packageVersionsOrEmptySet(name);
     if (versions.has(version)) {

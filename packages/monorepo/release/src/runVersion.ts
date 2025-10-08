@@ -52,10 +52,7 @@ import { read as readChangesetConfig } from "@changesets/config";
 import { getCurrentCommitId } from "@changesets/git";
 import { readPreState } from "@changesets/pre";
 import readChangesets from "@changesets/read";
-import {
-  getChangelogEntry,
-  sortChangelogEntries,
-} from "@changesets/release-utils";
+import { getChangelogEntry, sortChangelogEntries } from "@changesets/release-utils";
 import type { Config } from "@changesets/types";
 import { getPackages } from "@manypkg/get-packages";
 import { consola } from "consola";
@@ -112,8 +109,7 @@ export async function runVersion({
     );
   }
 
-  const isMainBranch =
-    (process.env.PRETEND_BRANCH ?? context.branch) === "main";
+  const isMainBranch = (process.env.PRETEND_BRANCH ?? context.branch) === "main";
 
   const isReleaseBranch = (process.env.PRETEND_BRANCH ?? context.branch)
     .startsWith("release/");
@@ -245,7 +241,7 @@ async function getSortedChangedPackagesInfo(
 ) {
   const changedPackages = await getChangedPackages(cwd, oldVersionsByDirectory);
   const changedPackagesInfo = await Promise.all(
-    changedPackages.map(async (pkg) => {
+    changedPackages.map(async pkg => {
       const changelogContents = await fs.promises.readFile(
         path.join(pkg.dir, "CHANGELOG.md"),
         "utf8",
@@ -270,13 +266,15 @@ async function getSortedChangedPackagesInfo(
   );
 
   return changedPackagesInfo
-    .filter((x) => x)
+    .filter(x => x)
     .sort(sortChangelogEntries);
 }
 
-type PR = Awaited<
-  ReturnType<Octokit["rest"]["search"]["issuesAndPullRequests"]>
->["data"]["items"][0] | undefined;
+type PR =
+  | Awaited<
+    ReturnType<Octokit["rest"]["search"]["issuesAndPullRequests"]>
+  >["data"]["items"][0]
+  | undefined;
 
 export async function getExistingPr(
   repo: string,

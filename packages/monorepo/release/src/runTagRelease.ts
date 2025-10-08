@@ -33,9 +33,7 @@ async function createGithubReleaseTag(
   context: GithubContext,
   sha: string,
 ) {
-  const changelogPath = `packages/${
-    getDirNameFromPackageName(packageName)
-  }/CHANGELOG.md`;
+  const changelogPath = `packages/${getDirNameFromPackageName(packageName)}/CHANGELOG.md`;
   const changelogContent = await context.octokit.rest.repos.getContent({
     owner: context.repo.owner,
     repo: context.repo.repo,
@@ -68,19 +66,17 @@ async function createGithubReleaseTag(
     ...context.repo,
     tag_name: tagName,
     name: tagName,
-    body: changelogEntry.content === "\n"
-      ? "No changes were made."
-      : changelogEntry.content,
+    body: changelogEntry.content === "\n" ? "No changes were made." : changelogEntry.content,
     prerelease: version.includes("beta")
       || version.includes("rc"),
     target_commitish: sha,
-  }).then((result) => {
+  }).then(result => {
     consola.log(
       `Created GitHub release with tag ${
         chalk.green(`${packageName}@${version}`)
       } at ${result.data.html_url}`,
     );
-  }).catch((e) => {
+  }).catch(e => {
     if (e.response.data?.errors[0].code === "already_exists") {
       consola.log(
         chalk.yellow(
@@ -166,9 +162,7 @@ export async function runTagRelease(
 
   for (const publishedPackage of publishedPackages.publishedPackages) {
     const packageName = publishedPackage.name;
-    const packagePath = `packages/${
-      getDirNameFromPackageName(packageName)
-    }/package.json`;
+    const packagePath = `packages/${getDirNameFromPackageName(packageName)}/package.json`;
     const pkg = await context.octokit.rest.repos.getContent({
       owner: context.repo.owner,
       repo: context.repo.repo,

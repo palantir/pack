@@ -27,7 +27,7 @@ export function simulateMinorBump(): void {
 
   const preJson = JSON.parse(fs.readFileSync(preJsonPath, "utf-8"));
   const changeSetFilesToKeep = ["README.md", "config.json", "pre.json"];
-  fs.readdirSync(changesetsDir).forEach((changesetFile) => {
+  fs.readdirSync(changesetsDir).forEach(changesetFile => {
     if (!changeSetFilesToKeep.includes(changesetFile)) {
       fs.rmSync(path.join(changesetsDir, changesetFile));
     }
@@ -65,9 +65,7 @@ export function simulateMinorBump(): void {
       );
 
       // Add a changeset file that indicates a minor bump happened, write back
-      const changesetFileName = `${
-        packageJson.name.replace("/", "-")
-      }-simulatedRelease`;
+      const changesetFileName = `${packageJson.name.replace("/", "-")}-simulatedRelease`;
       const changesetFile = path.join(
         changesetsDir,
         changesetFileName + ".md",

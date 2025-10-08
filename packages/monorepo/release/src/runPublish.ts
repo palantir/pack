@@ -93,7 +93,7 @@ export async function runPublish({
   if (tool !== "root") {
     const newTagRegex = /New tag:\s+(@[^/]+\/[^@]+|[^/]+)@([^\s]+)/;
     const packagesByName = new Map(
-      packages.map((x) => [x.packageJson.name, x]),
+      packages.map(x => [x.packageJson.name, x]),
     );
 
     for (const line of changesetPublishOutput.stdout.split("\n")) {
@@ -114,7 +114,7 @@ export async function runPublish({
 
     if (createGithubReleases) {
       await Promise.all(
-        releasedPackages.map((pkg) =>
+        releasedPackages.map(pkg =>
           createRelease(context, {
             pkg,
             tagName: `${pkg.packageJson.name}@${pkg.packageJson.version}`,
@@ -151,7 +151,7 @@ export async function runPublish({
   if (releasedPackages.length) {
     return {
       published: true,
-      publishedPackages: releasedPackages.map((pkg) => ({
+      publishedPackages: releasedPackages.map(pkg => ({
         name: pkg.packageJson.name,
         version: pkg.packageJson.version,
       })),
