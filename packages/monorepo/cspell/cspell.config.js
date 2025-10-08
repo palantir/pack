@@ -61,6 +61,7 @@ const cspell = {
     "*.{css,svg}",
     "*.{yml,yaml}",
     "*.json",
+    "*.jsonc",
     "*.sh",
     "*.snap",
     "typedoc.jsonc",
@@ -75,19 +76,13 @@ const cspell = {
     // Just too complex right now. We should fix this later.
     "eslint.config.mjs",
     "tsup.config.js",
-    ".lintstagedrc.mjs",
+    "lint-staged.config.mjs",
     ".envrc.sample",
     ".monorepolint.config.mjs",
 
     // don't bother with any build directories
     "examples-extra/*/{build,dist}/**/*",
     "packages/*/build/**",
-
-    // this is the conjure generated code that we won't keep forever
-    "packages/client.unstable/src/generated/**",
-
-    "packages/e2e.test.foundry-sdk-generator/src/generatedNoCheck/**/*",
-    "packages/create-app.template.*/src/generatedNoCheck/**/*",
     "CHANGELOG.md",
   ],
   dictionaryDefinitions: [
@@ -105,6 +100,7 @@ const cspell = {
     "/\/entitymetadata\//",
   ],
 
+  // TODO(FIRST_BUILD): Slim down dictionaries copied from OSDK 
   dictionaries: [
     // builtin dicts to always include
     "en_US",
@@ -169,46 +165,6 @@ const cspell = {
       ignoreRegExpList: [
         "url-oauth-scopes",
         "oauth-token",
-      ],
-    },
-    {
-      filename: [
-        "packages/*/generatedNoCheck",
-        "packages/*/generatedNoCheck2",
-
-        // v1 client wire api
-        "packages/gateway/src/generated/**",
-
-        // "omni apis"
-        "packages/foundry.*/src/**",
-        "packages/internal.foundry.*/src/**",
-      ],
-      dictionaries: [
-        // acceptable words in generated code
-        "wire-api-words",
-
-        // un-acceptable words in generated code that need to be fixed elsewhere
-        "wire-api-words-to-fix",
-      ],
-    },
-    {
-      filename: [
-        "packages/e2e.*/src/**/*.{mts,cts,ts,tsx}",
-        "packages/shared.test/src/mock-ontology/**/*.{mts,cts,ts,tsx}",
-        "examples-extra/*/src/**/*.{mts,cts,ts,tsx}",
-      ],
-      dictionaries: ["imported-ontologies"],
-      ignoreRegExpList: [
-        /Palo Alto/,
-      ],
-      words: [
-        "Clooney",
-        "Downey",
-        "Hemsworth",
-        "underlyings",
-        "Dherlihy",
-        "Mnayan",
-        "Matthewvs",
       ],
     },
   ],

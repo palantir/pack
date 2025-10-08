@@ -143,6 +143,14 @@
       "dependsOn": ["build", "test", "lint", "//#mrl:check"],
       "outputs": []
     },
+    
+    "ci:cspell": {
+      "dependsOn": ["//#cspell:all"]
+    },
+
+    "//#cspell:all": {
+      "cache": false
+    },
 
     "//#mrl:check": {
       "inputs": [

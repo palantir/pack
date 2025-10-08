@@ -7,5 +7,5 @@ cd "${SCRIPT_DIR}/../"
 
 COMMIT_SHA=${1:-}
 
-pnpm exec turbo transpile --filter "./packages/tool.release"
-node ./packages/tool.release/build/esm/index.js --repo palantir/pack --mode tag-version --commitSha "${COMMIT_SHA}"
+pnpm exec turbo transpile --filter "./packages/monorepo/release"
+node ./packages/monorepo/release/build/esm/index.js --repo palantir/pack --mode tag-version --commitSha "${COMMIT_SHA}"
