@@ -112,8 +112,6 @@ export default tseslint.config(
     files: [
       "**/bin/*.mjs",
       "**/bin/*.cjs",
-      "examples-extra/**/*",
-      "packages/e2e.sandbox.*/**/*",
     ],
     rules: {
       "header/header": "off",
@@ -124,7 +122,7 @@ export default tseslint.config(
   //
   {
     files: [
-      "packages/*/src/**/*",
+      "packages/**/src/**/*",
     ],
     extends: [
       tseslint.configs.strictTypeCheckedOnly,
@@ -132,6 +130,7 @@ export default tseslint.config(
     rules: {
       "@typescript-eslint/no-floating-promises": "error",
       "@typescript-eslint/await-thenable": "error",
+      "@typescript-eslint/no-deprecated": "error",
       "@typescript-eslint/no-misused-promises": ["error", {
         // this lets you pass an async function to a definition of `() => void`
         checksVoidReturn: false,
@@ -167,6 +166,7 @@ export default tseslint.config(
 
       // ideally these would be an error because it does catch bugs
       // but it also requires a lot of code change right now
+      // TODO(FIRST_BUILD): Determine if we want these enabled
       "@typescript-eslint/no-unsafe-assignment": "off",
       "@typescript-eslint/no-unsafe-member-access": "off",
       "@typescript-eslint/no-unsafe-return": "off",
@@ -188,28 +188,32 @@ export default tseslint.config(
       parser: typescriptEslintParser,
       parserOptions: {
         projectService: true,
-        // projectService: {
-        //   allowDefaultProject: ["*.js", "vitest.config.mts", "bin/*.mjs"],
-        // },
         tsconfigRootDir: process.cwd(),
       },
-    },
+    }
   },
   {
     files: ["**/*.test.ts"],
     rules: {
       // Just trying to reduce the errors in tests
       "@typescript-eslint/unbound-method": "warn",
-      "@typescript-eslint/no-unsafe-assignment": "off",
+      "@typescript-eslint/no-unsafe-assignment": "warn",
       "@typescript-eslint/no-deprecated": "warn",
-      "@typescript-eslint/no-unsafe-argument": "off",
-      "@typescript-eslint/no-base-to-string": "off",
-      // "@typescript-eslint/prefer-const": "warn",
+      "@typescript-eslint/no-unsafe-argument": "warn",
+      "@typescript-eslint/no-base-to-string": "warn",
+      "prefer-const": "warn",
 
-      "eslint@typescript-eslint/require-await": "off",
+      "@typescript-eslint/require-await": "warn",
 
       // rules that should be enabled but I dont want a massive delta yet
-      "@typescript-eslint/await-thenable": "warn",
+      "@typescript-eslint/await-thenable": "error",
+    },
+    languageOptions: {
+      parser: typescriptEslintParser,
+      parserOptions: {
+        projectService: true,
+        tsconfigRootDir: process.cwd(),
+      },
     },
   },
   //
@@ -220,8 +224,6 @@ export default tseslint.config(
     files: [
       "**/*.test.ts",
       "**/test/*",
-      "examples-extra/**/*",
-      "packages/e2e.sandbox.*/**/*",
     ],
     rules: {
       "no-console": "off",
@@ -240,11 +242,6 @@ export default tseslint.config(
       "**/src/generatedNoCheck/",
       "**/src/generatedNoCheck2/",
       "**/templates/",
-      "examples/**/*",
-      "packages/monorepo.*/**",
-      "google-font-mocked-response.js",
-      ".lintstagedrc.mjs",
-      "tests/",
     ],
   },
 );
