@@ -3,10 +3,13 @@ import * as Rules from "@monorepolint/rules";
 
 // @ts-check
 
+const REPOSITORY_URL = "https://github.com/palantir/pack.git";
+
 /**
  * @typedef {Object} ArchetypeRules
  * @property {boolean} [isCli]
  * @property {boolean} [isSdkgenTemplate]
+ * @property {boolean} [isBuildTools]
  */
 
 const archetypeConfig = archetypes(
@@ -68,6 +71,19 @@ const archetypeConfig = archetypes(
 
     // Rules that apply to all packages
     const baseRules = [
+      Rules.packageEntry({
+        ...shared,
+        options: {
+          entriesExist: ["version"],
+          entries: {
+            license: "Apache-2.0",
+            repository: {
+              "type": "git",
+              "url": REPOSITORY_URL,
+            },
+          },
+        },
+      }),
       Rules.packageOrder({
         options: {
           order: [
@@ -122,11 +138,36 @@ const archetypeConfig = archetypes(
       },
     });
 
+    const privateRule = Rules.packageEntry({
+      ...shared,
+      options: {
+        entries: {
+          private: true,
+        },
+      },
+    });
+
+    const publicRules = [
+      noPackageEntry({
+        ...shared,
+        options: {
+          entries: ["private"],
+        },
+      }),
+      allLocalDepsMustNotBePrivate({
+        ...shared,
+      }),
+    ];
+
     if (rules.isBuildTools) {
       if (!rules.isCli) {
-        return baseRules;
+        return [
+          privateRule,
+          ...baseRules,
+        ];
       }
       return [
+        privateRule,
         scriptsRule,
         requiredScriptsDependenciesRule,
         standardTsConfigRule,
@@ -135,6 +176,7 @@ const archetypeConfig = archetypes(
     }
 
     return [
+      ...publicRules,
       scriptsRule,
 
       // Vitest config
@@ -151,7 +193,6 @@ const archetypeConfig = archetypes(
         ...shared,
         options: {
           entries: {
-            version: "0.0.1",
             type: "module",
             ...(rules.isCli
               ? {
@@ -229,6 +270,60 @@ const archetypeConfig = archetypes(
     {},
   )
   .addArchetype("sdkgen-template", [], { isSdkgenTemplate: true });
+
+const allLocalDepsMustNotBePrivate = Rules.createRuleFactory({
+  name: "allLocalDepsMustNotBePrivate",
+  check: async context => {
+    const packageJson = context.getPackageJson();
+    const deps = packageJson.dependencies ?? {};
+
+    const nameToDir = await context.getWorkspaceContext().getPackageNameToDir();
+
+    for (const [dep, version] of Object.entries(deps)) {
+      if (nameToDir.has(dep)) {
+        const packageDir = nameToDir.get(dep);
+        /** @type any */
+        const theirPackageJson = context.host.readJson(
+          path.join(packageDir, "package.json"),
+        );
+
+        if (theirPackageJson.private) {
+          const message =
+            `${dep} is private and cannot be used as a regular dependency for this package`;
+          context.addError({
+            message,
+            longMessage: message,
+            file: context.getPackageJsonPath(),
+          });
+        }
+      }
+    }
+  },
+  validateOptions: () => {}, // no options right now
+});
+
+/**
+ * @type {import("@monorepolint/rules").RuleFactoryFn<{entries: string[]}>}
+ */
+const noPackageEntry = Rules.createRuleFactory({
+  name: "noPackageEntry",
+  check: async (context, options) => {
+    const packageJson = context.getPackageJson();
+    for (const entry of options.entries) {
+      if (packageJson[entry]) {
+        context.addError({
+          message: `${entry} field is not allowed`,
+          longMessage: `${entry} field is not allowed`,
+          file: context.getPackageJsonPath(),
+        });
+      }
+    }
+  },
+  validateOptions: options => {
+    return typeof options === "object" && "entries" in options
+      && Array.isArray(options.entries);
+  },
+});
 
 const config = () => ({
   rules: archetypeConfig.buildRules(),
