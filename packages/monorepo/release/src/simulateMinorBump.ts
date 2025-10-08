@@ -36,6 +36,7 @@ export function simulateMinorBump(): void {
   // Remove all old changesets that would have been deleted after minor release was cut
   preJson.changesets = [];
 
+  // TODO(FIRST_BUILD): Assumes packages are in the top level packages directory
   fs.readdirSync(packagesDir).forEach(folder => {
     const packagePath = path.join(packagesDir, folder);
     const packageJsonPath = path.join(packagePath, "package.json");

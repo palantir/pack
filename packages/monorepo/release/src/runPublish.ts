@@ -80,7 +80,7 @@ export async function runPublish({
   const [publishCommand, ...publishArgs] = script.split(/\s+/);
 
   const changesetPublishOutput = await getExecOutput(
-    publishCommand,
+    publishCommand!,
     publishArgs,
     { cwd },
   );
@@ -102,7 +102,7 @@ export async function runPublish({
         continue;
       }
       const pkgName = match[1];
-      const pkg = packagesByName.get(pkgName);
+      const pkg = pkgName != null ? packagesByName.get(pkgName) : undefined;
       if (pkg === undefined) {
         throw new Error(
           `Package "${pkgName}" not found.`
@@ -129,7 +129,7 @@ export async function runPublish({
           + "This is probably a bug in the action, please open an issue",
       );
     }
-    const pkg = packages[0];
+    const pkg = packages[0]!;
     const newTagRegex = /New tag:/;
 
     for (const line of changesetPublishOutput.stdout.split("\n")) {

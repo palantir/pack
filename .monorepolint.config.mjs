@@ -11,6 +11,7 @@ import * as Rules from "@monorepolint/rules";
 
 const archetypeConfig = archetypes(
   (shared, rules) => {
+    // TODO(FIRST_BUILD): Re-enable MRL for build tools
     if (rules.isBuildTools) {
       return [];
     }

@@ -23,6 +23,7 @@ import { readFile, writeFile } from "fs/promises";
 import { join } from "path";
 import semver from "semver";
 import yargs from "yargs";
+import { getPackPackageDirectory } from "./util/getPackPackageDirectory.js";
 
 interface PackageInfo {
   name: string;
@@ -46,8 +47,7 @@ async function getChangelogContent(
   branch: string,
 ): Promise<string | null> {
   const changelogPath = join(
-    "packages",
-    packageName.split("/")[1],
+    getPackPackageDirectory(packageName),
     "CHANGELOG.md",
   );
   let content: Result<{}> = {} as Result<{}>;
@@ -69,7 +69,10 @@ function doesVersionExistInChangelog(
   const changelogEntry = getChangelogEntry(changelogContent, version);
 
   const lines = changelogEntry.content.split("\n");
-  const firstLine = lines[0].trim();
+  if (lines.length === 0) {
+    return false;
+  }
+  const firstLine = lines[0]!.trim();
   return !firstLine.startsWith("# "); // If the first line of the changelog entry starts with #, it means the entry does not exist
 }
 
@@ -79,8 +82,7 @@ async function updateChangelog(
   fullTargetBranchChangelogContent: string,
 ): Promise<void> {
   const changelogPath = join(
-    "packages",
-    packageName.split("/")[1],
+    getPackPackageDirectory(packageName),
     "CHANGELOG.md",
   );
 
@@ -126,11 +128,11 @@ async function updateChangelog(
   let insertAt = 0;
 
   for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
+    const line = lines[i]!;
     const versionMatch = line.match(/^## ([\d.]+(?:-beta\.\d+)?)$/);
 
-    if (versionMatch) {
-      const entryVersion = versionMatch[1];
+    if (versionMatch && versionMatch.length > 0) {
+      const entryVersion = versionMatch[1]!;
       if (semver.lt(entryVersion, targetVersion)) {
         insertAt = i - 1;
         break;

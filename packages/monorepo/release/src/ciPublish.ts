@@ -109,7 +109,7 @@ export function findGreatestVersion(releaseBranches: string[]): string | null {
     }
 
     return semver.gt(version, maxVersion) ? branch : maxBranch;
-  }, releaseBranches[0]);
+  }, releaseBranches[0]!);
 }
 
 export function determineTag(

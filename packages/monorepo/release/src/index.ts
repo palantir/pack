@@ -72,11 +72,14 @@ async function getContext(
   args: { repo: string; branch?: string; commitSha?: string },
 ): Promise<GithubContext> {
   const parts = args.repo.split("/");
+  if (parts.length < 2) {
+    throw new Error("Could not get github context");
+  }
 
   return {
     repo: {
-      owner: parts[0],
-      repo: parts[1],
+      owner: parts[0]!,
+      repo: parts[1]!,
     },
     sha: args.commitSha
       ?? (await getStdoutOrThrow("git", ["rev-parse", "HEAD"])).trim(),

@@ -274,16 +274,16 @@ async function getSortedChangedPackagesInfo(
     .sort(sortChangelogEntries);
 }
 
+type PR = Awaited<
+  ReturnType<Octokit["rest"]["search"]["issuesAndPullRequests"]>
+>["data"]["items"][0] | undefined;
+
 export async function getExistingPr(
   repo: string,
   versionBranch: string,
   branch: string,
   octokit: Octokit,
-): Promise<
-  Awaited<
-    ReturnType<Octokit["rest"]["search"]["issuesAndPullRequests"]>
-  >["data"]["items"][0]
-> {
+): Promise<PR> {
   // eslint-disable-next-line @typescript-eslint/no-deprecated
   const { data } = await octokit.rest.search.issuesAndPullRequests(
     {
