@@ -189,6 +189,9 @@ importers:
       '@changesets/types':
         specifier: ^6.1.0
         version: 6.1.0
+      '@palantir/pack.monorepo.transpile':
+        specifier: workspace:~
+        version: link:../transpile
       '@palantir/pack.monorepo.tsconfig':
         specifier: workspace:~
         version: link:../tsconfig
@@ -208,8 +211,8 @@ importers:
         specifier: ^17.0.33
         version: 17.0.33
       typescript:
-        specifier: ~5.5.4
-        version: 5.5.4
+        specifier: ~5.9.2
+        version: 5.9.3
       vitest:
         specifier: ^3.2.4
         version: 3.2.4(@types/node@18.19.129)(yaml@2.8.1)
@@ -250,6 +253,9 @@ importers:
         specifier: ^18.0.0
         version: 18.0.0
     devDependencies:
+      '@palantir/pack.monorepo.tsconfig':
+        specifier: workspace:~
+        version: link:../tsconfig
       '@types/node':
         specifier: 'catalog:'
         version: 20.19.19
@@ -3328,11 +3334,6 @@ packages:
     peerDependencies:
       eslint: ^8.57.0 || ^9.0.0
       typescript: '>=4.8.4 <6.0.0'
-
-  typescript@5.5.4:
-    resolution: {integrity: sha512-Mtq29sKDAEYP7aljRgtPOpTvOfbwRWlS6dPRzwjdE+C0R4brX/GUyhHSecbHMFLNBLcJIPt9nl9yG5TZ1weH+Q==}
-    engines: {node: '>=14.17'}
-    hasBin: true
 
   typescript@5.9.3:
     resolution: {integrity: sha512-jl1vZzPDinLr9eUt3J/t7V6FgNEw9QjvBPdysz9KfQDD41fQrC2Y4vKQdiaUpFT4bXlb1RHhLpp8wtm6M5TgSw==}
@@ -6940,8 +6941,6 @@ snapshots:
       typescript: 5.9.3
     transitivePeerDependencies:
       - supports-color
-
-  typescript@5.5.4: {}
 
   typescript@5.9.3: {}
 

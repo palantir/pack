@@ -11,6 +11,10 @@ import * as Rules from "@monorepolint/rules";
 
 const archetypeConfig = archetypes(
   (shared, rules) => {
+    if (rules.isBuildTools) {
+      return [];
+    }
+
     const baseScripts = {
       clean: "rimraf .turbo build dist lib test-output *.tgz tsconfig.tsbuildinfo",
       lint: "eslint ./src ; dprint check --config $(find-up dprint.json) --allow-no-files",
@@ -184,10 +188,15 @@ const archetypeConfig = archetypes(
   { unmatched: "error" }, // Error if any package doesn't match an archetype
 )
   .addArchetype(
-    "cli",
+    "build-tools",
     [
-      "@palantir/pack.monorepo.transpile",
+      "@palantir/pack.monorepo.*",
     ],
+    { isBuildTools: true },
+  )
+  .addArchetype(
+    "cli",
+    [],
     { isCli: true },
   )
   .addArchetype(

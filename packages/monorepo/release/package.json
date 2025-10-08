@@ -29,7 +29,7 @@
     "fix-lint": "eslint . --fix && dprint fmt --config $(find-up dprint.json)",
     "lint": "eslint . && dprint check  --config $(find-up dprint.json)",
     "test": "vitest run --pool=forks",
-    "transpileEsm": "monorepo.tool.transpile -f esm -m normal -t node",
+    "transpileEsm": "monorepo-transpile -f esm -m normal -t node",
     "typecheck": "tsc --noEmit --emitDeclarationOnly false"
   },
   "dependencies": {
@@ -61,13 +61,14 @@
   },
   "devDependencies": {
     "@changesets/types": "^6.1.0",
+    "@palantir/pack.monorepo.transpile": "workspace:~",
     "@palantir/pack.monorepo.tsconfig": "workspace:~",
     "@types/adm-zip": "^0.5.7",
     "@types/mdast": "4.0.4",
     "@types/node": "^18.19.124",
     "@types/semver": "^7.7.1",
     "@types/yargs": "^17.0.33",
-    "typescript": "~5.5.4",
+    "typescript": "^5.9.2",
     "vitest": "^3.2.4"
   },
   "publishConfig": {

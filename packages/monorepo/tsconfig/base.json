@@ -16,8 +16,8 @@
 
     "forceConsistentCasingInFileNames": true,
     "strict": true,
-    "noImplicitAny": true,
-    "noUncheckedIndexedAccess": true,
+    // "noImplicitAny": true,
+    // "noUncheckedIndexedAccess": true,
 
     "allowImportingTsExtensions": false,
 

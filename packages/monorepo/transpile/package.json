@@ -37,6 +37,7 @@
     "yargs": "^18.0.0"
   },
   "devDependencies": {
+    "@palantir/pack.monorepo.tsconfig": "workspace:~",
     "@types/node": "catalog:",
     "@types/yargs": "^17.0.33",
     "find-up": "^8.0.0",
