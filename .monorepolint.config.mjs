@@ -54,8 +54,7 @@ const archetypeConfig = archetypes(
     });
 
     // Required dependencies - CLI packages need @types/node
-    const requiredScriptsDependenciesRule = 
-    Rules.requireDependency({
+    const requiredScriptsDependenciesRule = Rules.requireDependency({
       ...shared,
       options: {
         devDependencies: {
@@ -112,6 +111,17 @@ const archetypeConfig = archetypes(
       }),
     ];
 
+    // TypeScript config - different templates for CLI vs library vs sdkgen template
+    const standardTsConfigRule = Rules.standardTsconfig({
+      ...shared,
+      options: {
+        excludedReferences: ["**/*"],
+        templateFile: rules.isSdkgenTemplate
+          ? "templates/tsconfig.sdkgen-template.json"
+          : (rules.isCli ? "templates/tsconfig.cli.json" : "templates/tsconfig.json"),
+      },
+    });
+
     if (rules.isBuildTools) {
       if (!rules.isCli) {
         return baseRules;
@@ -119,7 +129,8 @@ const archetypeConfig = archetypes(
       return [
         scriptsRule,
         requiredScriptsDependenciesRule,
-        ...baseRules
+        standardTsConfigRule,
+        ...baseRules,
       ];
     }
 
@@ -184,18 +195,7 @@ const archetypeConfig = archetypes(
           },
         },
       }),
-
-      // TypeScript config - different templates for CLI vs library vs sdkgen template
-      Rules.standardTsconfig({
-        ...shared,
-        options: {
-          excludedReferences: ["**/*"],
-          templateFile: rules.isSdkgenTemplate
-            ? "templates/tsconfig.sdkgen-template.json"
-            : (rules.isCli ? "templates/tsconfig.cli.json" : "templates/tsconfig.json"),
-        },
-      }),
-
+      standardTsConfigRule,
       requiredScriptsDependenciesRule,
       ...baseRules,
     ];
