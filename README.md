@@ -1,3 +1,7 @@
+<p align="right">
+<a href="https://autorelease.general.dmz.palantir.tech/palantir/pack"><img src="https://img.shields.io/badge/Perform%20an-Autorelease-success.svg" alt="Autorelease"></a>
+</p>
+
 # Platform Application Capabilities Kit (PACK)
 
 This repository is a monorepo for the Platform Application Capabilities Kit (PACK) TypeScript packages.
