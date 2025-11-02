@@ -1,6 +1,6 @@
 # @palantir/pack.document-schema.model-types
 
-Minimal runtime types and interfaces supporting generated document schemas, providing the foundational types for schema-generated models.
+Minimal runtime types and interfaces supporting generated [PACK](https://github.com/palantir/pack) schemas, providing the foundational types for schema-generated models.
 
 ## Overview
 
