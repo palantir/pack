@@ -18,7 +18,7 @@ import type { ZodType } from "zod";
 import type { WithMetadata } from "./Metadata.js";
 
 /**
- * A Model defines the datastructure of a document record or union.
+ * A Model defines the structure of a document record or union.
  *
  * It includes a zod schema for validation and type information.
  */
