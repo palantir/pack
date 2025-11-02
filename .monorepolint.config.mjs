@@ -266,7 +266,9 @@ const archetypeConfig = archetypes(
   )
   .addArchetype(
     "library",
-    [],
+    [
+      "@palantir/pack.document-schema.model-types",
+    ],
     {},
   )
   .addArchetype("sdkgen-template", [], { isSdkgenTemplate: true });
