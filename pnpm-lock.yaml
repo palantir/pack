@@ -111,7 +111,7 @@ importers:
         specifier: ^3.2.4
         version: 3.2.4(@types/node@20.19.19)(yaml@2.8.1)
 
-  packages/document-schema/document-schema-model-types:
+  packages/document-schema/model-types:
     dependencies:
       zod:
         specifier: ^4.1.7
