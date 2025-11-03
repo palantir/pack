@@ -18,6 +18,7 @@ import { getChangelogEntry } from "@changesets/release-utils";
 import AdmZip from "adm-zip";
 import chalk from "chalk";
 import consola from "consola";
+import { RequestError } from "octokit";
 import type { GithubContext } from "./runVersion.js";
 import { getPackPackageDirectory } from "./util/getPackPackageDirectory.js";
 
@@ -77,8 +78,9 @@ async function createGithubReleaseTag(
         chalk.green(`${packageName}@${version}`)
       } at ${result.data.html_url}`,
     );
-  }).catch(e => {
-    if (e.response.data?.errors[0].code === "already_exists") {
+  }).catch((e: unknown) => {
+    const response: any = e instanceof RequestError ? e.response?.data : {};
+    if (response.errors[0].code === "already_exists") {
       consola.log(
         chalk.yellow(
           `Release for ${packageName}@${version} already exists, ignoring`,
