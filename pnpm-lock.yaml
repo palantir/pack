@@ -117,6 +117,25 @@ importers:
         specifier: ^3.2.4
         version: 3.2.4(@types/node@20.19.19)(yaml@2.8.1)
 
+  packages/document-schema/model-types:
+    dependencies:
+      zod:
+        specifier: ^4.1.7
+        version: 4.1.12
+    devDependencies:
+      '@palantir/pack.monorepo.tsconfig':
+        specifier: workspace:~
+        version: link:../../monorepo/tsconfig
+      rimraf:
+        specifier: ^6.0.1
+        version: 6.0.1
+      tslib:
+        specifier: ^2.8.1
+        version: 2.8.1
+      typescript:
+        specifier: ^5.9.2
+        version: 5.9.3
+
   packages/monorepo/cspell:
     dependencies:
       '@cspell/cspell-types':
@@ -4147,6 +4166,9 @@ packages:
   yoctocolors@2.1.2:
     resolution: {integrity: sha512-CzhO+pFNo8ajLM2d2IW/R93ipy99LWjtwblvC1RsoSUMZgyLbYFr221TnSNT7GjGdYui6P459mw9JH/g/zW2ug==}
     engines: {node: '>=18'}
+
+  zod@4.1.12:
+    resolution: {integrity: sha512-JInaHOamG8pt5+Ey8kGmdcAcg3OL9reK8ltczgHTAwNhMys/6ThXHityHxVV2p3fkw/c+MAvBHFVYHFZDmjMCQ==}
 
 snapshots:
 
@@ -8357,3 +8379,5 @@ snapshots:
   yocto-queue@1.2.1: {}
 
   yoctocolors@2.1.2: {}
+
+  zod@4.1.12: {}
