@@ -19,6 +19,7 @@ import AdmZip from "adm-zip";
 import chalk from "chalk";
 import consola from "consola";
 import type { GithubContext } from "./runVersion.js";
+import { getPackPackageDirectory } from "./util/getPackPackageDirectory.js";
 
 type PublishedPackages = {
   publishedPackages: {
@@ -33,7 +34,7 @@ async function createGithubReleaseTag(
   context: GithubContext,
   sha: string,
 ) {
-  const changelogPath = `packages/${getDirNameFromPackageName(packageName)}/CHANGELOG.md`;
+  const changelogPath = `${getPackPackageDirectory(packageName)}/CHANGELOG.md`;
   const changelogContent = await context.octokit.rest.repos.getContent({
     owner: context.repo.owner,
     repo: context.repo.repo,
@@ -162,7 +163,7 @@ export async function runTagRelease(
 
   for (const publishedPackage of publishedPackages.publishedPackages) {
     const packageName = publishedPackage.name;
-    const packagePath = `packages/${getDirNameFromPackageName(packageName)}/package.json`;
+    const packagePath = `${getPackPackageDirectory(packageName)}/package.json`;
     const pkg = await context.octokit.rest.repos.getContent({
       owner: context.repo.owner,
       repo: context.repo.repo,
@@ -190,9 +191,4 @@ export async function runTagRelease(
       workflowSha,
     );
   }
-}
-
-function getDirNameFromPackageName(packageName: string) {
-  // TODO: needs to be fixed for nested packages.
-  return packageName.split("/")[1];
 }
