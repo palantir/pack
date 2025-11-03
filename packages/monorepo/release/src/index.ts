@@ -176,7 +176,7 @@ async function getContext(
     changeset => changeset.releases.length > 0,
   );
   if (args.mode === "simulateMinorBump") {
-    simulateMinorBump();
+    await simulateMinorBump();
     consola.info("Simulated minor bump");
     return;
   }

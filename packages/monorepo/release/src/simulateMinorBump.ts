@@ -14,14 +14,14 @@
  * limitations under the License.
  */
 
+import { getPackages } from "@manypkg/get-packages";
 import fs from "node:fs";
 import path from "node:path";
 import * as semver from "semver";
 
-export function simulateMinorBump(): void {
+export async function simulateMinorBump(): Promise<void> {
   const cwd = process.cwd();
 
-  const packagesDir = path.join(cwd, "./packages");
   const changesetsDir = path.join(cwd, "./.changeset");
   const preJsonPath = path.join(changesetsDir, "pre.json");
 
@@ -36,52 +36,46 @@ export function simulateMinorBump(): void {
   // Remove all old changesets that would have been deleted after minor release was cut
   preJson.changesets = [];
 
-  // TODO(FIRST_BUILD): Assumes packages are in the top level packages directory
-  fs.readdirSync(packagesDir).forEach(folder => {
-    const packagePath = path.join(packagesDir, folder);
-    const packageJsonPath = path.join(packagePath, "package.json");
+  const { packages } = await getPackages(cwd);
+  packages.forEach(pkg => {
+    const packageJsonPath = path.join(pkg.dir, "package.json");
+    const packageJson = pkg.packageJson;
 
-    if (fs.existsSync(packageJsonPath)) {
-      const packageJson = JSON.parse(
-        fs.readFileSync(packageJsonPath, "utf8"),
-      );
+    let version = packageJson.version;
 
-      let version = packageJson.version;
+    // Remove beta tag, if any
+    if (version && semver.prerelease(version)) {
+      version = semver.coerce(version)?.version ?? version;
+    }
 
-      // Remove beta tag, if any
-      if (version && semver.prerelease(version)) {
-        version = semver.coerce(version)?.version;
-      }
+    // Set the initial version in preJson for that package to the non beta tagged version and write back
+    preJson.initialVersions[packageJson.name] = version;
 
-      // Set the initial version in preJson for that package to the non beta tagged version and write back
-      preJson.initialVersions[packageJson.name] = version;
+    // Increment minor version and add a beta tag, write back
+    const newVersion = semver.inc(version, "minor") + "-beta.1";
+    packageJson.version = newVersion;
+    fs.writeFileSync(
+      packageJsonPath,
+      JSON.stringify(packageJson, null, 2) + "\n",
+    );
 
-      // Increment minor version and add a beta tag, write back
-      const newVersion = semver.inc(version, "minor") + "-beta.1";
-      packageJson.version = newVersion;
-      fs.writeFileSync(
-        packageJsonPath,
-        JSON.stringify(packageJson, null, 2) + "\n",
-      );
+    // Add a changeset file that indicates a minor bump happened, write back
+    const changesetFileName = `${packageJson.name.replace("/", "-")}-simulatedRelease`;
+    const changesetFile = path.join(
+      changesetsDir,
+      changesetFileName + ".md",
+    );
 
-      // Add a changeset file that indicates a minor bump happened, write back
-      const changesetFileName = `${packageJson.name.replace("/", "-")}-simulatedRelease`;
-      const changesetFile = path.join(
-        changesetsDir,
-        changesetFileName + ".md",
-      );
+    preJson.changesets.push(changesetFileName);
 
-      preJson.changesets.push(changesetFileName);
-
-      const changeset = `---
+    const changeset = `---
 "${packageJson.name}": patch
 ---
-      
+
 Simulated release
       `;
 
-      fs.writeFileSync(changesetFile, changeset);
-    }
+    fs.writeFileSync(changesetFile, changeset);
   });
   fs.writeFileSync(preJsonPath, JSON.stringify(preJson, null, 2) + "\n");
 }
