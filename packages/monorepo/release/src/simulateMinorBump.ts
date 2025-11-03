@@ -19,6 +19,17 @@ import fs from "node:fs";
 import path from "node:path";
 import * as semver from "semver";
 
+interface PackageUpdate {
+  packageJsonPath: string;
+  packageJson: Record<string, unknown>;
+  packageName: string;
+  initialVersion: string;
+  newVersion: string;
+  changesetFileName: string;
+  changesetFilePath: string;
+  changesetContent: string;
+}
+
 export async function simulateMinorBump(): Promise<void> {
   const cwd = process.cwd();
 
@@ -37,45 +48,79 @@ export async function simulateMinorBump(): Promise<void> {
   preJson.changesets = [];
 
   const { packages } = await getPackages(cwd);
-  packages.forEach(pkg => {
+
+  // Validate and collect all package updates first
+  const packageUpdates: PackageUpdate[] = packages.map(pkg => {
     const packageJsonPath = path.join(pkg.dir, "package.json");
     const packageJson = pkg.packageJson;
+    const packageName = packageJson.name as string;
 
-    let version = packageJson.version;
+    let version = packageJson.version as string;
 
     // Remove beta tag, if any
     if (version && semver.prerelease(version)) {
-      version = semver.coerce(version)?.version ?? version;
+      const coercedVersion = semver.coerce(version)?.version;
+      if (!coercedVersion) {
+        throw new Error(
+          `Failed to coerce version "${version}" for package "${packageName}"`,
+        );
+      }
+      version = coercedVersion;
     }
 
-    // Set the initial version in preJson for that package to the non beta tagged version and write back
-    preJson.initialVersions[packageJson.name] = version;
+    // Increment minor version and add a beta tag
+    const incrementedVersion = semver.inc(version, "minor");
+    if (!incrementedVersion) {
+      throw new Error(
+        `Failed to increment version "${version}" for package "${packageName}"`,
+      );
+    }
+    const newVersion = incrementedVersion + "-beta.1";
 
-    // Increment minor version and add a beta tag, write back
-    const newVersion = semver.inc(version, "minor") + "-beta.1";
-    packageJson.version = newVersion;
-    fs.writeFileSync(
-      packageJsonPath,
-      JSON.stringify(packageJson, null, 2) + "\n",
-    );
-
-    // Add a changeset file that indicates a minor bump happened, write back
-    const changesetFileName = `${packageJson.name.replace("/", "-")}-simulatedRelease`;
-    const changesetFile = path.join(
+    // Prepare changeset file information
+    const changesetFileName = `${packageName.replace("/", "-")}-simulatedRelease`;
+    const changesetFilePath = path.join(
       changesetsDir,
       changesetFileName + ".md",
     );
-
-    preJson.changesets.push(changesetFileName);
-
-    const changeset = `---
-"${packageJson.name}": patch
+    const changesetContent = `---
+"${packageName}": patch
 ---
 
 Simulated release
       `;
 
-    fs.writeFileSync(changesetFile, changeset);
+    return {
+      packageJsonPath,
+      packageJson,
+      packageName,
+      initialVersion: version,
+      newVersion,
+      changesetFileName,
+      changesetFilePath,
+      changesetContent,
+    };
   });
+
+  // All validations passed, now write all files
+  packageUpdates.forEach(update => {
+    // Update preJson initial versions
+    preJson.initialVersions[update.packageName] = update.initialVersion;
+
+    // Update package.json
+    update.packageJson.version = update.newVersion;
+    fs.writeFileSync(
+      update.packageJsonPath,
+      JSON.stringify(update.packageJson, null, 2) + "\n",
+    );
+
+    // Add to preJson changesets
+    preJson.changesets.push(update.changesetFileName);
+
+    // Write changeset file
+    fs.writeFileSync(update.changesetFilePath, update.changesetContent);
+  });
+
+  // Write updated preJson
   fs.writeFileSync(preJsonPath, JSON.stringify(preJson, null, 2) + "\n");
 }
