@@ -139,8 +139,8 @@ importers:
   packages/monorepo/cspell:
     dependencies:
       '@cspell/cspell-types':
-        specifier: ^8.19.4
-        version: 8.19.4
+        specifier: ^9.2.2
+        version: 9.2.2
       '@types/node':
         specifier: ^18.19.124
         version: 18.19.129
@@ -550,10 +550,6 @@ packages:
   '@cspell/cspell-service-bus@9.2.2':
     resolution: {integrity: sha512-AxJuw/YPJkz1Ali5mA+OW9y4JiJzb2U7H4pGYq0nRB/mWwI/xtFjuWVkI+BhwrA2P6hHdifu0JdxSLqW4IYpPQ==}
     engines: {node: '>=20'}
-
-  '@cspell/cspell-types@8.19.4':
-    resolution: {integrity: sha512-ekMWuNlFiVGfsKhfj4nmc8JCA+1ZltwJgxiKgDuwYtR09ie340RfXFF6YRd2VTW5zN7l4F1PfaAaPklVz6utSg==}
-    engines: {node: '>=18'}
 
   '@cspell/cspell-types@9.2.2':
     resolution: {integrity: sha512-/1dRFQ3sEY9Yo+f3w0A8MFJ0BOapQc1uFjlMF19c3uoD/e4PpNLpL1qXY4FeLWKDk1D9VT8SL93J+lIwEi5bvg==}
@@ -4617,8 +4613,6 @@ snapshots:
       global-directory: 4.0.1
 
   '@cspell/cspell-service-bus@9.2.2': {}
-
-  '@cspell/cspell-types@8.19.4': {}
 
   '@cspell/cspell-types@9.2.2': {}
 
