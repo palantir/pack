@@ -217,7 +217,7 @@ export async function runVersion({
 
     await gitUtils.push(versionBranch, { force: true });
 
-    const prBody = await getVersionPrBody({
+    const prBody = getVersionPrBody({
       hasPublishScript,
       preState,
       branch,
