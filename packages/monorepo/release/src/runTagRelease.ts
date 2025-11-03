@@ -18,7 +18,9 @@ import { getChangelogEntry } from "@changesets/release-utils";
 import AdmZip from "adm-zip";
 import chalk from "chalk";
 import consola from "consola";
+import { RequestError } from "octokit";
 import type { GithubContext } from "./runVersion.js";
+import { getPackPackageDirectory } from "./util/getPackPackageDirectory.js";
 
 type PublishedPackages = {
   publishedPackages: {
@@ -33,7 +35,7 @@ async function createGithubReleaseTag(
   context: GithubContext,
   sha: string,
 ) {
-  const changelogPath = `packages/${getDirNameFromPackageName(packageName)}/CHANGELOG.md`;
+  const changelogPath = `${getPackPackageDirectory(packageName)}/CHANGELOG.md`;
   const changelogContent = await context.octokit.rest.repos.getContent({
     owner: context.repo.owner,
     repo: context.repo.repo,
@@ -76,8 +78,9 @@ async function createGithubReleaseTag(
         chalk.green(`${packageName}@${version}`)
       } at ${result.data.html_url}`,
     );
-  }).catch(e => {
-    if (e.response.data?.errors[0].code === "already_exists") {
+  }).catch((e: unknown) => {
+    const response: any = e instanceof RequestError ? e.response?.data : {};
+    if (response.errors[0].code === "already_exists") {
       consola.log(
         chalk.yellow(
           `Release for ${packageName}@${version} already exists, ignoring`,
@@ -162,7 +165,7 @@ export async function runTagRelease(
 
   for (const publishedPackage of publishedPackages.publishedPackages) {
     const packageName = publishedPackage.name;
-    const packagePath = `packages/${getDirNameFromPackageName(packageName)}/package.json`;
+    const packagePath = `${getPackPackageDirectory(packageName)}/package.json`;
     const pkg = await context.octokit.rest.repos.getContent({
       owner: context.repo.owner,
       repo: context.repo.repo,
@@ -190,9 +193,4 @@ export async function runTagRelease(
       workflowSha,
     );
   }
-}
-
-function getDirNameFromPackageName(packageName: string) {
-  // TODO: needs to be fixed for nested packages.
-  return packageName.split("/")[1];
 }
