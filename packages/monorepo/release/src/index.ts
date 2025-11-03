@@ -49,11 +49,9 @@ SOFTWARE.
 import { getExecOutput } from "@actions/exec";
 import { readChangesetState } from "@changesets/release-utils";
 import { consola } from "consola";
-import * as fs from "node:fs";
 import yargs from "yargs";
 import { FailedWithUserMessage } from "./FailedWithUserMessage.js";
 import { checkIfClean as isGitClean, setupUser } from "./gitUtils.js";
-import { runPublish } from "./runPublish.js";
 import { runTagRelease } from "./runTagRelease.js";
 import type { GithubContext } from "./runVersion.js";
 import { runVersion } from "./runVersion.js";
@@ -98,12 +96,8 @@ async function getContext(
     .options({
       cwd: { type: "string", description: "Change working directory" },
       mode: {
-        choices: ["version", "publish", "simulateMinorBump", "tag-version"],
+        choices: ["version", "simulateMinorBump", "tag-version"],
         default: "version",
-      },
-      publishCmd: {
-        type: "string",
-        description: "Publish command to run in publish mode",
       },
       title: { type: "string", description: "Custom pr title" },
       commitMessage: { type: "string", description: "custom commit message" },
@@ -126,21 +120,6 @@ async function getContext(
         type: "string",
         description: "Custom commit SHA to use for tagging releases",
       },
-    })
-    .check(argv => {
-      if (argv.mode === "publish" && !argv.publishCmd) {
-        throw new Error(
-          "You must provide a publish command when running in publish mode",
-        );
-      }
-
-      if (argv.publishCmd && argv.mode !== "publish") {
-        throw new Error(
-          "You cannot provide a publish command when running in version mode",
-        );
-      }
-
-      return true;
     })
     .parseAsync();
 
@@ -175,11 +154,13 @@ async function getContext(
   const hasNonEmptyChangesets = changesets.some(
     changeset => changeset.releases.length > 0,
   );
+
   if (args.mode === "simulateMinorBump") {
-    simulateMinorBump();
+    await simulateMinorBump();
     consola.info("Simulated minor bump");
     return;
   }
+
   if (args.mode === "version") {
     if (!hasChangesets) {
       consola.info("No changesets found; not creating PR");
@@ -196,54 +177,12 @@ async function getContext(
       branch: args.branch,
       context,
     });
-  } else {
-    if (!hasChangesets) {
-      consola.error("No changesets found.");
-      return;
-    }
 
-    throw "skip publish";
-
-    const userNpmrcPath = `${process.env.HOME}/.npmrc`;
-
-    if (fs.existsSync(userNpmrcPath)) {
-      consola.info("Found existing user .npmrc file");
-      const userNpmrcContent = await fs.promises.readFile(
-        userNpmrcPath,
-        "utf8",
-      );
-      const authLine = userNpmrcContent.split("\n").find(line => {
-        // check based on https://github.com/npm/cli/blob/8f8f71e4dd5ee66b3b17888faad5a7bf6c657eed/test/lib/adduser.js#L103-L105
-        return /^\s*\/\/registry\.npmjs\.org\/:[_-]authToken=/i.test(line);
-      });
-      if (authLine) {
-        consola.info(
-          "Found existing auth token for the npm registry in the user .npmrc file",
-        );
-      } else {
-        consola.info(
-          "Didn't find existing auth token for the npm registry in the user .npmrc file, creating one",
-        );
-        fs.appendFileSync(
-          userNpmrcPath,
-          `\n//registry.npmjs.org/:_authToken=${process.env.NPM_TOKEN}\n`,
-        );
-      }
-    } else {
-      consola.info("No user .npmrc file found, creating one");
-      fs.writeFileSync(
-        userNpmrcPath,
-        `//registry.npmjs.org/:_authToken=${process.env.NPM_TOKEN}\n`,
-      );
-    }
-
-    const result = await runPublish({
-      script: args.publishCmd!,
-      context,
-      createGithubReleases: false,
-    });
+    return;
   }
-})().catch(err => {
+
+  throw new FailedWithUserMessage("Unrecognized mode");
+})().catch((err: unknown) => {
   if (err instanceof FailedWithUserMessage) {
     consola.error(err);
   } else if (err instanceof Error) {

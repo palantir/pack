@@ -61,13 +61,13 @@ type GetMessageOptions = {
   preState?: PreState;
 };
 
-export async function getVersionPrBody({
+export function getVersionPrBody({
   hasPublishScript,
   preState,
   changedPackagesInfo,
   prBodyMaxCharacters,
   branch,
-}: GetMessageOptions): Promise<string> {
+}: GetMessageOptions): string {
   const messageHeader =
     `This PR was opened by automation. When you're ready to do a release, you can merge this and publish to npm yourself.
      If you're not ready to do a release yet, that's fine, whenever you re-run the release script in ${branch}, this PR will be updated.
