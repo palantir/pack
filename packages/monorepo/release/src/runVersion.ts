@@ -191,7 +191,7 @@ export async function runVersion({
     );
   }
 
-  await exec("pnpm", ["run", "postVersionCmd"], { cwd });
+  await exec("pnpm", ["run"], { cwd });
 
   const changedPackagesInfo = await getSortedChangedPackagesInfo(
     cwd,
