@@ -271,6 +271,7 @@ const archetypeConfig = archetypes(
     "library",
     [
       "@palantir/pack.document-schema.model-types",
+      "@palantir/pack.schema",
     ],
     {},
   )
