@@ -194,6 +194,9 @@ const archetypeConfig = archetypes(
         options: {
           entries: {
             type: "module",
+            publishConfig: {
+              "access": "public",
+            },
             ...(rules.isCli
               ? {
                 // CLI packages: simpler exports for Node.js only
