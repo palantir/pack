@@ -16,11 +16,15 @@
 
 export const TypeKind = {
   ARRAY: "array",
+  DOC_REF: "docRef",
   DOUBLE: "double",
+  MEDIA_REF: "mediaRef",
+  OBJECT_REF: "objectRef",
   OPTIONAL: "optional",
   REF: "ref",
   STRING: "string",
   UNKNOWN: "unknown",
+  USER_REF: "userRef",
 } as const;
 
 export type TypeKind = typeof TypeKind[keyof typeof TypeKind];
@@ -59,13 +63,33 @@ export type Unknown = {
   readonly type: typeof TypeKind.UNKNOWN;
 };
 
+export type DocRef = {
+  readonly type: typeof TypeKind.DOC_REF;
+};
+
+export type MediaRef = {
+  readonly type: typeof TypeKind.MEDIA_REF;
+};
+
+export type ObjectRef = {
+  readonly type: typeof TypeKind.OBJECT_REF;
+};
+
+export type UserRef = {
+  readonly type: typeof TypeKind.USER_REF;
+};
+
 export type Type =
-  | String
-  | Double
   | Array
-  | Ref
+  | DocRef
+  | Double
+  | MediaRef
+  | ObjectRef
   | Optional
-  | Unknown;
+  | Ref
+  | String
+  | Unknown
+  | UserRef;
 
 export const String: String = { type: TypeKind.STRING };
 export const Double: Double = { type: TypeKind.DOUBLE };

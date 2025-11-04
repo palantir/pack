@@ -14,17 +14,20 @@
  * limitations under the License.
  */
 
-export const Metadata: symbol = Symbol("@palantir/pack.document-schema/metadata");
+const SEEN_KEYS = new Set<string>();
 
-export interface WithMetadata<T> {
-  readonly [Metadata]: T;
-}
-
-export function getMetadata<T>(obj: WithMetadata<T>): T {
-  // TS always treats symbol keys as optional
-  const metadata = obj[Metadata];
-  if (metadata == null) {
-    throw new Error("Object does not have metadata");
+/**
+ * Used to call fn only once between app reloads.
+ * eg: Useful for logging warnings that should only be logged once.
+ *
+ * @example
+ * ```ts
+ * justOnce("unexpected-value", () => console.warn("There was an unexpected value returned", {value}));
+ * ```
+ */
+export function justOnce(key: string, fn: () => void): void {
+  if (!SEEN_KEYS.has(key)) {
+    SEEN_KEYS.add(key);
+    fn();
   }
-  return metadata;
 }

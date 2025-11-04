@@ -14,17 +14,15 @@
  * limitations under the License.
  */
 
-export const Metadata: symbol = Symbol("@palantir/pack.document-schema/metadata");
-
-export interface WithMetadata<T> {
-  readonly [Metadata]: T;
+function toHexString(byteArray: Int8Array) {
+  return Array.from(byteArray, function(byte) {
+    const h = (byte & 0xff).toString(16);
+    return h.length === 1 ? `0${h}` : h;
+  }).join("");
 }
 
-export function getMetadata<T>(obj: WithMetadata<T>): T {
-  // TS always treats symbol keys as optional
-  const metadata = obj[Metadata];
-  if (metadata == null) {
-    throw new Error("Object does not have metadata");
-  }
-  return metadata;
+export function generateId(bytes = 12): string {
+  const array = new Int8Array(bytes);
+  const r = crypto.getRandomValues(array);
+  return toHexString(r);
 }

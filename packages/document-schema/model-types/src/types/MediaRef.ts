@@ -14,17 +14,19 @@
  * limitations under the License.
  */
 
-export const Metadata: symbol = Symbol("@palantir/pack.document-schema/metadata");
+import type { Flavored } from "@palantir/pack.core";
 
-export interface WithMetadata<T> {
-  readonly [Metadata]: T;
-}
+export type MediaId = Flavored<"MediaId">;
 
-export function getMetadata<T>(obj: WithMetadata<T>): T {
-  // TS always treats symbol keys as optional
-  const metadata = obj[Metadata];
-  if (metadata == null) {
-    throw new Error("Object does not have metadata");
-  }
-  return metadata;
+export const MediaRefBrand: unique symbol = Symbol("pack:MediaRef");
+
+/**
+ * @experimental
+ */
+export interface MediaRef {
+  readonly mediaId: MediaId;
+  readonly [MediaRefBrand]: typeof MediaRefBrand;
+
+  // TODO: implement this correctly
+  readonly subscribe?: (callback: unknown) => unknown;
 }

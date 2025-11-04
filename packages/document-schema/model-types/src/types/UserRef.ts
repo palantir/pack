@@ -14,17 +14,14 @@
  * limitations under the License.
  */
 
-export const Metadata: symbol = Symbol("@palantir/pack.document-schema/metadata");
+import type { Flavored } from "@palantir/pack.core";
 
-export interface WithMetadata<T> {
-  readonly [Metadata]: T;
-}
+export type UserId = Flavored<"pack:UserId">;
 
-export function getMetadata<T>(obj: WithMetadata<T>): T {
-  // TS always treats symbol keys as optional
-  const metadata = obj[Metadata];
-  if (metadata == null) {
-    throw new Error("Object does not have metadata");
-  }
-  return metadata;
+export const UserRefBrand: unique symbol = Symbol("pack:UserRef");
+
+export interface UserRef {
+  readonly userId: UserId;
+  readonly [UserRefBrand]: typeof UserRefBrand;
+  readonly get: (force?: boolean) => Promise<unknown>;
 }

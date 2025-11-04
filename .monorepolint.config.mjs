@@ -1,5 +1,6 @@
 import { archetypes } from "@monorepolint/archetypes";
 import * as Rules from "@monorepolint/rules";
+import * as path from "path";
 
 // @ts-check
 
@@ -271,7 +272,9 @@ const archetypeConfig = archetypes(
     "library",
     [
       "@palantir/pack.document-schema.model-types",
+      "@palantir/pack.core",
       "@palantir/pack.schema",
+      "@palantir/pack.state.core",
     ],
     {},
   )
