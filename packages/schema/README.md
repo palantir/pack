@@ -29,7 +29,7 @@ This package provides builder functions and types for defining document schemas 
 ## Usage
 
 ```typescript
-import * as P from "@palantir/pack.core.schema";
+import * as P from "@palantir/pack.schema";
 
 // Define a record type
 const Position = P.defineRecord("Position", {
