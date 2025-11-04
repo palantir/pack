@@ -15,7 +15,7 @@ This package provides the core state management infrastructure for PACK, built a
 > TODO: These need another pass for consistent naming, there's a confusing interchange of Schema & Model between document & record layer.
 
 - `Document` - An instance of a document, as loaded by id. A document is a collection of `Records`.
-- `DocumentType` - The backend-registered metadata describing app-specfic archetypes of Documents.
+- `DocumentType` - The backend-registered metadata describing app-specific archetypes of Documents.
 - `DocumentSchema` - Describes the Record types in a Document Type. Used internally at runtime for type inspection, validation, and read/writes to underlying document implementation.
   - `Model<Data, Schema>` - Effectively a _Record Type_ - A runtime type unifying `ModelData` and `ModelSchema`.
   - via sdk generators:

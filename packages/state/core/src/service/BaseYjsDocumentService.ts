@@ -443,7 +443,7 @@ export abstract class BaseYjsDocumentService<TDoc extends InternalYjsDoc = Inter
       `Cannot set record as document not found: ${recordRef.docRef.id}`,
     );
 
-    // TODO: you cannot resurrect tombstoned records I think, so need to check for that before notify
+    // TODO: you cannot resurrect tomb stoned records I think, so need to check for that before notify
     // TODO: perhaps we just call this via onRecordSet instead?
 
     YjsSchemaMapper.setRecord(
