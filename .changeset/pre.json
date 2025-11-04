@@ -1,6 +1,17 @@
 {
   "mode": "pre",
   "tag": "beta",
-  "initialVersions": {},
-  "changesets": []
+  "initialVersions": {
+    "@palantir/pack.document-schema.model-types": "0.0.1-beta.1",
+    "@palantir/pack.monorepo.cspell": "0.4.0-beta.1",
+    "@palantir/pack.monorepo.release": "0.10.0-beta.1",
+    "@palantir/pack.monorepo.transpile": "0.0.1",
+    "@palantir/pack.monorepo.tsconfig": "0.4.0-beta.1",
+    "@palantir/pack.schema": "0.0.1-beta.1"
+  },
+  "changesets": [
+    "happy-rules-dance",
+    "modern-keys-melt",
+    "open-states-shave"
+  ]
 }
