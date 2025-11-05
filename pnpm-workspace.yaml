@@ -6,6 +6,7 @@ catalog:
   "@osdk/api": "~2.4.2"
   "@osdk/client": "~2.4.2"
   "@osdk/foundry.admin": "~2.32.0"
+  "@osdk/foundry.pack": "~2.38.0"
   "@osdk/oauth": "~1.4.0"
   "@osdk/react": "~0.6.0"
   "@osdk/shared.client2": "~1.0.0"
