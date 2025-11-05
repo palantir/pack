@@ -65,6 +65,7 @@ describe("StaticTokenService", () => {
       username: "test-user",
       realm: "test-realm",
       attributes: {},
+      status: "ACTIVE",
     });
 
     service = createStaticTokenService(mockApp, mockTokenProvider);

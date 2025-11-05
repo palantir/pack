@@ -13,8 +13,11 @@ catalogs:
       specifier: ~2.4.2
       version: 2.4.2
     '@osdk/foundry.admin':
-      specifier: ~2.32.0
-      version: 2.32.0
+      specifier: ~2.38.0
+      version: 2.38.0
+    '@osdk/foundry.pack':
+      specifier: ~2.38.0
+      version: 2.38.0
     '@osdk/oauth':
       specifier: ~1.4.0
       version: 1.4.0
@@ -135,6 +138,61 @@ importers:
         specifier: ^3.2.4
         version: 3.2.4(@types/node@20.19.19)(happy-dom@18.0.1)(yaml@2.8.1)
 
+  packages/app:
+    dependencies:
+      '@osdk/api':
+        specifier: 'catalog:'
+        version: 2.4.2
+      '@osdk/client':
+        specifier: 'catalog:'
+        version: 2.4.2
+      '@osdk/oauth':
+        specifier: 'catalog:'
+        version: 1.4.0
+      '@osdk/shared.client2':
+        specifier: 'catalog:'
+        version: 1.0.0
+      '@palantir/pack.auth':
+        specifier: workspace:*
+        version: link:../auth/core
+      '@palantir/pack.auth.foundry':
+        specifier: workspace:*
+        version: link:../auth/foundry
+      '@palantir/pack.core':
+        specifier: workspace:*
+        version: link:../core
+      '@palantir/pack.state.core':
+        specifier: workspace:*
+        version: link:../state/core
+      '@palantir/pack.state.foundry':
+        specifier: workspace:*
+        version: link:../state/foundry
+      remeda:
+        specifier: 'catalog:'
+        version: 2.32.0
+      tiny-invariant:
+        specifier: ^1.3.3
+        version: 1.3.3
+    devDependencies:
+      '@palantir/pack.monorepo.tsconfig':
+        specifier: workspace:~
+        version: link:../monorepo/tsconfig
+      happy-dom:
+        specifier: ^18.0.1
+        version: 18.0.1
+      rimraf:
+        specifier: ^6.0.1
+        version: 6.0.1
+      tslib:
+        specifier: ^2.8.1
+        version: 2.8.1
+      typescript:
+        specifier: ^5.9.2
+        version: 5.9.3
+      vitest-mock-extended:
+        specifier: ^3.1.0
+        version: 3.1.0(typescript@5.9.3)(vitest@3.2.4(@types/node@20.19.19)(happy-dom@18.0.1)(yaml@2.8.1))
+
   packages/auth/core:
     dependencies:
       '@osdk/client':
@@ -173,7 +231,7 @@ importers:
         version: 2.4.2
       '@osdk/foundry.admin':
         specifier: 'catalog:'
-        version: 2.32.0
+        version: 2.38.0
       '@osdk/oauth':
         specifier: 'catalog:'
         version: 1.4.0
@@ -193,9 +251,6 @@ importers:
       '@palantir/pack.monorepo.tsconfig':
         specifier: workspace:~
         version: link:../../monorepo/tsconfig
-      happy-dom:
-        specifier: ^18.0.1
-        version: 18.0.1
       rimraf:
         specifier: ^6.0.1
         version: 6.0.1
@@ -467,7 +522,7 @@ importers:
         specifier: workspace:*
         version: link:../../document-schema/model-types
       remeda:
-        specifier: ^2.32.0
+        specifier: 'catalog:'
         version: 2.32.0
       tiny-invariant:
         specifier: ^1.3.3
@@ -485,6 +540,153 @@ importers:
       '@palantir/pack.monorepo.tsconfig':
         specifier: workspace:~
         version: link:../../monorepo/tsconfig
+      rimraf:
+        specifier: ^6.0.1
+        version: 6.0.1
+      tslib:
+        specifier: ^2.8.1
+        version: 2.8.1
+      typescript:
+        specifier: ^5.9.2
+        version: 5.9.3
+      vitest-mock-extended:
+        specifier: ^3.1.0
+        version: 3.1.0(typescript@5.9.3)(vitest@3.2.4(@types/node@20.19.19)(happy-dom@18.0.1)(yaml@2.8.1))
+
+  packages/state/foundry:
+    dependencies:
+      '@osdk/api':
+        specifier: 'catalog:'
+        version: 2.4.2
+      '@osdk/foundry.pack':
+        specifier: 'catalog:'
+        version: 2.38.0
+      '@palantir/pack.auth':
+        specifier: workspace:*
+        version: link:../../auth/core
+      '@palantir/pack.core':
+        specifier: workspace:*
+        version: link:../../core
+      '@palantir/pack.document-schema.model-types':
+        specifier: workspace:*
+        version: link:../../document-schema/model-types
+      '@palantir/pack.state.core':
+        specifier: workspace:*
+        version: link:../core
+      '@palantir/pack.state.foundry-event':
+        specifier: workspace:*
+        version: link:../foundry-event
+      conjure-client:
+        specifier: ^2.15.0
+        version: 2.15.0
+      remeda:
+        specifier: 'catalog:'
+        version: 2.32.0
+      yjs:
+        specifier: ^13.6.27
+        version: 13.6.27
+    devDependencies:
+      '@palantir/pack.monorepo.tsconfig':
+        specifier: workspace:~
+        version: link:../../monorepo/tsconfig
+      '@types/node':
+        specifier: 'catalog:'
+        version: 20.19.19
+      rimraf:
+        specifier: ^6.0.1
+        version: 6.0.1
+      tslib:
+        specifier: ^2.8.1
+        version: 2.8.1
+      typescript:
+        specifier: ^5.9.2
+        version: 5.9.3
+      vitest-mock-extended:
+        specifier: ^3.1.0
+        version: 3.1.0(typescript@5.9.3)(vitest@3.2.4(@types/node@20.19.19)(happy-dom@18.0.1)(yaml@2.8.1))
+
+  packages/state/foundry-event:
+    dependencies:
+      '@osdk/api':
+        specifier: 'catalog:'
+        version: 2.4.2
+      '@osdk/foundry.pack':
+        specifier: 'catalog:'
+        version: 2.38.0
+      '@palantir/pack.auth':
+        specifier: workspace:*
+        version: link:../../auth/core
+      '@palantir/pack.core':
+        specifier: workspace:*
+        version: link:../../core
+      '@palantir/pack.document-schema.model-types':
+        specifier: workspace:*
+        version: link:../../document-schema/model-types
+      '@palantir/pack.state.core':
+        specifier: workspace:*
+        version: link:../core
+      cometd:
+        specifier: ^7.0.19
+        version: 7.0.19
+      js-base64:
+        specifier: ^3.7.8
+        version: 3.7.8
+      yjs:
+        specifier: ^13.6.27
+        version: 13.6.27
+    devDependencies:
+      '@palantir/pack.monorepo.tsconfig':
+        specifier: workspace:~
+        version: link:../../monorepo/tsconfig
+      '@types/node':
+        specifier: 'catalog:'
+        version: 20.19.19
+      rimraf:
+        specifier: ^6.0.1
+        version: 6.0.1
+      tslib:
+        specifier: ^2.8.1
+        version: 2.8.1
+      typescript:
+        specifier: ^5.9.2
+        version: 5.9.3
+      vitest-mock-extended:
+        specifier: ^3.1.0
+        version: 3.1.0(typescript@5.9.3)(vitest@3.2.4(@types/node@20.19.19)(happy-dom@18.0.1)(yaml@2.8.1))
+
+  packages/state/react:
+    dependencies:
+      '@palantir/pack.auth':
+        specifier: workspace:*
+        version: link:../../auth/core
+      '@palantir/pack.core':
+        specifier: workspace:*
+        version: link:../../core
+      '@palantir/pack.document-schema.model-types':
+        specifier: workspace:*
+        version: link:../../document-schema/model-types
+      '@palantir/pack.state.core':
+        specifier: workspace:*
+        version: link:../core
+      react:
+        specifier: ^17 || ^18 || ^19
+        version: 19.2.0
+    devDependencies:
+      '@palantir/pack.monorepo.tsconfig':
+        specifier: workspace:~
+        version: link:../../monorepo/tsconfig
+      '@testing-library/react':
+        specifier: ^16.3.0
+        version: 16.3.0(@testing-library/dom@10.4.1)(@types/react-dom@19.2.2(@types/react@19.2.2))(@types/react@19.2.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
+      '@types/react':
+        specifier: ^19.1.15
+        version: 19.2.2
+      '@types/react-dom':
+        specifier: ^19.1.9
+        version: 19.2.2(@types/react@19.2.2)
+      happy-dom:
+        specifier: ^18.0.1
+        version: 18.0.1
       rimraf:
         specifier: ^6.0.1
         version: 6.0.1
@@ -1424,23 +1626,29 @@ packages:
   '@osdk/client@2.4.2':
     resolution: {integrity: sha512-27slFq0IIdLvlG6sKVDFDPMmjHpxX1l/mgv+S9n5oU4QstoKoarksIJOFC1TXfPR77S1HfEdDKOhKP/b9WsNqA==}
 
-  '@osdk/foundry.admin@2.32.0':
-    resolution: {integrity: sha512-al75N65mcBECy3NNv0Ltfmuh0aLwJCjS6PpctX4MQwK/L8MeyakQnFHKjEakO/iqYBGT3HuT4FmDa/YmDystvA==}
+  '@osdk/foundry.admin@2.38.0':
+    resolution: {integrity: sha512-kAaX0Bi+R5PuE4TD6JFxiPi/cvisdDawOHj0FYLnL/vDmV1UabEYiRIpS1u+fHZLIAWFF+/YoExqtdj6DUWA0Q==}
 
   '@osdk/foundry.core@2.28.0':
     resolution: {integrity: sha512-ETCcpHZoROhamo7WlQBIs6q9vM/I3TYyuy1NQSZRaLbIFmCXff05Cl/KDjOL48jy5G0btevI+gAhacvGvvm8Mw==}
 
-  '@osdk/foundry.core@2.32.0':
-    resolution: {integrity: sha512-+TUMkIN6bd63yNbctTgom+c/zZjhRZJ0syOWIUzAJeFqxFmVP18eN8tmX4KvzSAaRLMy4ipEX4gOKeatdRmc4g==}
+  '@osdk/foundry.core@2.38.0':
+    resolution: {integrity: sha512-ZV/QpLdm5QeeufTqNZaBraNcLgTpcWCI3PDPzoIwEI+lnnLpGa04nLQIGpak/ndBIWMj/bwcCTYhqKhOHbtxog==}
+
+  '@osdk/foundry.filesystem@2.38.0':
+    resolution: {integrity: sha512-+8UN3aE/De9bHi7ndY/HTkyAAqX26VvpDqI0lnGl34XZO2KKUAIBULDKk2Y48FvIz5qpjlz/kIFX1EBIjeQrBA==}
 
   '@osdk/foundry.geo@2.28.0':
     resolution: {integrity: sha512-yC5nkSgktnj8JPtW5ROuRYqe6s3gfg3ihN4vCm+aPAa85LjfBg/woY/ZkET4Tgy27+HOkGr7SwB77jzTzl4rzQ==}
 
-  '@osdk/foundry.geo@2.32.0':
-    resolution: {integrity: sha512-p7PB1PvRQl9YovkagAM8szmy+o8j1zAGGN96W65lBO7mjqawQS3sF/5P/GvXY1/RIdUm9HMhDEgiB+UUnz05MA==}
+  '@osdk/foundry.geo@2.38.0':
+    resolution: {integrity: sha512-1Nwnh/UAtm1UCJUGmzhY+52LdcxEVSmtqxjRBuTM0IpVz7JoCO1dSmJPFOaJGaFvUP76VIFqHf/rhD6xkmtyGg==}
 
   '@osdk/foundry.ontologies@2.28.0':
     resolution: {integrity: sha512-PoV+QUNP94sXi2wwi3N57DD2tnlzsGP9vKrmSqgbnJaGVPo7EMMBzVzI6jPJMzJk61b00U4lwZB6qL3S5If7SA==}
+
+  '@osdk/foundry.pack@2.38.0':
+    resolution: {integrity: sha512-4I/w0ekKQep5UnugyRvS5MhHpuKy7uG2wPD4ITSx4AKZ7tjDkfVIqolPPqlRDGtF8KqHJrLyh7RPms0wAokDWw==}
 
   '@osdk/generator-converters@2.4.2':
     resolution: {integrity: sha512-XJUcBqlkNCofkqt/zXwmSkAstZYUCFrdKp4ijWjV50gNsgAks6+p9tRHIwOlLdes0v6YXHpjBttwutHVGqrdEA==}
@@ -1736,11 +1944,33 @@ packages:
     resolution: {integrity: sha512-tlqY9xq5ukxTUZBmoOp+m61cqwQD5pHJtFY3Mn8CA8ps6yghLH/Hw8UPdqg4OLmFW3IFlcXnQNmo/dh8HzXYIQ==}
     engines: {node: '>=18'}
 
+  '@testing-library/dom@10.4.1':
+    resolution: {integrity: sha512-o4PXJQidqJl82ckFaXUeoAW+XysPLauYI43Abki5hABd853iMhitooc6znOnczgbTYmEP6U6/y1ZyKAIsvMKGg==}
+    engines: {node: '>=18'}
+
+  '@testing-library/react@16.3.0':
+    resolution: {integrity: sha512-kFSyxiEDwv1WLl2fgsq6pPBbw5aWKrsY2/noi1Id0TK0UParSF62oFQFGHXIyaG4pp2tEub/Zlel+fjjZILDsw==}
+    engines: {node: '>=18'}
+    peerDependencies:
+      '@testing-library/dom': ^10.0.0
+      '@types/react': ^18.0.0 || ^19.0.0
+      '@types/react-dom': ^18.0.0 || ^19.0.0
+      react: ^18.0.0 || ^19.0.0
+      react-dom: ^18.0.0 || ^19.0.0
+    peerDependenciesMeta:
+      '@types/react':
+        optional: true
+      '@types/react-dom':
+        optional: true
+
   '@tybys/wasm-util@0.10.1':
     resolution: {integrity: sha512-9tTaPJLSiejZKx+Bmog4uSubteqTvFrVrURwkmHixBo0G4seD0zUxp98E1DzUBJxLQ3NPwXrGKDiVjwx/DpPsg==}
 
   '@types/adm-zip@0.5.7':
     resolution: {integrity: sha512-DNEs/QvmyRLurdQPChqq0Md4zGvPwHerAJYWk9l2jCbD1VPpnzRJorOdiq4zsw09NFbYnhfsoEhWtxIzXpn2yw==}
+
+  '@types/aria-query@5.0.4':
+    resolution: {integrity: sha512-rfT93uj5s0PRL7EzccGMs3brplhcrghnDoV26NqKhCAS1hVo+WdNsPvE/yb6ilfr5hi2MEk6d5EWJTKdxg8jVw==}
 
   '@types/aws-lambda@8.10.155':
     resolution: {integrity: sha512-wd1XgoL0gy/ybo7WozUKQBd+IOgUkdfG6uUGI0fQOTEq06FBFdO7tmPDSxgjkFkl8GlfApvk5TvqZlAl0g+Lbg==}
@@ -1774,6 +2004,14 @@ packages:
 
   '@types/node@20.19.19':
     resolution: {integrity: sha512-pb1Uqj5WJP7wrcbLU7Ru4QtA0+3kAXrkutGiD26wUKzSMgNNaPARTUDQmElUXp64kh3cWdou3Q0C7qwwxqSFmg==}
+
+  '@types/react-dom@19.2.2':
+    resolution: {integrity: sha512-9KQPoO6mZCi7jcIStSnlOWn2nEF3mNmyr3rIAsGnAbQKYbRLyqmeSc39EVgtxXVia+LMT8j3knZLAZAh+xLmrw==}
+    peerDependencies:
+      '@types/react': ^19.2.0
+
+  '@types/react@19.2.2':
+    resolution: {integrity: sha512-6mDvHUFSjyT2B2yeNx2nUgMxh9LtOWvkhIU3uePn2I2oyNymUAX1NIsdgviM4CH+JSrp2D2hsMvJOkxY+0wNRA==}
 
   '@types/semver@7.7.1':
     resolution: {integrity: sha512-FmgJfu+MOcQ370SD0ev7EI8TlCAfKYU+B4m5T3yXc1CiRN94g/SZPtsCkk506aUDtlMnFZvasDwHHUcZUEaYuA==}
@@ -2047,6 +2285,9 @@ packages:
   argparse@2.0.1:
     resolution: {integrity: sha512-8+9WqebbFzpX9OR+Wa6O29asIogeRMzcGtAINdpMHHyAg10f05aSFVBbcEqGf/PXw1EjAZ+q2/bEBg3DvurK3Q==}
 
+  aria-query@5.3.0:
+    resolution: {integrity: sha512-b0P0sZPKtyu8HkeRAfCq0IfURZK+SuwMjY1UXGBU27wpAiTwQAIlq56IbIO+ytk/JjS1fMR14ee5WBBfKi5J6A==}
+
   array-buffer-byte-length@1.0.2:
     resolution: {integrity: sha512-LHE+8BuR7RYGDKvnrmcuSq3tDcKv9OFEXQt/HpbZhY7V6h0zlUXutnAD82GiFx9rdieCMjkvtcsPqBwgUl1Iiw==}
     engines: {node: '>= 0.4'}
@@ -2264,6 +2505,9 @@ packages:
   colorette@2.0.20:
     resolution: {integrity: sha512-IfEDxwoWIjkeXL1eXcDiow4UbKjhLdq6/EuSVR9GMN7KVH3r9gQ83e73hsz1Nd1T3ijd5xv1wcWRYO+D6kCI2w==}
 
+  cometd@7.0.19:
+    resolution: {integrity: sha512-oOBR/+JTMXyNo4Xdtb2KgBHG9tuPwDss4kVOwhbxr/iEsWtHrva7FDBZ3fWT3Royi02dmOXs56tHs2Hb/E9+fg==}
+
   commander@14.0.1:
     resolution: {integrity: sha512-2JkV3gUZUVrbNA+1sjBOYLsMZ5cEEl8GTFP2a4AVz5hvasAMCQ1D2l2le/cX+pV4N6ZU17zjUahLpIXRrnWL8A==}
     engines: {node: '>=20'}
@@ -2292,6 +2536,9 @@ packages:
 
   config-chain@1.1.13:
     resolution: {integrity: sha512-qj+f8APARXHrM0hraqXYb2/bOVSV4PvJQlNZ/DVj0QrmNM2q2euizkeuVckQ57J+W0mRH6Hvi+k50M4Jul2VRQ==}
+
+  conjure-client@2.15.0:
+    resolution: {integrity: sha512-AgB6kcgwQBjPAr/n6fghpmwR8ZX+5MSsmcbMFi3KQBhCg038JgLtS59O6WjVpi2IM35etF7DE/3I41k+GekTag==}
 
   conjure-lite@0.4.4:
     resolution: {integrity: sha512-WHmOLegM2L7WOxsDaNfobjLdKc0uzYWXvDTRZrnqkK58W/A+m4kkH/QVsyUdHhLA7ayRhAcoovuKJNfS/SKmqQ==}
@@ -2354,6 +2601,9 @@ packages:
     engines: {node: '>=20'}
     hasBin: true
 
+  csstype@3.1.3:
+    resolution: {integrity: sha512-M1uQkMl8rQK/szD0LNhtqxIPLpimGm8sOBwU7lLnCpSbTyY3yeU1Vc7l4KT5zT4s/yOxHH5O7tIuuLOCnLADRw==}
+
   data-view-buffer@1.0.2:
     resolution: {integrity: sha512-EmKO5V3OLXh1rtK2wgXRansaK1/mtVdTUEiEI0W8RkvgT05kfxaH29PliLnpLP73yYO6142Q72QNa8Wx/A5CqQ==}
     engines: {node: '>= 0.4'}
@@ -2406,6 +2656,10 @@ packages:
     resolution: {integrity: sha512-2NJozoOHQ4NuZuVIr5CWd0iiLVIRSDepakaovIN+9eIDHEhdCAEvSy2cuf1DCrPPQLvHmbqTHODlhHg8UCy4zw==}
     engines: {node: '>=16'}
 
+  dequal@2.0.3:
+    resolution: {integrity: sha512-0je+qPKHEMohvfRTCEo3CrPG6cAzAYgmzKyxRiYSSDkS6eGJdyVJm7WaYA5ECaAD9wLB2T4EEeymA5aFVcYXCA==}
+    engines: {node: '>=6'}
+
   detect-indent@6.1.0:
     resolution: {integrity: sha512-reYkTUJAZb9gUuZ2RvVCNhVHdg62RHnJ7WJl8ftMi4diZ6NWlciOzQN88pUhSELEwflJht4oQDv0F0BMlwaYtA==}
     engines: {node: '>=8'}
@@ -2421,6 +2675,9 @@ packages:
   doctrine@2.1.0:
     resolution: {integrity: sha512-35mSku4ZXK0vfCuHEDAwt55dg2jNajHZ1odvF+8SSr82EsZY4QmXfuWso8oEd8zRhVObSN18aM0CjSdoBX7zIw==}
     engines: {node: '>=0.10.0'}
+
+  dom-accessibility-api@0.5.16:
+    resolution: {integrity: sha512-X7BJ2yElsnOJ30pZF4uIIDfBEVgF4XEBxL9Bxhy6dnrm5hkzqmsWHGTiHqRiITNhMyFLyAiWndIJP7Z1NTteDg==}
 
   dotenv@16.0.3:
     resolution: {integrity: sha512-7GO6HghkA5fYG9TYnNxi14/7K9f5occMlp3zXAuSxn7CKCxt9xbNWG7yF8hTCSUchlfWSe3uLmlPfigevRItzQ==}
@@ -3190,6 +3447,9 @@ packages:
     resolution: {integrity: sha512-34wB/Y7MW7bzjKRjUKTa46I2Z7eV62Rkhva+KkopW7Qvv/OSWBqvkSY7vusOPrNuZcUG3tApvdVgNB8POj3SPw==}
     engines: {node: '>=10'}
 
+  js-base64@3.7.8:
+    resolution: {integrity: sha512-hNngCeKxIUQiEUN3GPJOkz4wF/YvdUdbNL9hsBcMQTkKzboD7T/q3OYOuuPZLUE6dBxSGpwhk5mwuDud7JVAow==}
+
   js-tokens@4.0.0:
     resolution: {integrity: sha512-RdJUflcE3cUzKiMqQgsCu06FPu9UdIJO0beYbPhHN4k6apgJtifcoCtT9bcxOpYBtpD2kCM6Sbzg4CausW/PKQ==}
 
@@ -3320,6 +3580,10 @@ packages:
 
   lru-cache@5.1.1:
     resolution: {integrity: sha512-KpNARQA3Iwv+jTA0utUVVbrh+Jlrr1Fv0e56GGzAFOXN7dk/FviaDW8LHmK52DlcH4WP2n6gI8vN1aesBFgo9w==}
+
+  lz-string@1.5.0:
+    resolution: {integrity: sha512-h5bgJWpxJNswbU7qCrV0tIKQCaS3blPDrqKWx+QxzuzL1zGUzij9XCWLrSLsJPu5t+eWA/ycetzYAO5IOMcWAQ==}
+    hasBin: true
 
   magic-string@0.30.19:
     resolution: {integrity: sha512-2N21sPY9Ws53PZvsEpVtNuSW+ScYbQdp4b9qUaL+9QkHUrGFKo56Lg9Emg5s9V/qrtNBmiR01sYhUOwu3H+VOw==}
@@ -3686,6 +3950,10 @@ packages:
     engines: {node: '>=10.13.0'}
     hasBin: true
 
+  pretty-format@27.5.1:
+    resolution: {integrity: sha512-Qb1gy5OrP5+zDf2Bvnzdl3jsTf1qXVMazbvCoKhtKqVs4/YK4ozX4gKQJJVyNe+cajNPn0KoC0MC3FUmaHWEmQ==}
+    engines: {node: ^10.13.0 || ^12.13.0 || ^14.15.0 || >=15.0.0}
+
   pretty-format@29.7.0:
     resolution: {integrity: sha512-Pdlw/oPxN+aXdmM9R00JVC9WVFoCLTKJvDVLgmJ+qAffBMxsV85l/Lu7sNx4zSzPyoL2euImuEwHhOXdEgNFZQ==}
     engines: {node: ^14.15.0 || ^16.10.0 || >=18.0.0}
@@ -3711,8 +3979,20 @@ packages:
     resolution: {integrity: sha512-y3bGgqKj3QBdxLbLkomlohkvsA8gdAiUQlSBJnBhfn+BPxg4bc62d8TcBW15wavDfgexCgccckhcZvywyQYPOw==}
     hasBin: true
 
+  react-dom@19.2.0:
+    resolution: {integrity: sha512-UlbRu4cAiGaIewkPyiRGJk0imDN2T3JjieT6spoL2UeSf5od4n5LB/mQ4ejmxhCFT1tYe8IvaFulzynWovsEFQ==}
+    peerDependencies:
+      react: ^19.2.0
+
+  react-is@17.0.2:
+    resolution: {integrity: sha512-w2GsyukL62IJnlaff/nRegPQR94C/XXamvMWmSHRJ4y7Ts/4ocGRmTHvOs8PSE6pB3dWOrD/nueuU5sduBsQ4w==}
+
   react-is@18.3.1:
     resolution: {integrity: sha512-/LLMVyas0ljjAtoYiPqYiL8VWXzUUdThrmU5+n20DZv+a+ClRoevUzw5JxU+Ieh5/c87ytoTBV9G1FiKfNJdmg==}
+
+  react@19.2.0:
+    resolution: {integrity: sha512-tmbWg6W31tQLeB5cdIBOicJDJRR2KzXsV7uSK9iNfLWQ5bIZfxuPEHp7M8wiHyHnn0DD1i7w3Zmin0FtkrwoCQ==}
+    engines: {node: '>=0.10.0'}
 
   read-yaml-file@1.1.0:
     resolution: {integrity: sha512-VIMnQi/Z4HT2Fxuwg5KrY174U1VdUIASQVWXXyqtNRtxSr9IYkn1rsI6Tb6HsrHCmB7gVpNwX6JxPTHcH6IoTA==}
@@ -3834,6 +4114,9 @@ packages:
 
   safer-buffer@2.1.2:
     resolution: {integrity: sha512-YZo3K82SD7Riyi0E1EQPojLz7kpepnSQI9IyPbHHg1XXXevb5dJI7tpyN2ADxGcQbHG7vcyRHk0cbwqcQriUtg==}
+
+  scheduler@0.27.0:
+    resolution: {integrity: sha512-eNv+WrVbKu1f3vbYJT/xtiF5syA5HPIMtf9IgY/nKg0sWqzAUEvqY/xm7OcZc/qafLx/iO9FgOmeSAp4v5ti/Q==}
 
   semver@5.7.2:
     resolution: {integrity: sha512-cBznnQ9KjJqU67B52RMC65CMarK2600WFnbkcaiwWq3xy/5haFJlshgnpjovMVJ+Hff49d8GEn0b87C5pDQ10g==}
@@ -4378,6 +4661,10 @@ packages:
 
   vscode-uri@3.1.0:
     resolution: {integrity: sha512-/BpdSx+yCQGnCvecbyXdxHDkuk55/G3xwnC0GqY4gmQ3j+A+g8kzzgB4Nk/SINjqn6+waqw3EgbVF2QKExkRxQ==}
+
+  web-streams-polyfill@3.3.3:
+    resolution: {integrity: sha512-d2JWLCivmZYTSIoge9MsgFCZrt571BikcWGYkjC1khllbTeDlGqZ2D8vD8E/lJa8WGWbb7Plm8/XJYV7IJHZZw==}
+    engines: {node: '>= 8'}
 
   webidl-conversions@4.0.2:
     resolution: {integrity: sha512-YQ+BmxuTgd6UXZW3+ICGfyqRyHXVlD5GtQr5+qjiNW7bF0cqrzX500HVXPBOvgXb5YnzDd+h0zqyv61KUD7+Sg==}
@@ -5624,9 +5911,9 @@ snapshots:
       - bufferutil
       - utf-8-validate
 
-  '@osdk/foundry.admin@2.32.0':
+  '@osdk/foundry.admin@2.38.0':
     dependencies:
-      '@osdk/foundry.core': 2.32.0
+      '@osdk/foundry.core': 2.38.0
       '@osdk/shared.client': 1.0.1
       '@osdk/shared.client2': 1.0.0
       '@osdk/shared.net.platformapi': 1.5.0
@@ -5638,9 +5925,16 @@ snapshots:
       '@osdk/shared.client2': 1.0.0
       '@osdk/shared.net.platformapi': 1.4.0
 
-  '@osdk/foundry.core@2.32.0':
+  '@osdk/foundry.core@2.38.0':
     dependencies:
-      '@osdk/foundry.geo': 2.32.0
+      '@osdk/foundry.geo': 2.38.0
+      '@osdk/shared.client': 1.0.1
+      '@osdk/shared.client2': 1.0.0
+      '@osdk/shared.net.platformapi': 1.5.0
+
+  '@osdk/foundry.filesystem@2.38.0':
+    dependencies:
+      '@osdk/foundry.core': 2.38.0
       '@osdk/shared.client': 1.0.1
       '@osdk/shared.client2': 1.0.0
       '@osdk/shared.net.platformapi': 1.5.0
@@ -5651,7 +5945,7 @@ snapshots:
       '@osdk/shared.client2': 1.0.0
       '@osdk/shared.net.platformapi': 1.4.0
 
-  '@osdk/foundry.geo@2.32.0':
+  '@osdk/foundry.geo@2.38.0':
     dependencies:
       '@osdk/shared.client': 1.0.1
       '@osdk/shared.client2': 1.0.0
@@ -5664,6 +5958,14 @@ snapshots:
       '@osdk/shared.client': 1.0.1
       '@osdk/shared.client2': 1.0.0
       '@osdk/shared.net.platformapi': 1.4.0
+
+  '@osdk/foundry.pack@2.38.0':
+    dependencies:
+      '@osdk/foundry.core': 2.38.0
+      '@osdk/foundry.filesystem': 2.38.0
+      '@osdk/shared.client': 1.0.1
+      '@osdk/shared.client2': 1.0.0
+      '@osdk/shared.net.platformapi': 1.5.0
 
   '@osdk/generator-converters@2.4.2':
     dependencies:
@@ -5889,6 +6191,27 @@ snapshots:
 
   '@sindresorhus/merge-streams@4.0.0': {}
 
+  '@testing-library/dom@10.4.1':
+    dependencies:
+      '@babel/code-frame': 7.27.1
+      '@babel/runtime': 7.28.4
+      '@types/aria-query': 5.0.4
+      aria-query: 5.3.0
+      dom-accessibility-api: 0.5.16
+      lz-string: 1.5.0
+      picocolors: 1.1.1
+      pretty-format: 27.5.1
+
+  '@testing-library/react@16.3.0(@testing-library/dom@10.4.1)(@types/react-dom@19.2.2(@types/react@19.2.2))(@types/react@19.2.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)':
+    dependencies:
+      '@babel/runtime': 7.28.4
+      '@testing-library/dom': 10.4.1
+      react: 19.2.0
+      react-dom: 19.2.0(react@19.2.0)
+    optionalDependencies:
+      '@types/react': 19.2.2
+      '@types/react-dom': 19.2.2(@types/react@19.2.2)
+
   '@tybys/wasm-util@0.10.1':
     dependencies:
       tslib: 2.8.1
@@ -5897,6 +6220,8 @@ snapshots:
   '@types/adm-zip@0.5.7':
     dependencies:
       '@types/node': 18.19.129
+
+  '@types/aria-query@5.0.4': {}
 
   '@types/aws-lambda@8.10.155': {}
 
@@ -5927,6 +6252,14 @@ snapshots:
   '@types/node@20.19.19':
     dependencies:
       undici-types: 6.21.0
+
+  '@types/react-dom@19.2.2(@types/react@19.2.2)':
+    dependencies:
+      '@types/react': 19.2.2
+
+  '@types/react@19.2.2':
+    dependencies:
+      csstype: 3.1.3
 
   '@types/semver@7.7.1': {}
 
@@ -6206,6 +6539,10 @@ snapshots:
 
   argparse@2.0.1: {}
 
+  aria-query@5.3.0:
+    dependencies:
+      dequal: 2.0.3
+
   array-buffer-byte-length@1.0.2:
     dependencies:
       call-bound: 1.0.4
@@ -6447,6 +6784,8 @@ snapshots:
 
   colorette@2.0.20: {}
 
+  cometd@7.0.19: {}
+
   commander@14.0.1: {}
 
   commander@14.0.2: {}
@@ -6469,6 +6808,10 @@ snapshots:
     dependencies:
       ini: 1.3.8
       proto-list: 1.2.4
+
+  conjure-client@2.15.0:
+    dependencies:
+      web-streams-polyfill: 3.3.3
 
   conjure-lite@0.4.4: {}
 
@@ -6573,6 +6916,8 @@ snapshots:
       semver: 7.7.3
       tinyglobby: 0.2.15
 
+  csstype@3.1.3: {}
+
   data-view-buffer@1.0.2:
     dependencies:
       call-bound: 1.0.4
@@ -6619,6 +6964,8 @@ snapshots:
 
   delay@6.0.0: {}
 
+  dequal@2.0.3: {}
+
   detect-indent@6.1.0: {}
 
   diff-sequences@29.6.3: {}
@@ -6630,6 +6977,8 @@ snapshots:
   doctrine@2.1.0:
     dependencies:
       esutils: 2.0.3
+
+  dom-accessibility-api@0.5.16: {}
 
   dotenv@16.0.3: {}
 
@@ -7514,6 +7863,8 @@ snapshots:
 
   joycon@3.1.1: {}
 
+  js-base64@3.7.8: {}
+
   js-tokens@4.0.0: {}
 
   js-tokens@9.0.1: {}
@@ -7634,6 +7985,8 @@ snapshots:
   lru-cache@5.1.1:
     dependencies:
       yallist: 3.1.1
+
+  lz-string@1.5.0: {}
 
   magic-string@0.30.19:
     dependencies:
@@ -7984,6 +8337,12 @@ snapshots:
 
   prettier@2.8.8: {}
 
+  pretty-format@27.5.1:
+    dependencies:
+      ansi-regex: 5.0.1
+      ansi-styles: 5.2.0
+      react-is: 17.0.2
+
   pretty-format@29.7.0:
     dependencies:
       '@jest/schemas': 29.6.3
@@ -8009,7 +8368,16 @@ snapshots:
       minimist: 1.2.8
       strip-json-comments: 2.0.1
 
+  react-dom@19.2.0(react@19.2.0):
+    dependencies:
+      react: 19.2.0
+      scheduler: 0.27.0
+
+  react-is@17.0.2: {}
+
   react-is@18.3.1: {}
+
+  react@19.2.0: {}
 
   read-yaml-file@1.1.0:
     dependencies:
@@ -8195,6 +8563,8 @@ snapshots:
       regexp-tree: 0.1.27
 
   safer-buffer@2.1.2: {}
+
+  scheduler@0.27.0: {}
 
   semver@5.7.2: {}
 
@@ -8780,6 +9150,8 @@ snapshots:
   vscode-languageserver-textdocument@1.0.12: {}
 
   vscode-uri@3.1.0: {}
+
+  web-streams-polyfill@3.3.3: {}
 
   webidl-conversions@4.0.2: {}
 
