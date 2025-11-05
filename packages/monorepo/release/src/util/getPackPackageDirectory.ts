@@ -14,15 +14,51 @@
  * limitations under the License.
  */
 
-import { join } from "path";
+import { getPackages } from "@manypkg/get-packages";
+import { relative } from "path";
 
-const PACKAGE_NAME_PREFIX = "@palantir/pack.";
+let packageDirectoryCache: Map<string, string> | null = null;
+
+async function initializeCache(): Promise<Map<string, string>> {
+  if (packageDirectoryCache != null) {
+    return packageDirectoryCache;
+  }
+
+  const cwd = process.cwd();
+  const { packages, root } = await getPackages(cwd);
+
+  packageDirectoryCache = new Map();
+  for (const pkg of packages) {
+    const relativePath = relative(root.dir, pkg.dir);
+    packageDirectoryCache.set(pkg.packageJson.name as string, relativePath);
+  }
+
+  return packageDirectoryCache;
+}
 
 /**
  * Returns the directory of the package with the given name.
- * e.g. `@palantir/pack.monorepo.release` -> `packages/monorepo/release`
+ * Uses a cached index built from @manypkg/get-packages.
+ *
+ * @example
+ * await getPackPackageDirectory("@palantir/pack.monorepo.release")
+ * // => "packages/monorepo/release"
+ *
+ * @throws {Error} If the package is not found in the workspace
  */
-export function getPackPackageDirectory(packageName: string): string {
-  const packageDirectory = packageName.replace(PACKAGE_NAME_PREFIX, "");
-  return join("packages", ...packageDirectory.split("."));
+export async function getPackPackageDirectory(
+  packageName: string,
+): Promise<string> {
+  const cache = await initializeCache();
+  const directory = cache.get(packageName);
+
+  if (!directory) {
+    throw new Error(
+      `Package "${packageName}" not found in workspace. Available packages: ${
+        Array.from(cache.keys()).join(", ")
+      }`,
+    );
+  }
+
+  return directory;
 }
