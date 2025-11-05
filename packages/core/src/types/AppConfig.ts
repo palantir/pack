@@ -32,7 +32,6 @@ export interface AppConfig {
   readonly osdkClient: Client;
 
   readonly remote: {
-    readonly packApiPath: string;
     readonly packWsPath: string;
     readonly baseUrl: string;
     readonly fetchFn: typeof globalThis.fetch;
@@ -70,11 +69,6 @@ export interface AppOptions {
   readonly moduleOverrides?: readonly ModuleConfigTuple[];
 
   readonly remote?: {
-    /**
-     * @default "/pack/api"
-     */
-    readonly packApiPath?: string;
-
     /**
      * @default "/pack/ws"
      */
