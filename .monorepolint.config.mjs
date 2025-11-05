@@ -284,6 +284,7 @@ const archetypeConfig = archetypes(
     "library",
     [
       "@palantir/pack.document-schema.model-types",
+      "@palantir/pack.app",
       "@palantir/pack.auth",
       "@palantir/pack.auth.foundry",
       "@palantir/pack.core",

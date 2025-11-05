@@ -1,4 +1,4 @@
-# @pack/state-react
+# @palantir/pack.state.react
 
 React hooks and components for integrating PACK's real-time state management into React applications.
 
@@ -24,7 +24,7 @@ import {
   useDocumentMetadata,
   useRecord,
   useRecords,
-} from "@pack/state-react";
+} from "@palantir/pack.state.react";
 import { DocumentModel, NoteModel } from "@myapp/generated-sdk";
 import * as React, {useEffect, useMemo, useCallback} from "react";
 import { app } from "./packClient";

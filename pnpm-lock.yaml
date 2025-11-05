@@ -138,6 +138,61 @@ importers:
         specifier: ^3.2.4
         version: 3.2.4(@types/node@20.19.19)(happy-dom@18.0.1)(yaml@2.8.1)
 
+  packages/app:
+    dependencies:
+      '@osdk/api':
+        specifier: 'catalog:'
+        version: 2.4.2
+      '@osdk/client':
+        specifier: 'catalog:'
+        version: 2.4.2
+      '@osdk/oauth':
+        specifier: 'catalog:'
+        version: 1.4.0
+      '@osdk/shared.client2':
+        specifier: 'catalog:'
+        version: 1.0.0
+      '@palantir/pack.auth':
+        specifier: workspace:*
+        version: link:../auth/core
+      '@palantir/pack.auth.foundry':
+        specifier: workspace:*
+        version: link:../auth/foundry
+      '@palantir/pack.core':
+        specifier: workspace:*
+        version: link:../core
+      '@palantir/pack.state.core':
+        specifier: workspace:*
+        version: link:../state/core
+      '@palantir/pack.state.foundry':
+        specifier: workspace:*
+        version: link:../state/foundry
+      remeda:
+        specifier: ^2.32.0
+        version: 2.32.0
+      tiny-invariant:
+        specifier: ^1.3.3
+        version: 1.3.3
+    devDependencies:
+      '@palantir/pack.monorepo.tsconfig':
+        specifier: workspace:~
+        version: link:../monorepo/tsconfig
+      happy-dom:
+        specifier: ^18.0.1
+        version: 18.0.1
+      rimraf:
+        specifier: ^6.0.1
+        version: 6.0.1
+      tslib:
+        specifier: ^2.8.1
+        version: 2.8.1
+      typescript:
+        specifier: ^5.9.2
+        version: 5.9.3
+      vitest-mock-extended:
+        specifier: ^3.1.0
+        version: 3.1.0(typescript@5.9.3)(vitest@3.2.4(@types/node@20.19.19)(happy-dom@18.0.1)(yaml@2.8.1))
+
   packages/auth/core:
     dependencies:
       '@osdk/client':
