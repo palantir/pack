@@ -168,7 +168,7 @@ importers:
         specifier: workspace:*
         version: link:../state/foundry
       remeda:
-        specifier: ^2.32.0
+        specifier: 'catalog:'
         version: 2.32.0
       tiny-invariant:
         specifier: ^1.3.3

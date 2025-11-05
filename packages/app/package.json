@@ -46,7 +46,7 @@
     "@palantir/pack.core": "workspace:*",
     "@palantir/pack.state.core": "workspace:*",
     "@palantir/pack.state.foundry": "workspace:*",
-    "remeda": "^2.32.0",
+    "remeda": "catalog:",
     "tiny-invariant": "^1.3.3"
   },
   "peerDependencies": {

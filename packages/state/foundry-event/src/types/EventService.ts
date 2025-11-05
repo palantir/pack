@@ -16,7 +16,7 @@
 
 import type { Branded } from "@palantir/pack.core";
 
-export type SubscriptionId = Branded<"eventService:subscriptionid">;
+export type SubscriptionId = Branded<"eventService:subscriptionId">;
 export type ChannelId = Branded<"eventService:channelId">;
 export type TypedPublishChannelId<S = unknown> = ChannelId & {
   readonly _channelPublishType: S;

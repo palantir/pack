@@ -29,20 +29,20 @@ export function useRecord<M extends Model>(
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const unsubOnChange = ref.onChange(newSnapshot => {
+    const unsubscribeToOnChange = ref.onChange(newSnapshot => {
       setIsLoading(false);
       setData(newSnapshot);
     });
 
-    const unsubOnDeleted = ref.onDeleted(() => {
+    const unsubscribeToOnDeleted = ref.onDeleted(() => {
       setIsLoading(false);
       setData(undefined);
     });
 
     return () => {
       setData(undefined);
-      unsubOnChange();
-      unsubOnDeleted();
+      unsubscribeToOnChange();
+      unsubscribeToOnDeleted();
     };
   }, [ref]);
   return { data, isLoading };

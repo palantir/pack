@@ -42,14 +42,14 @@ export function useRecords<M extends Model>(
       setRecordRefs([...collectionRef]);
     }
 
-    const unsubAdded = collectionRef.onItemsAdded(refreshCollection);
-    const unsubDeleted = collectionRef.onItemsDeleted(refreshCollection);
+    const unsubscribeAdded = collectionRef.onItemsAdded(refreshCollection);
+    const unsubscribeDeleted = collectionRef.onItemsDeleted(refreshCollection);
 
     refreshCollection();
 
     return () => {
-      unsubAdded();
-      unsubDeleted();
+      unsubscribeAdded();
+      unsubscribeDeleted();
       setRecordRefs(emptyRefs());
     };
   }, [collectionRef]);

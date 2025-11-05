@@ -41,12 +41,12 @@ export function useDocumentMetadata<D extends DocumentSchema>(
 
     // TODO: much more sensible upstream loading state
 
-    const unsubMetdata = docRef.onMetadataChange((_docRef, metadata) => {
+    const unsubscribeToMetadataChanges = docRef.onMetadataChange((_docRef, metadata) => {
       setMetadata(metadata);
     });
 
     return () => {
-      unsubMetdata();
+      unsubscribeToMetadataChanges();
       setMetadata(undefined);
     };
   }, [docRef]);

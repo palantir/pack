@@ -124,6 +124,10 @@ const cspell = {
     {
       filename: ["**/*.md"],
       dictionaries: ["foundry-words", "dev-words"],
+      words: [
+        // used in an example
+        "myapp"
+      ]
     },
     {
       filename: [".changeset/**/*.md"],

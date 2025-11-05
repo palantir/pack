@@ -61,7 +61,7 @@ export class EventServiceCometD implements EventService {
     // TODO: Support binary messages
     // this.cometd.registerExtension(BINARY_EXTENSION_NAME, new BinaryExtension());
 
-    // Any time the token changes, update the extension so reconnections use the new token.
+    // Any time the token changes, update the extension so reconnection requests use the new token.
     // This will also be called on initial token set when the auth module is initialized.
     getAuthModule(app).onTokenChange(token => {
       this.tokenExtension.setToken(token);
@@ -120,7 +120,7 @@ export class EventServiceCometD implements EventService {
 
     return new Promise<SubscriptionId>(
       (resolve, reject) => {
-        const messageHandler = (receievedData: Message) => {
+        const messageHandler = (receivedData: Message) => {
           if (!this.subscriptionById.has(subscriptionId)) {
             this.logger.info("Dropping message for unsubscribing channel", {
               channel,
@@ -132,9 +132,9 @@ export class EventServiceCometD implements EventService {
           this.logger.debug("Received message on channel", {
             channel,
             subscriptionId,
-            hasData: receievedData.data != null,
+            hasData: receivedData.data != null,
           });
-          onMessage(receievedData.data as T);
+          onMessage(receivedData.data as T);
         };
 
         const subscribeCallback = (message: Message) => {
