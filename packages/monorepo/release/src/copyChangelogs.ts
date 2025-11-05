@@ -47,7 +47,7 @@ async function getChangelogContent(
   branch: string,
 ): Promise<string | null> {
   const changelogPath = join(
-    getPackPackageDirectory(packageName),
+    await getPackPackageDirectory(packageName),
     "CHANGELOG.md",
   );
   let content: Result<{}> = {} as Result<{}>;
@@ -82,7 +82,7 @@ async function updateChangelog(
   fullTargetBranchChangelogContent: string,
 ): Promise<void> {
   const changelogPath = join(
-    getPackPackageDirectory(packageName),
+    await getPackPackageDirectory(packageName),
     "CHANGELOG.md",
   );
 

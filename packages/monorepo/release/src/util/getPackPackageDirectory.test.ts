@@ -18,27 +18,29 @@ import { describe, expect, it } from "vitest";
 import { getPackPackageDirectory } from "./getPackPackageDirectory.js";
 
 describe("getPackPackageDirectory", () => {
-  it("should handle flat package structure", () => {
-    const result = getPackPackageDirectory("@palantir/pack.release");
-
-    expect(result).toBe("packages/release");
-  });
-
-  it("should handle nested package structure with 2 levels", () => {
-    const result = getPackPackageDirectory("@palantir/pack.monorepo.release");
+  it("should return directory for nested package structure", async () => {
+    const result = await getPackPackageDirectory("@palantir/pack.monorepo.release");
 
     expect(result).toBe("packages/monorepo/release");
   });
 
-  it("should handle nested package structure with 3 levels", () => {
-    const result = getPackPackageDirectory("@palantir/pack.document-schema.model-types");
+  it("should return directory for deeply nested package structure", async () => {
+    const result = await getPackPackageDirectory("@palantir/pack.document-schema.model-types");
 
     expect(result).toBe("packages/document-schema/model-types");
   });
 
-  it("should handle deeply nested structures", () => {
-    const result = getPackPackageDirectory("@palantir/pack.a.b.c.d.e");
+  it("should use cached results on subsequent calls", async () => {
+    const result1 = await getPackPackageDirectory("@palantir/pack.monorepo.release");
+    const result2 = await getPackPackageDirectory("@palantir/pack.monorepo.release");
 
-    expect(result).toBe("packages/a/b/c/d/e");
+    expect(result1).toBe(result2);
+    expect(result1).toBe("packages/monorepo/release");
+  });
+
+  it("should throw error for non-existent package", async () => {
+    await expect(
+      getPackPackageDirectory("@palantir/pack.does-not-exist"),
+    ).rejects.toThrow("Package \"@palantir/pack.does-not-exist\" not found in workspace");
   });
 });

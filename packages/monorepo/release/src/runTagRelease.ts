@@ -35,7 +35,7 @@ async function createGithubReleaseTag(
   context: GithubContext,
   sha: string,
 ) {
-  const changelogPath = `${getPackPackageDirectory(packageName)}/CHANGELOG.md`;
+  const changelogPath = `${await getPackPackageDirectory(packageName)}/CHANGELOG.md`;
   const changelogContent = await context.octokit.rest.repos.getContent({
     owner: context.repo.owner,
     repo: context.repo.repo,
@@ -165,7 +165,7 @@ export async function runTagRelease(
 
   for (const publishedPackage of publishedPackages.publishedPackages) {
     const packageName = publishedPackage.name;
-    const packagePath = `${getPackPackageDirectory(packageName)}/package.json`;
+    const packagePath = `${await getPackPackageDirectory(packageName)}/package.json`;
     const pkg = await context.octokit.rest.repos.getContent({
       owner: context.repo.owner,
       repo: context.repo.repo,
