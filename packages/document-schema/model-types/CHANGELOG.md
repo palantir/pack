@@ -1,5 +1,18 @@
 # @palantir/pack.document-schema.model-types
 
+## 0.1.0
+
+### Minor Changes
+
+- 77c07c4: Add Core and State Core packages, add Refs to core model types
+- 27a3b33: Initial release
+- 511ee0c: Resetting to beta version of package
+
+### Patch Changes
+
+- Updated dependencies [77c07c4]
+  - @palantir/pack.core@0.1.0
+
 ## 0.1.0-beta.3
 
 ### Minor Changes

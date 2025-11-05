@@ -1,5 +1,12 @@
 # @palantir/pack.schema
 
+## 0.1.0
+
+### Minor Changes
+
+- 77c07c4: Add Core and State Core packages, add Refs to core model types
+- 4a71da0: Initial addition of @palantir/pack.schema
+
 ## 0.1.0-beta.3
 
 ### Minor Changes
