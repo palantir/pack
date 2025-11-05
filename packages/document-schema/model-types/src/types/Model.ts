@@ -24,7 +24,7 @@ import type { WithMetadata } from "./Metadata.js";
  */
 // TODO: I think we can/should hide the zod types
 export interface Model<T = unknown, Z extends ZodType<T> = ZodType<T>>
-  extends WithMetadata<ModelMetadata>
+  extends WithMetadata<ModelMetadata<T>>
 {
   readonly __type: T;
   readonly zodSchema: Readonly<Z>;
@@ -32,6 +32,16 @@ export interface Model<T = unknown, Z extends ZodType<T> = ZodType<T>>
 
 export type ModelData<M extends Model> = M["__type"];
 
-export interface ModelMetadata {
+export const ExternalRefType = {
+  DOC_REF: "docRef",
+  MEDIA_REF: "mediaRef",
+  OBJECT_REF: "objectRef",
+  USER_REF: "userRef",
+} as const;
+
+export type ExternalRefType = typeof ExternalRefType[keyof typeof ExternalRefType];
+
+export interface ModelMetadata<T = unknown> {
+  readonly externalRefFieldTypes?: Readonly<Record<keyof T, ExternalRefType>>;
   readonly name: string;
 }

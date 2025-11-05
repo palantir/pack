@@ -14,17 +14,4 @@
  * limitations under the License.
  */
 
-export const Metadata: symbol = Symbol("@palantir/pack.document-schema/metadata");
-
-export interface WithMetadata<T> {
-  readonly [Metadata]: T;
-}
-
-export function getMetadata<T>(obj: WithMetadata<T>): T {
-  // TS always treats symbol keys as optional
-  const metadata = obj[Metadata];
-  if (metadata == null) {
-    throw new Error("Object does not have metadata");
-  }
-  return metadata;
-}
+export type Unsubscribe = () => void;
