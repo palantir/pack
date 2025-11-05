@@ -46,7 +46,6 @@ export function createTestApp(
       logger: config.logger ?? consoleLogger({}),
       osdkClient: mockClient,
       remote: {
-        packApiPath: "/pack/api",
         packWsPath: "/pack/ws",
         baseUrl: "http://localhost",
         fetchFn: fetch,
