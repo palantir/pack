@@ -1,6 +1,6 @@
-# @palantir/pack.document-schema.model-types
+# @palantir/pack.state.core
 
-## 0.1.0-beta.3
+## 0.1.0-beta.2
 
 ### Minor Changes
 
@@ -9,11 +9,5 @@
 ### Patch Changes
 
 - Updated dependencies [77c07c4]
+  - @palantir/pack.document-schema.model-types@0.1.0-beta.3
   - @palantir/pack.core@0.1.0-beta.2
-
-## 0.1.0-beta.2
-
-### Minor Changes
-
-- 27a3b33: Initial release
-- 511ee0c: Resetting to beta version of package
