@@ -23,12 +23,11 @@ import type {
   DocumentRef,
   DocumentSchema,
 } from "@palantir/pack.document-schema.model-types";
-import type {
+import type { DocumentService, InternalYjsDoc } from "@palantir/pack.state.core";
+import {
   BaseYjsDocumentService,
   createDocumentServiceConfig,
   DocumentLoadStatus,
-  DocumentService,
-  InternalYjsDoc,
 } from "@palantir/pack.state.core";
 import type { FoundryEventService, SyncSession } from "@palantir/pack.state.foundry-event";
 import { createFoundryEventService } from "@palantir/pack.state.foundry-event";
