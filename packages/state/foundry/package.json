@@ -48,7 +48,7 @@
     "@palantir/pack.state.core": "workspace:*",
     "@palantir/pack.state.foundry-event": "workspace:*",
     "conjure-client": "^2.15.0",
-    "remeda": "^2.32.0",
+    "remeda": "catalog:",
     "yjs": "^13.6.27"
   },
   "devDependencies": {

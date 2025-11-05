@@ -43,7 +43,7 @@
     "@osdk/api": "catalog:",
     "@palantir/pack.core": "workspace:*",
     "@palantir/pack.document-schema.model-types": "workspace:*",
-    "remeda": "^2.32.0",
+    "remeda": "catalog:",
     "tiny-invariant": "^1.3.3",
     "yjs": "^13.6.27"
   },
