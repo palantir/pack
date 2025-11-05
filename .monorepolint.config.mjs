@@ -185,7 +185,19 @@ const archetypeConfig = archetypes(
         ...shared,
         options: {
           file: "vitest.config.mjs",
-          templateFile: "templates/vitest.config.mjs",
+          generator: (context) => {
+            const packageJson = context.getPackageJson();
+            const devDeps = packageJson.devDependencies ?? {};
+            const hasHappyDom = "happy-dom" in devDeps;
+
+            const templateFile = hasHappyDom
+              ? "templates/vitest-with-dom.config.mjs"
+              : "templates/vitest.config.mjs";
+
+            const { packageDir: workspacePackageDir } = context.getWorkspaceContext();
+            const fullPath = path.resolve(workspacePackageDir, templateFile);
+            return context.host.readFile(fullPath, { encoding: "utf-8" });
+          },
         },
       }),
 
@@ -279,6 +291,7 @@ const archetypeConfig = archetypes(
       "@palantir/pack.state.core",
       "@palantir/pack.state.foundry",
       "@palantir/pack.state.foundry-event",
+      "@palantir/pack.state.react",
     ],
     {},
   )
