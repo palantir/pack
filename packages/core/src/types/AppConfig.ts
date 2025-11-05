@@ -70,7 +70,7 @@ export interface AppOptions {
 
   readonly remote?: {
     /**
-     * @default "/pack/ws"
+     * @default "/api/v2/packSubscriptions"
      */
     readonly packWsPath?: string;
 
