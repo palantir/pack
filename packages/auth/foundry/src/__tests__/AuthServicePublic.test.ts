@@ -338,8 +338,6 @@ describe("PublicOauthService", () => {
 
   describe("error handling", () => {
     it("should handle errors in state change callbacks", () => {
-      const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
-
       const errorCallback = vi.fn().mockImplementation(() => {
         throw new Error("Callback error");
       });
@@ -352,14 +350,15 @@ describe("PublicOauthService", () => {
       // Clear initial calls to test the actual event-triggered behavior
       errorCallback.mockClear();
       goodCallback.mockClear();
-      consoleSpy.mockClear();
+      mockLogger.error.mockClear();
 
       triggerEvent("signIn");
 
-      expect(consoleSpy).toHaveBeenCalledWith("Error in auth state callback:", expect.any(Error));
+      expect(mockLogger.error).toHaveBeenCalledWith(
+        "Error in auth state callback:",
+        expect.any(Error),
+      );
       expect(goodCallback).toHaveBeenCalled(); // Other callbacks should still work
-
-      consoleSpy.mockRestore();
     });
 
     it("should convert non-Error objects to Error in error state", async () => {

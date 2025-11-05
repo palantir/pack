@@ -80,7 +80,7 @@ describe("StaticTokenService", () => {
       expect(mockTokenProvider).toHaveBeenCalled();
     });
 
-    it("should start in unvalidated state", () => {
+    it("should start in un-validated state", () => {
       expect(service.isValidated()).toBe(false);
     });
 
