@@ -51,7 +51,7 @@ describe("StaticTokenService", () => {
         logger: mockLogger,
         osdkClient: mockOsdkClient,
         remote: {
-          packWsPath: "/pack/ws",
+          packWsPath: "/api/v2/packSubscriptions",
           baseUrl: "https://test.example.com",
           fetchFn: globalThis.fetch,
         },
@@ -230,7 +230,7 @@ describe("StaticTokenService", () => {
             logger: mockLogger,
             osdkClient: mock<Client>(),
             remote: {
-              packWsPath: "/pack/ws",
+              packWsPath: "/api/v2/packSubscriptions",
               baseUrl: "https://localhost:5173",
               fetchFn: globalThis.fetch,
             },

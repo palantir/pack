@@ -315,7 +315,7 @@ function getAppConfig(
     logger,
     osdkClient: client,
     remote: {
-      packWsPath: options.remote?.packWsPath ?? "/pack/ws",
+      packWsPath: options.remote?.packWsPath ?? "/api/v2/packSubscriptions",
       baseUrl: isTestMode ? "https://localhost:5173" : (baseUrl || ""),
       fetchFn,
     },

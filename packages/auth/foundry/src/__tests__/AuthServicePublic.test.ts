@@ -54,7 +54,7 @@ describe("PublicOauthService", () => {
         logger: mockLogger,
         osdkClient: mockOsdkClient,
         remote: {
-          packWsPath: "/pack/ws",
+          packWsPath: "/api/v2/packSubscriptions",
           baseUrl: "https://test.example.com",
           fetchFn: globalThis.fetch,
         },
