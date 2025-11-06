@@ -16,12 +16,18 @@
 
 import type { Logger } from "@osdk/api";
 import type {
+  DocumentEditDescription,
   DocumentPublishMessage,
   DocumentUpdateMessage,
   DocumentUpdateSubscriptionRequest,
 } from "@osdk/foundry.pack";
 import { generateId, justOnce, type PackAppInternal } from "@palantir/pack.core";
-import type { DocumentId } from "@palantir/pack.document-schema.model-types";
+import {
+  type DocumentId,
+  type EditDescription,
+  getMetadata,
+  Metadata,
+} from "@palantir/pack.document-schema.model-types";
 import { DocumentLoadStatus, type DocumentSyncStatus } from "@palantir/pack.state.core";
 import type { CometD } from "cometd";
 import { Base64 } from "js-base64";
@@ -112,13 +118,20 @@ export class FoundryEventService {
 
       const publishChannelId = getDocumentPublishChannelId(documentId);
       const editId = generateId();
-      void this.eventService.publish(publishChannelId, {
-        clientId: session.clientId,
-        editId,
-        yjsUpdate: {
-          data: Base64.fromUint8Array(update),
+      const description = isEditDescription(origin)
+        ? createDocumentEditDescription(origin)
+        : undefined;
+      void this.eventService.publish(
+        publishChannelId,
+        {
+          clientId: session.clientId,
+          description,
+          editId,
+          yjsUpdate: {
+            data: Base64.fromUint8Array(update),
+          },
         },
-      }).catch((error: unknown) => {
+      ).catch((error: unknown) => {
         this.logger.error("Failed to publish document update", error, {
           docId: documentId,
         });
@@ -282,4 +295,26 @@ export function createFoundryEventService(
   cometd?: CometD,
 ): FoundryEventService {
   return new FoundryEventService(app, cometd);
+}
+
+function isEditDescription(obj: unknown): obj is EditDescription {
+  return (
+    obj != null
+    && typeof obj === "object"
+    && "data" in obj
+    && "model" in obj
+    && typeof obj.model === "object"
+    && obj.model != null
+    && Metadata in obj.model
+  );
+}
+
+function createDocumentEditDescription(editDescription: EditDescription): DocumentEditDescription {
+  return {
+    eventData: {
+      data: editDescription.data,
+      version: 1,
+    },
+    eventType: getMetadata(editDescription.model).name,
+  };
 }

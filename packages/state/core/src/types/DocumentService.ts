@@ -21,6 +21,7 @@ import type {
   DocumentRef,
   DocumentSchema,
   DocumentState,
+  EditDescription,
   Model,
   ModelData,
   RecordCollectionRef,
@@ -125,6 +126,12 @@ export interface DocumentService {
     record: RecordRef<R>,
     partialState: Partial<ModelData<R>>,
   ) => Promise<void>;
+
+  readonly withTransaction: (
+    docRef: DocumentRef,
+    fn: () => void,
+    description?: EditDescription,
+  ) => void;
 
   // Collection methods
   readonly getRecord: <M extends Model>(

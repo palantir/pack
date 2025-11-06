@@ -17,7 +17,7 @@
 import type { Flavored } from "@palantir/pack.core";
 import type { DocumentMetadata } from "./DocumentMetadata.js";
 import type { DocumentSchema, DocumentState } from "./DocumentSchema.js";
-import type { Model } from "./Model.js";
+import type { EditDescription, Model } from "./Model.js";
 import type { RecordCollectionRef } from "./RecordCollectionRef.js";
 import type { Unsubscribe } from "./Unsubscribe.js";
 
@@ -38,4 +38,5 @@ export interface DocumentRef<D extends DocumentSchema = DocumentSchema> {
   readonly onStateChange: (
     callback: (docRef: DocumentRef<D>) => void,
   ) => Unsubscribe;
+  readonly withTransaction: (fn: () => void, description?: EditDescription) => void;
 }

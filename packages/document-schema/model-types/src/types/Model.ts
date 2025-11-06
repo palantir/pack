@@ -32,6 +32,11 @@ export interface Model<T = unknown, Z extends ZodType<T> = ZodType<T>>
 
 export type ModelData<M extends Model> = M["__type"];
 
+export interface EditDescription<M extends Model = Model> {
+  readonly data: ModelData<M>;
+  readonly model: M;
+}
+
 export const ExternalRefType = {
   DOC_REF: "docRef",
   MEDIA_REF: "mediaRef",
