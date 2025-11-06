@@ -1,3 +1,19 @@
+/*
+ * Copyright 2025 Palantir Technologies, Inc. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 import { archetypes } from "@monorepolint/archetypes";
 import * as Rules from "@monorepolint/rules";
 import * as path from "path";
@@ -191,7 +207,7 @@ const archetypeConfig = archetypes(
             const hasHappyDom = "happy-dom" in devDeps;
 
             const templateFile = hasHappyDom
-              ? "templates/vitest-with-dom.config.mjs"
+              ? "templates/vitest.with-dom.config.mjs"
               : "templates/vitest.config.mjs";
 
             const { packageDir: workspacePackageDir } = context.getWorkspaceContext();
@@ -277,7 +293,9 @@ const archetypeConfig = archetypes(
   )
   .addArchetype(
     "cli",
-    [],
+    [
+      "@palantir/pack.document-schema.type-gen"
+    ],
     { isCli: true },
   )
   .addArchetype(
