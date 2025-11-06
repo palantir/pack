@@ -15,6 +15,7 @@
  */
 
 import { CommanderError } from "commander";
+import { consola } from "consola";
 import { readFileSync, writeFileSync } from "fs";
 import { resolve } from "path";
 import { parse } from "yaml";
@@ -33,25 +34,25 @@ export async function stepsGenModelsHandler(options: StepsGenModelsOptions): Pro
     const inputPath = resolve(options.input);
     const outputPath = resolve(options.output);
 
-    console.log(`Reading migration steps from: ${inputPath}`);
+    consola.info(`Reading migration steps from: ${inputPath}`);
 
     const yamlContent = readFileSync(inputPath, "utf8");
     const parsedYaml = parse(yamlContent) as unknown;
     const migrationSteps = parseMigrationSteps(parsedYaml);
 
-    console.log("Generating Model constants from migration steps...");
+    consola.info("Generating Model constants from migration steps...");
 
     const generatedCode = await generateModelsFromStepsSchema(migrationSteps, undefined, {
       typeImportPath: options.typeImportPath,
       schemaImportPath: options.schemaImportPath,
     });
 
-    console.log(`Writing generated Model constants to: ${outputPath}`);
+    consola.info(`Writing generated Model constants to: ${outputPath}`);
     writeFileSync(outputPath, generatedCode, "utf8");
 
-    console.log("✅ Successfully generated Model constants from migration steps");
+    consola.success("✅ Successfully generated Model constants from migration steps");
   } catch (error) {
-    console.error("❌ Error generating Model constants from steps:", error);
+    consola.error("❌ Error generating Model constants from steps:", error);
     throw new CommanderError(
       1,
       "STEPS_MODELS_ERROR",

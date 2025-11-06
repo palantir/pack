@@ -23,6 +23,7 @@ import type {
   IRecordDef,
   IUnionDef,
 } from "@palantir/pack-docschema-api/pack-docschema-ir";
+import consola from "consola";
 import invariant from "tiny-invariant";
 import { assertNever } from "../assertNever.js";
 import { formatVariantName } from "../formatVariantName.js";
@@ -139,7 +140,7 @@ class ZodSchemaGenerator {
 
     // If there are still remaining unions, we have circular dependencies or missing models
     if (remainingUnions.size > 0) {
-      console.warn(
+      consola.warn(
         `Warning: Could not generate schemas for unions due to circular or missing dependencies: ${
           Array.from(remainingUnions.keys()).join(", ")
         }`,

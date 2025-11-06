@@ -16,6 +16,7 @@
 
 import type { ReturnedSchema } from "@palantir/pack.schema";
 import { CommanderError } from "commander";
+import { consola } from "consola";
 import * as fs from "fs";
 import * as path from "path";
 import * as YAML from "yaml";
@@ -75,5 +76,5 @@ export function stepsGenTypesHandler(options: TypesGenOptions): void {
 
   fs.writeFileSync(outputFile, generatedTypes, "utf8");
 
-  console.log(`Generated types written to: ${outputFile}`);
+  consola.success(`Generated types written to: ${outputFile}`);
 }

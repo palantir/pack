@@ -242,6 +242,8 @@ export default tseslint.config(
       "**/src/generatedNoCheck/",
       "**/src/generatedNoCheck2/",
       "**/templates/",
+      "**/__tests__/**/fixtures/",
+      "**/__tests__/__snapshots__/",
     ],
   },
 );

@@ -15,6 +15,7 @@
  */
 
 import { CommanderError } from "commander";
+import { consola } from "consola";
 import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from "fs";
 import { dirname, join } from "path";
 import * as YAML from "yaml";
@@ -60,7 +61,7 @@ export function stepsGenIrHandler(options: StepsGenIrOptions): void {
       migrationSteps.push(...parsedCommands);
     }
 
-    console.log(`Converting ${migrationSteps.length} migration step(s) to IR format...`);
+    consola.info(`Converting ${migrationSteps.length} migration step(s) to IR format...`);
 
     // Prepare metadata if provided
     const metadata: SchemaMetadata = {
@@ -77,13 +78,13 @@ export function stepsGenIrHandler(options: StepsGenIrOptions): void {
     }
     writeFileSync(outputFile, JSON.stringify(schema, null, 2), "utf8");
 
-    console.log("✅ Successfully converted migration steps to IR format");
-    console.log(`   Generated types written to: ${outputFile}`);
-    console.log(`   Schema: ${schema.name} v${schema.version}`);
-    console.log(`   Models: ${Object.keys(schema.models).length}`);
-    console.log(`   Primary models: ${schema.primaryModelKeys.length}`);
+    consola.success("✅ Successfully converted migration steps to IR format");
+    consola.info(`   Generated types written to: ${outputFile}`);
+    consola.info(`   Schema: ${schema.name} v${schema.version}`);
+    consola.info(`   Models: ${Object.keys(schema.models).length}`);
+    consola.info(`   Primary models: ${schema.primaryModelKeys.length}`);
   } catch (error) {
-    console.error("❌ Error converting steps to IR:", error);
+    consola.error("❌ Error converting steps to IR:", error);
     throw new CommanderError(1, "STEPS_IR_ERROR", "Failed to convert steps to IR format");
   }
 }

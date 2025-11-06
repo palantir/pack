@@ -15,6 +15,7 @@
  */
 
 import { CommanderError } from "commander";
+import { consola } from "consola";
 import { readFileSync, writeFileSync } from "fs";
 import { resolve } from "path";
 import { parse } from "yaml";
@@ -32,24 +33,24 @@ export async function stepsGenZodHandler(options: StepsGenZodOptions): Promise<v
     const inputPath = resolve(options.input);
     const outputPath = resolve(options.output);
 
-    console.log(`Reading migration steps from: ${inputPath}`);
+    consola.info(`Reading migration steps from: ${inputPath}`);
 
     const yamlContent = readFileSync(inputPath, "utf8");
     const parsedYaml = parse(yamlContent) as unknown;
     const migrationSteps = parseMigrationSteps(parsedYaml);
 
-    console.log("Generating Zod schemas from migration steps...");
+    consola.info("Generating Zod schemas from migration steps...");
 
     const generatedCode = await generateZodFromStepsSchema(migrationSteps, undefined, {
       typeImportPath: options.typeImportPath,
     });
 
-    console.log(`Writing generated Zod schemas to: ${outputPath}`);
+    consola.info(`Writing generated Zod schemas to: ${outputPath}`);
     writeFileSync(outputPath, generatedCode, "utf8");
 
-    console.log("✅ Successfully generated Zod schemas from migration steps");
+    consola.success("✅ Successfully generated Zod schemas from migration steps");
   } catch (error) {
-    console.error("❌ Error generating Zod schemas from steps:", error);
+    consola.error("❌ Error generating Zod schemas from steps:", error);
     throw new CommanderError(1, "STEPS_ZOD_ERROR", "Failed to generate Zod schemas from steps");
   }
 }

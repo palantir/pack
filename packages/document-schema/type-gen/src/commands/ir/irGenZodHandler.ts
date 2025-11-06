@@ -16,6 +16,7 @@
 
 import type { IRealTimeDocumentSchema } from "@palantir/pack-docschema-api/pack-docschema-ir";
 import { CommanderError } from "commander";
+import { consola } from "consola";
 import { readFileSync, writeFileSync } from "fs";
 import { resolve } from "path";
 import { generateZodSchemasFromIr } from "../../utils/ir/generateZodSchemasFromIr.js";
@@ -31,25 +32,25 @@ export async function irGenZodHandler(options: ZodGenOptions): Promise<void> {
     const schemaPath = resolve(options.schema);
     const outputPath = resolve(options.output);
 
-    console.log(`Reading schema from: ${schemaPath}`);
+    consola.info(`Reading schema from: ${schemaPath}`);
 
     const schemaContent = readFileSync(schemaPath, "utf8");
 
     // TODO: conjureToZod based validation matches conjure ir
     const schema = JSON.parse(schemaContent) as IRealTimeDocumentSchema;
 
-    console.log(`Generating Zod schemas for ${schema.primaryModelKeys.length} model(s)...`);
+    consola.info(`Generating Zod schemas for ${schema.primaryModelKeys.length} model(s)...`);
 
     const generatedCode = await generateZodSchemasFromIr(schema, {
       typeImportPath: options.typeImportPath,
     });
 
-    console.log(`Writing generated Zod schemas to: ${outputPath}`);
+    consola.info(`Writing generated Zod schemas to: ${outputPath}`);
     writeFileSync(outputPath, generatedCode, "utf8");
 
-    console.log("✅ Zod schema generation completed successfully");
+    consola.success("✅ Zod schema generation completed successfully");
   } catch (error) {
-    console.error("❌ Error during Zod schema generation:", error);
+    consola.error("❌ Error during Zod schema generation:", error);
     throw new CommanderError(1, "ERRIRZOD", "Error generating Zod schemas");
   }
 }

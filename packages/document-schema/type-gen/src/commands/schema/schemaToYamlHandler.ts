@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+import { consola } from "consola";
 import fs from "fs-extra";
 import path from "path";
 import { pathToFileURL } from "url";
@@ -38,7 +39,7 @@ export async function schemaToYamlHandler(options: SchemaToYamlOptions): Promise
       throw new Error(`Input file not found: ${inputPath}`);
     }
 
-    console.log(`Loading schema from: ${inputPath}`);
+    consola.info(`Loading schema from: ${inputPath}`);
 
     const schemaUrl = pathToFileURL(inputPath).href;
     const schemaModule: unknown = await import(schemaUrl);
@@ -46,7 +47,7 @@ export async function schemaToYamlHandler(options: SchemaToYamlOptions): Promise
     // Validate and extract the schema using Zod validation
     const schema = extractValidSchema(schemaModule);
 
-    console.log("Converting schema to YAML...");
+    consola.info("Converting schema to YAML...");
 
     // Generate the migration steps
     const steps = convertSchemaToSteps(schema);
@@ -58,9 +59,9 @@ export async function schemaToYamlHandler(options: SchemaToYamlOptions): Promise
     await fs.ensureDir(path.dirname(outputPath));
     await fs.writeFile(outputPath, yamlContent, "utf8");
 
-    console.log(`✅ YAML migration steps written to: ${outputPath}`);
+    consola.success(`✅ YAML migration steps written to: ${outputPath}`);
   } catch (error) {
-    console.error("Error converting schema to YAML:", error);
+    consola.error("Error converting schema to YAML:", error);
     process.exit(1);
   }
 }

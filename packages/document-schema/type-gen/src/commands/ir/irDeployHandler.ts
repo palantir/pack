@@ -19,6 +19,7 @@ import type { CreateDocumentTypeRequest } from "@osdk/foundry.pack";
 import { DocumentTypes } from "@osdk/foundry.pack";
 import type { IRealTimeDocumentSchema } from "@palantir/pack-docschema-api/pack-docschema-ir";
 import { CommanderError } from "commander";
+import { consola } from "consola";
 import { readFileSync } from "fs";
 import { resolve } from "path";
 
@@ -33,7 +34,7 @@ export async function irDeployHandler(options: DeployOptions): Promise<void> {
   try {
     const irPath = resolve(options.ir);
 
-    console.log(`Reading schema from: ${irPath}`);
+    consola.info(`Reading schema from: ${irPath}`);
 
     const irContent = readFileSync(irPath, "utf8");
 
@@ -51,11 +52,11 @@ export async function irDeployHandler(options: DeployOptions): Promise<void> {
     };
 
     // PACK BE does not yet support storing schemas...
-    console.warn("Creating document type without schema information", request);
+    consola.warn("Creating document type without schema information", request);
 
     await DocumentTypes.create(osdkClient, request);
   } catch (error) {
-    console.error("❌ Error during Deploy:", error);
+    consola.error("❌ Error during Deploy:", error);
     throw new CommanderError(1, "ERRIRMDEPLOY", "Error deploying IR document schema");
   }
 }

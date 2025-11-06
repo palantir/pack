@@ -16,6 +16,7 @@
 
 import type { IRealTimeDocumentSchema } from "@palantir/pack-docschema-api/pack-docschema-ir";
 import { CommanderError } from "commander";
+import { consola } from "consola";
 import { readFileSync, writeFileSync } from "fs";
 import { resolve } from "path";
 import { generateModelsFromIr } from "../../utils/ir/generateModelsFromIr.js";
@@ -32,26 +33,26 @@ export async function irGenModelsHandler(options: ModelsGenOptions): Promise<voi
     const schemaPath = resolve(options.schema);
     const outputPath = resolve(options.output);
 
-    console.log(`Reading schema from: ${schemaPath}`);
+    consola.info(`Reading schema from: ${schemaPath}`);
 
     const schemaContent = readFileSync(schemaPath, "utf8");
 
     // TODO: conjureToZod based validation matches conjure ir
     const schema = JSON.parse(schemaContent) as IRealTimeDocumentSchema;
 
-    console.log(`Generating Model constants for ${schema.primaryModelKeys.length} model(s)...`);
+    consola.info(`Generating Model constants for ${schema.primaryModelKeys.length} model(s)...`);
 
     const generatedCode = await generateModelsFromIr(schema, {
       typeImportPath: options.typeImportPath,
       schemaImportPath: options.schemaImportPath,
     });
 
-    console.log(`Writing generated Model constants to: ${outputPath}`);
+    consola.info(`Writing generated Model constants to: ${outputPath}`);
     writeFileSync(outputPath, generatedCode, "utf8");
 
-    console.log("✅ Model constants generation completed successfully");
+    consola.success("✅ Model constants generation completed successfully");
   } catch (error) {
-    console.error("❌ Error during Model constants generation:", error);
+    consola.error("❌ Error during Model constants generation:", error);
     throw new CommanderError(1, "ERRIRMODELS", "Error generating Model constants");
   }
 }
