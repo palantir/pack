@@ -21,6 +21,7 @@ import type {
   DocumentRef,
   DocumentSchema,
   DocumentState,
+  EditDescription,
   Model,
   RecordCollectionRef,
   Unsubscribe,
@@ -41,6 +42,9 @@ const INVALID_DOC_REF: DocumentRef = Object.freeze(
     },
     onMetadataChange: () => () => {},
     onStateChange: () => () => {},
+    withTransaction: () => {
+      throw new Error("Invalid document reference");
+    },
   } as const,
 );
 
@@ -94,5 +98,12 @@ class DocumentRefImpl<T extends DocumentSchema> implements DocumentRef<T> {
     callback: (docRef: DocumentRef<T>) => void,
   ): Unsubscribe {
     return this.#stateModule.onStateChange(this, callback);
+  }
+
+  withTransaction(
+    fn: () => void,
+    description?: EditDescription,
+  ): void {
+    this.#stateModule.withTransaction(this, fn, description);
   }
 }

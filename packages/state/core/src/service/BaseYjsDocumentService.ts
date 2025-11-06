@@ -24,6 +24,7 @@ import {
   type DocumentRef,
   type DocumentSchema,
   type DocumentState,
+  type EditDescription,
   getMetadata,
   type Model,
   type ModelData,
@@ -484,6 +485,20 @@ export abstract class BaseYjsDocumentService<TDoc extends InternalYjsDoc = Inter
     this.onRecordSet?.(recordRef, partialState);
 
     return Promise.resolve();
+  };
+
+  readonly withTransaction = (
+    docRef: DocumentRef,
+    fn: () => void,
+    description?: EditDescription,
+  ): void => {
+    const internalDoc = this.documents.get(docRef.id);
+    invariant(
+      internalDoc != null,
+      `Cannot start transaction as document not found: ${docRef.id}`,
+    );
+
+    internalDoc.yDoc.transact(fn, description);
   };
 
   onMetadataChange<T extends DocumentSchema>(

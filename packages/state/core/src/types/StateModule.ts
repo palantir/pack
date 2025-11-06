@@ -26,6 +26,7 @@ import type {
   DocumentRef,
   DocumentSchema,
   DocumentState,
+  EditDescription,
   Model,
   ModelData,
   RecordCollectionRef,
@@ -111,6 +112,12 @@ export interface StateModule {
     recordRef: RecordRef<R>,
     partialState: Partial<ModelData<R>>,
   ) => Promise<void>;
+
+  readonly withTransaction: (
+    docRef: DocumentRef,
+    fn: () => void,
+    description?: EditDescription,
+  ) => void;
 
   readonly onRecordChanged: <M extends Model>(
     record: RecordRef<M>,
@@ -210,6 +217,14 @@ export class StateModuleImpl implements StateModule {
     partialState: Partial<ModelData<R>>,
   ): Promise<void> {
     return this.documentService.updateRecord(recordRef, partialState);
+  }
+
+  withTransaction(
+    docRef: DocumentRef,
+    fn: () => void,
+    description?: EditDescription,
+  ): void {
+    this.documentService.withTransaction(docRef, fn, description);
   }
 
   // Collection methods
