@@ -200,7 +200,7 @@ describe("Transaction Batching", () => {
     unsubscribe();
   });
 
-  it("should handle nested transactions correctly (Y.js reentrancy)", async () => {
+  it("should handle nested transactions correctly (Y.js transact is reentrant)", async () => {
     const collection = docRef.getRecords(schema.User);
     const stateModule = getStateModule(app);
 
