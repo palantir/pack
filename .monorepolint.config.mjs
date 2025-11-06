@@ -311,7 +311,7 @@ const archetypeConfig = archetypes(
       "@palantir/pack.state.core",
       "@palantir/pack.state.foundry",
       "@palantir/pack.state.foundry-event",
-      "@palantir/pack.state.react",            
+      "@palantir/pack.state.react",
     ],
     {},
   )
