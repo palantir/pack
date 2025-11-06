@@ -171,12 +171,12 @@ class ZodSchemaGenerator {
   private generateRecordSchema(
     record: IRecordDef,
   ): string {
-    const fieldEntryStrs: string[] = [];
+    const fieldEntryLines: string[] = [];
     for (const field of record.fields) {
       const fieldSchema = this.generateFieldSchema(field);
-      fieldEntryStrs.push(`  ${field.key}: ${fieldSchema}`);
+      fieldEntryLines.push(`  ${field.key}: ${fieldSchema}`);
     }
-    return `z.object({\n${fieldEntryStrs.join(",\n")}\n})`;
+    return `z.object({\n${fieldEntryLines.join(",\n")}\n})`;
   }
 
   private generateUnionSchema(
@@ -338,7 +338,7 @@ class ZodSchemaGenerator {
       }
 
       case "modelRef": {
-        const refVariantsStrs: string[] = [];
+        const refVariantsLines: string[] = [];
 
         for (const modelType of fieldValue.modelRef.modelTypes) {
           const model = this.schema.models[modelType];
@@ -354,15 +354,15 @@ class ZodSchemaGenerator {
           return this.generateModel(model);
         }
 
-        if (refVariantsStrs.length === 0) {
+        if (refVariantsLines.length === 0) {
           return "z.unknown()";
         }
 
-        if (refVariantsStrs.length === 1) {
-          return refVariantsStrs[0]!;
+        if (refVariantsLines.length === 1) {
+          return refVariantsLines[0]!;
         }
 
-        return `z.union([${refVariantsStrs.join(", ")}])`;
+        return `z.union([${refVariantsLines.join(", ")}])`;
       }
 
       case "string": {

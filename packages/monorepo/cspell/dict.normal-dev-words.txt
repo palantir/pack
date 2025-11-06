@@ -4,6 +4,7 @@ BACKCOMPAT
 backlink
 Canonicalizer
 Canonicalizers
+CRDT
 codegen
 commitish
 devx

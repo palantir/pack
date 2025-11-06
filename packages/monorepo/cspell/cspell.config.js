@@ -110,7 +110,7 @@ const cspell = {
     "npm",
 
     // our dictionaries to always include
-    "osdk",
+    "pack",
     "npm-packages",
     "foundry-words",
     "normal-dev-words",
@@ -134,7 +134,7 @@ const cspell = {
     },
     {
       filename: ["**/*.{mts,cts,ts,tsx}"],
-      dictionaries: ["osdk-code"],
+      dictionaries: ["osdk-code", "error-codes"],
       words: [
         // used in a regex
         "0123456789bcdefghjkmnpqrstuvwxyz",
