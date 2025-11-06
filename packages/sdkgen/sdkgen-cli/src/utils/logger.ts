@@ -14,34 +14,38 @@
  * limitations under the License.
  */
 
-import chalk from "chalk";
+import { type ConsolaInstance, createConsola } from "consola";
 
 export class Logger {
-  constructor(private readonly verbose: boolean = false) {}
+  private consola: ConsolaInstance;
+
+  constructor(verbose: boolean = false) {
+    this.consola = createConsola({
+      level: verbose ? 4 : 3,
+    });
+  }
 
   info(message: string): void {
-    console.log(chalk.blue("ℹ"), message);
+    this.consola.info(message);
   }
 
   success(message: string): void {
-    console.log(chalk.green("✔"), message);
+    this.consola.success(message);
   }
 
   warning(message: string): void {
-    console.log(chalk.yellow("⚠"), message);
+    this.consola.warn(message);
   }
 
   error(message: string): void {
-    console.error(chalk.red("✖"), message);
+    this.consola.error(message);
   }
 
   debug(message: string): void {
-    if (this.verbose) {
-      console.log(chalk.gray("▸"), message);
-    }
+    this.consola.debug(message);
   }
 
   log(message: string): void {
-    console.log(message);
+    this.consola.log(message);
   }
 }

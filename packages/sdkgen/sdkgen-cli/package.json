@@ -18,8 +18,8 @@
   },
   "scripts": {
     "clean": "rimraf .turbo build dist lib test-output *.tgz tsconfig.tsbuildinfo",
-    "lint": "eslint ./src ; dprint check --config $(find-up dprint.json) --allow-no-files",
-    "lint:fix": "eslint ./src --fix ; dprint fmt --config $(find-up dprint.json) --allow-no-files",
+    "lint": "eslint ./src && dprint check --config $(find-up dprint.json) --allow-no-files",
+    "lint:fix": "eslint ./src --fix && dprint fmt --config $(find-up dprint.json) --allow-no-files",
     "test": "vitest run --passWithNoTests -u",
     "test:watch": "vitest --passWithNoTests",
     "transpile": "tsc",
@@ -29,8 +29,8 @@
   },
   "dependencies": {
     "bun": "catalog:",
-    "chalk": "^5.6.2",
     "commander": "catalog:",
+    "consola": "^3.2.3",
     "ejs": "^3.1.10",
     "find-up": "^8.0.0",
     "fs-extra": "^11.3.2",
