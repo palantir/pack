@@ -1,6 +1,8 @@
 {
   "extends": "@palantir/pack.monorepo.tsconfig/base.json",
   "compilerOptions": {
+    "module": "es2022",
+    "moduleResolution": "bundler",
     "outDir": "./build/esm",
     "rootDir": "./src",
     "declarationDir": "./build/types",
