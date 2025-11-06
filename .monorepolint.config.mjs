@@ -33,9 +33,9 @@ const archetypeConfig = archetypes(
   (shared, rules) => {
     const baseScripts = {
       clean: "rimraf .turbo build dist lib test-output *.tgz tsconfig.tsbuildinfo",
-      lint: "eslint ./src ; dprint check --config $(find-up dprint.json) --allow-no-files",
+      lint: "eslint ./src && dprint check --config $(find-up dprint.json) --allow-no-files",
       "lint:fix":
-        "eslint ./src --fix ; dprint fmt --config $(find-up dprint.json) --allow-no-files",
+        "eslint ./src --fix && dprint fmt --config $(find-up dprint.json) --allow-no-files",
       "test:watch": "vitest --passWithNoTests",
       test: "vitest run --passWithNoTests -u",
       typecheck: "tsc --noEmit --emitDeclarationOnly false",
