@@ -164,15 +164,15 @@ export async function createCommand(
     await generator.generate();
 
     if (!options.dryRun) {
-      logger.success(`\n🎉 SDK project created successfully!`);
-      logger.info(`\nNext steps:`);
-      logger.log(`  cd ${projectName}`);
+      logger.success(`🎉 SDK project created successfully!`);
+      logger.info(`Next steps:`);
+      logger.info(`  cd ${projectName}`);
       if (options.skipInstall) {
-        logger.log(`  npm install`);
+        logger.info(`  npm install`);
       }
-      logger.log(`  npm run build`);
+      logger.info(`  npm run build`);
     } else {
-      logger.info("\n✨ Dry run completed. No files were written.");
+      logger.success("✨ Dry run completed. No files were written.");
     }
   } catch (error) {
     logger.error(`Failed to create SDK: ${error instanceof Error ? error.message : String(error)}`);
