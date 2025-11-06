@@ -123,53 +123,18 @@ const cspell = {
   overrides: [
     {
       filename: ["**/*.md"],
-      dictionaries: ["foundry-words", "dev-words"],
       words: [
         // used in an example
         "myapp"
       ]
     },
     {
-      filename: [".changeset/**/*.md"],
-    },
-    {
       filename: ["**/*.{mts,cts,ts,tsx}"],
-      dictionaries: ["osdk-code", "error-codes"],
-      words: [
-        // used in a regex
-        "0123456789bcdefghjkmnpqrstuvwxyz",
-
-        // used in a const (that is removed in a different PR)
-        "asdfasdfdhjlkajhgj",
-
-        // Used in a stub
-        "Clooney",
-        "Itask",
-        "Mobi",
-
-        // Authless client
-        "Authless",
-        "authless",
-      ],
-      ignoreWords: [
-        // it's an NPM package
-        "blueprintjs",
-        "picocolors",
-        // used in a RID template literal string
-        "widgetregistry",
-        // used in scopes
-        "mediasets",
-      ],
+      dictionaries: ["error-codes"],
     },
     {
       filename: "**/*.test.{mts,cts,ts,tsx}",
-      dictionaries: [
-        "test-words",
-      ],
-      ignoreRegExpList: [
-        "url-oauth-scopes",
-        "oauth-token",
-      ],
+      dictionaries: ["test-words"],
     },
   ],
 };
