@@ -18,5 +18,7 @@ export { useAuthState } from "./hooks/useAuthState.js";
 export { useAuthToken } from "./hooks/useAuthToken.js";
 export { useDocRef } from "./hooks/useDocRef.js";
 export { useDocumentMetadata } from "./hooks/useDocumentMetadata.js";
+export { useOnDocActivityEvents } from "./hooks/useOnDocActivityEvents.js";
+export { useOnDocPresenceEvents } from "./hooks/useOnDocPresenceEvents.js";
 export { useRecord } from "./hooks/useRecord.js";
 export { useRecords } from "./hooks/useRecords.js";

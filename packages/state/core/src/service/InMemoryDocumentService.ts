@@ -14,13 +14,18 @@
  * limitations under the License.
  */
 
-import type { ModuleConfigTuple, PackAppInternal } from "@palantir/pack.core";
+import type { ModuleConfigTuple, PackAppInternal, Unsubscribe } from "@palantir/pack.core";
 import { generateId } from "@palantir/pack.core";
 import type {
+  ActivityEvent,
   DocumentId,
   DocumentMetadata,
   DocumentRef,
   DocumentSchema,
+  Model,
+  ModelData,
+  PresenceEvent,
+  PresenceSubscriptionOptions,
 } from "@palantir/pack.document-schema.model-types";
 import type * as Y from "yjs";
 import { createDocumentServiceConfig } from "../DocumentServiceModule.js";
@@ -154,6 +159,28 @@ class InMemoryDocumentService extends BaseYjsDocumentService {
     _docRef: DocumentRef,
   ): void {
     // No cleanup needed for in-memory service
+  }
+
+  onActivity<T extends DocumentSchema>(
+    _docRef: DocumentRef<T>,
+    _callback: (docRef: DocumentRef<T>, event: ActivityEvent) => void,
+  ): Unsubscribe {
+    return () => {};
+  }
+
+  onPresence<T extends DocumentSchema>(
+    _docRef: DocumentRef<T>,
+    _callback: (docRef: DocumentRef<T>, event: PresenceEvent) => void,
+    _options?: PresenceSubscriptionOptions,
+  ): Unsubscribe {
+    return () => {};
+  }
+
+  updateCustomPresence<M extends Model>(
+    _docRef: DocumentRef,
+    _model: M,
+    _eventData: ModelData<M>,
+  ): void {
   }
 }
 

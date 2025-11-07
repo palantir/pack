@@ -16,6 +16,7 @@
 
 import type { PackAppInternal } from "@palantir/pack.core";
 import type {
+  ActivityEvent,
   DocumentId,
   DocumentMetadata,
   DocumentRef,
@@ -23,6 +24,9 @@ import type {
   DocumentState,
   EditDescription,
   Model,
+  ModelData,
+  PresenceEvent,
+  PresenceSubscriptionOptions,
   RecordCollectionRef,
   Unsubscribe,
 } from "@palantir/pack.document-schema.model-types";
@@ -40,8 +44,11 @@ const INVALID_DOC_REF: DocumentRef = Object.freeze(
     getRecords: () => {
       throw new Error("Invalid document reference");
     },
+    onActivity: () => () => {},
     onMetadataChange: () => () => {},
+    onPresence: () => () => {},
     onStateChange: () => () => {},
+    updateCustomPresence: () => {},
     withTransaction: () => {
       throw new Error("Invalid document reference");
     },
@@ -88,16 +95,36 @@ class DocumentRefImpl<T extends DocumentSchema> implements DocumentRef<T> {
     return this.#stateModule.getCreateRecordCollectionRef(this, model);
   }
 
+  onActivity(
+    callback: (docRef: DocumentRef<T>, event: ActivityEvent) => void,
+  ): Unsubscribe {
+    return this.#stateModule.onActivity(this, callback);
+  }
+
   onMetadataChange(
     cb: (docRef: DocumentRef<T>, metadata: DocumentMetadata) => void,
   ): Unsubscribe {
     return this.#stateModule.onMetadataChange(this, cb);
   }
 
+  onPresence(
+    callback: (docRef: DocumentRef<T>, event: PresenceEvent) => void,
+    options?: PresenceSubscriptionOptions,
+  ): Unsubscribe {
+    return this.#stateModule.onPresence(this, callback, options);
+  }
+
   onStateChange(
     callback: (docRef: DocumentRef<T>) => void,
   ): Unsubscribe {
     return this.#stateModule.onStateChange(this, callback);
+  }
+
+  updateCustomPresence<M extends Model = Model>(
+    model: M,
+    eventData: ModelData<M>,
+  ): void {
+    this.#stateModule.updateCustomPresence(this, model, eventData);
   }
 
   withTransaction(

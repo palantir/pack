@@ -16,6 +16,7 @@
 
 import type { Unsubscribe } from "@palantir/pack.core";
 import type {
+  ActivityEvent,
   DocumentId,
   DocumentMetadata,
   DocumentRef,
@@ -24,6 +25,8 @@ import type {
   EditDescription,
   Model,
   ModelData,
+  PresenceEvent,
+  PresenceSubscriptionOptions,
   RecordCollectionRef,
   RecordId,
   RecordRef,
@@ -177,15 +180,32 @@ export interface DocumentService {
     callback: RecordCollectionChangeCallback<M>,
   ) => Unsubscribe;
 
+  readonly onActivity: <T extends DocumentSchema>(
+    docRef: DocumentRef<T>,
+    callback: (docRef: DocumentRef<T>, event: ActivityEvent) => void,
+  ) => Unsubscribe;
+
   readonly onMetadataChange: <T extends DocumentSchema>(
     docRef: DocumentRef<T>,
     callback: DocumentMetadataChangeCallback<T>,
+  ) => Unsubscribe;
+
+  readonly onPresence: <T extends DocumentSchema>(
+    docRef: DocumentRef<T>,
+    callback: (docRef: DocumentRef<T>, event: PresenceEvent) => void,
+    options?: PresenceSubscriptionOptions,
   ) => Unsubscribe;
 
   readonly onStateChange: <T extends DocumentSchema>(
     docRef: DocumentRef<T>,
     callback: DocumentStateChangeCallback<T>,
   ) => Unsubscribe;
+
+  readonly updateCustomPresence: <M extends Model>(
+    docRef: DocumentRef,
+    model: M,
+    eventData: ModelData<M>,
+  ) => void;
 
   readonly onRecordChanged: <M extends Model>(
     record: RecordRef<M>,

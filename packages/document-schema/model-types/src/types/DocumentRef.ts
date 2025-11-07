@@ -15,13 +15,19 @@
  */
 
 import type { Flavored } from "@palantir/pack.core";
+import type { ActivityEvent } from "./ActivityEvent.js";
 import type { DocumentMetadata } from "./DocumentMetadata.js";
 import type { DocumentSchema, DocumentState } from "./DocumentSchema.js";
-import type { EditDescription, Model } from "./Model.js";
+import type { EditDescription, Model, ModelData } from "./Model.js";
+import type { PresenceEvent } from "./PresenceEvent.js";
 import type { RecordCollectionRef } from "./RecordCollectionRef.js";
 import type { Unsubscribe } from "./Unsubscribe.js";
 
 export type DocumentId = Flavored<"DocumentId">;
+
+export interface PresenceSubscriptionOptions {
+  readonly ignoreSelfUpdates?: boolean;
+}
 
 export const DocumentRefBrand: unique symbol = Symbol("pack:DocumentRef");
 
@@ -30,13 +36,24 @@ export interface DocumentRef<D extends DocumentSchema = DocumentSchema> {
   readonly schema: D;
   readonly [DocumentRefBrand]: typeof DocumentRefBrand;
 
-  readonly getDocSnapshot: () => Promise<DocumentState<D>>;
-  readonly getRecords: <R extends Model>(model: R) => RecordCollectionRef<R>;
-  readonly onMetadataChange: (
-    callback: (docId: DocumentRef<D>, metadata: DocumentMetadata) => void,
-  ) => Unsubscribe;
-  readonly onStateChange: (
+  getDocSnapshot(): Promise<DocumentState<D>>;
+  getRecords<R extends Model>(model: R): RecordCollectionRef<R>;
+  onActivity(
+    callback: (docRef: DocumentRef<D>, event: ActivityEvent) => void,
+  ): Unsubscribe;
+  onMetadataChange(
+    callback: (docRef: DocumentRef<D>, metadata: DocumentMetadata) => void,
+  ): Unsubscribe;
+  onPresence(
+    callback: (docRef: DocumentRef<D>, event: PresenceEvent) => void,
+    options?: PresenceSubscriptionOptions,
+  ): Unsubscribe;
+  onStateChange(
     callback: (docRef: DocumentRef<D>) => void,
-  ) => Unsubscribe;
-  readonly withTransaction: (fn: () => void, description?: EditDescription) => void;
+  ): Unsubscribe;
+  updateCustomPresence<M extends Model = Model>(
+    model: M,
+    eventData: ModelData<M>,
+  ): void;
+  withTransaction(fn: () => void, description?: EditDescription): void;
 }

@@ -101,12 +101,12 @@ export class AuthModuleImpl implements AuthModule {
     });
   }
 
-  getCurrentUser(): UserRef | undefined {
-    const userId = this.#authService.getCurrentUserId();
-    if (!userId) {
-      return undefined;
+  getCurrentUser(allowUnverified = false): UserRef | undefined {
+    const userId = this.#authService.getCurrentUserId(allowUnverified);
+    if (userId != null) {
+      return createUserRef(this.app, userId);
     }
-    return createUserRef(this.app, userId);
+    return undefined;
   }
 
   async validateToken(): Promise<boolean> {

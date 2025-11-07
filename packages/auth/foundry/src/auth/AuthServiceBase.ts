@@ -59,8 +59,19 @@ export abstract class AuthServiceBase implements BaseAuthService {
     return this.getTokenOrUndefined() != null;
   }
 
-  getCurrentUserId(): string | undefined {
-    return this.isTokenValidated ? this.currentUserId : undefined;
+  getCurrentUserId(allowUnverified = false): string | undefined {
+    if (this.isTokenValidated) {
+      return this.currentUserId;
+    }
+
+    if (allowUnverified) {
+      const token = this.getTokenOrUndefined();
+      if (token != null) {
+        return parseJwtToken(token)?.userId;
+      }
+    }
+
+    return undefined;
   }
 
   abstract getTokenOrUndefined(): string | undefined;
