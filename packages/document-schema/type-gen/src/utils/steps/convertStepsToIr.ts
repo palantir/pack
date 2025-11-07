@@ -17,19 +17,19 @@
 import type * as P from "@palantir/pack.schema";
 import invariant from "tiny-invariant";
 import type {
-    IModelTypeKey,
-    IUnionVariantKey,
+  IModelTypeKey,
+  IUnionVariantKey,
 } from "../../lib/pack-docschema-api/pack-docschema-api";
 import type {
-    IFieldDef,
-    IRealTimeDocumentSchema,
-    IRecordDef,
-    IUnionDef,
+  IFieldDef,
+  IRealTimeDocumentSchema,
+  IRecordDef,
+  IUnionDef,
 } from "../../lib/pack-docschema-api/pack-docschema-ir";
 import {
-    IFieldTypeUnion,
-    IFieldValueUnion,
-    IModelDef,
+  IFieldTypeUnion,
+  IFieldValueUnion,
+  IModelDef,
 } from "../../lib/pack-docschema-api/pack-docschema-ir";
 import { assertNever } from "../assertNever.js";
 import { convertStepsToSchema } from "./convertStepsToSchema.js";

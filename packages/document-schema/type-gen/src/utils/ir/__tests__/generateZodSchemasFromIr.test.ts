@@ -17,11 +17,11 @@
 import path from "path";
 import { describe, expect, it } from "vitest";
 import type {
-    IFieldDef,
-    IModelDef,
-    IRealTimeDocumentSchema,
-    IRecordDef,
-    IUnionDef,
+  IFieldDef,
+  IModelDef,
+  IRealTimeDocumentSchema,
+  IRecordDef,
+  IUnionDef,
 } from "../../../lib/pack-docschema-api/pack-docschema-ir";
 import { generateZodSchemasFromIr } from "../generateZodSchemasFromIr.js";
 import { formatWithPrettier } from "./formatWithPrettier.js";

@@ -17,11 +17,11 @@
 import { createPlatformClient } from "@osdk/client";
 import type { CreateDocumentTypeRequest } from "@osdk/foundry.pack";
 import { DocumentTypes } from "@osdk/foundry.pack";
-import type { IRealTimeDocumentSchema } from "../../lib/pack-docschema-api/pack-docschema-ir";
 import { CommanderError } from "commander";
 import { consola } from "consola";
 import { readFileSync } from "fs";
 import { resolve } from "path";
+import type { IRealTimeDocumentSchema } from "../../lib/pack-docschema-api/pack-docschema-ir";
 
 interface DeployOptions {
   readonly ir: string;
