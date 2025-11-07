@@ -1,6 +1,6 @@
 {
   "name": "@palantir/pack.document-schema.model-types",
-  "version": "0.1.0-beta.3",
+  "version": "0.1.0",
   "description": "Minimal types supporting generated PACK schemas",
   "license": "Apache-2.0",
   "repository": {
