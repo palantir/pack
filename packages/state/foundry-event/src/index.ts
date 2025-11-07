@@ -16,7 +16,15 @@
 
 export { EventServiceCometD } from "./cometd/EventServiceCometD.js";
 export { createFoundryEventService, FoundryEventService } from "./FoundryEventService.js";
-export type { SyncSession } from "./FoundryEventService.js";
+export type {
+  CustomPresenceEvent,
+  DocumentPresenceChangeEvent,
+  PresenceCollaborativeUpdate,
+  PresencePublishMessage,
+  PresencePublishMessageCustom,
+  PresenceSubscriptionOptions,
+  SyncSession,
+} from "./FoundryEventService.js";
 export type {
   ChannelId,
   EventService,

@@ -16,11 +16,15 @@
 
 import type { Logger } from "@osdk/api";
 import type {
+  ActivityCollaborativeUpdate,
+  ClientId,
   DocumentEditDescription,
   DocumentPublishMessage,
   DocumentUpdateMessage,
   DocumentUpdateSubscriptionRequest,
+  UserId,
 } from "@osdk/foundry.pack";
+import { getAuthModule } from "@palantir/pack.auth";
 import { generateId, justOnce, type PackAppInternal } from "@palantir/pack.core";
 import {
   type DocumentId,
@@ -40,6 +44,46 @@ import type {
   TypedReceiveChannelId,
 } from "./types/EventService.js";
 
+// TODO: replace with @osdk/foundry.pack types when they land.
+export interface PresenceSubscriptionOptions {
+  readonly ignoreSelfUpdates?: boolean;
+}
+
+export interface PresencePublishMessageCustom {
+  readonly type: "custom";
+  readonly custom: {
+    userId: UserId;
+    clientId: ClientId;
+    eventData: any;
+  };
+}
+
+export type PresencePublishMessage = PresencePublishMessageCustom;
+
+export interface DocumentPresenceChangeEvent {
+  readonly type: "presenceChangeEvent";
+  readonly presenceChangeEvent: {
+    readonly userId: UserId;
+    readonly status: "PRESENT" | "NOT_PRESENT";
+  };
+}
+
+export interface CustomPresenceEvent {
+  readonly type: "customPresenceEvent";
+  readonly customPresenceEvent: {
+    readonly userId: UserId;
+    readonly clientId: ClientId;
+    readonly eventData: any;
+  };
+}
+export type PresenceCollaborativeUpdate = DocumentPresenceChangeEvent | CustomPresenceEvent;
+
+// TODO: presence api should have an eventType so we don't need extra wrapper here.
+interface PresencePublishMessageData {
+  readonly eventType: string; // model name
+  readonly eventData: unknown; // model data
+}
+
 const UPDATE_ORIGIN_REMOTE = "remote" as const;
 
 const getDocumentUpdatesChannelId = (
@@ -52,15 +96,32 @@ const getDocumentPublishChannelId = (
 ): TypedPublishChannelId<DocumentPublishMessage> =>
   `/document/${documentId}/publish` as TypedPublishChannelId<DocumentPublishMessage>;
 
+const getDocumentActivityChannelId = (
+  documentId: DocumentId,
+): TypedReceiveChannelId<ActivityCollaborativeUpdate> =>
+  `/document/${documentId}/activity` as TypedReceiveChannelId<ActivityCollaborativeUpdate>;
+
+const getDocumentPresenceChannelId = (
+  documentId: DocumentId,
+): TypedReceiveChannelId<PresenceCollaborativeUpdate> =>
+  `/document/${documentId}/presence` as TypedReceiveChannelId<PresenceCollaborativeUpdate>;
+
+const getDocumentPresencePublishChannelId = (
+  documentId: DocumentId,
+): TypedPublishChannelId<PresencePublishMessage> =>
+  `/document/${documentId}/presence-publish` as TypedPublishChannelId<PresencePublishMessage>;
+
 export interface SyncSession {
   readonly clientId: string;
   readonly documentId: DocumentId;
 }
 
 interface SyncSessionInternal extends SyncSession {
+  activitySubscriptionId?: SubscriptionId;
   documentSubscriptionId?: SubscriptionId;
   lastRevisionId?: number;
   localYDocUpdateHandler?: (update: Uint8Array, origin: unknown) => void;
+  presenceSubscriptionId?: SubscriptionId;
   yDoc: y.Doc;
 }
 
@@ -80,27 +141,37 @@ export class FoundryEventService {
     });
   }
 
+  private getOrCreateSession(documentId: DocumentId, yDoc?: y.Doc): SyncSessionInternal {
+    const sessionId = this.getSessionId(documentId);
+    let session = this.sessions.get(sessionId);
+
+    if (!session) {
+      session = {
+        activitySubscriptionId: undefined,
+        clientId: crypto.randomUUID(),
+        documentId,
+        documentSubscriptionId: undefined,
+        lastRevisionId: undefined,
+        localYDocUpdateHandler: undefined,
+        presenceSubscriptionId: undefined,
+        yDoc: yDoc ?? new y.Doc(),
+      };
+      this.sessions.set(sessionId, session);
+    }
+
+    return session;
+  }
+
   startDocumentSync(
     documentId: DocumentId,
     yDoc: y.Doc,
     onStatusChange: (status: Partial<DocumentSyncStatus>) => void,
   ): SyncSession {
-    const sessionId = this.getSessionId(documentId);
+    const session = this.getOrCreateSession(documentId, yDoc);
 
-    if (this.sessions.has(sessionId)) {
-      throw new Error(`Sync session already exists for document ${documentId}`);
+    if (session.documentSubscriptionId != null) {
+      throw new Error(`Document data sync already active for document ${documentId}`);
     }
-
-    const session: SyncSessionInternal = {
-      clientId: crypto.randomUUID(),
-      documentId,
-      documentSubscriptionId: undefined,
-      lastRevisionId: undefined,
-      localYDocUpdateHandler: undefined,
-      yDoc,
-    };
-
-    this.sessions.set(sessionId, session);
 
     const localYDocUpdateHandler = (update: Uint8Array, origin: unknown) => {
       if (origin === UPDATE_ORIGIN_REMOTE) {
@@ -187,6 +258,121 @@ export class FoundryEventService {
     };
   }
 
+  subscribeToActivityUpdates(
+    documentId: DocumentId,
+    callback: (event: ActivityCollaborativeUpdate) => void,
+  ): Promise<SubscriptionId> {
+    const session = this.getOrCreateSession(documentId);
+
+    const channelId = getDocumentActivityChannelId(documentId);
+
+    return this.eventService.subscribe(
+      channelId,
+      (event: ActivityCollaborativeUpdate) => {
+        this.logger.debug("Received activity event", {
+          docId: documentId,
+          event,
+        });
+        callback(event);
+      },
+    ).then(subscriptionId => {
+      session.activitySubscriptionId = subscriptionId;
+      return subscriptionId;
+    }).catch((e: unknown) => {
+      this.logger.error("Failed to subscribe to activity updates", e, {
+        docId: documentId,
+      });
+      throw new Error("Failed to subscribe to activity updates", { cause: e });
+    });
+  }
+
+  subscribeToPresenceUpdates(
+    documentId: DocumentId,
+    callback: (update: PresenceCollaborativeUpdate) => void,
+    options: PresenceSubscriptionOptions = {},
+  ): Promise<SubscriptionId> {
+    const { ignoreSelfUpdates = true } = options;
+    const session = this.getOrCreateSession(documentId);
+
+    const channelId = getDocumentPresenceChannelId(documentId);
+
+    return this.eventService.subscribe(
+      channelId,
+      (update: PresenceCollaborativeUpdate) => {
+        // TODO: api should provide clientId so we filter on our presence messages only,
+        // but allow apps to decide what they do with same-user-different-client messages ie
+        // from different tabs or devices.
+        const localUserId = getAuthModule(this.app).getCurrentUser(true)?.userId;
+        if (ignoreSelfUpdates && localUserId != null) {
+          switch (update.type) {
+            case "presenceChangeEvent":
+              if (update.presenceChangeEvent.userId === localUserId) {
+                return;
+              }
+              break;
+            case "customPresenceEvent":
+              if (update.customPresenceEvent.userId === localUserId) {
+                return;
+              }
+              break;
+            default:
+              update satisfies never;
+              break;
+          }
+        }
+
+        this.logger.debug("Received presence update", {
+          docId: documentId,
+          updateType: update.type,
+        });
+        callback(update);
+      },
+    ).then(subscriptionId => {
+      session.presenceSubscriptionId = subscriptionId;
+      return subscriptionId;
+    }).catch((e: unknown) => {
+      this.logger.error("Failed to subscribe to presence updates", e, {
+        docId: documentId,
+      });
+      throw new Error("Failed to subscribe to presence updates", { cause: e });
+    });
+  }
+
+  publishCustomPresence(
+    documentId: DocumentId,
+    eventType: string,
+    eventData: unknown,
+  ): Promise<void> {
+    const session = this.getOrCreateSession(documentId);
+    const channelId = getDocumentPresencePublishChannelId(documentId);
+
+    const messageData: PresencePublishMessageData = {
+      eventData,
+      eventType,
+    };
+    // TODO: maybe the session should hold userId
+    // Though would need better reconnection handling to ensure userId doesn't change.
+    const userId = getAuthModule(this.app).getCurrentUser(true)?.userId;
+    if (userId == null) {
+      throw new Error("Could not get current userId");
+    }
+
+    return this.eventService.publish(channelId, {
+      custom: {
+        clientId: session.clientId,
+        eventData: messageData,
+        // FIXME: why do we have to send this, we are authenticated
+        userId,
+      },
+      type: "custom",
+    }).catch((error: unknown) => {
+      this.logger.error("Failed to publish custom presence", error, {
+        docId: documentId,
+      });
+      throw error;
+    });
+  }
+
   stopDocumentSync(session: SyncSession): void {
     const sessionId = this.getSessionId(session.documentId);
     const internalSession = this.sessions.get(sessionId);
@@ -202,6 +388,14 @@ export class FoundryEventService {
     if (internalSession.localYDocUpdateHandler != null) {
       internalSession.yDoc.off("update", internalSession.localYDocUpdateHandler);
       internalSession.localYDocUpdateHandler = undefined;
+    }
+
+    if (internalSession.activitySubscriptionId) {
+      this.eventService.unsubscribe(internalSession.activitySubscriptionId);
+    }
+
+    if (internalSession.presenceSubscriptionId) {
+      this.eventService.unsubscribe(internalSession.presenceSubscriptionId);
     }
 
     if (internalSession.documentSubscriptionId) {

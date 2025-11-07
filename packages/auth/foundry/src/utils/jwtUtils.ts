@@ -17,17 +17,26 @@
 import type { UserId } from "@palantir/pack.auth";
 
 /**
- * Decode a Palantir-specific JWT claim that stores UUIDs as 16-byte arrays.
+ * Decode a Palantir-specific JWT claim that stores UUIDs as 16-byte arrays or base64 strings.
  * These are the sub, sid, jti, and org claims.
  */
 function maybeDecodeUuidClaim(value: unknown): string | undefined {
-  if (!Array.isArray(value)) {
-    return undefined;
+  if (typeof value === "string") {
+    try {
+      const decoded = atob(value);
+      if (decoded.length === 16) {
+        const bytes = Array.from(decoded, char => char.charCodeAt(0));
+        return decodeUuidBytes(bytes);
+      }
+    } catch {
+      return undefined;
+    }
   }
 
-  if (value.length === 16 && value.every(v => typeof v === "number")) {
-    // Convert 16-byte array to UUID string
-    return decodeUuidBytes(value);
+  if (Array.isArray(value)) {
+    if (value.length === 16 && value.every(v => typeof v === "number")) {
+      return decodeUuidBytes(value);
+    }
   }
 
   return undefined;

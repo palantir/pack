@@ -19,6 +19,7 @@
 import type { Logger } from "@osdk/api";
 import type { PackAppInternal, Unsubscribe } from "@palantir/pack.core";
 import {
+  type ActivityEvent,
   type DocumentId,
   type DocumentMetadata,
   type DocumentRef,
@@ -28,6 +29,7 @@ import {
   getMetadata,
   type Model,
   type ModelData,
+  type PresenceEvent,
   type RecordCollectionRef,
   type RecordId,
   type RecordRef,
@@ -534,6 +536,22 @@ export abstract class BaseYjsDocumentService<TDoc extends InternalYjsDoc = Inter
       }
     };
   }
+
+  abstract onActivity<T extends DocumentSchema>(
+    docRef: DocumentRef<T>,
+    callback: (docRef: DocumentRef<T>, event: ActivityEvent) => void,
+  ): Unsubscribe;
+
+  abstract onPresence<T extends DocumentSchema>(
+    docRef: DocumentRef<T>,
+    callback: (docRef: DocumentRef<T>, event: PresenceEvent) => void,
+  ): Unsubscribe;
+
+  abstract updateCustomPresence<M extends Model>(
+    docRef: DocumentRef,
+    model: M,
+    eventData: ModelData<M>,
+  ): void;
 
   readonly onStateChange = <T extends DocumentSchema>(
     docRef: DocumentRef<T>,

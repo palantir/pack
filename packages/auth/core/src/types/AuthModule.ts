@@ -32,8 +32,11 @@ export interface AuthModule {
   /**
    * Get the current user information.
    * Returns undefined if not authenticated or user data not available.
+   *
+   * @param allowUnverified - If true, will extract userId from token without validation.
+   *                          Defaults to false (requires validated token).
    */
-  readonly getCurrentUser: () => UserRef | undefined;
+  readonly getCurrentUser: (allowUnverified?: boolean) => UserRef | undefined;
 
   /**
    * Get an access token, automatically refreshing if needed.

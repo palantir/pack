@@ -24,7 +24,7 @@ import type { TokenChangeCallback } from "./TokenChange.js";
 export interface BaseAuthService {
   dispose(): void;
   getCurrentState(): AuthState;
-  getCurrentUserId(): string | undefined;
+  getCurrentUserId(allowUnverified?: boolean): string | undefined;
   getToken(): Promise<string>;
   getTokenOrUndefined(): string | undefined;
   getUserData(userId: string, force?: boolean): Promise<unknown>;

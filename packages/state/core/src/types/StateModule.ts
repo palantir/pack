@@ -21,6 +21,7 @@ import {
   type Unsubscribe,
 } from "@palantir/pack.core";
 import type {
+  ActivityEvent,
   DocumentId,
   DocumentMetadata,
   DocumentRef,
@@ -29,6 +30,8 @@ import type {
   EditDescription,
   Model,
   ModelData,
+  PresenceEvent,
+  PresenceSubscriptionOptions,
   RecordCollectionRef,
   RecordId,
   RecordRef,
@@ -74,15 +77,32 @@ export interface StateModule {
     docRef: DocumentRef<T>,
   ) => Promise<DocumentState<T>>;
 
+  readonly onActivity: <T extends DocumentSchema>(
+    docRef: DocumentRef<T>,
+    callback: (docRef: DocumentRef<T>, event: ActivityEvent) => void,
+  ) => Unsubscribe;
+
   readonly onMetadataChange: <T extends DocumentSchema>(
     docRef: DocumentRef<T>,
     cb: (docRef: DocumentRef<T>, metadata: DocumentMetadata) => void,
+  ) => Unsubscribe;
+
+  readonly onPresence: <T extends DocumentSchema>(
+    docRef: DocumentRef<T>,
+    callback: (docRef: DocumentRef<T>, event: PresenceEvent) => void,
+    options?: PresenceSubscriptionOptions,
   ) => Unsubscribe;
 
   readonly onStateChange: <T extends DocumentSchema>(
     docRef: DocumentRef<T>,
     cb: (docRef: DocumentRef<T>) => void,
   ) => Unsubscribe;
+
+  readonly updateCustomPresence: <M extends Model>(
+    docRef: DocumentRef,
+    model: M,
+    eventData: ModelData<M>,
+  ) => void;
 
   readonly getRecordSnapshot: <R extends Model>(
     recordRef: RecordRef<R>,
@@ -185,6 +205,13 @@ export class StateModuleImpl implements StateModule {
     return this.documentService.getDocumentSnapshot(docRef);
   }
 
+  onActivity<T extends DocumentSchema>(
+    docRef: DocumentRef<T>,
+    callback: (docRef: DocumentRef<T>, event: ActivityEvent) => void,
+  ): Unsubscribe {
+    return this.documentService.onActivity(docRef, callback);
+  }
+
   onMetadataChange<T extends DocumentSchema>(
     docRef: DocumentRef<T>,
     cb: (doc: DocumentRef<T>, metadata: DocumentMetadata) => void,
@@ -192,11 +219,27 @@ export class StateModuleImpl implements StateModule {
     return this.documentService.onMetadataChange(docRef, cb);
   }
 
+  onPresence<T extends DocumentSchema>(
+    docRef: DocumentRef<T>,
+    callback: (docRef: DocumentRef<T>, event: PresenceEvent) => void,
+    options?: PresenceSubscriptionOptions,
+  ): Unsubscribe {
+    return this.documentService.onPresence(docRef, callback, options);
+  }
+
   onStateChange<T extends DocumentSchema>(
     docRef: DocumentRef<T>,
     cb: (docRef: DocumentRef<T>) => void,
   ): Unsubscribe {
     return this.documentService.onStateChange(docRef, cb);
+  }
+
+  updateCustomPresence<M extends Model>(
+    docRef: DocumentRef,
+    model: M,
+    eventData: ModelData<M>,
+  ): void {
+    this.documentService.updateCustomPresence(docRef, model, eventData);
   }
 
   async getRecordSnapshot<R extends Model>(

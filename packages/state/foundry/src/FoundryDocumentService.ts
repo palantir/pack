@@ -16,13 +16,19 @@
 
 import type { CreateDocumentRequest, DocumentSecurity } from "@osdk/foundry.pack";
 import { Documents } from "@osdk/foundry.pack";
-import type { ModuleConfigTuple, PackAppInternal } from "@palantir/pack.core";
+import type { ModuleConfigTuple, PackAppInternal, Unsubscribe } from "@palantir/pack.core";
 import type {
+  ActivityEvent,
   DocumentId,
   DocumentMetadata,
   DocumentRef,
   DocumentSchema,
+  Model,
+  ModelData,
+  PresenceEvent,
+  PresenceSubscriptionOptions,
 } from "@palantir/pack.document-schema.model-types";
+import { getMetadata } from "@palantir/pack.document-schema.model-types";
 import type { DocumentService, InternalYjsDoc } from "@palantir/pack.state.core";
 import {
   BaseYjsDocumentService,
@@ -32,6 +38,7 @@ import {
 import type { FoundryEventService, SyncSession } from "@palantir/pack.state.foundry-event";
 import { createFoundryEventService } from "@palantir/pack.state.foundry-event";
 import type * as y from "yjs";
+import { getActivityEvent, getPresenceEvent } from "./eventMappers.js";
 
 const DEFAULT_USE_PREVIEW_API = true;
 
@@ -192,6 +199,80 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
       this.eventService.stopDocumentSync(internalDoc.syncSession);
       internalDoc.syncSession = undefined;
     }
+  }
+
+  onActivity<T extends DocumentSchema>(
+    docRef: DocumentRef<T>,
+    callback: (docRef: DocumentRef<T>, event: ActivityEvent) => void,
+  ): Unsubscribe {
+    let unsubscribed = false;
+    const unsubscribeFn = () => {
+      unsubscribed = true;
+    };
+
+    this.eventService.subscribeToActivityUpdates(
+      docRef.id,
+      foundryEvent => {
+        if (!unsubscribed) {
+          const localEvent = getActivityEvent(docRef.schema, foundryEvent);
+          if (localEvent != null) {
+            callback(docRef, localEvent);
+          }
+        }
+      },
+    ).catch((e: unknown) => {
+      this.logger.error("Failed to subscribe to activity updates", e, {
+        docId: docRef.id,
+      });
+    });
+
+    return unsubscribeFn;
+  }
+
+  onPresence<T extends DocumentSchema>(
+    docRef: DocumentRef<T>,
+    callback: (docRef: DocumentRef<T>, event: PresenceEvent) => void,
+    options?: PresenceSubscriptionOptions,
+  ): Unsubscribe {
+    let unsubscribed = false;
+    const unsubscribeFn = () => {
+      unsubscribed = true;
+    };
+
+    this.eventService.subscribeToPresenceUpdates(
+      docRef.id,
+      foundryUpdate => {
+        if (!unsubscribed) {
+          const localEvent = getPresenceEvent(docRef.schema, foundryUpdate);
+          callback(docRef, localEvent);
+        }
+      },
+      options,
+    ).catch((e: unknown) => {
+      this.logger.error("Failed to subscribe to presence updates", e, {
+        docId: docRef.id,
+      });
+    });
+
+    return unsubscribeFn;
+  }
+
+  updateCustomPresence<M extends Model>(
+    docRef: DocumentRef,
+    model: M,
+    eventData: ModelData<M>,
+  ): void {
+    const eventType = getMetadata(model).name;
+
+    void this.eventService.publishCustomPresence(
+      docRef.id,
+      eventType,
+      eventData,
+    ).catch((e: unknown) => {
+      this.logger.error("Failed to publish custom presence", e, {
+        docId: docRef.id,
+      });
+    });
   }
 }
 

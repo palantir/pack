@@ -14,6 +14,14 @@
  * limitations under the License.
  */
 
+export { ActivityEventDataType } from "./types/ActivityEvent.js";
+export type {
+  ActivityEvent,
+  ActivityEventData,
+  ActivityEventDataCustom,
+  ActivityEventDataUnknown,
+  ActivityEventId,
+} from "./types/ActivityEvent.js";
 export type {
   DiscretionaryPrincipal,
   DiscretionaryPrincipal_All,
@@ -22,7 +30,7 @@ export type {
   DocumentMetadata,
 } from "./types/DocumentMetadata.js";
 export { DocumentRefBrand } from "./types/DocumentRef.js";
-export type { DocumentId, DocumentRef } from "./types/DocumentRef.js";
+export type { DocumentId, DocumentRef, PresenceSubscriptionOptions } from "./types/DocumentRef.js";
 export type {
   DocumentSchema,
   DocumentSchemaMetadata,
@@ -36,6 +44,15 @@ export { ExternalRefType } from "./types/Model.js";
 export type { EditDescription, Model, ModelData, ModelMetadata } from "./types/Model.js";
 export { ObjectRefBrand } from "./types/ObjectRef.js";
 export type { ObjectId, ObjectRef } from "./types/ObjectRef.js";
+export { PresenceEventDataType } from "./types/PresenceEvent.js";
+export type {
+  PresenceEvent,
+  PresenceEventData,
+  PresenceEventDataArrived,
+  PresenceEventDataCustom,
+  PresenceEventDataDeparted,
+  PresenceEventUnknown,
+} from "./types/PresenceEvent.js";
 export { RecordCollectionRefBrand } from "./types/RecordCollectionRef.js";
 export type { RecordCollectionRef } from "./types/RecordCollectionRef.js";
 export { RecordRefBrand } from "./types/RecordRef.js";
