@@ -1,0 +1,61 @@
+{
+  "name": "@palantir/pack.sdkgen",
+  "version": "0.0.1-beta.1",
+  "description": "Generic Typescript SDK generator CLI",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/palantir/pack.git"
+  },
+  "bin": {
+    "sdkgen": "./bin/cli.ts"
+  },
+  "exports": {
+    ".": {
+      "types": "./build/types/index.d.ts",
+      "default": "./build/esm/index.js"
+    }
+  },
+  "scripts": {
+    "clean": "rimraf .turbo build dist lib test-output *.tgz tsconfig.tsbuildinfo",
+    "lint": "eslint ./src && dprint check --config $(find-up dprint.json) --allow-no-files",
+    "lint:fix": "eslint ./src --fix && dprint fmt --config $(find-up dprint.json) --allow-no-files",
+    "test": "vitest run --passWithNoTests -u",
+    "test:watch": "vitest --passWithNoTests",
+    "transpile": "tsc",
+    "transpileEsm": "monorepo-transpile -f esm -m normal -t node",
+    "transpileTypes": "tsc --emitDeclarationOnly",
+    "typecheck": "tsc --noEmit --emitDeclarationOnly false"
+  },
+  "dependencies": {
+    "bun": "catalog:",
+    "commander": "catalog:",
+    "consola": "^3.2.3",
+    "ejs": "^3.1.10",
+    "find-up": "^8.0.0",
+    "fs-extra": "^11.3.2",
+    "glob": "^11.0.3",
+    "inquirer": "^12.9.6"
+  },
+  "devDependencies": {
+    "@palantir/pack.monorepo.tsconfig": "workspace:~",
+    "@types/ejs": "^3.1.5",
+    "@types/fs-extra": "^11.0.4",
+    "@types/inquirer": "^9.0.9",
+    "@types/node": "catalog:",
+    "prettier": "^3.6.2",
+    "rimraf": "^6.0.1",
+    "tslib": "^2.8.1",
+    "typescript": "^5.9.2"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "files": [
+    "bin",
+    "build"
+  ],
+  "main": "./build/esm/index.js",
+  "types": "./build/types/index.d.ts",
+  "type": "module"
+}

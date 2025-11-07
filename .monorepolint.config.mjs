@@ -294,7 +294,8 @@ const archetypeConfig = archetypes(
   .addArchetype(
     "cli",
     [
-      "@palantir/pack.document-schema.type-gen"
+      "@palantir/pack.document-schema.type-gen",
+      "@palantir/pack.sdkgen",
     ],
     { isCli: true },
   )
@@ -314,7 +315,9 @@ const archetypeConfig = archetypes(
     ],
     {},
   )
-  .addArchetype("sdkgen-template", [], { isSdkgenTemplate: true });
+  .addArchetype("sdkgen-template", [
+    "@palantir/pack.sdkgen.demo-template",
+  ], { isSdkgenTemplate: true });
 
 const allLocalDepsMustNotBePrivate = Rules.createRuleFactory({
   name: "allLocalDepsMustNotBePrivate",
