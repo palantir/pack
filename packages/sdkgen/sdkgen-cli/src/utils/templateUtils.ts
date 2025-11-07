@@ -60,6 +60,7 @@ export function createTemplateUtils(): TemplateUtils {
 
     pluralize: (str: string) => {
       if (str.match(/s$/)) return str;
+      /* cspell:disable-next-line */
       if (str.match(/[^aeiou]y$/)) return str.replace(/y$/, "ies");
       if (str.match(/(s|x|z|ch|sh)$/)) return str + "es";
       return str + "s";

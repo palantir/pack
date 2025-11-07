@@ -110,8 +110,9 @@ const cspell = {
     {
       filename: ["**/*.md"],
       words: [
-        // used in an example
-        "myapp"
+        // used in examples
+        "myapp",
+        "myorg"
       ]
     },
     {

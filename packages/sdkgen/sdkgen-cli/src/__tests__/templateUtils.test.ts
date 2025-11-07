@@ -72,7 +72,9 @@ describe("templateUtils", () => {
     it("should singularize words", () => {
       expect(utils.singularize("users")).toBe("user");
       expect(utils.singularize("cities")).toBe("city");
+      /* cspell:disable-next-line */
       expect(utils.singularize("boxes")).toBe("boxe");
+      /* cspell:disable-next-line */
       expect(utils.singularize("churches")).toBe("churche");
     });
   });
