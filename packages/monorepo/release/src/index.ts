@@ -55,6 +55,7 @@ import { checkIfClean as isGitClean, setupUser } from "./gitUtils.js";
 import { runTagRelease } from "./runTagRelease.js";
 import type { GithubContext } from "./runVersion.js";
 import { runVersion } from "./runVersion.js";
+import { runVersionCommit } from "./runVersionCommit.js";
 import { simulateMinorBump } from "./simulateMinorBump.js";
 import { setupOctokit } from "./util/setupOctokit.js";
 
@@ -96,7 +97,7 @@ async function getContext(
     .options({
       cwd: { type: "string", description: "Change working directory" },
       mode: {
-        choices: ["version", "simulateMinorBump", "tag-version"],
+        choices: ["version", "version-commit", "simulateMinorBump", "tag-version"],
         default: "version",
       },
       title: { type: "string", description: "Custom pr title" },
@@ -108,7 +109,6 @@ async function getContext(
       },
       repo: {
         type: "string",
-        demandOption: true,
         description: "Repo to push to (format: org/name)",
       },
       setupGitUser: {
@@ -124,7 +124,10 @@ async function getContext(
     .parseAsync();
 
   if (args.mode === "tag-version") {
-    const context = await getContext(args);
+    if (!args.repo) {
+      throw new FailedWithUserMessage("--repo is required for tag-version mode");
+    }
+    const context = await getContext(args as typeof args & { repo: string });
 
     await runTagRelease(context, args.commitSha);
     return;
@@ -146,8 +149,6 @@ async function getContext(
     );
   }
 
-  const context = await getContext(args);
-
   const { changesets } = await readChangesetState();
 
   const hasChangesets = changesets.length !== 0;
@@ -161,6 +162,24 @@ async function getContext(
     return;
   }
 
+  if (args.mode === "version-commit") {
+    if (!hasChangesets) {
+      consola.info("No changesets found");
+      return;
+    }
+    if (!hasNonEmptyChangesets) {
+      consola.info("All changesets are empty");
+      return;
+    }
+
+    await runVersionCommit({
+      cwd: args.cwd,
+      commitMessage: args.commitMessage,
+    });
+
+    return;
+  }
+
   if (args.mode === "version") {
     if (!hasChangesets) {
       consola.info("No changesets found; not creating PR");
@@ -170,6 +189,11 @@ async function getContext(
       consola.info("All changesets are empty; not creating PR");
       return;
     }
+
+    if (!args.repo) {
+      throw new FailedWithUserMessage("--repo is required for version mode");
+    }
+    const context = await getContext(args as typeof args & { repo: string });
 
     await runVersion({
       prTitle: args.title,
