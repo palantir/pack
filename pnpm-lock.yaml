@@ -669,6 +669,9 @@ importers:
         specifier: ^11.3.2
         version: 11.3.2
     devDependencies:
+      '@palantir/pack.monorepo.tsconfig':
+        specifier: workspace:~
+        version: link:../../monorepo/tsconfig
       '@palantir/pack.sdkgen':
         specifier: workspace:*
         version: link:../sdkgen-cli
@@ -678,6 +681,9 @@ importers:
       '@types/node':
         specifier: 'catalog:'
         version: 20.19.19
+      consola:
+        specifier: ^3.2.3
+        version: 3.4.2
       rimraf:
         specifier: ^6.0.1
         version: 6.0.1

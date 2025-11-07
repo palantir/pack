@@ -1,9 +1,12 @@
 {
   "name": "@palantir/pack.sdkgen.pack-template",
-  "private": true,
-  "version": "0.0.1",
+  "version": "0.0.1-beta.1",
   "description": "PACK SDK template for generating types and Zod schemas from YAML",
-  "license": "UNLICENSED",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/palantir/pack.git"
+  },
   "exports": {
     ".": {
       "browser": "./build/browser/index.js",
@@ -27,8 +30,8 @@
   "scripts": {
     "build": "pnpm transpile",
     "clean": "rimraf .turbo build dist lib test-output *.tgz tsconfig.tsbuildinfo",
-    "lint": "eslint ./src ; dprint check --config $(find-up dprint.json) --allow-no-files",
-    "lint:fix": "eslint ./src --fix ; dprint fmt --config $(find-up dprint.json) --allow-no-files",
+    "lint": "eslint ./src && dprint check --config $(find-up dprint.json) --allow-no-files",
+    "lint:fix": "eslint ./src --fix && dprint fmt --config $(find-up dprint.json) --allow-no-files",
     "test": "vitest run --passWithNoTests -u",
     "test:watch": "vitest --passWithNoTests",
     "transpile": "tsc",
@@ -43,13 +46,18 @@
     "fs-extra": "^11.3.2"
   },
   "devDependencies": {
+    "@palantir/pack.monorepo.tsconfig": "workspace:~",
     "@palantir/pack.sdkgen": "workspace:*",
     "@types/fs-extra": "^11.0.4",
     "@types/node": "catalog:",
+    "consola": "^3.2.3",
     "rimraf": "^6.0.1",
     "tslib": "^2.8.1",
     "typescript": "^5.9.2",
     "vitest": "^3.2.4"
+  },
+  "publishConfig": {
+    "access": "public"
   },
   "files": [
     "build/",

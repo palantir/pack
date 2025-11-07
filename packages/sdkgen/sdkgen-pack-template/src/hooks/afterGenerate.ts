@@ -1,4 +1,21 @@
+/*
+ * Copyright 2025 Palantir Technologies, Inc. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 import { spawnSync } from "child_process";
+import { consola } from "consola";
 import fs from "fs-extra";
 import path from "path";
 
@@ -18,7 +35,7 @@ export default async function afterGenerate(context: HookContext): Promise<void>
 
     if (await fs.pathExists(copiedSchemaPath)) {
       try {
-        console.log("Generating TypeScript types from YAML schema...");
+        consola.log("Generating TypeScript types from YAML schema...");
 
         // Find the first YAML file in the schema directory
         const yamlFiles = await fs.readdir(copiedSchemaPath);
@@ -49,7 +66,7 @@ export default async function afterGenerate(context: HookContext): Promise<void>
             );
           }
 
-          console.log("Generating Zod schemas from YAML schema...");
+          consola.log("Generating Zod schemas from YAML schema...");
           const zodResult = spawnSync(
             "pnpm",
             [
@@ -71,7 +88,7 @@ export default async function afterGenerate(context: HookContext): Promise<void>
             throw new Error(`Zod schema generation failed with exit code ${zodResult.status}`);
           }
 
-          console.log("Generating Model constants from YAML schema...");
+          consola.log("Generating Model constants from YAML schema...");
           const modelsResult = spawnSync(
             "pnpm",
             [
@@ -97,12 +114,12 @@ export default async function afterGenerate(context: HookContext): Promise<void>
             );
           }
         } else {
-          console.log("No YAML schema files found in schema directory");
+          consola.log("No YAML schema files found in schema directory");
         }
 
-        console.log("Type, Zod schema, and Model constants generation complete!");
+        consola.log("Type, Zod schema, and Model constants generation complete!");
       } catch (error) {
-        console.error(
+        consola.error(
           `Could not generate types: ${error instanceof Error ? error.message : String(error)}`,
         );
       }
