@@ -1,0 +1,114 @@
+import { spawnSync } from "child_process";
+import fs from "fs-extra";
+import path from "path";
+
+interface HookContext {
+  outputPath: string;
+  schema: unknown;
+  schemaPath?: string;
+  options: { dryRun?: boolean; skipInstall?: boolean };
+}
+
+export default async function afterGenerate(context: HookContext): Promise<void> {
+  const { outputPath, schemaPath, options } = context;
+
+  if (!options.dryRun && schemaPath) {
+    // Check if schema was provided and copied to output
+    const copiedSchemaPath = path.join(outputPath, "schema");
+
+    if (await fs.pathExists(copiedSchemaPath)) {
+      try {
+        console.log("Generating TypeScript types from YAML schema...");
+
+        // Find the first YAML file in the schema directory
+        const yamlFiles = await fs.readdir(copiedSchemaPath);
+        const yamlFile = yamlFiles.find(f => f.endsWith(".yaml") || f.endsWith(".yml"));
+
+        if (yamlFile) {
+          const schemaFile = path.join(copiedSchemaPath, yamlFile);
+
+          // Use pnpm to run the type-gen CLI
+          const typesResult = spawnSync(
+            "pnpm",
+            [
+              "exec",
+              "type-gen",
+              "steps",
+              "types",
+              "-i",
+              copiedSchemaPath,
+              "-o",
+              path.join(outputPath, "src", "types.ts"),
+            ],
+            { stdio: "inherit", cwd: outputPath },
+          );
+
+          if (typesResult.status !== 0) {
+            throw new Error(
+              `Type generation failed with exit code ${typesResult.status ?? "unknown"}`,
+            );
+          }
+
+          console.log("Generating Zod schemas from YAML schema...");
+          const zodResult = spawnSync(
+            "pnpm",
+            [
+              "exec",
+              "type-gen",
+              "steps",
+              "zod",
+              "--type-import-path",
+              "./types.js",
+              "-i",
+              schemaFile,
+              "-o",
+              path.join(outputPath, "src", "schema.ts"),
+            ],
+            { stdio: "inherit", cwd: outputPath },
+          );
+
+          if (zodResult.status !== 0) {
+            throw new Error(`Zod schema generation failed with exit code ${zodResult.status}`);
+          }
+
+          console.log("Generating Model constants from YAML schema...");
+          const modelsResult = spawnSync(
+            "pnpm",
+            [
+              "exec",
+              "type-gen",
+              "steps",
+              "models",
+              "--type-import-path",
+              "./types.js",
+              "--schema-import-path",
+              "./schema.js",
+              "-i",
+              schemaFile,
+              "-o",
+              path.join(outputPath, "src", "models.ts"),
+            ],
+            { stdio: "inherit", cwd: outputPath },
+          );
+
+          if (modelsResult.status !== 0) {
+            throw new Error(
+              `Model constants generation failed with exit code ${modelsResult.status}`,
+            );
+          }
+        } else {
+          console.log("No YAML schema files found in schema directory");
+        }
+
+        console.log("Type, Zod schema, and Model constants generation complete!");
+      } catch (error) {
+        console.error(
+          `Could not generate types: ${error instanceof Error ? error.message : String(error)}`,
+        );
+      }
+    }
+  }
+
+  // Note: We don't install dependencies or run prettier here
+  // The CLI handles dependency installation if --skip-install is not set
+}

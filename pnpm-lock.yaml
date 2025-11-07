@@ -660,6 +660,37 @@ importers:
         specifier: ^5.9.2
         version: 5.9.3
 
+  packages/sdkgen/sdkgen-pack-template:
+    dependencies:
+      '@palantir/pack.document-schema.type-gen':
+        specifier: workspace:*
+        version: link:../../document-schema/type-gen
+      fs-extra:
+        specifier: ^11.3.2
+        version: 11.3.2
+    devDependencies:
+      '@palantir/pack.sdkgen':
+        specifier: workspace:*
+        version: link:../sdkgen-cli
+      '@types/fs-extra':
+        specifier: ^11.0.4
+        version: 11.0.4
+      '@types/node':
+        specifier: 'catalog:'
+        version: 20.19.19
+      rimraf:
+        specifier: ^6.0.1
+        version: 6.0.1
+      tslib:
+        specifier: ^2.8.1
+        version: 2.8.1
+      typescript:
+        specifier: ^5.9.2
+        version: 5.9.3
+      vitest:
+        specifier: ^3.2.4
+        version: 3.2.4(@types/node@20.19.19)(happy-dom@18.0.1)(yaml@2.8.1)
+
   packages/state/core:
     dependencies:
       '@osdk/api':

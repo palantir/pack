@@ -317,6 +317,7 @@ const archetypeConfig = archetypes(
   )
   .addArchetype("sdkgen-template", [
     "@palantir/pack.sdkgen.demo-template",
+    "@palantir/pack.sdkgen.pack-template",
   ], { isSdkgenTemplate: true });
 
 const allLocalDepsMustNotBePrivate = Rules.createRuleFactory({
