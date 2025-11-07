@@ -63,17 +63,24 @@ export async function createCommand(
     // Prompt user for additional configuration
     let answers: Record<string, unknown> = {};
 
-    // Load config from file if provided
+    // Load config from file or object if provided
     if (options.config) {
-      try {
-        const configPath = path.resolve(options.config);
-        const configContent = await fs.readFile(configPath, "utf-8");
-        answers = JSON.parse(configContent) as Record<string, unknown>;
-        logger.debug(`Using config from ${configPath}: ${JSON.stringify(answers)}`);
-      } catch (error) {
-        throw new Error(
-          `Failed to load config file: ${error instanceof Error ? error.message : String(error)}`,
-        );
+      if (typeof options.config === "string") {
+        // Load from file path
+        try {
+          const configPath = path.resolve(options.config);
+          const configContent = await fs.readFile(configPath, "utf-8");
+          answers = JSON.parse(configContent) as Record<string, unknown>;
+          logger.debug(`Using config from ${configPath}: ${JSON.stringify(answers)}`);
+        } catch (error) {
+          throw new Error(
+            `Failed to load config file: ${error instanceof Error ? error.message : String(error)}`,
+          );
+        }
+      } else {
+        // Use provided object directly
+        answers = options.config;
+        logger.debug(`Using config object: ${JSON.stringify(answers)}`);
       }
     }
 

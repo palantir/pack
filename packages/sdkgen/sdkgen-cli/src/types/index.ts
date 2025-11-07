@@ -84,7 +84,7 @@ export interface TemplateUtils {
 }
 
 export interface CreateCommandOptions {
-  readonly config?: string;
+  readonly config?: string | Record<string, unknown>;
   readonly dryRun?: boolean;
   readonly nonInteractive?: boolean;
   readonly overwrite?: boolean;

@@ -19,7 +19,6 @@ import path from "path";
 import { fileURLToPath } from "url";
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { createCommand } from "../commands/create.js";
-import * as prompts from "../utils/prompts.js";
 import type { PackageJson } from "./types/testTypes.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -53,13 +52,6 @@ describe("createCommand", () => {
     const templatePath = path.resolve(packageRoot, "../sdkgen-demo-template");
     const schemaPath = path.join(__dirname, "fixtures", "test-schema.json");
 
-    // Mock prompts to provide answers
-    vi.spyOn(prompts, "promptUser").mockResolvedValue({
-      greeting: "Hello from test!",
-      author: "Test Suite",
-      license: "MIT",
-    });
-
     // Change to test directory to create project there
     const originalCwd = process.cwd();
     process.chdir(testOutputDir);
@@ -71,6 +63,11 @@ describe("createCommand", () => {
         skipInstall: true,
         verbose: false,
         dryRun: false,
+        config: {
+          greeting: "Hello from test!",
+          author: "Test Suite",
+          license: "MIT",
+        },
       });
 
       // Verify the SDK was created
@@ -100,12 +97,6 @@ describe("createCommand", () => {
     const outputPath = path.join(testOutputDir, projectName);
     const templatePath = path.resolve(__dirname, "../../templates/default");
 
-    // Mock prompts to provide answers
-    vi.spyOn(prompts, "promptUser").mockResolvedValue({
-      description: "SDK without schema",
-      author: "No Schema Author",
-    });
-
     const originalCwd = process.cwd();
     process.chdir(testOutputDir);
 
@@ -115,6 +106,10 @@ describe("createCommand", () => {
         skipInstall: true,
         verbose: false,
         dryRun: false,
+        config: {
+          description: "SDK without schema",
+          author: "No Schema Author",
+        },
       });
 
       expect(await fs.pathExists(outputPath)).toBe(true);
@@ -134,11 +129,6 @@ describe("createCommand", () => {
     const outputPath = path.join(testOutputDir, projectName);
     const templatePath = path.resolve(__dirname, "../../templates/default");
 
-    vi.spyOn(prompts, "promptUser").mockResolvedValue({
-      description: "Dry run SDK",
-      author: "Dry Run Author",
-    });
-
     const originalCwd = process.cwd();
     process.chdir(testOutputDir);
 
@@ -148,6 +138,10 @@ describe("createCommand", () => {
         skipInstall: true,
         verbose: false,
         dryRun: true,
+        config: {
+          description: "Dry run SDK",
+          author: "Dry Run Author",
+        },
       });
 
       // In dry-run mode, directory should not be created
