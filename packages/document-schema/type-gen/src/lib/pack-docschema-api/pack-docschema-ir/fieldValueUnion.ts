@@ -25,72 +25,62 @@ import type { IFieldValueString } from "./fieldValueString";
 import type { IFieldValueText } from "./fieldValueText";
 import type { IFieldValueUnmanagedJson } from "./fieldValueUnmanagedJson";
 import type { IFieldValueUserRef } from "./fieldValueUserRef";
+
 export interface IFieldValueUnion_Datetime {
   readonly "datetime": IFieldValueDatetime;
   readonly "type": "datetime";
 }
+
 export interface IFieldValueUnion_DocRef {
   readonly "docRef": IFieldValueDocumentRef;
   readonly "type": "docRef";
 }
+
 export interface IFieldValueUnion_Double {
   readonly "double": IFieldValueDouble;
   readonly "type": "double";
 }
+
 export interface IFieldValueUnion_Integer {
   readonly "integer": IFieldValueInteger;
   readonly "type": "integer";
 }
+
 export interface IFieldValueUnion_MediaRef {
   readonly "mediaRef": IFieldValueMediaRef;
   readonly "type": "mediaRef";
 }
+
 export interface IFieldValueUnion_ModelRef {
   readonly "modelRef": IFieldValueModelRef;
   readonly "type": "modelRef";
 }
+
 export interface IFieldValueUnion_Object {
   readonly "object": IFieldValueObjectRef;
   readonly "type": "object";
 }
+
 export interface IFieldValueUnion_String {
   readonly "string": IFieldValueString;
   readonly "type": "string";
 }
+
 export interface IFieldValueUnion_Text {
   readonly "text": IFieldValueText;
   readonly "type": "text";
 }
+
 export interface IFieldValueUnion_UnmanagedJson {
   readonly "unmanagedJson": IFieldValueUnmanagedJson;
   readonly "type": "unmanagedJson";
 }
+
 export interface IFieldValueUnion_UserRef {
   readonly "userRef": IFieldValueUserRef;
   readonly "type": "userRef";
 }
-declare function isDatetime(obj: IFieldValueUnion): obj is IFieldValueUnion_Datetime;
-declare function datetime(obj: IFieldValueDatetime): IFieldValueUnion_Datetime;
-declare function isDocRef(obj: IFieldValueUnion): obj is IFieldValueUnion_DocRef;
-declare function docRef(obj: IFieldValueDocumentRef): IFieldValueUnion_DocRef;
-declare function isDouble(obj: IFieldValueUnion): obj is IFieldValueUnion_Double;
-declare function double(obj: IFieldValueDouble): IFieldValueUnion_Double;
-declare function isInteger(obj: IFieldValueUnion): obj is IFieldValueUnion_Integer;
-declare function integer(obj: IFieldValueInteger): IFieldValueUnion_Integer;
-declare function isMediaRef(obj: IFieldValueUnion): obj is IFieldValueUnion_MediaRef;
-declare function mediaRef(obj: IFieldValueMediaRef): IFieldValueUnion_MediaRef;
-declare function isModelRef(obj: IFieldValueUnion): obj is IFieldValueUnion_ModelRef;
-declare function modelRef(obj: IFieldValueModelRef): IFieldValueUnion_ModelRef;
-declare function isObject(obj: IFieldValueUnion): obj is IFieldValueUnion_Object;
-declare function object(obj: IFieldValueObjectRef): IFieldValueUnion_Object;
-declare function isString(obj: IFieldValueUnion): obj is IFieldValueUnion_String;
-declare function string(obj: IFieldValueString): IFieldValueUnion_String;
-declare function isText(obj: IFieldValueUnion): obj is IFieldValueUnion_Text;
-declare function text(obj: IFieldValueText): IFieldValueUnion_Text;
-declare function isUnmanagedJson(obj: IFieldValueUnion): obj is IFieldValueUnion_UnmanagedJson;
-declare function unmanagedJson(obj: IFieldValueUnmanagedJson): IFieldValueUnion_UnmanagedJson;
-declare function isUserRef(obj: IFieldValueUnion): obj is IFieldValueUnion_UserRef;
-declare function userRef(obj: IFieldValueUserRef): IFieldValueUnion_UserRef;
+
 export type IFieldValueUnion =
   | IFieldValueUnion_Datetime
   | IFieldValueUnion_DocRef
@@ -103,6 +93,7 @@ export type IFieldValueUnion =
   | IFieldValueUnion_Text
   | IFieldValueUnion_UnmanagedJson
   | IFieldValueUnion_UserRef;
+
 export interface IFieldValueUnionVisitor<T> {
   readonly "datetime": (obj: IFieldValueDatetime) => T;
   readonly "docRef": (obj: IFieldValueDocumentRef) => T;
@@ -117,8 +108,166 @@ export interface IFieldValueUnionVisitor<T> {
   readonly "userRef": (obj: IFieldValueUserRef) => T;
   readonly "unknown": (obj: IFieldValueUnion) => T;
 }
-declare function visit<T>(obj: IFieldValueUnion, visitor: IFieldValueUnionVisitor<T>): T;
-export declare const IFieldValueUnion: {
+
+function isDatetime(obj: IFieldValueUnion): obj is IFieldValueUnion_Datetime {
+  return (obj.type === "datetime");
+}
+
+function datetime(obj: IFieldValueDatetime): IFieldValueUnion_Datetime {
+  return {
+    datetime: obj,
+    type: "datetime",
+  };
+}
+
+function isDocRef(obj: IFieldValueUnion): obj is IFieldValueUnion_DocRef {
+  return (obj.type === "docRef");
+}
+
+function docRef(obj: IFieldValueDocumentRef): IFieldValueUnion_DocRef {
+  return {
+    docRef: obj,
+    type: "docRef",
+  };
+}
+
+function isDouble(obj: IFieldValueUnion): obj is IFieldValueUnion_Double {
+  return (obj.type === "double");
+}
+
+function double(obj: IFieldValueDouble): IFieldValueUnion_Double {
+  return {
+    double: obj,
+    type: "double",
+  };
+}
+
+function isInteger(obj: IFieldValueUnion): obj is IFieldValueUnion_Integer {
+  return (obj.type === "integer");
+}
+
+function integer(obj: IFieldValueInteger): IFieldValueUnion_Integer {
+  return {
+    integer: obj,
+    type: "integer",
+  };
+}
+
+function isMediaRef(obj: IFieldValueUnion): obj is IFieldValueUnion_MediaRef {
+  return (obj.type === "mediaRef");
+}
+
+function mediaRef(obj: IFieldValueMediaRef): IFieldValueUnion_MediaRef {
+  return {
+    mediaRef: obj,
+    type: "mediaRef",
+  };
+}
+
+function isModelRef(obj: IFieldValueUnion): obj is IFieldValueUnion_ModelRef {
+  return (obj.type === "modelRef");
+}
+
+function modelRef(obj: IFieldValueModelRef): IFieldValueUnion_ModelRef {
+  return {
+    modelRef: obj,
+    type: "modelRef",
+  };
+}
+
+function isObject(obj: IFieldValueUnion): obj is IFieldValueUnion_Object {
+  return (obj.type === "object");
+}
+
+function object(obj: IFieldValueObjectRef): IFieldValueUnion_Object {
+  return {
+    object: obj,
+    type: "object",
+  };
+}
+
+function isString(obj: IFieldValueUnion): obj is IFieldValueUnion_String {
+  return (obj.type === "string");
+}
+
+function string(obj: IFieldValueString): IFieldValueUnion_String {
+  return {
+    string: obj,
+    type: "string",
+  };
+}
+
+function isText(obj: IFieldValueUnion): obj is IFieldValueUnion_Text {
+  return (obj.type === "text");
+}
+
+function text(obj: IFieldValueText): IFieldValueUnion_Text {
+  return {
+    text: obj,
+    type: "text",
+  };
+}
+
+function isUnmanagedJson(obj: IFieldValueUnion): obj is IFieldValueUnion_UnmanagedJson {
+  return (obj.type === "unmanagedJson");
+}
+
+function unmanagedJson(obj: IFieldValueUnmanagedJson): IFieldValueUnion_UnmanagedJson {
+  return {
+    unmanagedJson: obj,
+    type: "unmanagedJson",
+  };
+}
+
+function isUserRef(obj: IFieldValueUnion): obj is IFieldValueUnion_UserRef {
+  return (obj.type === "userRef");
+}
+
+function userRef(obj: IFieldValueUserRef): IFieldValueUnion_UserRef {
+  return {
+    userRef: obj,
+    type: "userRef",
+  };
+}
+
+function visit<T>(obj: IFieldValueUnion, visitor: IFieldValueUnionVisitor<T>): T {
+  if (isDatetime(obj)) {
+    return visitor.datetime(obj.datetime);
+  }
+  if (isDocRef(obj)) {
+    return visitor.docRef(obj.docRef);
+  }
+  if (isDouble(obj)) {
+    return visitor.double(obj.double);
+  }
+  if (isInteger(obj)) {
+    return visitor.integer(obj.integer);
+  }
+  if (isMediaRef(obj)) {
+    return visitor.mediaRef(obj.mediaRef);
+  }
+  if (isModelRef(obj)) {
+    return visitor.modelRef(obj.modelRef);
+  }
+  if (isObject(obj)) {
+    return visitor.object(obj.object);
+  }
+  if (isString(obj)) {
+    return visitor.string(obj.string);
+  }
+  if (isText(obj)) {
+    return visitor.text(obj.text);
+  }
+  if (isUnmanagedJson(obj)) {
+    return visitor.unmanagedJson(obj.unmanagedJson);
+  }
+  if (isUserRef(obj)) {
+    return visitor.userRef(obj.userRef);
+  }
+  return visitor.unknown(obj);
+}
+
+export const IFieldValueUnion: {
   isDatetime: typeof isDatetime;
   datetime: typeof datetime;
   isDocRef: typeof isDocRef;
@@ -142,5 +291,28 @@ export declare const IFieldValueUnion: {
   isUserRef: typeof isUserRef;
   userRef: typeof userRef;
   visit: typeof visit;
+} = {
+  isDatetime: isDatetime,
+  datetime: datetime,
+  isDocRef: isDocRef,
+  docRef: docRef,
+  isDouble: isDouble,
+  double: double,
+  isInteger: isInteger,
+  integer: integer,
+  isMediaRef: isMediaRef,
+  mediaRef: mediaRef,
+  isModelRef: isModelRef,
+  modelRef: modelRef,
+  isObject: isObject,
+  object: object,
+  isString: isString,
+  string: string,
+  isText: isText,
+  text: text,
+  isUnmanagedJson: isUnmanagedJson,
+  unmanagedJson: unmanagedJson,
+  isUserRef: isUserRef,
+  userRef: userRef,
+  visit: visit,
 };
-export {};

@@ -17,35 +17,33 @@
 import type { IFieldTypeCollection } from "./fieldTypeCollection";
 import type { IFieldTypeMap } from "./fieldTypeMap";
 import type * as IFieldValueUnion from "./fieldValueUnion";
+
 export interface IFieldTypeUnion_Array {
   readonly "array": IFieldTypeCollection;
   readonly "type": "array";
 }
+
 export interface IFieldTypeUnion_Map {
   readonly "map": IFieldTypeMap;
   readonly "type": "map";
 }
+
 export interface IFieldTypeUnion_Set {
   readonly "set": IFieldTypeCollection;
   readonly "type": "set";
 }
+
 export interface IFieldTypeUnion_Value {
   readonly "value": IFieldValueUnion.IFieldValueUnion;
   readonly "type": "value";
 }
-declare function isArray(obj: IFieldTypeUnion): obj is IFieldTypeUnion_Array;
-declare function array(obj: IFieldTypeCollection): IFieldTypeUnion_Array;
-declare function isMap(obj: IFieldTypeUnion): obj is IFieldTypeUnion_Map;
-declare function map(obj: IFieldTypeMap): IFieldTypeUnion_Map;
-declare function isSet(obj: IFieldTypeUnion): obj is IFieldTypeUnion_Set;
-declare function set(obj: IFieldTypeCollection): IFieldTypeUnion_Set;
-declare function isValue(obj: IFieldTypeUnion): obj is IFieldTypeUnion_Value;
-declare function value(obj: IFieldValueUnion.IFieldValueUnion): IFieldTypeUnion_Value;
+
 export type IFieldTypeUnion =
   | IFieldTypeUnion_Array
   | IFieldTypeUnion_Map
   | IFieldTypeUnion_Set
   | IFieldTypeUnion_Value;
+
 export interface IFieldTypeUnionVisitor<T> {
   readonly "array": (obj: IFieldTypeCollection) => T;
   readonly "map": (obj: IFieldTypeMap) => T;
@@ -53,8 +51,68 @@ export interface IFieldTypeUnionVisitor<T> {
   readonly "value": (obj: IFieldValueUnion.IFieldValueUnion) => T;
   readonly "unknown": (obj: IFieldTypeUnion) => T;
 }
-declare function visit<T>(obj: IFieldTypeUnion, visitor: IFieldTypeUnionVisitor<T>): T;
-export declare const IFieldTypeUnion: {
+
+function isArray(obj: IFieldTypeUnion): obj is IFieldTypeUnion_Array {
+  return (obj.type === "array");
+}
+
+function array(obj: IFieldTypeCollection): IFieldTypeUnion_Array {
+  return {
+    array: obj,
+    type: "array",
+  };
+}
+
+function isMap(obj: IFieldTypeUnion): obj is IFieldTypeUnion_Map {
+  return (obj.type === "map");
+}
+
+function map(obj: IFieldTypeMap): IFieldTypeUnion_Map {
+  return {
+    map: obj,
+    type: "map",
+  };
+}
+
+function isSet(obj: IFieldTypeUnion): obj is IFieldTypeUnion_Set {
+  return (obj.type === "set");
+}
+
+function set(obj: IFieldTypeCollection): IFieldTypeUnion_Set {
+  return {
+    set: obj,
+    type: "set",
+  };
+}
+
+function isValue(obj: IFieldTypeUnion): obj is IFieldTypeUnion_Value {
+  return (obj.type === "value");
+}
+
+function value(obj: IFieldValueUnion.IFieldValueUnion): IFieldTypeUnion_Value {
+  return {
+    value: obj,
+    type: "value",
+  };
+}
+
+function visit<T>(obj: IFieldTypeUnion, visitor: IFieldTypeUnionVisitor<T>): T {
+  if (isArray(obj)) {
+    return visitor.array(obj.array);
+  }
+  if (isMap(obj)) {
+    return visitor.map(obj.map);
+  }
+  if (isSet(obj)) {
+    return visitor.set(obj.set);
+  }
+  if (isValue(obj)) {
+    return visitor.value(obj.value);
+  }
+  return visitor.unknown(obj);
+}
+
+export const IFieldTypeUnion: {
   isArray: typeof isArray;
   array: typeof array;
   isMap: typeof isMap;
@@ -64,5 +122,14 @@ export declare const IFieldTypeUnion: {
   isValue: typeof isValue;
   value: typeof value;
   visit: typeof visit;
+} = {
+  isArray: isArray,
+  array: array,
+  isMap: isMap,
+  map: map,
+  isSet: isSet,
+  set: set,
+  isValue: isValue,
+  value: value,
+  visit: visit,
 };
-export {};
