@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-import type { IFieldTypeUnion } from "@palantir/pack-docschema-api/pack-docschema-ir";
 import { describe, expect, it } from "vitest";
+import type { IFieldTypeUnion } from "../../../lib/pack-docschema-api/pack-docschema-ir";
 import { convertStepsToIr } from "../convertStepsToIr.js";
 import type { MigrationStep } from "../parseMigrationSteps.js";
 

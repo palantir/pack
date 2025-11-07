@@ -17,7 +17,7 @@
 import { createPlatformClient } from "@osdk/client";
 import type { CreateDocumentTypeRequest } from "@osdk/foundry.pack";
 import { DocumentTypes } from "@osdk/foundry.pack";
-import type { IRealTimeDocumentSchema } from "@palantir/pack-docschema-api/pack-docschema-ir";
+import type { IRealTimeDocumentSchema } from "../../lib/pack-docschema-api/pack-docschema-ir";
 import { CommanderError } from "commander";
 import { consola } from "consola";
 import { readFileSync } from "fs";
