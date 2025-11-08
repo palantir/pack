@@ -14,23 +14,23 @@
  * limitations under the License.
  */
 
+import type * as P from "@palantir/pack.schema";
+import invariant from "tiny-invariant";
 import type {
   IModelTypeKey,
   IUnionVariantKey,
-} from "@palantir/pack-docschema-api/pack-docschema-api";
+} from "../../lib/pack-docschema-api/pack-docschema-api";
 import type {
   IFieldDef,
   IRealTimeDocumentSchema,
   IRecordDef,
   IUnionDef,
-} from "@palantir/pack-docschema-api/pack-docschema-ir";
+} from "../../lib/pack-docschema-api/pack-docschema-ir";
 import {
   IFieldTypeUnion,
   IFieldValueUnion,
   IModelDef,
-} from "@palantir/pack-docschema-api/pack-docschema-ir";
-import type * as P from "@palantir/pack.schema";
-import invariant from "tiny-invariant";
+} from "../../lib/pack-docschema-api/pack-docschema-ir";
 import { assertNever } from "../assertNever.js";
 import { convertStepsToSchema } from "./convertStepsToSchema.js";
 import type { MigrationStep } from "./parseMigrationSteps.js";

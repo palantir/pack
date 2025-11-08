@@ -14,15 +14,15 @@
  * limitations under the License.
  */
 
+import path from "path";
+import { describe, expect, it } from "vitest";
 import type {
   IFieldDef,
   IModelDef,
   IRealTimeDocumentSchema,
   IRecordDef,
   IUnionDef,
-} from "@palantir/pack-docschema-api/pack-docschema-ir";
-import path from "path";
-import { describe, expect, it } from "vitest";
+} from "../../../lib/pack-docschema-api/pack-docschema-ir";
 import { generateZodSchemasFromIr } from "../generateZodSchemasFromIr.js";
 import { formatWithPrettier } from "./formatWithPrettier.js";
 

@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-import type { IRealTimeDocumentSchema } from "@palantir/pack-docschema-api/pack-docschema-ir";
 import { CommanderError } from "commander";
 import { consola } from "consola";
 import { readFileSync, writeFileSync } from "fs";
 import { resolve } from "path";
+import type { IRealTimeDocumentSchema } from "../../lib/pack-docschema-api/pack-docschema-ir";
 import { generateZodSchemasFromIr } from "../../utils/ir/generateZodSchemasFromIr.js";
 
 interface ZodGenOptions {

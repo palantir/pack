@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+import consola from "consola";
+import invariant from "tiny-invariant";
 import type {
   IFieldDef,
   IFieldTypeUnion,
@@ -22,9 +24,7 @@ import type {
   IRealTimeDocumentSchema,
   IRecordDef,
   IUnionDef,
-} from "@palantir/pack-docschema-api/pack-docschema-ir";
-import consola from "consola";
-import invariant from "tiny-invariant";
+} from "../../lib/pack-docschema-api/pack-docschema-ir";
 import { assertNever } from "../assertNever.js";
 import { formatVariantName } from "../formatVariantName.js";
 

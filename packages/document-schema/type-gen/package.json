@@ -30,7 +30,6 @@
   "dependencies": {
     "@osdk/client": "catalog:",
     "@osdk/foundry.pack": "catalog:",
-    "@palantir/pack-docschema-api": "file:../../../libs/palantir-pack-docschema-api-500.88.0-14-gbc8cb97.tgz",
     "@palantir/pack.schema": "workspace:*",
     "bun": "catalog:",
     "commander": "catalog:",
