@@ -54,7 +54,8 @@
   },
   "files": [
     "bin",
-    "build"
+    "build",
+    "templates"
   ],
   "main": "./build/esm/index.js",
   "types": "./build/types/index.d.ts",
