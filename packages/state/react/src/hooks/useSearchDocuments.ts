@@ -44,11 +44,6 @@ export function useSearchDocuments<T extends DocumentSchema>(
 
   const search = useCallback(
     async (options?: SearchOptions) => {
-      if (!app.state.searchDocuments) {
-        setError(new Error("searchDocuments is not supported by this document service"));
-        return;
-      }
-
       setIsLoading(true);
       setError(undefined);
 

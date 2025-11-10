@@ -96,7 +96,7 @@ export interface DocumentService {
     schema: T,
   ) => Promise<DocumentRef<T>>;
 
-  readonly searchDocuments?: <T extends DocumentSchema>(
+  readonly searchDocuments: <T extends DocumentSchema>(
     documentTypeName: string,
     schema: T,
     options?: {

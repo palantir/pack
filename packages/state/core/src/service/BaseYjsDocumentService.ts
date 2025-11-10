@@ -127,6 +127,14 @@ export abstract class BaseYjsDocumentService<TDoc extends InternalYjsDoc = Inter
     metadata: DocumentMetadata,
     schema: T,
   ) => Promise<DocumentRef<T>>;
+  abstract readonly searchDocuments: <T extends DocumentSchema>(
+    documentTypeName: string,
+    schema: T,
+    options?: {
+      documentName?: string;
+      limit?: number;
+    },
+  ) => Promise<Array<DocumentRef<T>>>;
 
   readonly createDocRef = <const T extends DocumentSchema>(
     id: DocumentId,

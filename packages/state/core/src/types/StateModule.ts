@@ -73,7 +73,7 @@ export interface StateModule {
     schema: T,
   ) => Promise<DocumentRef<T>>;
 
-  readonly searchDocuments?: <T extends DocumentSchema>(
+  readonly searchDocuments: <T extends DocumentSchema>(
     documentTypeName: string,
     schema: T,
     options?: {
@@ -216,9 +216,6 @@ export class StateModuleImpl implements StateModule {
       limit?: number;
     },
   ): Promise<Array<DocumentRef<T>>> {
-    if (!this.documentService.searchDocuments) {
-      throw new Error("searchDocuments is not supported by this document service");
-    }
     return this.documentService.searchDocuments(documentTypeName, schema, options);
   }
 
