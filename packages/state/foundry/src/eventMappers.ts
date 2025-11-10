@@ -17,6 +17,8 @@
 import type {
   ActivityCollaborativeUpdate,
   ActivityEvent as FoundryActivityEvent,
+  CustomPresenceEvent,
+  DocumentPresenceChangeEvent,
 } from "@osdk/foundry.pack";
 import { invalidUserRef } from "@palantir/pack.auth";
 import type {
@@ -94,38 +96,38 @@ export function getPresenceEvent(
   documentSchema: DocumentSchema,
   foundryUpdate: PresenceCollaborativeUpdate,
 ): PresenceEvent {
-  switch (foundryUpdate.type) {
-    case "presenceChangeEvent": {
-      const { userId, status } = foundryUpdate.presenceChangeEvent;
-      const eventData = status === "PRESENT" ? ARRIVED_DATA : DEPARTED_DATA;
-      return {
-        eventData,
-        userId: userId as UserId,
-      };
-    }
-
-    case "customPresenceEvent": {
-      const { userId, eventData } = foundryUpdate.customPresenceEvent;
-      const presenceEventData = getPresenceEventData(documentSchema, eventData);
-      return {
-        eventData: presenceEventData,
-        userId: userId as UserId,
-      };
-    }
-    default: {
-      foundryUpdate satisfies never;
-      const unknownUpdate = foundryUpdate as Record<string, unknown>;
-      return {
-        eventData: {
-          rawData: foundryUpdate,
-          rawType: typeof unknownUpdate.type === "string" ? unknownUpdate.type : "unknown",
-          type: PresenceEventDataType.UNKNOWN,
-        },
-        // FIXME: try and pull userId from message? Or just fix the platform types to have useful wrappers.
-        userId: invalidUserRef().userId,
-      };
-    }
+  if (foundryUpdate.type === "presenceChangeEvent") {
+    const event = foundryUpdate as { type: "presenceChangeEvent" } & DocumentPresenceChangeEvent;
+    const { userId, status } = event;
+    const eventData = status === "PRESENT" ? ARRIVED_DATA : DEPARTED_DATA;
+    return {
+      eventData,
+      userId: userId as UserId,
+    };
   }
+
+  if (foundryUpdate.type === "customPresenceEvent") {
+    const event = foundryUpdate as { type: "customPresenceEvent" } & CustomPresenceEvent;
+    const { userId, eventData } = event;
+    const presenceEventData = getPresenceEventData(documentSchema, eventData);
+    return {
+      eventData: presenceEventData,
+      userId: userId as UserId,
+    };
+  }
+
+  // Unknown event type
+  foundryUpdate satisfies never;
+  const unknownUpdate = foundryUpdate as Record<string, unknown>;
+  return {
+    eventData: {
+      rawData: foundryUpdate,
+      rawType: typeof unknownUpdate.type === "string" ? unknownUpdate.type : "unknown",
+      type: PresenceEventDataType.UNKNOWN,
+    },
+    // FIXME: try and pull userId from message? Or just fix the platform types to have useful wrappers.
+    userId: invalidUserRef().userId,
+  };
 }
 
 function getPresenceEventData(
