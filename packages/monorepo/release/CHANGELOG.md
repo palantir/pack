@@ -1,5 +1,7 @@
 # @palantir/pack.monorepo.release
 
+## 0.10.2
+
 ## 0.10.1
 
 ## 0.10.0
