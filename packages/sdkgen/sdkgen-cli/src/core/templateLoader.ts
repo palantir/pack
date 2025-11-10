@@ -35,11 +35,11 @@ export class TemplateLoader {
       resolvedPath = path.resolve(templatePath);
       this.logger.debug(`Loading local template from: ${resolvedPath}`);
     } else if (templatePath === "default") {
-      // Use built-in default template (we'll create this later)
-      resolvedPath = path.join(
-        path.dirname(import.meta.url.replace("file://", "")),
-        "../../templates/default",
-      );
+      // Use built-in default template
+      // Find package root by looking for package.json
+      const currentFile = import.meta.url.replace("file://", "");
+      const packageRoot = await this.findPackageRoot(path.dirname(currentFile));
+      resolvedPath = path.join(packageRoot, "templates/default");
       this.logger.debug(`Loading built-in default template`);
     } else {
       // Try to resolve as an npm package
@@ -70,6 +70,19 @@ export class TemplateLoader {
       config,
       templateDir: resolvedPath,
     };
+  }
+
+  private async findPackageRoot(startDir: string): Promise<string> {
+    const packageJsonPath = await findUp(
+      "package.json",
+      { cwd: startDir },
+    );
+
+    if (!packageJsonPath) {
+      throw new Error("Could not find package.json");
+    }
+
+    return path.dirname(packageJsonPath);
   }
 
   private async resolveNodeModule(moduleName: string): Promise<string> {

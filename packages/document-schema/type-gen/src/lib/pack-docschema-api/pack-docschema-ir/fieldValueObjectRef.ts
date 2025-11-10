@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-import type { IInterfaceTypeRid } from "../pack-docschema-api/interfaceTypeRid";
-import type { IObjectTypeRid } from "../pack-docschema-api/objectTypeRid";
+import type { IInterfaceTypeRid } from "../pack-docschema-api/interfaceTypeRid.js";
+import type { IObjectTypeRid } from "../pack-docschema-api/objectTypeRid.js";
 export interface IFieldValueObjectRef {
   readonly "interfaceTypeRids": ReadonlyArray<IInterfaceTypeRid>;
   readonly "objectTypeRids": ReadonlyArray<IObjectTypeRid>;

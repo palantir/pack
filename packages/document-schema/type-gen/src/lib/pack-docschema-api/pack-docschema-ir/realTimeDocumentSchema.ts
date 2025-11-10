@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-import type { IModelTypeKey } from "../pack-docschema-api/modelTypeKey";
-import type { ISchemaVersion } from "../pack-docschema-api/schemaVersion";
-import type * as IModelDef from "./modelDef";
+import type { IModelTypeKey } from "../pack-docschema-api/modelTypeKey.js";
+import type { ISchemaVersion } from "../pack-docschema-api/schemaVersion.js";
+import type * as IModelDef from "./modelDef.js";
 export interface IRealTimeDocumentSchema {
   readonly "name": string;
   readonly "description": string;

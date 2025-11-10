@@ -1,5 +1,17 @@
 # @palantir/pack.document-schema.type-gen
 
+## 0.0.3
+
+### Patch Changes
+
+- fcb7a68: Fix CLIs to use node
+
+## 0.0.2
+
+### Patch Changes
+
+- aa031e0: Fix dependency
+
 ## 0.0.1
 
 ### Patch Changes

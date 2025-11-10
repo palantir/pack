@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import type { ISchemaVersion } from "../pack-docschema-api/schemaVersion";
+import type { ISchemaVersion } from "../pack-docschema-api/schemaVersion.js";
 export interface ISchemaMeta {
   readonly "addedIn": ISchemaVersion;
   readonly "deprecated"?: ISchemaVersion | null;

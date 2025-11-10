@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-import type { IFieldKey } from "../pack-docschema-api/fieldKey";
-import type { IModelTypeKey } from "../pack-docschema-api/modelTypeKey";
-import type { IUnionVariantKey } from "../pack-docschema-api/unionVariantKey";
-import type { ISchemaMeta } from "./schemaMeta";
+import type { IFieldKey } from "../pack-docschema-api/fieldKey.js";
+import type { IModelTypeKey } from "../pack-docschema-api/modelTypeKey.js";
+import type { IUnionVariantKey } from "../pack-docschema-api/unionVariantKey.js";
+import type { ISchemaMeta } from "./schemaMeta.js";
 export interface IUnionDef {
   readonly "key": IModelTypeKey;
   readonly "discriminant": IFieldKey;
