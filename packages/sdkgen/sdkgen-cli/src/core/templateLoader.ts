@@ -16,6 +16,7 @@
 
 import { findUp } from "find-up";
 import fs from "fs-extra";
+import { findPackageJSON } from "module";
 import path from "path";
 import { pathToFileURL } from "url";
 import type { TemplateConfig } from "../types/index.js";
@@ -87,25 +88,7 @@ export class TemplateLoader {
 
   private async resolveNodeModule(moduleName: string): Promise<string> {
     try {
-      const require = (await import("module")).createRequire(import.meta.url);
-      const modulePath = require.resolve(moduleName);
-      const startDir = path.dirname(modulePath);
-
-      const packageJsonPath = await findUp(
-        async directory => {
-          const pkgPath = path.join(directory, "package.json");
-          try {
-            const pkg = await fs.readJson(pkgPath) as { name?: string };
-            if (pkg.name === moduleName) {
-              return pkgPath;
-            }
-          } catch {
-            return undefined;
-          }
-          return undefined;
-        },
-        { cwd: startDir },
-      );
+      const packageJsonPath = findPackageJSON(moduleName, import.meta.url);
 
       if (packageJsonPath) {
         return path.dirname(packageJsonPath);

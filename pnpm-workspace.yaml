@@ -10,7 +10,7 @@ catalog:
   '@osdk/oauth': ~1.4.0
   '@osdk/react': ~0.6.0
   '@osdk/shared.client2': ~1.0.0
-  '@types/node': ^20.19.17
+  '@types/node': ^22.11.0
   bun: ^1.3.0
   commander: ^14.0.0
   cometd: ^7.0.18
