@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-import type { IRecordDef } from "./recordDef";
-import type { IUnionDef } from "./unionDef";
+import type { IRecordDef } from "./recordDef.js";
+import type { IUnionDef } from "./unionDef.js";
 
 export interface IModelDef_Record {
   readonly "record": IRecordDef;

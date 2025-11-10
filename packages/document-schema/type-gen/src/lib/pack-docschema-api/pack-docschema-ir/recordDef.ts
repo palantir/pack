@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import type { IModelTypeKey } from "../pack-docschema-api/modelTypeKey";
+import type { IModelTypeKey } from "../pack-docschema-api/modelTypeKey.js";
 import type { IFieldDef } from "./fieldDef.js";
 import type { ISchemaMeta } from "./schemaMeta.js";
 export interface IRecordDef {

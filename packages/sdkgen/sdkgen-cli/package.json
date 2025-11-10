@@ -8,7 +8,8 @@
     "url": "https://github.com/palantir/pack.git"
   },
   "bin": {
-    "sdkgen": "./bin/cli.ts"
+    "sdkgen-bun": "./bin/cli.ts",
+    "sdkgen": "./bin/cli-node.js"
   },
   "exports": {
     ".": {
