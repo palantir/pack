@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import type * as IFieldValueUnion from "./fieldValueUnion";
+import type * as IFieldValueUnion from "./fieldValueUnion.js";
 export interface IFieldTypeCollection {
   readonly "allowNullValue": boolean;
   readonly "value": IFieldValueUnion.IFieldValueUnion;

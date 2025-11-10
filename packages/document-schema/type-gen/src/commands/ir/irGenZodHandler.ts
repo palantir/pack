@@ -18,7 +18,7 @@ import { CommanderError } from "commander";
 import { consola } from "consola";
 import { readFileSync, writeFileSync } from "fs";
 import { resolve } from "path";
-import type { IRealTimeDocumentSchema } from "../../lib/pack-docschema-api/pack-docschema-ir";
+import type { IRealTimeDocumentSchema } from "../../lib/pack-docschema-api/pack-docschema-ir/index.js";
 import { generateZodSchemasFromIr } from "../../utils/ir/generateZodSchemasFromIr.js";
 
 interface ZodGenOptions {

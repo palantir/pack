@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-import type { IFieldKey } from "../pack-docschema-api/fieldKey";
-import type * as IFieldTypeUnion from "./fieldTypeUnion";
-import type { ISchemaMeta } from "./schemaMeta";
+import type { IFieldKey } from "../pack-docschema-api/fieldKey.js";
+import type * as IFieldTypeUnion from "./fieldTypeUnion.js";
+import type { ISchemaMeta } from "./schemaMeta.js";
 export interface IFieldDef {
   readonly "key": IFieldKey;
   readonly "name": string;

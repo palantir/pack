@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import type { IModelTypeKey } from "../pack-docschema-api/modelTypeKey";
+import type { IModelTypeKey } from "../pack-docschema-api/modelTypeKey.js";
 export interface IFieldValueModelRef {
   readonly "modelTypes": ReadonlyArray<IModelTypeKey>;
 }

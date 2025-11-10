@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-import type { IFieldTypeCollection } from "./fieldTypeCollection";
-import type { IFieldTypeMap } from "./fieldTypeMap";
-import type * as IFieldValueUnion from "./fieldValueUnion";
+import type { IFieldTypeCollection } from "./fieldTypeCollection.js";
+import type { IFieldTypeMap } from "./fieldTypeMap.js";
+import type * as IFieldValueUnion from "./fieldValueUnion.js";
 
 export interface IFieldTypeUnion_Array {
   readonly "array": IFieldTypeCollection;

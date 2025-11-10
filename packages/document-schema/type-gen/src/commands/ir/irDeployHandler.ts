@@ -21,7 +21,7 @@ import { CommanderError } from "commander";
 import { consola } from "consola";
 import { readFileSync } from "fs";
 import { resolve } from "path";
-import type { IRealTimeDocumentSchema } from "../../lib/pack-docschema-api/pack-docschema-ir";
+import type { IRealTimeDocumentSchema } from "../../lib/pack-docschema-api/pack-docschema-ir/index.js";
 
 interface DeployOptions {
   readonly ir: string;

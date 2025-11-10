@@ -22,7 +22,7 @@ import type {
   IRealTimeDocumentSchema,
   IRecordDef,
   IUnionDef,
-} from "../../../lib/pack-docschema-api/pack-docschema-ir";
+} from "../../../lib/pack-docschema-api/pack-docschema-ir/index.js";
 import { generateZodSchemasFromIr } from "../generateZodSchemasFromIr.js";
 import { formatWithPrettier } from "./formatWithPrettier.js";
 

@@ -24,7 +24,7 @@ import type {
   IRealTimeDocumentSchema,
   IRecordDef,
   IUnionDef,
-} from "../../lib/pack-docschema-api/pack-docschema-ir";
+} from "../../lib/pack-docschema-api/pack-docschema-ir/index.js";
 import { assertNever } from "../assertNever.js";
 import { formatVariantName } from "../formatVariantName.js";
 

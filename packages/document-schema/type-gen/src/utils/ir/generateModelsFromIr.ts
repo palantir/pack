@@ -15,7 +15,7 @@
  */
 
 import invariant from "tiny-invariant";
-import type { IRealTimeDocumentSchema } from "../../lib/pack-docschema-api/pack-docschema-ir";
+import type { IRealTimeDocumentSchema } from "../../lib/pack-docschema-api/pack-docschema-ir/index.js";
 import { formatVariantName } from "../formatVariantName.js";
 
 export interface ModelGeneratorOptions {

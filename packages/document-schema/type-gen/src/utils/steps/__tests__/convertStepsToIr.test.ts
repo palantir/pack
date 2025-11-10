@@ -15,7 +15,7 @@
  */
 
 import { describe, expect, it } from "vitest";
-import type { IFieldTypeUnion } from "../../../lib/pack-docschema-api/pack-docschema-ir";
+import type { IFieldTypeUnion } from "../../../lib/pack-docschema-api/pack-docschema-ir/index.js";
 import { convertStepsToIr } from "../convertStepsToIr.js";
 import type { MigrationStep } from "../parseMigrationSteps.js";
 
