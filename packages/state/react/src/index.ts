@@ -22,3 +22,4 @@ export { useOnDocActivityEvents } from "./hooks/useOnDocActivityEvents.js";
 export { useOnDocPresenceEvents } from "./hooks/useOnDocPresenceEvents.js";
 export { useRecord } from "./hooks/useRecord.js";
 export { useRecords } from "./hooks/useRecords.js";
+export { useSearchDocuments } from "./hooks/useSearchDocuments.js";

@@ -104,6 +104,33 @@ class InMemoryDocumentService extends BaseYjsDocumentService {
     return Promise.resolve(docRef);
   };
 
+  readonly searchDocuments = <T extends DocumentSchema>(
+    documentTypeName: string,
+    schema: T,
+    options?: {
+      documentName?: string;
+      limit?: number;
+    },
+  ): Promise<Array<DocumentRef<T>>> => {
+    const results: Array<DocumentRef<T>> = [];
+    const { documentName, limit } = options ?? {};
+
+    for (const [docId, internalDoc] of this.documents.entries()) {
+      if (internalDoc.metadata?.documentTypeName === documentTypeName) {
+        if (documentName && !internalDoc.metadata.name.includes(documentName)) {
+          continue;
+        }
+        results.push(createDocRef(this.app, docId as DocumentId, schema));
+
+        if (limit && results.length >= limit) {
+          break;
+        }
+      }
+    }
+
+    return Promise.resolve(results);
+  };
+
   // Lifecycle method implementations
   protected onMetadataSubscriptionOpened(
     internalDoc: InternalYjsDoc,

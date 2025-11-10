@@ -73,6 +73,15 @@ export interface StateModule {
     schema: T,
   ) => Promise<DocumentRef<T>>;
 
+  readonly searchDocuments?: <T extends DocumentSchema>(
+    documentTypeName: string,
+    schema: T,
+    options?: {
+      documentName?: string;
+      limit?: number;
+    },
+  ) => Promise<Array<DocumentRef<T>>>;
+
   readonly getDocumentSnapshot: <T extends DocumentSchema>(
     docRef: DocumentRef<T>,
   ) => Promise<DocumentState<T>>;
@@ -197,6 +206,20 @@ export class StateModuleImpl implements StateModule {
     schema: T,
   ): Promise<DocumentRef<T>> {
     return this.documentService.createDocument(metadata, schema);
+  }
+
+  async searchDocuments<T extends DocumentSchema>(
+    documentTypeName: string,
+    schema: T,
+    options?: {
+      documentName?: string;
+      limit?: number;
+    },
+  ): Promise<Array<DocumentRef<T>>> {
+    if (!this.documentService.searchDocuments) {
+      throw new Error("searchDocuments is not supported by this document service");
+    }
+    return this.documentService.searchDocuments(documentTypeName, schema, options);
   }
 
   async getDocumentSnapshot<T extends DocumentSchema>(
