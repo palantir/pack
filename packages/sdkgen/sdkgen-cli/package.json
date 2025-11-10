@@ -1,6 +1,6 @@
 {
   "name": "@palantir/pack.sdkgen",
-  "version": "0.0.2",
+  "version": "0.1.0-beta.0",
   "description": "Generic Typescript SDK generator CLI",
   "license": "Apache-2.0",
   "repository": {

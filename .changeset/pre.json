@@ -21,5 +21,8 @@
     "@palantir/pack.state.foundry-event": "0.0.1",
     "@palantir/pack.state.react": "0.0.1"
   },
-  "changesets": []
+  "changesets": [
+    "icy-boats-drop",
+    "mighty-camels-hear"
+  ]
 }
