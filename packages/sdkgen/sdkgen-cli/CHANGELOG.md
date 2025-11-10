@@ -1,5 +1,11 @@
 # @palantir/pack.sdkgen
 
+## 0.1.0-beta.0
+
+### Minor Changes
+
+- 19126c1: Fix usage of templates from npm dependencies
+
 ## 0.0.2
 
 ### Patch Changes
