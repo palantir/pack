@@ -27,6 +27,7 @@ const REPOSITORY_URL = "https://github.com/palantir/pack.git";
  * @property {boolean} [isCli]
  * @property {boolean} [isSdkgenTemplate]
  * @property {boolean} [isBuildTools]
+ * @property {boolean} [hasSdkgenTemplates]
  */
 
 const archetypeConfig = archetypes(
@@ -235,7 +236,9 @@ const archetypeConfig = archetypes(
                     default: "./build/esm/index.js",
                   },
                 },
-                files: ["bin", "build"],
+                files: rules.hasSdkgenTemplates
+                  ? ["bin", "build", "templates"]
+                  : ["bin", "build"],
                 main: "./build/esm/index.js",
                 types: "./build/types/index.d.ts",
               }
@@ -295,9 +298,15 @@ const archetypeConfig = archetypes(
     "cli",
     [
       "@palantir/pack.document-schema.type-gen",
-      "@palantir/pack.sdkgen",
     ],
     { isCli: true },
+  )
+  .addArchetype(
+    "sdkgen-cli",
+    [
+      "@palantir/pack.sdkgen",
+    ],
+    { isCli: true, hasSdkgenTemplates: true },
   )
   .addArchetype(
     "library",

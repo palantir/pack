@@ -1,6 +1,6 @@
 {
   "name": "@palantir/pack.document-schema.type-gen",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "TypeScript type generation from document schema",
   "license": "Apache-2.0",
   "repository": {
@@ -8,7 +8,8 @@
     "url": "https://github.com/palantir/pack.git"
   },
   "bin": {
-    "type-gen": "./bin/cli.ts"
+    "type-gen-bun": "./bin/cli.ts",
+    "type-gen": "./bin/cli-node.js"
   },
   "exports": {
     ".": {

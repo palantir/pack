@@ -1,6 +1,6 @@
 {
   "name": "@palantir/pack.sdkgen",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Generic Typescript SDK generator CLI",
   "license": "Apache-2.0",
   "repository": {
@@ -8,7 +8,8 @@
     "url": "https://github.com/palantir/pack.git"
   },
   "bin": {
-    "sdkgen": "./bin/cli.ts"
+    "sdkgen-bun": "./bin/cli.ts",
+    "sdkgen": "./bin/cli-node.js"
   },
   "exports": {
     ".": {
@@ -53,7 +54,8 @@
   },
   "files": [
     "bin",
-    "build"
+    "build",
+    "templates"
   ],
   "main": "./build/esm/index.js",
   "types": "./build/types/index.d.ts",

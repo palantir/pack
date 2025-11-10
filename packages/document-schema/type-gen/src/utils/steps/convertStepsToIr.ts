@@ -25,12 +25,12 @@ import type {
   IRealTimeDocumentSchema,
   IRecordDef,
   IUnionDef,
-} from "../../lib/pack-docschema-api/pack-docschema-ir";
+} from "../../lib/pack-docschema-api/pack-docschema-ir/index.js";
 import {
   IFieldTypeUnion,
   IFieldValueUnion,
   IModelDef,
-} from "../../lib/pack-docschema-api/pack-docschema-ir";
+} from "../../lib/pack-docschema-api/pack-docschema-ir/index.js";
 import { assertNever } from "../assertNever.js";
 import { convertStepsToSchema } from "./convertStepsToSchema.js";
 import type { MigrationStep } from "./parseMigrationSteps.js";

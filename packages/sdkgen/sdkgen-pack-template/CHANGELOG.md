@@ -1,5 +1,13 @@
 # @palantir/pack.sdkgen.pack-template
 
+## 0.0.3
+
+### Patch Changes
+
+- fcb7a68: Fix CLIs to use node
+- Updated dependencies [fcb7a68]
+  - @palantir/pack.document-schema.type-gen@0.0.3
+
 ## 0.0.2
 
 ### Patch Changes

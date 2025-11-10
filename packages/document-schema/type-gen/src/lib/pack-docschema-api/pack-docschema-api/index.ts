@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-export * from "./documentTypeRid";
-export * from "./fieldKey";
-export * from "./interfaceTypeRid";
-export * from "./modelTypeKey";
-export * from "./objectTypeRid";
-export * from "./schemaVersion";
-export * from "./unionVariantKey";
+export * from "./documentTypeRid.js";
+export * from "./fieldKey.js";
+export * from "./interfaceTypeRid.js";
+export * from "./modelTypeKey.js";
+export * from "./objectTypeRid.js";
+export * from "./schemaVersion.js";
+export * from "./unionVariantKey.js";

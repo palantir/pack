@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import type { IDocumentTypeRid } from "../pack-docschema-api/documentTypeRid";
+import type { IDocumentTypeRid } from "../pack-docschema-api/documentTypeRid.js";
 export interface IFieldValueDocumentRef {
   readonly "documentTypeRids": ReadonlyArray<IDocumentTypeRid>;
 }

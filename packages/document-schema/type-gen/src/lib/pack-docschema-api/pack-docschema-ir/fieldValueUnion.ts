@@ -14,17 +14,17 @@
  * limitations under the License.
  */
 
-import type { IFieldValueDatetime } from "./fieldValueDatetime";
-import type { IFieldValueDocumentRef } from "./fieldValueDocumentRef";
-import type { IFieldValueDouble } from "./fieldValueDouble";
-import type { IFieldValueInteger } from "./fieldValueInteger";
-import type { IFieldValueMediaRef } from "./fieldValueMediaRef";
-import type { IFieldValueModelRef } from "./fieldValueModelRef";
-import type { IFieldValueObjectRef } from "./fieldValueObjectRef";
-import type { IFieldValueString } from "./fieldValueString";
-import type { IFieldValueText } from "./fieldValueText";
-import type { IFieldValueUnmanagedJson } from "./fieldValueUnmanagedJson";
-import type { IFieldValueUserRef } from "./fieldValueUserRef";
+import type { IFieldValueDatetime } from "./fieldValueDatetime.js";
+import type { IFieldValueDocumentRef } from "./fieldValueDocumentRef.js";
+import type { IFieldValueDouble } from "./fieldValueDouble.js";
+import type { IFieldValueInteger } from "./fieldValueInteger.js";
+import type { IFieldValueMediaRef } from "./fieldValueMediaRef.js";
+import type { IFieldValueModelRef } from "./fieldValueModelRef.js";
+import type { IFieldValueObjectRef } from "./fieldValueObjectRef.js";
+import type { IFieldValueString } from "./fieldValueString.js";
+import type { IFieldValueText } from "./fieldValueText.js";
+import type { IFieldValueUnmanagedJson } from "./fieldValueUnmanagedJson.js";
+import type { IFieldValueUserRef } from "./fieldValueUserRef.js";
 
 export interface IFieldValueUnion_Datetime {
   readonly "datetime": IFieldValueDatetime;
