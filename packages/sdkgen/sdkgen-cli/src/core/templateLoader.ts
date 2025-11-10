@@ -17,7 +17,7 @@
 import { findUp } from "find-up";
 import fs from "fs-extra";
 import path from "path";
-import { pathToFileURL } from "url";
+import { fileURLToPath, pathToFileURL } from "url";
 import type { TemplateConfig } from "../types/index.js";
 import type { Logger } from "../utils/logger.js";
 
@@ -87,9 +87,7 @@ export class TemplateLoader {
 
   private async resolveNodeModule(moduleName: string): Promise<string> {
     try {
-      const require = (await import("module")).createRequire(import.meta.url);
-      const modulePath = require.resolve(moduleName);
-      const startDir = path.dirname(modulePath);
+      const modulePath = import.meta.resolve(moduleName);
 
       const packageJsonPath = await findUp(
         async directory => {
@@ -104,7 +102,7 @@ export class TemplateLoader {
           }
           return undefined;
         },
-        { cwd: startDir },
+        { cwd: fileURLToPath(modulePath) },
       );
 
       if (packageJsonPath) {
