@@ -76,6 +76,7 @@ export interface CustomPresenceEvent {
     readonly eventData: any;
   };
 }
+
 export type PresenceCollaborativeUpdate = DocumentPresenceChangeEvent | CustomPresenceEvent;
 
 // TODO: presence api should have an eventType so we don't need extra wrapper here.
