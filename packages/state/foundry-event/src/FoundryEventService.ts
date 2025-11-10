@@ -22,6 +22,7 @@ import type {
   DocumentPublishMessage,
   DocumentUpdateMessage,
   DocumentUpdateSubscriptionRequest,
+  PresenceCollaborativeUpdate,
   UserId,
 } from "@osdk/foundry.pack";
 import { getAuthModule } from "@palantir/pack.auth";
@@ -44,7 +45,6 @@ import type {
   TypedReceiveChannelId,
 } from "./types/EventService.js";
 
-// TODO: replace with @osdk/foundry.pack types when they land.
 export interface PresenceSubscriptionOptions {
   readonly ignoreSelfUpdates?: boolean;
 }
@@ -60,24 +60,12 @@ export interface PresencePublishMessageCustom {
 
 export type PresencePublishMessage = PresencePublishMessageCustom;
 
-export interface DocumentPresenceChangeEvent {
-  readonly type: "presenceChangeEvent";
-  readonly presenceChangeEvent: {
-    readonly userId: UserId;
-    readonly status: "PRESENT" | "NOT_PRESENT";
-  };
-}
-
-export interface CustomPresenceEvent {
-  readonly type: "customPresenceEvent";
-  readonly customPresenceEvent: {
-    readonly userId: UserId;
-    readonly clientId: ClientId;
-    readonly eventData: any;
-  };
-}
-
-export type PresenceCollaborativeUpdate = DocumentPresenceChangeEvent | CustomPresenceEvent;
+// Re-export SDK types for public API
+export type {
+  CustomPresenceEvent as CustomPresenceEvent,
+  DocumentPresenceChangeEvent as DocumentPresenceChangeEvent,
+  PresenceCollaborativeUpdate as PresenceCollaborativeUpdate,
+} from "@osdk/foundry.pack";
 
 // TODO: presence api should have an eventType so we don't need extra wrapper here.
 interface PresencePublishMessageData {
@@ -300,19 +288,17 @@ export class FoundryEventService {
     return this.eventService.subscribe(
       channelId,
       (update: PresenceCollaborativeUpdate) => {
-        // TODO: api should provide clientId so we filter on our presence messages only,
-        // but allow apps to decide what they do with same-user-different-client messages ie
-        // from different tabs or devices.
+        // Filter self updates
         const localUserId = getAuthModule(this.app).getCurrentUser(true)?.userId;
         if (ignoreSelfUpdates && localUserId != null) {
           switch (update.type) {
             case "presenceChangeEvent":
-              if (update.presenceChangeEvent.userId === localUserId) {
+              if (update.userId === localUserId) {
                 return;
               }
               break;
             case "customPresenceEvent":
-              if (update.customPresenceEvent.userId === localUserId) {
+              if (update.userId === localUserId) {
                 return;
               }
               break;
