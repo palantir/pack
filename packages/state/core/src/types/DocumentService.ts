@@ -96,6 +96,15 @@ export interface DocumentService {
     schema: T,
   ) => Promise<DocumentRef<T>>;
 
+  readonly searchDocuments: <T extends DocumentSchema>(
+    documentTypeName: string,
+    schema: T,
+    options?: {
+      documentName?: string;
+      limit?: number;
+    },
+  ) => Promise<ReadonlyArray<DocumentMetadata & { readonly id: DocumentId }>>;
+
   readonly createDocRef: <const T extends DocumentSchema>(
     id: DocumentId,
     schema: T,

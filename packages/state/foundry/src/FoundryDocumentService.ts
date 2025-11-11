@@ -14,7 +14,11 @@
  * limitations under the License.
  */
 
-import type { CreateDocumentRequest, DocumentSecurity } from "@osdk/foundry.pack";
+import type {
+  CreateDocumentRequest,
+  DocumentSecurity,
+  SearchDocumentsRequest,
+} from "@osdk/foundry.pack";
 import { Documents } from "@osdk/foundry.pack";
 import type { ModuleConfigTuple, PackAppInternal, Unsubscribe } from "@palantir/pack.core";
 import type {
@@ -126,6 +130,33 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
     const documentId = createResponse.id as DocumentId;
     const docRef = this.createDocRef(documentId, schema);
     return docRef;
+  };
+
+  readonly searchDocuments = async <T extends DocumentSchema>(
+    documentTypeName: string,
+    schema: T,
+    options?: {
+      documentName?: string;
+      limit?: number;
+    },
+  ): Promise<ReadonlyArray<DocumentMetadata & { readonly id: DocumentId }>> => {
+    const request: SearchDocumentsRequest = {
+      documentTypeName,
+      limit: options?.limit,
+      searchQuery: options?.documentName ? { documentName: options.documentName } : undefined,
+    };
+
+    const searchResponse = await Documents.search(this.app.config.osdkClient, request, {
+      preview: this.config.usePreviewApi ?? DEFAULT_USE_PREVIEW_API,
+    });
+
+    return searchResponse.map(doc => ({
+      documentTypeName: doc.documentTypeName,
+      id: doc.id as DocumentId,
+      name: doc.name,
+      ontologyRid: "unknown",
+      security: { discretionary: { owners: [] }, mandatory: {} },
+    }));
   };
 
   protected onMetadataSubscriptionOpened(

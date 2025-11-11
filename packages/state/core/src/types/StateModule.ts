@@ -73,6 +73,15 @@ export interface StateModule {
     schema: T,
   ) => Promise<DocumentRef<T>>;
 
+  readonly searchDocuments: <T extends DocumentSchema>(
+    documentTypeName: string,
+    schema: T,
+    options?: {
+      documentName?: string;
+      limit?: number;
+    },
+  ) => Promise<ReadonlyArray<DocumentMetadata & { readonly id: DocumentId }>>;
+
   readonly getDocumentSnapshot: <T extends DocumentSchema>(
     docRef: DocumentRef<T>,
   ) => Promise<DocumentState<T>>;
@@ -197,6 +206,17 @@ export class StateModuleImpl implements StateModule {
     schema: T,
   ): Promise<DocumentRef<T>> {
     return this.documentService.createDocument(metadata, schema);
+  }
+
+  async searchDocuments<T extends DocumentSchema>(
+    documentTypeName: string,
+    schema: T,
+    options?: {
+      documentName?: string;
+      limit?: number;
+    },
+  ): Promise<ReadonlyArray<DocumentMetadata & { readonly id: DocumentId }>> {
+    return this.documentService.searchDocuments(documentTypeName, schema, options);
   }
 
   async getDocumentSnapshot<T extends DocumentSchema>(
