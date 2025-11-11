@@ -1,5 +1,11 @@
 # @palantir/pack.sdkgen.pack-template
 
+## 0.0.4-beta.3
+
+### Patch Changes
+
+- ce86799: Fix pack-template dependency
+
 ## 0.0.4-beta.2
 
 ### Patch Changes
