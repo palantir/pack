@@ -1,5 +1,11 @@
 # @palantir/pack.sdkgen.pack-template
 
+## 0.0.4-beta.0
+
+### Patch Changes
+
+- 6e833f1: Execute type-gen package via bin, with node, instead of pnpm
+
 ## 0.0.3
 
 ### Patch Changes
