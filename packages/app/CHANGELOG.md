@@ -1,5 +1,17 @@
 # @palantir/pack.app
 
+## 0.0.2
+
+### Patch Changes
+
+- 6478ab5: Fix issues locating model metadata when multiple copies of the schema package are present
+- Updated dependencies [6478ab5]
+  - @palantir/pack.core@0.1.1
+  - @palantir/pack.state.core@0.1.1
+  - @palantir/pack.state.foundry@0.0.2
+  - @palantir/pack.auth@0.0.2
+  - @palantir/pack.auth.foundry@0.0.2
+
 ## 0.0.1
 
 ### Patch Changes

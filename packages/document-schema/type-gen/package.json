@@ -1,6 +1,6 @@
 {
   "name": "@palantir/pack.document-schema.type-gen",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "TypeScript type generation from document schema",
   "license": "Apache-2.0",
   "repository": {

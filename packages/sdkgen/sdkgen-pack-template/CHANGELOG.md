@@ -1,5 +1,13 @@
 # @palantir/pack.sdkgen.pack-template
 
+## 0.0.4
+
+### Patch Changes
+
+- 6478ab5: Fix issues locating model metadata when multiple copies of the schema package are present
+- Updated dependencies [6478ab5]
+  - @palantir/pack.document-schema.type-gen@0.0.4
+
 ## 0.0.3
 
 ### Patch Changes

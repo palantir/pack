@@ -1,5 +1,13 @@
 # @palantir/pack.document-schema.model-types
 
+## 0.1.1
+
+### Patch Changes
+
+- 6478ab5: Fix issues locating model metadata when multiple copies of the schema package are present
+- Updated dependencies [6478ab5]
+  - @palantir/pack.core@0.1.1
+
 ## 0.1.0
 
 ### Minor Changes

@@ -1,5 +1,12 @@
 # @palantir/pack.auth
 
+## 0.0.2
+
+### Patch Changes
+
+- Updated dependencies [6478ab5]
+  - @palantir/pack.core@0.1.1
+
 ## 0.0.1
 
 ### Patch Changes
