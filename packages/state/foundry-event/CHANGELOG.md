@@ -1,5 +1,19 @@
 # @palantir/pack.state.foundry-event
 
+## 0.0.2
+
+### Patch Changes
+
+- 4ab9c98: Update @osdk/foundry.pack dependency, add searchDocuments to FoundryEventService
+- eba27ae: Fix issues locating model metadata when multiple copies of the schema package are present
+- 67df6e4: Documented public apis
+- Updated dependencies [eba27ae]
+- Updated dependencies [67df6e4]
+  - @palantir/pack.document-schema.model-types@0.1.1
+  - @palantir/pack.core@0.1.1
+  - @palantir/pack.state.core@0.1.1
+  - @palantir/pack.auth@0.0.2
+
 ## 0.0.1
 
 ### Patch Changes

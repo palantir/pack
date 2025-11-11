@@ -1,5 +1,14 @@
 # @palantir/pack.auth
 
+## 0.0.2
+
+### Patch Changes
+
+- 67df6e4: Documented public apis
+- Updated dependencies [eba27ae]
+- Updated dependencies [67df6e4]
+  - @palantir/pack.core@0.1.1
+
 ## 0.0.1
 
 ### Patch Changes
