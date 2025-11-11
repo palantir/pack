@@ -20,12 +20,48 @@ import { useEffect, useState } from "react";
 
 type PackAppWithAuth = PackApp & { auth: AuthModule };
 
+/**
+ * Gets the authentication token from the app, useful for making authenticated API requests.
+ *
+ * Prefer using OSDK APIs with an OsdkClient for available APIs, this hook is primarily
+ * for internal or experimental API calls.
+ *
+ * This hook will update when the token refreshes.
+ *
+ * @param app The app instance initialized by your application.
+ * @returns The current authentication token or undefined if not available.
+ * @example
+ * ```tsx
+ * import { useAuthToken } from "@palantir/pack.state.react";
+ * import { app } from "./appInstance";
+ *
+ * const MyComponent: React.FC = () => {
+ *   const authToken = useAuthToken(app);
+ *   useEffect(() => {
+ *     async function fetchData() {
+ *       const response = await fetch("/api/data", {
+ *         headers: {
+ *           Authorization: `Bearer ${authToken}`,
+ *         },
+ *       });
+ *       const data = await response.json();
+ *       // handle data
+ *     }
+ *     if (authToken) {
+ *       fetchData();
+ *     }
+ *   }, [authToken]);
+ *
+ *   return <div>Data fetching component</div>;
+ * }
+ * ```
+ */
 export function useAuthToken(app: PackAppWithAuth): string | undefined {
   const [token, setToken] = useState<string | undefined>(() => app.auth.getTokenOrUndefined());
 
   useEffect(() => {
-    const unsubscribe = app.auth.onAuthStateChange(() => {
-      setToken(app.auth.getTokenOrUndefined());
+    const unsubscribe = app.auth.onTokenChange(token => {
+      setToken(token);
     });
 
     return unsubscribe;

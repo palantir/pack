@@ -25,6 +25,27 @@ export const ActivityEventDataType = {
   UNKNOWN: "unknown",
 } as const;
 
+/**
+ * Application specific custom activity event data, as described in a transaction edit,
+ * using an application sdk's generated model types.
+ *
+ * @example
+ * ```ts
+ * const unsubscribe = docRef.onActivity((docRef, event) => {
+ *   console.log("Activity event:", event);
+ * });
+ * // Submit an edit with a description to generate an activity event.
+ * docRef.withTransaction(() => {
+ *   // make some edits to the document here
+ * }, {
+ *   model: MyEventModel,
+ *   data: {
+ *     myDataField: "some value",
+ *     foo: 42,
+ *   },
+ * });
+ * ```
+ */
 export interface ActivityEventDataCustom<M extends Model = Model> {
   readonly type: typeof ActivityEventDataType.CUSTOM_EVENT;
   readonly model: M;
@@ -33,6 +54,14 @@ export interface ActivityEventDataCustom<M extends Model = Model> {
 
 // TODO: add standard document activity events (need to be added to api types)
 
+/**
+ * Fallback for unrecognized activity event types.
+ *
+ * This allows some flexibility with new event types added to the platform.
+ * Likely unknown events represent a new platform event type and will be handled
+ * in a future release of pack libraries and can be safely ignored by
+ * applications.
+ */
 export interface ActivityEventDataUnknown {
   readonly type: "unknown";
   readonly rawType: string;
@@ -41,7 +70,15 @@ export interface ActivityEventDataUnknown {
 
 export type ActivityEventData = ActivityEventDataCustom | ActivityEventDataUnknown;
 
+/**
+ * An event representing an activity that has occurred on a document. This
+ * includes standard document events as well as custom application-specific
+ * events describing document edits.
+ *
+ * ActivityEvents are useful for building activity feeds, or notifications.
+ */
 export interface ActivityEvent {
+  /** Multiple events with the same aggregationKey may be collapsed. */
   readonly aggregationKey: string;
   readonly createdBy: UserId;
   readonly createdInstant: number;

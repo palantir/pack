@@ -23,6 +23,36 @@ import type {
 import { invalidDocRef, type WithStateModule } from "@palantir/pack.state.core";
 import { useMemo } from "react";
 
+/**
+ * Gets or creates a stable {@link DocumentRef} for the specified document ID and
+ * schema.
+ *
+ * @param app The app instance initialized by your application.
+ * @param docSchema The schema of the document from your application's generated
+ * model definitions.
+ * @param documentId The ID of the document.
+ * @returns A stable document reference for the specified document ID and
+ * schema, suitable for use in hooks, react deps, and for other state / caching
+ * scenarios. This docRef is weakly held within the app instance so any other
+ * calls returning a docRef will return the same instance as long as a reference
+ * is held somewhere. If `documentId` is `undefined`, returns an invalid docRef.
+ *
+ * @example
+ * ```tsx
+ * import { useDocMetadata, useDocRef } from "@palantir/pack.state.react";
+ * import { DocumentSchema } from "@myapp/schema";
+ * import { app } from "./appInstance";
+ *
+ * const MyComponent: React.FC<{ documentId: string | undefined }> = ({ documentId }) => {
+ *   const docRef = useDocRef(app, DocumentSchema, documentId);
+ *   const { isMetadataLoading, metadata } = useDocMetadata(docRef);
+ *   if (isMetadataLoading) {
+ *     return <Spinner />;
+ *   }
+ *   return <DocumentViewer document={metadata} />;
+ * };
+ * ```
+ */
 export function useDocRef<D extends DocumentSchema>(
   app: WithStateModule<PackApp>,
   docSchema: D,

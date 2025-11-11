@@ -19,7 +19,25 @@ import { isValidDocRef } from "@palantir/pack.state.core";
 import { useEffect, useRef } from "react";
 
 /**
+ * Registers a callback to be invoked on document activity events.
+ *
  * @experimental
+ *
+ * @param docRef The document reference to listen for activity events on.
+ * @param onActivity The callback to invoke when an activity event occurs.
+ *
+ * @example
+ * ```tsx
+ * import { useOnDocActivityEvents, useDocRef } from "@palantir/pack.state.react";
+ * import { DocumentSchema } from "@myapp/schema";
+ * import { app } from "./appInstance";
+ *
+ * const MyComponent: React.FC<{ documentId: string | undefined }> = ({ documentId }) => {
+ *   const docRef = useDocRef(app, DocumentSchema, documentId);
+ *   useOnDocActivityEvents(docRef, (event) => {
+ *     // Handle the activity event, eg display a notification or populate a panel.
+ *   });
+ * };
  */
 export function useOnDocActivityEvents(
   docRef: DocumentRef,

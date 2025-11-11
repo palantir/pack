@@ -87,6 +87,13 @@ export type RecordDeleteCallback<M extends Model = Model> = (
   record: RecordRef<M>,
 ) => void;
 
+/**
+ * Base interface for specific document service implementations.
+ * The DocumentService is responsible for persisting document state,
+ * metadata, and providing methods to subscribe and interact with documents.
+ *
+ * The main implementation communicates with the Foundry platform (see @palantir/pack.state.foundry).
+ */
 export interface DocumentService {
   readonly hasMetadataSubscriptions: boolean;
   readonly hasStateSubscriptions: boolean;

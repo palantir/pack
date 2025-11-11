@@ -23,7 +23,68 @@ import { isValidDocRef } from "@palantir/pack.state.core";
 import { useEffect, useRef } from "react";
 
 /**
+ * Registers a callback to be invoked on document presence events.
+ *
  * @experimental
+ *
+ * Presence events include user arrive/depart notifications and custom
+ * (application-specific) collaborative updates.
+ *
+ * You can broadcast presence events using the {@link DocumentRef.updateCustomPresence}.
+ *
+ * @param docRef The document to subscribe to.
+ * @param onPresence The callback to invoke when a presence event occurs.
+ * @param options Optional presence subscription options.
+ *
+ * @example
+ * ```tsx
+ * import { useOnDocPresenceEvents, useDocRef } from "@palantir/pack.state.react";
+ * import { CursorUpdateEventModel, DocumentSchema } from "@myapp/schema";
+ * import { app } from "./appInstance";
+ *
+ * const MyComponent: React.FC<{ documentId: string | undefined }> = ({ documentId }) => {
+ *   const docRef = useDocRef(app, DocumentSchema, documentId);
+ *   const [cursors, setCursors] = useState<Record<string, { x: number; y: number }>>({});
+ *   useOnDocPresenceEvents(docRef, ({ userId, eventData }) => {
+ *     if (eventData.type === PresenceEventDataType.DEPARTED) {
+ *       setCursors(prev => {
+ *         const newCursors = { ...prev };
+ *         delete newCursors[userId];
+ *         return newCursors;
+ *       });
+ *       return;
+ *     }
+ *
+ *     if (eventData.type !== PresenceEventDataType.CUSTOM_EVENT) {
+ *       return;
+ *     }
+ *     const { model, eventData: data } = eventData;
+ *     if (model === CursorUpdateEventModel) {
+ *       setCursors(prev => ({
+ *         ...prev,
+ *         [userId]: data as ModelData<typeof CursorUpdateEventModel>,
+ *       }));
+ *     }
+ *   }, { ignoreSelfUpdates: false });
+ *
+ *   // NOTE: ideally throttle this in a real app to avoid flooding presence updates
+ *   const handleMouseMove = useCallback(
+ *     (e: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
+ *       // Broadcast cursor position as a custom presence event
+ *       docRef.updateCustomPresence(CursorUpdateEventModel, {
+ *         x: e.nativeEvent.offsetX,
+ *         y: e.nativeEvent.offsetY,
+ *       });
+ *     },
+ *     [docRef]
+ *   );
+ *   return (<div onMouseMove={handleMouseMove}>
+ *     {Object.entries(cursors).map(([userId, pos]) => (
+ *       <Cursor key={userId} x={pos.x} y={pos.y} />
+ *     ))}
+ *   </div>);
+ * };
+ * ```
  */
 export function useOnDocPresenceEvents(
   docRef: DocumentRef,

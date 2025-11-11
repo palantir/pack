@@ -46,10 +46,35 @@ const INVALID_USER_REF: UserRef = Object.freeze(
   } as const,
 );
 
+/**
+ * Get an invalid user reference. This is a stable reference that can be used to
+ * represent an invalid user.
+ *
+ * Not to be confused with a valid reference to a non-existent user, an invalid
+ * reference is one that is not properly initialized. For example, code that
+ * initializes with an undefined or empty userId might produce an invalid user
+ * reference rather than propagate nullish types.
+ *
+ * Most operations on an invalid reference are no-ops. For the rest, it is
+ * recommended to check for validity using {@link isValidUserRef} before
+ * performing operations.
+ */
 export function invalidUserRef(): UserRef {
   return INVALID_USER_REF;
 }
 
+/**
+ * Check if a user reference is valid.
+ *
+ * Not to be confused with a valid reference to a non-existent user, an invalid
+ * reference is one that is not properly initialized. For example, code that
+ * initializes with an undefined or empty userId might produce an invalid user
+ * reference rather than propagate nullish types.
+ *
+ * Most operations on an invalid reference are no-ops. For the rest, it is
+ * recommended to check for validity using this function before performing
+ * operations.
+ */
 export function isValidUserRef(userRef: UserRef): boolean {
   return userRef.userId !== INVALID_USER_ID && userRef.userId !== "";
 }

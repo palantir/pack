@@ -11,7 +11,7 @@ This package provides React-specific bindings for PACK's state management system
 ### Hooks
 
 - `useDocRef(app, documentModel, documentId)` - Hook for managing document references
-- `useDocumentMetadata(docRef)` - Hook for accessing document metadata and status
+- `useDocMetadata(docRef)` - Hook for accessing document metadata and status
 - `useRecord(recordRef)` - Hook for accessing individual records
 - `useRecords(collectionRef)` - Hook for accessing and managing record collections
 
@@ -20,8 +20,8 @@ This package provides React-specific bindings for PACK's state management system
 ```typescript
 import { createRecordCollectionRef, createRecordRef } from "@palantir/pack.state.core";
 import {
+  useDocMetadata,
   useDocRef,
-  useDocumentMetadata,
   useRecord,
   useRecords,
 } from "@palantir/pack.state.react";
@@ -36,7 +36,7 @@ export function MyComponent() {
   const docRef = useDocRef(app, DocumentModel, "my-document-id");
   const notes = useRecords(docRef, NoteModel);
 
-  const { isMetadataLoading, metadata } = useDocumentMetadata(docRef);
+  const { isMetadataLoading, metadata } = useDocMetadata(docRef);
   // TODO: separate useDocumentStatus to understand data load / live status changes
 
   const handleAddNote = useCallback(() => {

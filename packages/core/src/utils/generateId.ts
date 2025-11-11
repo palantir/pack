@@ -14,15 +14,20 @@
  * limitations under the License.
  */
 
+/**
+ * Generates a random ID using crypto library.
+ * @param bytes Generate an ID with this many random bytes (default: 12)
+ * @returns A hexadecimal string representation of the generated ID
+ */
+export function generateId(bytes = 12): string {
+  const array = new Int8Array(bytes);
+  const r = crypto.getRandomValues(array);
+  return toHexString(r);
+}
+
 function toHexString(byteArray: Int8Array) {
   return Array.from(byteArray, function(byte) {
     const h = (byte & 0xff).toString(16);
     return h.length === 1 ? `0${h}` : h;
   }).join("");
-}
-
-export function generateId(bytes = 12): string {
-  const array = new Int8Array(bytes);
-  const r = crypto.getRandomValues(array);
-  return toHexString(r);
 }

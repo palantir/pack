@@ -54,10 +54,33 @@ export const createRecordCollectionRef = <const M extends Model>(
   return new RecordCollectionRefImpl(documentService, docRef, model);
 };
 
+/**
+ * Get an invalid record collection reference. This is a stable reference that
+ * can be used to represent an invalid record collection.
+ *
+ * Not to be confused with a valid reference to a non-existent record
+ * collection, an invalid reference is one that is not properly initialized. For
+ * example, code that initializes with an undefined or empty model might produce
+ * an invalid record collection reference rather than propagate nullish types.
+ *
+ * Most operations on an invalid reference are no-ops. For the rest, it is
+ * recommended to check for validity using {@link isValidRecordCollectionRef}
+ * before performing operations.
+ */
 export function invalidRecordCollectionRef<M extends Model = Model>(): RecordCollectionRef<M> {
   return INVALID_RECORD_COLLECTION_REF as RecordCollectionRef<M>;
 }
 
+/**
+ * Check if a record collection reference is a valid reference.
+ *
+ * Not to be confused with a valid reference to a non-existent record
+ * collection, an invalid reference is one that is not properly initialized.
+ *
+ * Most operations on an invalid reference are no-ops. For the rest, it is
+ * recommended to check for validity using this function before performing
+ * operations.
+ */
 export function isValidRecordCollectionRef<M extends Model = Model>(
   collectionRef: RecordCollectionRef<M>,
 ): collectionRef is RecordCollectionRef<M> {

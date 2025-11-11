@@ -126,6 +126,10 @@ interface SyncSessionInternal extends SyncSession {
   yDoc: y.Doc;
 }
 
+/**
+ * This manages event subscriptions and publishing of document related events via
+ * our PACK Foundry backend's cometd service.
+ */
 export class FoundryEventService {
   private readonly eventService: EventService;
   private readonly logger: Logger;

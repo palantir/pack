@@ -32,6 +32,9 @@ export interface Model<T = unknown, Z extends ZodType<T> = ZodType<T>>
 
 export type ModelData<M extends Model> = M["__type"];
 
+/**
+ * Describes an edit made to a document.
+ */
 export interface EditDescription<M extends Model = Model> {
   readonly data: ModelData<M>;
   readonly model: M;
@@ -47,6 +50,12 @@ export const ExternalRefType = {
 export type ExternalRefType = typeof ExternalRefType[keyof typeof ExternalRefType];
 
 export interface ModelMetadata<T = unknown> {
+  /**
+   * Which fields in the model are external references (e.g. UserRef, DocumentRef, etc).
+   */
   readonly externalRefFieldTypes?: Readonly<Record<keyof T, ExternalRefType>>;
+  /**
+   * The name of the model (should match the typescript symbol).
+   */
   readonly name: string;
 }
