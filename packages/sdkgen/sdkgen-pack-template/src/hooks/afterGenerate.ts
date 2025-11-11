@@ -18,6 +18,7 @@ import { spawnSync } from "child_process";
 import { consola } from "consola";
 import fs from "fs-extra";
 import path from "path";
+import { fileURLToPath } from "url";
 
 interface HookContext {
   outputPath: string;
@@ -34,6 +35,15 @@ export default async function afterGenerate(context: HookContext): Promise<void>
     const copiedSchemaPath = path.join(outputPath, "schema");
 
     if (await fs.pathExists(copiedSchemaPath)) {
+      const resolvedUrlForTypeGenPackage = import.meta.resolve(
+        "@palantir/pack.document-schema.type-gen",
+      );
+
+      const pathToTypeGenExecutable = path.resolve(
+        fileURLToPath(resolvedUrlForTypeGenPackage),
+        "../../../bin/cli-node.js",
+      );
+
       try {
         consola.log("Generating TypeScript types from YAML schema...");
 
@@ -44,12 +54,9 @@ export default async function afterGenerate(context: HookContext): Promise<void>
         if (yamlFile) {
           const schemaFile = path.join(copiedSchemaPath, yamlFile);
 
-          // Use pnpm to run the type-gen CLI
           const typesResult = spawnSync(
-            "pnpm",
+            pathToTypeGenExecutable,
             [
-              "exec",
-              "type-gen",
               "steps",
               "types",
               "-i",
@@ -68,10 +75,8 @@ export default async function afterGenerate(context: HookContext): Promise<void>
 
           consola.log("Generating Zod schemas from YAML schema...");
           const zodResult = spawnSync(
-            "pnpm",
+            pathToTypeGenExecutable,
             [
-              "exec",
-              "type-gen",
               "steps",
               "zod",
               "--type-import-path",
@@ -90,10 +95,8 @@ export default async function afterGenerate(context: HookContext): Promise<void>
 
           consola.log("Generating Model constants from YAML schema...");
           const modelsResult = spawnSync(
-            "pnpm",
+            pathToTypeGenExecutable,
             [
-              "exec",
-              "type-gen",
               "steps",
               "models",
               "--type-import-path",
