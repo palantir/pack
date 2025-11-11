@@ -1,6 +1,6 @@
 {
   "name": "@palantir/pack.sdkgen.pack-template",
-  "version": "0.0.3",
+  "version": "0.0.4-beta.0",
   "description": "PACK SDK template for generating types and Zod schemas from YAML",
   "license": "Apache-2.0",
   "repository": {
