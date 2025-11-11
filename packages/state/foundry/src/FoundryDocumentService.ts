@@ -139,7 +139,7 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
       documentName?: string;
       limit?: number;
     },
-  ): Promise<Array<DocumentRef<T>>> => {
+  ): Promise<ReadonlyArray<DocumentMetadata & { readonly id: DocumentId }>> => {
     const request: SearchDocumentsRequest = {
       documentTypeName,
       limit: options?.limit,
@@ -150,7 +150,13 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
       preview: this.config.usePreviewApi ?? DEFAULT_USE_PREVIEW_API,
     });
 
-    return searchResponse.map(doc => this.createDocRef(doc.id as DocumentId, schema));
+    return searchResponse.map(doc => ({
+      documentTypeName: doc.documentTypeName,
+      id: doc.id as DocumentId,
+      name: doc.name,
+      ontologyRid: "unknown",
+      security: { discretionary: { owners: [] }, mandatory: {} },
+    }));
   };
 
   protected onMetadataSubscriptionOpened(

@@ -111,8 +111,8 @@ class InMemoryDocumentService extends BaseYjsDocumentService {
       documentName?: string;
       limit?: number;
     },
-  ): Promise<Array<DocumentRef<T>>> => {
-    const results: Array<DocumentRef<T>> = [];
+  ): Promise<ReadonlyArray<DocumentMetadata & { readonly id: DocumentId }>> => {
+    const results: Array<DocumentMetadata & { readonly id: DocumentId }> = [];
     const { documentName, limit } = options ?? {};
 
     for (const [docId, internalDoc] of this.documents.entries()) {
@@ -120,7 +120,10 @@ class InMemoryDocumentService extends BaseYjsDocumentService {
         if (documentName && !internalDoc.metadata.name.includes(documentName)) {
           continue;
         }
-        results.push(createDocRef(this.app, docId as DocumentId, schema));
+        results.push({
+          ...internalDoc.metadata,
+          id: docId as DocumentId,
+        });
 
         if (limit && results.length >= limit) {
           break;

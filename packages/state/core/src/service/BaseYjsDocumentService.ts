@@ -134,7 +134,7 @@ export abstract class BaseYjsDocumentService<TDoc extends InternalYjsDoc = Inter
       documentName?: string;
       limit?: number;
     },
-  ) => Promise<Array<DocumentRef<T>>>;
+  ) => Promise<ReadonlyArray<DocumentMetadata & { readonly id: DocumentId }>>;
 
   readonly createDocRef = <const T extends DocumentSchema>(
     id: DocumentId,

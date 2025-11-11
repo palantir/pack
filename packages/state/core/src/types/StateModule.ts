@@ -80,7 +80,7 @@ export interface StateModule {
       documentName?: string;
       limit?: number;
     },
-  ) => Promise<Array<DocumentRef<T>>>;
+  ) => Promise<ReadonlyArray<DocumentMetadata & { readonly id: DocumentId }>>;
 
   readonly getDocumentSnapshot: <T extends DocumentSchema>(
     docRef: DocumentRef<T>,
@@ -215,7 +215,7 @@ export class StateModuleImpl implements StateModule {
       documentName?: string;
       limit?: number;
     },
-  ): Promise<Array<DocumentRef<T>>> {
+  ): Promise<ReadonlyArray<DocumentMetadata & { readonly id: DocumentId }>> {
     return this.documentService.searchDocuments(documentTypeName, schema, options);
   }
 

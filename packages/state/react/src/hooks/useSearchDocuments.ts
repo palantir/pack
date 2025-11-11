@@ -15,35 +15,39 @@
  */
 
 import type { PackApp } from "@palantir/pack.core";
-import type { DocumentRef, DocumentSchema } from "@palantir/pack.document-schema.model-types";
+import type {
+  DocumentId,
+  DocumentMetadata,
+  DocumentSchema,
+} from "@palantir/pack.document-schema.model-types";
 import type { WithStateModule } from "@palantir/pack.state.core";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
-interface SearchOptions {
-  documentName?: string;
-  limit?: number;
-}
-
-interface UseSearchDocumentsResult<T extends DocumentSchema> {
+interface UseSearchDocumentsResult {
   isLoading: boolean;
   error: Error | undefined;
-  results: Array<DocumentRef<T>> | undefined;
-  search: (options?: SearchOptions) => Promise<void>;
+  results: ReadonlyArray<DocumentMetadata & { readonly id: DocumentId }> | undefined;
 }
 
 export function useSearchDocuments<T extends DocumentSchema>(
   app: WithStateModule<PackApp>,
   documentTypeName: string,
   schema: T,
-  autoSearch: boolean = false,
-  initialOptions?: SearchOptions,
-): UseSearchDocumentsResult<T> {
+  documentName?: string,
+  limit?: number,
+): UseSearchDocumentsResult {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<Error | undefined>(undefined);
-  const [results, setResults] = useState<Array<DocumentRef<T>> | undefined>(undefined);
+  const [results, setResults] = useState<
+    ReadonlyArray<DocumentMetadata & { readonly id: DocumentId }> | undefined
+  >(undefined);
+
+  const pendingRequestRef = useRef<number>(0);
 
   const search = useCallback(
-    async (options?: SearchOptions) => {
+    async (documentName?: string, limit?: number) => {
+      const requestRef = ++pendingRequestRef.current;
+
       setIsLoading(true);
       setError(undefined);
 
@@ -51,29 +55,36 @@ export function useSearchDocuments<T extends DocumentSchema>(
         const searchResults = await app.state.searchDocuments(
           documentTypeName,
           schema,
-          options,
+          { documentName, limit },
         );
-        setResults(searchResults);
+        if (requestRef === pendingRequestRef.current) {
+          setResults(searchResults);
+        }
       } catch (e) {
-        const error = e instanceof Error ? e : new Error("Failed to search documents");
-        setError(error);
+        if (requestRef === pendingRequestRef.current) {
+          const error = e instanceof Error ? e : new Error("Failed to search documents");
+          setError(error);
+        }
       } finally {
-        setIsLoading(false);
+        if (requestRef === pendingRequestRef.current) {
+          setIsLoading(false);
+        }
       }
     },
     [app.state, documentTypeName, schema],
   );
 
   useEffect(() => {
-    if (autoSearch) {
-      void search(initialOptions);
-    }
-  }, [autoSearch, initialOptions, search]);
+    void search(documentName, limit);
+    return () => {
+      // Invalidate pending requests on unmount or param change
+      pendingRequestRef.current++;
+    };
+  }, [search]);
 
   return {
     error,
     isLoading,
     results,
-    search,
   };
 }
