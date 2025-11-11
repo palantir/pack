@@ -241,7 +241,6 @@ export abstract class BaseYjsDocumentService<TDoc extends InternalYjsDoc = Inter
   protected readonly createBaseInternalDoc = <T extends DocumentSchema>(
     ref: DocumentRef<T>,
     metadata: DocumentMetadata | undefined,
-    yDoc?: Y.Doc,
   ): InternalYjsDoc => {
     const schema = ref.schema;
     return {
@@ -267,7 +266,7 @@ export abstract class BaseYjsDocumentService<TDoc extends InternalYjsDoc = Inter
       docStateSubscribers: new Set(),
       metadataSubscribers: new Set(),
       recordSubscriptions: new Map(),
-      yDoc: yDoc || this.initializeYDoc(schema),
+      yDoc: this.initializeYDoc(schema),
       yDocUpdateHandler: undefined,
       yjsCollectionHandlers: new Map(),
     };
