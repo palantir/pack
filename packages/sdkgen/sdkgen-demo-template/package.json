@@ -1,6 +1,6 @@
 {
   "name": "@palantir/pack.sdkgen.demo-template",
-  "version": "0.0.2-beta.1",
+  "version": "0.0.2",
   "description": "Demo template for sdkgen CLI",
   "license": "Apache-2.0",
   "repository": {

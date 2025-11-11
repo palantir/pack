@@ -1,6 +1,6 @@
 {
   "name": "@palantir/pack.state.react",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "PACK State logic and utilities",
   "license": "Apache-2.0",
   "repository": {
