@@ -22,9 +22,11 @@
     "@palantir/pack.state.react": "0.0.1"
   },
   "changesets": [
+    "fiery-rings-punch",
     "icy-boats-drop",
     "mighty-camels-hear",
     "mighty-doors-burn",
+    "nine-garlics-bake",
     "olive-rules-mix"
   ]
 }

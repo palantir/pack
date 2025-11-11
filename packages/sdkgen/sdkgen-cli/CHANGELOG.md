@@ -1,5 +1,11 @@
 # @palantir/pack.sdkgen
 
+## 0.1.0-beta.1
+
+### Patch Changes
+
+- d8582e5: Fix package names in generated models
+
 ## 0.1.0-beta.0
 
 ### Minor Changes

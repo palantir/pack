@@ -1,5 +1,11 @@
 # @palantir/pack.document-schema.type-gen
 
+## 0.0.4-beta.0
+
+### Patch Changes
+
+- d8582e5: Fix package names in generated models
+
 ## 0.0.3
 
 ### Patch Changes
