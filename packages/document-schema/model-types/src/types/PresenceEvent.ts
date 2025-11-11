@@ -27,20 +27,53 @@ export const PresenceEventDataType = {
 export type PresenceEventDataType =
   typeof PresenceEventDataType[keyof typeof PresenceEventDataType];
 
+/**
+ * Any client that subscribes to presence events via `DocumentRef.onPresence` will
+ * be considered 'present' on the document, and trigger an 'arrived' presence event.
+ * When they disconnect or unsubscribe from presence events, a 'departed' presence event
+ * will be triggered.
+ */
 export interface PresenceEventDataArrived {
   readonly type: typeof PresenceEventDataType.ARRIVED;
 }
 
+/**
+ * Any client that subscribes to presence events via `DocumentRef.onPresence` will
+ * be considered 'present' on the document, and trigger an 'arrived' presence event.
+ * When they disconnect or unsubscribe from presence events, a 'departed' presence event
+ * will be triggered.
+ */
 export interface PresenceEventDataDeparted {
   readonly type: typeof PresenceEventDataType.DEPARTED;
 }
 
+/**
+ * Application specific custom presence event data.
+ *
+ * Each different model type used for presence is expected to update the latest
+ * 'presence state' for that model type.
+ *
+ * For example, your app may have need to broadcast user cursor positions and
+ * selection ranges as presence data. You could define your schema to include a
+ * `CursorPosition` and `SelectionRange` record types, and set them
+ * independently via `{@link DocumentRef.updateCustomPresence}`. Each model type
+ * sent as a custom presence event should be considered a separate 'channel' of
+ * presence data on this document.
+ */
 export interface PresenceEventDataCustom<M extends Model = Model> {
   readonly type: typeof PresenceEventDataType.CUSTOM_EVENT;
   readonly eventData: ModelData<M>;
   readonly model: M;
 }
 
+/**
+ * Fallback for unrecognized activity event types.
+ *
+ * This allows some flexibility with new event types added to the platform.
+ * Likely unknown events represent a new platform event type and will be handled
+ * in a future release of pack libraries and can be safely ignored by
+ * applications.
+ */
 export interface PresenceEventUnknown {
   readonly type: "unknown";
   readonly rawType: string;
@@ -53,6 +86,16 @@ export type PresenceEventData =
   | PresenceEventDataCustom
   | PresenceEventUnknown;
 
+/**
+ * An event representing a transient awareness or presence change for a user on this document.
+ * The presence channel is intended for ephemeral data such as user cursors, selections, or
+ * other live collaboration indicators.
+ *
+ * PresenceEvents are not persisted in document history.
+ *
+ * When a client goes offline, its presence is considered departed and any presence events
+ * associated with that user should be considered stale and / or cleared.
+ */
 export interface PresenceEvent {
   readonly userId: UserId;
   readonly eventData: PresenceEventData;

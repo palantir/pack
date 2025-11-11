@@ -14,21 +14,85 @@
  * limitations under the License.
  */
 
-import type { DocumentRef, Model, RecordRef } from "@palantir/pack.document-schema.model-types";
+import type {
+  DocumentRef,
+  Model,
+  RecordCollectionRef,
+  RecordRef,
+} from "@palantir/pack.document-schema.model-types";
 import { useEffect, useMemo, useState } from "react";
 
 const EMPTY_RECORD_REFS: readonly RecordRef[] = Object.freeze([]);
 
 /**
- * Return refs for all records of a specific model in a document.
- * This may not always be desirable based on scale etc.
+ * Subscribes to all records of a specific model in a document.
+ * @warning This may not always be the best approach for large documents, in which case
+ * consider using custom subscription logic via the {@link RecordCollectionRef} API.
+ *
+ * @param doc The document reference to get records from.
+ * @param modelSchema The model schema to get records for.
+ * @returns An array of record references for the specified model in the document.
+ *
+ * @example
+ * ```tsx
+ * import { useDocRef, useRecords } from "@palantir/pack.state.react";
+ * import { DocumentSchema, MyModel } from "@myapp/schema";
+ * import { app } from "./appInstance";
+ *
+ * const MyComponent: React.FC<{ docRef: DocumentRef<DocumentSchema> }> = ({ docRef }) => {
+ *   const recordRefs = useRecords(docRef, MyModel);
+ *   const recordRefs = useRecords(docRef.getRecords(MyModel));
+ *
+ *   return (<div>
+ *     {recordRefs.map(recordRef => (
+ *       <MyComponent key={recordRef.id} recordRef={recordRef} />
+ *     ))}
+ *   </div>);
+ * }
  */
 export function useRecords<M extends Model>(
   doc: DocumentRef,
   modelSchema: M,
+): readonly RecordRef<M>[];
+/**
+ * Subscribes to all records of a specific model in a document.
+ * @warning This may not always be the best approach for large documents, in which case
+ * consider using custom subscription logic via the {@link RecordCollectionRef} API.
+ *
+ * @param collectionRef The collection to get records from.
+ * @returns An array of record references for the specified model in the document.
+ *
+ * @example
+ * ```tsx
+ * import { useDocRef, useRecords } from "@palantir/pack.state.react";
+ * import { DocumentSchema, MyModel } from "@myapp/schema";
+ * import { app } from "./appInstance";
+ *
+ * const MyComponent: React.FC<{ docRef: DocumentRef<DocumentSchema> }> = ({ docRef }) => {
+ *   const recordRefs = useRecords(docRef, MyModel);
+ *
+ *   return (<div>
+ *     {recordRefs.map(recordRef => (
+ *       <MyComponent key={recordRef.id} recordRef={recordRef} />
+ *     ))}
+ *   </div>);
+ * };
+ * ```
+ */
+export function useRecords<M extends Model>(
+  collectionRef: RecordCollectionRef<M>,
+): readonly RecordRef<M>[];
+export function useRecords<M extends Model>(
+  docOrCollectionRef: DocumentRef | RecordCollectionRef<M>,
+  modelSchema?: M,
 ): readonly RecordRef<M>[] {
-  // TODO: really the docRef/modelCollectionRefs should do their own memoization
-  const collectionRef = useMemo(() => doc.getRecords(modelSchema), [doc, modelSchema]);
+  const collectionRef = useMemo(() => {
+    if ("model" in docOrCollectionRef) {
+      return docOrCollectionRef;
+    }
+    return docOrCollectionRef.getRecords(modelSchema!);
+  }, [docOrCollectionRef, modelSchema]);
+
   const [recordRefs, setRecordRefs] = useState<readonly RecordRef<M>[]>(emptyRefs);
 
   useEffect(() => {

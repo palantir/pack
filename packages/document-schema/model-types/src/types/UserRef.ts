@@ -20,6 +20,11 @@ export type UserId = Flavored<"pack:UserId">;
 
 export const UserRefBrand: unique symbol = Symbol("pack:UserRef");
 
+/**
+ * A reference providing an API to interact with a user.
+ *
+ * @experimental
+ */
 export interface UserRef {
   readonly userId: UserId;
   readonly [UserRefBrand]: typeof UserRefBrand;

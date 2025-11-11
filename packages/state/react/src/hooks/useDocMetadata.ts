@@ -27,7 +27,36 @@ interface ReturnType {
   metadata: DocumentMetadata | undefined;
 }
 
-export function useDocumentMetadata<D extends DocumentSchema>(
+/**
+ * Gets the metadata for the specified document reference.
+ *
+ * @param docRef The document reference to get metadata for.
+ * @returns The document metadata, or undefined if the document is not found.
+ * The object itself is unstable though the fields within it are stable.
+ *
+ * @example
+ * ```tsx
+ * import { useDocMetadata, useDocRef } from "@palantir/pack.state.react";
+ * import { DocumentSchema } from "@myapp/schema";
+ * import { app } from "./appInstance";
+ *
+ * const MyComponent: React.FC<{ documentId: string | undefined }> = ({ documentId }) => {
+ *   const docRef = useDocRef(app, DocumentSchema, documentId);
+ *   const { isMetadataLoading, metadata } = useDocMetadata(docRef);
+ *   if (isMetadataLoading) {
+ *     return <Spinner />;
+ *   }
+ *   if (metadata == null) {
+ *     return <div>Document not found</div>;
+ *   }
+ *   return (<div>
+ *     <h1>{metadata?.name}</h1>
+ *     <p>{metadata?.description}</p>
+ *    </div>);
+ * };
+ * ```
+ */
+export function useDocMetadata<D extends DocumentSchema>(
   docRef: DocumentRef<D>,
 ): ReturnType {
   const [metadata, setMetadata] = useState<DocumentMetadata>();

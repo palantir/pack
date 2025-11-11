@@ -63,10 +63,30 @@ export const createDocRef = <const D extends DocumentSchema>(
   return new DocumentRefImpl(app, id, schema);
 };
 
+/**
+ * Get an invalid document reference. This is a stable reference that can be
+ * used to represent a non-existent or invalid document.
+ *
+ * Not to be confused with a valid reference to a non-existent document, an
+ * invalid reference is one that is not properly initialized. For example, code
+ * that initializes with an undefined or empty documentId might produce an
+ * invalid document reference rather than propagate nullish types.
+ *
+ * Most operations on an invalid reference are no-ops. For the rest, it is
+ * recommended to check for validity using {@link isValidDocRef} before
+ * performing operations.
+ */
 export function invalidDocRef<D extends DocumentSchema = DocumentSchema>(): DocumentRef<D> {
   return INVALID_DOC_REF as DocumentRef<D>;
 }
 
+/**
+ * Check if a document reference is an invalid reference.
+ * Not to be confused with a valid reference to a non-existent document, an invalid reference is one that is not properly initialized.
+ * For example, code that initializes with an undefined or empty documentId might produce an invalid document reference rather than
+ * propagate nullish types, as most operations on an invalid reference are no-ops. For the rest, it is recommended to check for
+ * validity using this function before performing operations.
+ */
 export function isValidDocRef<D extends DocumentSchema = DocumentSchema>(
   docRef: DocumentRef<D>,
 ): docRef is DocumentRef<D> {

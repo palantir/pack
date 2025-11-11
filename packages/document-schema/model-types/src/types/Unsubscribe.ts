@@ -14,4 +14,7 @@
  * limitations under the License.
  */
 
+/**
+ * A function that can be called to unsubscribe from a previously subscribed event interface.
+ */
 export type Unsubscribe = () => void;

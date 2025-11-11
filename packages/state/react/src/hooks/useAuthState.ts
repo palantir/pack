@@ -20,6 +20,29 @@ import { useEffect, useState } from "react";
 
 type PackAppWithAuth = PackApp & { auth: AuthModule };
 
+/**
+ * Gets the authentication state for the app, useful for authentication workflows.
+ *
+ * @param app The app instance initialized by your application.
+ * @returns The current authentication state.
+ *
+ * @example
+ * ```tsx
+ * import { useAuthState } from "@palantir/pack.state.react";
+ * import { app } from "./appInstance";
+ *
+ * const MyComponent: React.FC = () => {
+ *   const authState = useAuthState(app);
+ *   if (authState === AuthState.Error) {
+ *     return <div>Error occurred</div>;
+ *   }
+ *   if (authState !== AuthState.Authenticated) {
+ *     return <Spinner/>
+ *   }
+ *   return <div>Welcome back</div>;
+ * }
+ * ```
+ */
 export function useAuthState(app: PackAppWithAuth): AuthState {
   const [authState, setAuthState] = useState<AuthState>(AuthState.Initializing);
 

@@ -22,6 +22,31 @@ interface Return<M extends Model> {
   isLoading: boolean;
 }
 
+/**
+ * Subscribes to an individual record and subscribes to its changes.
+ *
+ * @param ref The record to subscribe to.
+ * @returns The latest data and loading state.
+ * @example
+ * ```tsx
+ * import { useDocRef, useRecord } from "@palantir/pack.state.react";
+ * import { DocumentSchema, MyModel } from "@myapp/schema";
+ * import { app } from "./appInstance";
+ *
+ * const MyComponent: React.FC<{ recordRef: RecordRef<MyModel> }> = ({ recordRef }) => {
+ *   const { data, isLoading } = useRecord(recordRef);
+ *
+ *   if (isLoading) {
+ *     return <Spinner />;
+ *   }
+ *
+ *   if (data == null) {
+ *     return <div>Record not found</div>;
+ *   }
+ *
+ *   return <div>Hello, {data.myFieldName}</div>;
+ * }
+ */
 export function useRecord<M extends Model>(
   ref: RecordRef<M>,
 ): Return<M> {

@@ -14,6 +14,12 @@
  * limitations under the License.
  */
 
+/**
+ * Assert that a value type is never, useful for compile time exhaustiveness checking.
+ *
+ * If it is hit at runtime, it may indicate a bug in the code, or an unhandled case
+ * for a new value added to a remotely loaded type.
+ */
 export function assertNever(_x: never): never {
   throw new Error("Hit unreachable code");
 }
