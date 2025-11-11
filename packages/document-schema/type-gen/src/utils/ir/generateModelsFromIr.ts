@@ -32,7 +32,7 @@ export class ModelGenerator {
   public generateModels(): Promise<string> {
     const typeImportPath = this.options?.typeImportPath ?? "./types.js";
     const schemaImportPath = this.options?.schemaImportPath ?? "./schema.js";
-    const modelTypesPackage = "@palantir/pack.schema";
+    const modelTypesPackage = "@palantir/pack.document-schema.model-types";
 
     // Generate imports
     let imports = `import type { DocumentSchema, Model } from "${modelTypesPackage}";\n`;
