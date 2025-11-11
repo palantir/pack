@@ -1,5 +1,11 @@
 # @palantir/pack.sdkgen
 
+## 0.2.0
+
+### Minor Changes
+
+- dfeaeb0: Fix bug in core, where multiple yDocs could get created, causing the initial update to be dropped
+
 ## 0.1.0
 
 ### Minor Changes

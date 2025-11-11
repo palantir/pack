@@ -123,7 +123,7 @@ interface SyncSessionInternal extends SyncSession {
   lastRevisionId?: number;
   localYDocUpdateHandler?: (update: Uint8Array, origin: unknown) => void;
   presenceSubscriptionId?: SubscriptionId;
-  yDoc: y.Doc;
+  yDoc?: y.Doc;
 }
 
 /**
@@ -159,7 +159,7 @@ export class FoundryEventService {
         lastRevisionId: undefined,
         localYDocUpdateHandler: undefined,
         presenceSubscriptionId: undefined,
-        yDoc: yDoc ?? new y.Doc(),
+        yDoc,
       };
       this.sessions.set(sessionId, session);
     }
@@ -229,7 +229,7 @@ export class FoundryEventService {
         if (session.localYDocUpdateHandler !== localYDocUpdateHandler) {
           return;
         }
-        this.handleDocumentUpdateMessage(session, message, onStatusChange);
+        this.handleDocumentUpdateMessage(session, message, yDoc, onStatusChange);
       },
       () => ({
         clientId: session.clientId,
@@ -391,7 +391,7 @@ export class FoundryEventService {
     }
 
     if (internalSession.localYDocUpdateHandler != null) {
-      internalSession.yDoc.off("update", internalSession.localYDocUpdateHandler);
+      internalSession.yDoc?.off("update", internalSession.localYDocUpdateHandler);
       internalSession.localYDocUpdateHandler = undefined;
     }
 
@@ -412,6 +412,7 @@ export class FoundryEventService {
   private handleDocumentUpdateMessage(
     session: SyncSessionInternal,
     message: DocumentUpdateMessage,
+    yDoc: y.Doc,
     onStatusChange: (status: Partial<DocumentSyncStatus>) => void,
   ): void {
     switch (message.type) {
@@ -460,7 +461,7 @@ export class FoundryEventService {
 
         session.lastRevisionId = Number(revisionId);
         if (data != null) {
-          y.applyUpdate(session.yDoc, data, UPDATE_ORIGIN_REMOTE);
+          y.applyUpdate(yDoc, data, UPDATE_ORIGIN_REMOTE);
         }
 
         onStatusChange({

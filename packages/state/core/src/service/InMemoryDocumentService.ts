@@ -27,7 +27,6 @@ import type {
   PresenceEvent,
   PresenceSubscriptionOptions,
 } from "@palantir/pack.document-schema.model-types";
-import type * as Y from "yjs";
 import { createDocumentServiceConfig } from "../DocumentServiceModule.js";
 import { createDocRef } from "../types/DocumentRefImpl.js";
 import type { DocumentService } from "../types/DocumentService.js";
@@ -74,9 +73,8 @@ class InMemoryDocumentService extends BaseYjsDocumentService {
   override createInternalDoc(
     ref: DocumentRef,
     metadata?: DocumentMetadata,
-    yDoc?: Y.Doc,
   ): InternalYjsDoc {
-    return this.createBaseInternalDoc(ref, metadata, yDoc);
+    return this.createBaseInternalDoc(ref, metadata);
   }
 
   get hasMetadataSubscriptions() {

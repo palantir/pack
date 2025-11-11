@@ -41,7 +41,6 @@ import {
 } from "@palantir/pack.state.core";
 import type { FoundryEventService, SyncSession } from "@palantir/pack.state.foundry-event";
 import { createFoundryEventService } from "@palantir/pack.state.foundry-event";
-import type * as y from "yjs";
 import { getActivityEvent, getPresenceEvent } from "./eventMappers.js";
 
 const DEFAULT_USE_PREVIEW_API = true;
@@ -91,10 +90,9 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
   protected createInternalDoc(
     ref: DocumentRef,
     metadata: DocumentMetadata | undefined,
-    initialYDoc?: y.Doc,
   ): FoundryInternalDoc {
     return {
-      ...this.createBaseInternalDoc(ref, metadata, initialYDoc),
+      ...this.createBaseInternalDoc(ref, metadata),
       syncSession: undefined,
     };
   }
