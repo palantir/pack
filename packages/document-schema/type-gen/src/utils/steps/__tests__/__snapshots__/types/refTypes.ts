@@ -1,5 +1,5 @@
 // Generated TypeScript interfaces from document schema
-import type { DocumentRef, MediaRef, ObjectRef, UserRef } from "@palantir/pack.schema";
+import type { DocumentRef, MediaRef, ObjectRef, UserRef } from "@palantir/pack.document-schema.model-types";
 
 /**
  * A record containing all reference types
