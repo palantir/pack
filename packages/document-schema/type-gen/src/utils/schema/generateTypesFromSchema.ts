@@ -199,7 +199,7 @@ export function generateTypesFromSchema<T extends ReturnedSchema>(
   // Add conditional imports based on which ref types are used
   if (usedRefTypes.size > 0) {
     const refTypesList = Array.from(usedRefTypes).sort().join(", ");
-    output += `import type { ${refTypesList} } from "@pack/document-schema-model-types";\n`;
+    output += `import type { ${refTypesList} } from "@palantir/pack.schema";\n`;
   }
 
   output += "\n";

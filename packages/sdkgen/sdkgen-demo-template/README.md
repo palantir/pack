@@ -44,7 +44,7 @@ The template includes:
 
 ```bash
 # Generate a new SDK using this demo template
-npx @pack/sdkgen create my-demo-sdk \
+npx @palantir/pack.sdkgen create my-demo-sdk \
   --template @palantir/pack.sdkgen.demo-template \
   --schema ./my-schema.json
 

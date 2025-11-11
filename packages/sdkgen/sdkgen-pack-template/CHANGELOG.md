@@ -1,5 +1,13 @@
 # @palantir/pack.sdkgen.pack-template
 
+## 0.0.4-beta.1
+
+### Patch Changes
+
+- d8582e5: Fix package names in generated models
+- Updated dependencies [d8582e5]
+  - @palantir/pack.document-schema.type-gen@0.0.4-beta.0
+
 ## 0.0.4-beta.0
 
 ### Patch Changes

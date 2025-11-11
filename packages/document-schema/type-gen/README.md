@@ -1,4 +1,4 @@
-# @pack/document-schema-type-gen
+# @palantir/pack.document-schema.type-gen
 
 TypeScript type generation from document schema definitions. This package provides CLI tools and programmatic APIs for generating TypeScript types and Zod schemas from document schema definitions in both IR (Intermediate Representation) and YAML migration steps formats.
 
@@ -125,7 +125,7 @@ Register commands in your own CLI:
 import {
   registerIrCommands,
   registerStepsCommands,
-} from "@pack/document-schema-type-gen";
+} from "@palantir/pack.document-schema.type-gen";
 import { Command } from "commander";
 
 const program = new Command();
@@ -150,7 +150,7 @@ import {
   generateTypesFromSchema,
   generateZodFromSchema,
   generateZodSchemasFromIr,
-} from "@pack/document-schema-type-gen";
+} from "@palantir/pack.document-schema.type-gen";
 
 // Generate TypeScript types from a schema object
 const schema = {/* your schema definition */};
@@ -177,7 +177,7 @@ import {
   convertTypeToFieldTypeUnion,
   generateZodFromStepsSchema,
   type SchemaMetadata,
-} from "@pack/document-schema-type-gen";
+} from "@palantir/pack.document-schema.type-gen";
 
 // Convert PACK types to field type unions
 const fieldType = convertTypeToFieldTypeUnion(type);
@@ -197,13 +197,13 @@ const zodSchemas = generateZodFromStepsSchema(steps, metadata);
 ### Building a Custom CLI
 
 ```typescript
-import { cli } from "@pack/document-schema-type-gen";
+import { cli } from "@palantir/pack.document-schema.type-gen";
 
 // Use the built-in CLI with custom arguments
 cli(process.argv);
 
 // Or build your own CLI using the exported handlers
-import { stepsGenTypesHandler } from "@pack/document-schema-type-gen";
+import { stepsGenTypesHandler } from "@palantir/pack.document-schema.type-gen";
 import { Command } from "commander";
 
 const program = new Command();
