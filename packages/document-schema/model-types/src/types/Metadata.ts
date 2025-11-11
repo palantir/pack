@@ -21,10 +21,25 @@ export interface WithMetadata<T> {
 }
 
 export function getMetadata<T>(obj: WithMetadata<T>): T {
-  // TS always treats symbol keys as optional
-  const metadata = obj[Metadata];
-  if (metadata == null) {
-    throw new Error("Object does not have metadata");
+  // First try the direct symbol access
+  const directMetadata = obj[Metadata];
+  if (directMetadata != null) {
+    return directMetadata;
   }
-  return metadata;
+
+  // Fallback: search for a symbol with matching string representation
+  // If the different copies of this package are used, the symbol references will not match directly
+  const metadataString = Metadata.toString();
+  const symbolKeys = Object.getOwnPropertySymbols(obj);
+
+  for (const symbolKey of symbolKeys) {
+    if (symbolKey.toString() === metadataString) {
+      const fallbackMetadata = (obj as any)[symbolKey];
+      if (fallbackMetadata != null) {
+        return fallbackMetadata;
+      }
+    }
+  }
+
+  throw new Error("Object does not have metadata");
 }
