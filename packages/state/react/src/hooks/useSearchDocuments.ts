@@ -76,11 +76,14 @@ export function useSearchDocuments<T extends DocumentSchema>(
 
   useEffect(() => {
     void search(documentName, limit);
+  }, [search, documentName, limit]);
+
+  useEffect(() => {
     return () => {
-      // Invalidate pending requests on unmount or param change
+      // Invalidate any pending requests on unmount
       pendingRequestRef.current++;
     };
-  }, [search]);
+  }, []);
 
   return {
     error,
