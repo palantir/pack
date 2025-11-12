@@ -7,6 +7,7 @@
       fields:
         stringField: string
         doubleField: double
+        booleanField: optional<boolean>
         optionalField: optional<string>
         arrayField: array<double>
         unknownField: unknown

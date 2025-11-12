@@ -16,6 +16,7 @@
 
 export const TypeKind = {
   ARRAY: "array",
+  BOOLEAN: "boolean",
   DOC_REF: "docRef",
   DOUBLE: "double",
   MEDIA_REF: "mediaRef",
@@ -35,6 +36,10 @@ export type String = {
 
 export type Double = {
   readonly type: typeof TypeKind.DOUBLE;
+};
+
+export type Boolean = {
+  readonly type: typeof TypeKind.BOOLEAN;
 };
 
 // Forward declaration to avoid circular reference
@@ -81,6 +86,7 @@ export type UserRef = {
 
 export type Type =
   | Array
+  | Boolean
   | DocRef
   | Double
   | MediaRef
@@ -93,6 +99,7 @@ export type Type =
 
 export const String: String = { type: TypeKind.STRING };
 export const Double: Double = { type: TypeKind.DOUBLE };
+export const Boolean: Boolean = { type: TypeKind.BOOLEAN };
 export const Unknown: Unknown = { type: TypeKind.UNKNOWN };
 export const Array = <T extends TypeBase>(item: T): Array<T> => ({
   type: TypeKind.ARRAY,

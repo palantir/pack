@@ -48,6 +48,7 @@ describe("defineRecord", () => {
         username: P.String,
         email: P.Optional(P.String),
         age: P.Optional(P.Double),
+        active: P.Optional(P.Boolean),
       },
     });
 
@@ -60,8 +61,12 @@ describe("defineRecord", () => {
       type: "optional",
       item: { type: "double" },
     });
+    expect(UserRecord.fields.active).toEqual({
+      type: "optional",
+      item: { type: "boolean" },
+    });
 
-    assertExactKeys<typeof UserRecord.fields, "username" | "email" | "age">();
+    assertExactKeys<typeof UserRecord.fields, "username" | "email" | "age" | "active">();
     assertTypeEquals<typeof UserRecord.fields.username, String>();
     assertTypeEquals<typeof UserRecord.fields.email, Optional<String>>();
     assertTypeEquals<typeof UserRecord.fields.age, Optional<Double>>();

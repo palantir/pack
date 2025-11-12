@@ -164,6 +164,7 @@ export function convertTypeToFieldTypeUnion(schemaType: P.Type): IFieldTypeUnion
       return convertTypeToFieldTypeUnion(optionalType.item as P.Type);
     }
 
+    case "boolean":
     case "docRef":
     case "double":
     case "mediaRef":
@@ -187,6 +188,9 @@ function convertTypeToFieldValueUnion(schemaType: P.Type): IFieldValueUnion {
         false,
         `Collection type passed to convertTypeToFieldValueUnion: ${schemaType.type}`,
       );
+
+    case "boolean":
+      return IFieldValueUnion.boolean({});
 
     case "docRef":
       return IFieldValueUnion.docRef({
