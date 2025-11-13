@@ -54,7 +54,7 @@ export async function irDeployHandler(options: DeployOptions): Promise<void> {
     // PACK BE does not yet support storing schemas...
     consola.warn("Creating document type without schema information", request);
 
-    await DocumentTypes.create(osdkClient, request);
+    await DocumentTypes.create(osdkClient, request, { preview: true });
   } catch (error) {
     consola.error("❌ Error during Deploy:", error);
     throw new CommanderError(1, "ERRIRMDEPLOY", "Error deploying IR document schema");
