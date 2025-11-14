@@ -313,6 +313,9 @@ class ZodSchemaGenerator {
     fieldValue: IFieldValueUnion,
   ): string {
     switch (fieldValue.type) {
+      case "boolean":
+        return "z.boolean()";
+
       case "datetime":
         return "z.string().datetime()";
 

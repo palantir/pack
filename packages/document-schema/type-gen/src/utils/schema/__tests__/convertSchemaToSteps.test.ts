@@ -208,6 +208,7 @@ describe("convertSchemaToSteps", () => {
           fields: {
             stringField: P.String,
             doubleField: P.Double,
+            booleanField: P.Optional(P.Boolean),
             optionalField: P.Optional(P.String),
             arrayField: P.Array(P.Double),
             unknownField: P.Unknown,
