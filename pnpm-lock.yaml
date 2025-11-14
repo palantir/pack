@@ -19,8 +19,8 @@ catalogs:
       specifier: ~2.39.0
       version: 2.39.0
     '@osdk/oauth':
-      specifier: ~1.4.0
-      version: 1.4.0
+      specifier: ~1.5.0
+      version: 1.5.0
     '@osdk/shared.client2':
       specifier: ~1.0.0
       version: 1.0.0
@@ -160,7 +160,7 @@ importers:
         version: 2.4.2
       '@osdk/oauth':
         specifier: 'catalog:'
-        version: 1.4.0
+        version: 1.5.0
       '@osdk/shared.client2':
         specifier: 'catalog:'
         version: 1.0.0
@@ -246,7 +246,7 @@ importers:
         version: 2.38.0
       '@osdk/oauth':
         specifier: 'catalog:'
-        version: 1.4.0
+        version: 1.5.0
       '@osdk/shared.client2':
         specifier: 'catalog:'
         version: 1.0.0
@@ -1971,8 +1971,8 @@ packages:
   '@osdk/generator-converters@2.4.2':
     resolution: {integrity: sha512-XJUcBqlkNCofkqt/zXwmSkAstZYUCFrdKp4ijWjV50gNsgAks6+p9tRHIwOlLdes0v6YXHpjBttwutHVGqrdEA==}
 
-  '@osdk/oauth@1.4.0':
-    resolution: {integrity: sha512-3ZpF2zFkmNMkrADrNe5P1TJs6JnEthi2oy97eRBtQ+6i/RbRHbG87QPXvTrB3y+YA0beiI+BpzMcpSntYimGUA==}
+  '@osdk/oauth@1.5.0':
+    resolution: {integrity: sha512-jpJBEcmj2J2YnQ/ZgcSuZef2cwBN4M5nCjQ9y2LKFzKNrYlt7Pi707iQIl54Up7uk1NJxv4oMuW5RVSCxoBwkA==}
 
   '@osdk/shared.client.impl@1.4.0':
     resolution: {integrity: sha512-XkvoOJrykKH5fb/NcVt/jk1+5ZR2LW2EofpW9xn/Q4qxUEuXDHhZQkLXzi6B7Og1VPhd3wP92g4J4QfvMJueiw==}
@@ -6571,7 +6571,7 @@ snapshots:
       '@osdk/api': 2.4.2
       '@osdk/foundry.ontologies': 2.28.0
 
-  '@osdk/oauth@1.4.0':
+  '@osdk/oauth@1.5.0':
     dependencies:
       delay: 6.0.0
       oauth4webapi: 2.17.0
