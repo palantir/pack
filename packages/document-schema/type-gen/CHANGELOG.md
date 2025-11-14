@@ -1,5 +1,11 @@
 # @palantir/pack.document-schema.type-gen
 
+## 0.1.1
+
+### Patch Changes
+
+- 4c038f5: Add preview flag to API call only available on preview
+
 ## 0.1.0
 
 ### Minor Changes
