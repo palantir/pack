@@ -38,7 +38,7 @@ export type {
 } from "./types/DocumentSchema.js";
 export { MediaRefBrand } from "./types/MediaRef.js";
 export type { MediaId, MediaRef } from "./types/MediaRef.js";
-export { getMetadata, Metadata } from "./types/Metadata.js";
+export { getMetadata, hasMetadata, Metadata } from "./types/Metadata.js";
 export type { WithMetadata } from "./types/Metadata.js";
 export { ExternalRefType } from "./types/Model.js";
 export type { EditDescription, Model, ModelData, ModelMetadata } from "./types/Model.js";

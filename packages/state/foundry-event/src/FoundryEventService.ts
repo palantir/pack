@@ -30,7 +30,7 @@ import {
   type DocumentId,
   type EditDescription,
   getMetadata,
-  Metadata,
+  hasMetadata,
 } from "@palantir/pack.document-schema.model-types";
 import { DocumentLoadStatus, type DocumentSyncStatus } from "@palantir/pack.state.core";
 import type { CometD } from "cometd";
@@ -505,7 +505,7 @@ function isEditDescription(obj: unknown): obj is EditDescription {
     && "model" in obj
     && typeof obj.model === "object"
     && obj.model != null
-    && Metadata in obj.model
+    && hasMetadata(obj.model)
   );
 }
 
