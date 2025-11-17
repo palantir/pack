@@ -239,12 +239,9 @@ export interface DocumentRef<D extends DocumentSchema = DocumentSchema> {
    *   const myRecords = docRef.getRecords(MyModel);
    *   myRecords.set("record-1", { field: "new value" });
    *   myRecords.delete("record-2");
-   * }, {
-   *   model: MyEditEventModel,
-   *   data: {
-   *     summary: "Updated record-1 and deleted record-2",
-   *   },
-   * });
+   * }, ActivityEvents.describeEdit(MyEditEventModel, {
+   *   summary: "Updated record-1 and deleted record-2",
+   * }));
    * ```
    */
   withTransaction(fn: () => void, description?: EditDescription): void;

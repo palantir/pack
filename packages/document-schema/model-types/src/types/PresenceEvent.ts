@@ -74,8 +74,8 @@ export interface PresenceEventDataCustom<M extends Model = Model> {
  * in a future release of pack libraries and can be safely ignored by
  * applications.
  */
-export interface PresenceEventUnknown {
-  readonly type: "unknown";
+export interface PresenceEventDataUnknown {
+  readonly type: typeof PresenceEventDataType.UNKNOWN;
   readonly rawType: string;
   readonly rawData: unknown;
 }
@@ -84,7 +84,7 @@ export type PresenceEventData =
   | PresenceEventDataArrived
   | PresenceEventDataDeparted
   | PresenceEventDataCustom
-  | PresenceEventUnknown;
+  | PresenceEventDataUnknown;
 
 /**
  * An event representing a transient awareness or presence change for a user on this document.

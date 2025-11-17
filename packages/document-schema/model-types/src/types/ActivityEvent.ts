@@ -63,7 +63,7 @@ export interface ActivityEventDataCustom<M extends Model = Model> {
  * applications.
  */
 export interface ActivityEventDataUnknown {
-  readonly type: "unknown";
+  readonly type: typeof ActivityEventDataType.UNKNOWN;
   readonly rawType: string;
   readonly rawData: unknown;
 }

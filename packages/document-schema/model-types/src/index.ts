@@ -51,7 +51,7 @@ export type {
   PresenceEventDataArrived,
   PresenceEventDataCustom,
   PresenceEventDataDeparted,
-  PresenceEventUnknown,
+  PresenceEventDataUnknown,
 } from "./types/PresenceEvent.js";
 export { RecordCollectionRefBrand } from "./types/RecordCollectionRef.js";
 export type { RecordCollectionRef } from "./types/RecordCollectionRef.js";
@@ -60,3 +60,5 @@ export type { RecordId, RecordRef } from "./types/RecordRef.js";
 export type { Unsubscribe } from "./types/Unsubscribe.js";
 export { UserRefBrand } from "./types/UserRef.js";
 export type { UserId, UserRef } from "./types/UserRef.js";
+export * as ActivityEvents from "./utils/ActivityEvents.js";
+export * as PresenceEvents from "./utils/PresenceEvents.js";
