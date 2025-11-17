@@ -33,10 +33,12 @@ const INVALID_RECORD_REF: RecordRef = Object.freeze(
     id: INVALID_RECORD_ID,
     model: {} as Model,
     [RecordRefBrand]: RecordRefBrand,
+    delete: () => Promise.reject(new Error("Invalid record reference")),
     getSnapshot: () => Promise.reject(new Error("Invalid record reference")),
     set: () => Promise.reject(new Error("Invalid record reference")),
     onChange: () => () => {},
     onDeleted: () => () => {},
+    update: () => Promise.reject(new Error("Invalid record reference")),
   } as const,
 );
 

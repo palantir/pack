@@ -1,5 +1,11 @@
 # @palantir/pack.document-schema.model-types
 
+## 0.2.1
+
+### Patch Changes
+
+- c2012a1: Add ActivityEvents and PresenceEvents utils for type guards and easier edit descriptions
+
 ## 0.2.0
 
 ### Minor Changes

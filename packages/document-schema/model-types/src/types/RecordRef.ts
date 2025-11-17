@@ -88,10 +88,22 @@ export interface RecordRef<M extends Model = Model> {
    * });
    *
    * // Trigger the deletion
-   * docRef.getRecords(MyModel).delete(recordRef.id);
+   * recordRef.delete();
    * ```
    */
   onDeleted(callback: (recordRef: RecordRef<M>) => void): Unsubscribe;
+
+  /**
+   * Delete the record from the document.
+   *
+   * @returns An ignorable promise that resolves when the record is deleted.
+   *
+   * @example
+   * ```ts
+   * await recordRef.delete();
+   * ```
+   */
+  delete(): Promise<void>;
 
   /**
    * Set the data for the record (creating it if it doesn't exist).
@@ -107,4 +119,19 @@ export interface RecordRef<M extends Model = Model> {
    * ```
    */
   set(record: ModelData<M>): Promise<void>;
+
+  /**
+   * Update specific fields of the record.
+   *
+   * @see {onChange} to subscribe to changes to the record.
+   *
+   * @param partialRecord - A partial plain object with the fields to update.
+   * @returns An ignorable promise that resolves when the record is published.
+   *
+   * @example
+   * ```ts
+   * await recordRef.update({ field: "new value" });
+   * ```
+   */
+  update(record: Partial<ModelData<M>>): Promise<void>;
 }
