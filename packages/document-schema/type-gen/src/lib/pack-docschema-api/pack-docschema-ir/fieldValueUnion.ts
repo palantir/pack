@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+import type { IFieldValueBoolean } from "./fieldValueBoolean.js";
 import type { IFieldValueDatetime } from "./fieldValueDatetime.js";
 import type { IFieldValueDocumentRef } from "./fieldValueDocumentRef.js";
 import type { IFieldValueDouble } from "./fieldValueDouble.js";
@@ -25,6 +26,11 @@ import type { IFieldValueString } from "./fieldValueString.js";
 import type { IFieldValueText } from "./fieldValueText.js";
 import type { IFieldValueUnmanagedJson } from "./fieldValueUnmanagedJson.js";
 import type { IFieldValueUserRef } from "./fieldValueUserRef.js";
+
+export interface IFieldValueUnion_Boolean {
+  readonly "boolean": IFieldValueBoolean;
+  readonly "type": "boolean";
+}
 
 export interface IFieldValueUnion_Datetime {
   readonly "datetime": IFieldValueDatetime;
@@ -82,6 +88,7 @@ export interface IFieldValueUnion_UserRef {
 }
 
 export type IFieldValueUnion =
+  | IFieldValueUnion_Boolean
   | IFieldValueUnion_Datetime
   | IFieldValueUnion_DocRef
   | IFieldValueUnion_Double
@@ -95,6 +102,7 @@ export type IFieldValueUnion =
   | IFieldValueUnion_UserRef;
 
 export interface IFieldValueUnionVisitor<T> {
+  readonly "boolean": (obj: IFieldValueBoolean) => T;
   readonly "datetime": (obj: IFieldValueDatetime) => T;
   readonly "docRef": (obj: IFieldValueDocumentRef) => T;
   readonly "double": (obj: IFieldValueDouble) => T;
@@ -107,6 +115,17 @@ export interface IFieldValueUnionVisitor<T> {
   readonly "unmanagedJson": (obj: IFieldValueUnmanagedJson) => T;
   readonly "userRef": (obj: IFieldValueUserRef) => T;
   readonly "unknown": (obj: IFieldValueUnion) => T;
+}
+
+function isBoolean(obj: IFieldValueUnion): obj is IFieldValueUnion_Boolean {
+  return (obj.type === "boolean");
+}
+
+function boolean(obj: IFieldValueBoolean): IFieldValueUnion_Boolean {
+  return {
+    boolean: obj,
+    type: "boolean",
+  };
 }
 
 function isDatetime(obj: IFieldValueUnion): obj is IFieldValueUnion_Datetime {
@@ -231,6 +250,9 @@ function userRef(obj: IFieldValueUserRef): IFieldValueUnion_UserRef {
 }
 
 function visit<T>(obj: IFieldValueUnion, visitor: IFieldValueUnionVisitor<T>): T {
+  if (isBoolean(obj)) {
+    return visitor.boolean(obj.boolean);
+  }
   if (isDatetime(obj)) {
     return visitor.datetime(obj.datetime);
   }
@@ -268,6 +290,8 @@ function visit<T>(obj: IFieldValueUnion, visitor: IFieldValueUnionVisitor<T>): T
 }
 
 export const IFieldValueUnion: {
+  isBoolean: typeof isBoolean;
+  boolean: typeof boolean;
   isDatetime: typeof isDatetime;
   datetime: typeof datetime;
   isDocRef: typeof isDocRef;
@@ -292,6 +316,8 @@ export const IFieldValueUnion: {
   userRef: typeof userRef;
   visit: typeof visit;
 } = {
+  isBoolean: isBoolean,
+  boolean: boolean,
   isDatetime: isDatetime,
   datetime: datetime,
   isDocRef: isDocRef,
