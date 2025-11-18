@@ -1,6 +1,6 @@
 {
   "name": "@palantir/pack.state.foundry-event",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "PACK event service for real-time document synchronization",
   "license": "Apache-2.0",
   "repository": {

@@ -1,5 +1,11 @@
 # @palantir/pack.document-schema.model-types
 
+## 0.2.2
+
+### Patch Changes
+
+- 0954a30: Relax validation on transaction editDescription for build environments that have duplicated @palantir/pack.document-schema.model-types. Adds a warning when this is detected
+
 ## 0.2.1
 
 ### Patch Changes

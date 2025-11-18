@@ -1,5 +1,12 @@
 # @palantir/pack.state.core
 
+## 0.2.2
+
+### Patch Changes
+
+- Updated dependencies [0954a30]
+  - @palantir/pack.document-schema.model-types@0.2.2
+
 ## 0.2.1
 
 ### Patch Changes
