@@ -37,7 +37,6 @@ const migration000 = S.defineMigration({}, () => {
   });
 
   const NodeShape = S.defineUnion("NodeShape", {
-    discriminant: "shapeType",
     docs: "The shape of a node.",
     variants: {
       "box": ShapeBox,
