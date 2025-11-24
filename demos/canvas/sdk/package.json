@@ -1,9 +1,9 @@
 {
-  "name": "<%= answers.packageName || projectName %>",
+  "name": "@demo/canvas.sdk",
   "private": true,
   "version": "0.0.1",
-  "description": "<%= answers.description || 'Generated SDK from schema' %>",
-  <% if (answers.author) { %>"author": "<%= answers.author %>",<% } %>
+  "description": "Generated SDK from canvas schema",
+  
   "license": "UNLICENSED",
   "exports": {
     ".": {

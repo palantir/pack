@@ -1,0 +1,53 @@
+{
+  "name": "@demo/canvas.app",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Canvas demo application",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/palantir/pack.git"
+  },
+  "scripts": {
+    "build": "tsc && vite build",
+    "clean": "rimraf .turbo build dist lib test-output *.tgz tsconfig.tsbuildinfo",
+    "dev": "vite",
+    "lint": "eslint ./src && dprint check --config $(find-up dprint.json) --allow-no-files",
+    "lint:fix": "eslint ./src --fix && dprint fmt --config $(find-up dprint.json) --allow-no-files",
+    "preview": "vite preview",
+    "test": "vitest run --passWithNoTests -u",
+    "test:watch": "vitest --passWithNoTests",
+    "typecheck": "tsc --noEmit --emitDeclarationOnly false"
+  },
+  "dependencies": {
+    "@demo/canvas.sdk": "workspace:*",
+    "@osdk/api": "catalog:",
+    "@osdk/client": "catalog:",
+    "@osdk/foundry.admin": "catalog:",
+    "@osdk/oauth": "catalog:",
+    "@osdk/react": "catalog:",
+    "@palantir/pack.app": "workspace:*",
+    "@palantir/pack.auth": "workspace:*",
+    "@palantir/pack.core": "workspace:*",
+    "@palantir/pack.state.core": "workspace:*",
+    "@palantir/pack.state.foundry": "workspace:*",
+    "@palantir/pack.state.react": "workspace:*",
+    "cometd": "catalog:",
+    "react": "^18",
+    "react-dom": "^18",
+    "react-router-dom": "^6.30.1"
+  },
+  "devDependencies": {
+    "@palantir/pack.monorepo.tsconfig": "workspace:~",
+    "@types/node": "catalog:",
+    "@types/react": "^18",
+    "@types/react-dom": "^18",
+    "@vitejs/plugin-react": "^4.7.0",
+    "rimraf": "^6.0.1",
+    "tslib": "^2.8.1",
+    "typescript": "^5.9.2",
+    "vite": "^6.3.6",
+    "vitest": "^3.2.4"
+  },
+  "type": "module"
+}

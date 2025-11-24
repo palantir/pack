@@ -1,0 +1,27 @@
+{
+  "$schema": "https://turbo.build/schema.json",
+  "extends": ["//"],
+  "tasks": {
+    "build": {
+      "dependsOn": ["@demo/canvas.schema#sdk-gen"]
+    },
+    "transpile": {
+      "dependsOn": ["@demo/canvas.schema#sdk-gen"]
+    },
+    "transpileBrowser": {
+      "dependsOn": ["@demo/canvas.schema#sdk-gen"]
+    },
+    "transpileCjs": {
+      "dependsOn": ["@demo/canvas.schema#sdk-gen"]
+    },
+    "transpileEsm": {
+      "dependsOn": ["@demo/canvas.schema#sdk-gen"]
+    },
+    "transpileTypes": {
+      "dependsOn": ["@demo/canvas.schema#sdk-gen"]
+    },
+    "typecheck": {
+      "dependsOn": ["@demo/canvas.schema#sdk-gen"]
+    }
+  }
+}

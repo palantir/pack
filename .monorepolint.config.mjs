@@ -28,6 +28,10 @@ const REPOSITORY_URL = "https://github.com/palantir/pack.git";
  * @property {boolean} [isSdkgenTemplate]
  * @property {boolean} [isBuildTools]
  * @property {boolean} [hasSdkgenTemplates]
+ * @property {boolean} [isDemo]
+ * @property {boolean} [isDemoSchema]
+ * @property {boolean} [isDemoApp]
+ * @property {boolean} [isDemoSdk]
  */
 
 const archetypeConfig = archetypes(
@@ -64,13 +68,26 @@ const archetypeConfig = archetypes(
       transpileTypes: "tsc --emitDeclarationOnly",
     };
 
-    // Package scripts - different for CLI vs library vs sdkgen template
+    const demoSchemaScripts = baseScripts;
+
+    const demoAppScripts = {
+      ...baseScripts,
+      build: "tsc && vite build",
+      dev: "vite",
+      preview: "vite preview",
+    };
+
+    // Package scripts - different for CLI vs library vs sdkgen template vs schema vs demo app
     const scriptsRule = Rules.packageScript({
       ...shared,
       options: {
-        scripts: rules.isSdkgenTemplate
-          ? sdkgenTemplateScripts
-          : (rules.isCli ? cliScripts : libraryScripts),
+        scripts: rules.isDemoApp
+          ? demoAppScripts
+          : (rules.isDemoSchema
+            ? demoSchemaScripts
+            : (rules.isSdkgenTemplate
+              ? sdkgenTemplateScripts
+              : (rules.isCli ? cliScripts : libraryScripts))),
       },
     });
 
@@ -87,21 +104,30 @@ const archetypeConfig = archetypes(
       },
     });
 
-    // Rules that apply to all packages
-    const baseRules = [
-      Rules.packageEntry({
-        ...shared,
-        options: {
-          entriesExist: ["version"],
-          entries: {
-            license: "Apache-2.0",
-            repository: {
-              "type": "git",
-              "url": REPOSITORY_URL,
-            },
+    const licenseAndRepositoryRule = Rules.packageEntry({
+      ...shared,
+      options: {
+        entries: {
+          license: "Apache-2.0",
+          repository: {
+            "type": "git",
+            "url": REPOSITORY_URL,
           },
         },
-      }),
+      },
+    });
+
+    // Version requirement for all packages
+    const versionRule = Rules.packageEntry({
+      ...shared,
+      options: {
+        entriesExist: ["version"],
+      },
+    });
+
+    // Rules that apply to all packages
+    const baseRules = [
+      versionRule,
       Rules.packageOrder({
         options: {
           order: [
@@ -145,14 +171,43 @@ const archetypeConfig = archetypes(
       }),
     ];
 
-    // TypeScript config - different templates for CLI vs library vs sdkgen template
+    // TypeScript config - different templates for CLI vs library vs sdkgen template vs demo
     const standardTsConfigRule = Rules.standardTsconfig({
       ...shared,
       options: {
         excludedReferences: ["**/*"],
-        templateFile: rules.isSdkgenTemplate
-          ? "templates/tsconfig.sdkgen-template.json"
-          : (rules.isCli ? "templates/tsconfig.cli.json" : "templates/tsconfig.json"),
+        templateFile: rules.isDemo || rules.isDemoSchema
+          ? "templates/tsconfig.demo.json"
+          : (rules.isSdkgenTemplate
+            ? "templates/tsconfig.sdkgen-template.json"
+            : (rules.isCli ? "templates/tsconfig.cli.json" : "templates/tsconfig.json")),
+      },
+    });
+
+    const vitestConfigRule = Rules.fileContents({
+      ...shared,
+      options: {
+        file: "vitest.config.mjs",
+        generator: context => {
+          const packageJson = context.getPackageJson();
+          const devDeps = packageJson.devDependencies ?? {};
+          const hasHappyDom = "happy-dom" in devDeps;
+
+          const templateFile = hasHappyDom
+            ? "templates/vitest.with-dom.config.mjs"
+            : "templates/vitest.config.mjs";
+
+          const { packageDir: workspacePackageDir } = context.getWorkspaceContext();
+          const fullPath = path.resolve(workspacePackageDir, templateFile);
+          return context.host.readFile(fullPath, { encoding: "utf-8" });
+        },
+      },
+    });
+
+    const noExportsRule = noPackageEntry({
+      ...shared,
+      options: {
+        entries: ["exports", "main", "module", "types"],
       },
     });
 
@@ -180,11 +235,13 @@ const archetypeConfig = archetypes(
     if (rules.isBuildTools) {
       if (!rules.isCli) {
         return [
+          licenseAndRepositoryRule,
           privateRule,
           ...baseRules,
         ];
       }
       return [
+        licenseAndRepositoryRule,
         privateRule,
         scriptsRule,
         requiredScriptsDependenciesRule,
@@ -193,30 +250,55 @@ const archetypeConfig = archetypes(
       ];
     }
 
+    if (rules.isDemoApp) {
+      return [
+        licenseAndRepositoryRule,
+        privateRule,
+        scriptsRule,
+        standardTsConfigRule,
+        vitestConfigRule,
+        noExportsRule,
+        ...baseRules,
+      ];
+    }
+
+    if (rules.isDemoSchema) {
+      return [
+        licenseAndRepositoryRule,
+        privateRule,
+        scriptsRule,
+        requiredScriptsDependenciesRule,
+        standardTsConfigRule,
+        vitestConfigRule,
+        noExportsRule,
+        ...baseRules,
+      ];
+    }
+
+    if (rules.isDemoSdk) {
+      return [
+        privateRule,
+        ...baseRules,
+      ];
+    }
+
+    if (rules.isDemo) {
+      return [
+        licenseAndRepositoryRule,
+        privateRule,
+        scriptsRule,
+        requiredScriptsDependenciesRule,
+        standardTsConfigRule,
+        vitestConfigRule,
+        ...baseRules,
+      ];
+    }
+
     return [
+      licenseAndRepositoryRule,
       ...publicRules,
       scriptsRule,
-
-      // Vitest config
-      Rules.fileContents({
-        ...shared,
-        options: {
-          file: "vitest.config.mjs",
-          generator: (context) => {
-            const packageJson = context.getPackageJson();
-            const devDeps = packageJson.devDependencies ?? {};
-            const hasHappyDom = "happy-dom" in devDeps;
-
-            const templateFile = hasHappyDom
-              ? "templates/vitest.with-dom.config.mjs"
-              : "templates/vitest.config.mjs";
-
-            const { packageDir: workspacePackageDir } = context.getWorkspaceContext();
-            const fullPath = path.resolve(workspacePackageDir, templateFile);
-            return context.host.readFile(fullPath, { encoding: "utf-8" });
-          },
-        },
-      }),
+      vitestConfigRule,
 
       // Package exports - CLI packages have simpler exports
       Rules.packageEntry({
@@ -236,9 +318,7 @@ const archetypeConfig = archetypes(
                     default: "./build/esm/index.js",
                   },
                 },
-                files: rules.hasSdkgenTemplates
-                  ? ["bin", "build", "templates"]
-                  : ["bin", "build"],
+                files: rules.hasSdkgenTemplates ? ["bin", "build", "templates"] : ["bin", "build"],
                 main: "./build/esm/index.js",
                 types: "./build/types/index.d.ts",
               }
@@ -327,7 +407,16 @@ const archetypeConfig = archetypes(
   .addArchetype("sdkgen-template", [
     "@palantir/pack.sdkgen.demo-template",
     "@palantir/pack.sdkgen.pack-template",
-  ], { isSdkgenTemplate: true });
+  ], { isSdkgenTemplate: true })
+  .addArchetype("demo-app", [
+    "@demo/canvas.app",
+  ], { isDemo: true, isDemoApp: true })
+  .addArchetype("demo-schema", [
+    "@demo/canvas.schema",
+  ], { isDemo: true, isDemoSchema: true })
+  .addArchetype("demo-sdk", [
+    "@demo/canvas.sdk",
+  ], { isDemo: true, isDemoSdk: true });
 
 const allLocalDepsMustNotBePrivate = Rules.createRuleFactory({
   name: "allLocalDepsMustNotBePrivate",

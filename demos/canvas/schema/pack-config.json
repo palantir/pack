@@ -1,0 +1,9 @@
+{
+  "packageName": "@demo/canvas.sdk",
+  "description": "Generated SDK from canvas schema",
+  "schemaName": "Canvas Document",
+  "schemaDescription": "Schema for the Demo Canvas Application",
+  "deploy": {
+    "parentFolder": "ri.compass.main.folder.54bbc110-7b0a-4c7b-93ce-7b9ff9cd3533"
+  }
+}
