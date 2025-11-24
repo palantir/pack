@@ -1,6 +1,7 @@
 import type {
   DocumentSchema,
-  Model,
+  RecordModel,
+  UnionModel,
 } from '@palantir/pack.document-schema.model-types';
 import { Metadata } from '@palantir/pack.document-schema.model-types';
 import type {
@@ -19,7 +20,7 @@ import {
 } from './schema.js';
 
 export interface ObjectNodeModel
-  extends Model<ObjectNode, typeof ObjectNodeSchema> {}
+  extends RecordModel<ObjectNode, typeof ObjectNodeSchema> {}
 export const ObjectNodeModel: ObjectNodeModel = {
   __type: {} as ObjectNode,
   zodSchema: ObjectNodeSchema,
@@ -28,7 +29,8 @@ export const ObjectNodeModel: ObjectNodeModel = {
   },
 };
 
-export interface TextBoxModel extends Model<TextBox, typeof TextBoxSchema> {}
+export interface TextBoxModel
+  extends RecordModel<TextBox, typeof TextBoxSchema> {}
 export const TextBoxModel: TextBoxModel = {
   __type: {} as TextBox,
   zodSchema: TextBoxSchema,
@@ -37,31 +39,34 @@ export const TextBoxModel: TextBoxModel = {
   },
 };
 
-export interface NodeModel extends Model<Node, typeof NodeSchema> {}
+export interface NodeModel extends UnionModel<Node, typeof NodeSchema> {}
 export const NodeModel: NodeModel = {
   __type: {} as Node,
   zodSchema: NodeSchema,
   [Metadata]: {
+    discriminant: 'type',
     name: 'Node',
   },
 };
 
 export interface NodeObjectModel
-  extends Model<NodeObject, typeof NodeObjectSchema> {}
+  extends UnionModel<NodeObject, typeof NodeObjectSchema> {}
 export const NodeObjectModel: NodeObjectModel = {
   __type: {} as NodeObject,
   zodSchema: NodeObjectSchema,
   [Metadata]: {
+    discriminant: 'type',
     name: 'NodeObject',
   },
 };
 
 export interface NodeTextBoxModel
-  extends Model<NodeTextBox, typeof NodeTextBoxSchema> {}
+  extends UnionModel<NodeTextBox, typeof NodeTextBoxSchema> {}
 export const NodeTextBoxModel: NodeTextBoxModel = {
   __type: {} as NodeTextBox,
   zodSchema: NodeTextBoxSchema,
   [Metadata]: {
+    discriminant: 'type',
     name: 'NodeTextBox',
   },
 };

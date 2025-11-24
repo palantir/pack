@@ -67,8 +67,9 @@ const schema = (
     "docs": "An edge in the graph"
   },
   "Node": {
-    "type": "union",
+    "discriminant": "type",
     "name": "Node",
+    "type": "union",
     "variants": {
       "object": {
         "type": "ref",
@@ -80,8 +81,7 @@ const schema = (
         "name": "TextBox",
         "refType": "record"
       }
-    },
-    "discriminant": "type"
+    }
   }
 }
 ) satisfies Schema<any>;

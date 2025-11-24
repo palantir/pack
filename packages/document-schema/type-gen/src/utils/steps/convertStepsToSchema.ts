@@ -66,10 +66,10 @@ export function convertStepsToSchema(steps: MigrationStep[]): {
     if ("add-union" in step) {
       const addUnion = step["add-union"]!;
       for (const [unionKey, unionDef] of Object.entries(addUnion)) {
-        // unionDef is a map from typeKey to recordKey (i.e. {"object" -> "ObjectNode"} implies { type: "object", ...ObjectNode })
+        const discriminant = unionDef.discriminant ?? "type";
 
         const variants: Record<string, Ref> = {};
-        for (const [typeKey, recordKey] of Object.entries(unionDef)) {
+        for (const [typeKey, recordKey] of Object.entries(unionDef.variants)) {
           const recordDef = recordDefinitionsByName[recordKey];
           if (!recordDef) {
             throw new Error(`Record ${recordKey} not found`);
@@ -78,11 +78,11 @@ export function convertStepsToSchema(steps: MigrationStep[]): {
         }
 
         unionDefinitionsByName[unionKey] = {
-          type: "union",
+          discriminant,
+          docs: undefined,
           name: unionKey,
-          docs: unionDef.docs,
+          type: "union",
           variants,
-          discriminant: "type",
         };
       }
     }

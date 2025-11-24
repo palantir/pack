@@ -228,4 +228,43 @@ describe("defineUnion", () => {
       "first" | "second" | "third" | "fourth"
     >();
   });
+
+  it("should support custom discriminant field", () => {
+    const CatRecord = defineRecord("Cat", {
+      docs: "A cat",
+      fields: {
+        meow: P.String,
+      },
+    });
+
+    const DogRecord = defineRecord("Dog", {
+      docs: "A dog",
+      fields: {
+        bark: P.String,
+      },
+    });
+
+    const AnimalUnion = defineUnion("Animal", {
+      discriminant: "kind",
+      docs: "An animal union with custom discriminant",
+      variants: {
+        cat: CatRecord,
+        dog: DogRecord,
+      },
+    });
+
+    expect(AnimalUnion.discriminant).toBe("kind");
+    expect(AnimalUnion.type).toBe("union");
+    expect(AnimalUnion.name).toBe("Animal");
+    expect(AnimalUnion.variants.cat).toEqual({
+      type: "ref",
+      name: "Cat",
+      refType: "record",
+    });
+    expect(AnimalUnion.variants.dog).toEqual({
+      type: "ref",
+      name: "Dog",
+      refType: "record",
+    });
+  });
 });

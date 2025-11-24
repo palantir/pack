@@ -15,7 +15,7 @@
  */
 
 import yaml from "js-yaml";
-import type { MigrationStep } from "../steps/parseMigrationSteps.js";
+import type { MigrationStep, UnionDefinition } from "../steps/parseMigrationSteps.js";
 import type { P } from "./validateSchemaModule.js";
 
 function convertFieldType(field: P.Type): string {
@@ -67,11 +67,19 @@ function convertRecordToYaml(
   return result;
 }
 
-function convertUnionToYaml(unionDef: P.UnionDef): Record<string, string> {
-  const result: Record<string, string> = {};
+function convertUnionToYaml(unionDef: P.UnionDef): UnionDefinition {
+  const variants: Record<string, string> = {};
 
   for (const [variantName, variantRef] of Object.entries(unionDef.variants)) {
-    result[variantName] = variantRef.name;
+    variants[variantName] = variantRef.name;
+  }
+
+  const result: UnionDefinition = {
+    variants,
+  };
+
+  if (unionDef.discriminant !== "type") {
+    result.discriminant = unionDef.discriminant;
   }
 
   return result;
@@ -80,7 +88,7 @@ function convertUnionToYaml(unionDef: P.UnionDef): Record<string, string> {
 export function convertSchemaToSteps(schema: P.ReturnedSchema): MigrationStep[] {
   const steps: MigrationStep[] = [];
   const records: Record<string, { docs?: string; fields: Record<string, string> }> = {};
-  const unions: Record<string, Record<string, string>> = {};
+  const unions: Record<string, UnionDefinition> = {};
 
   for (const def of Object.values(schema)) {
     switch (def.type) {

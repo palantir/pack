@@ -521,4 +521,94 @@ describe("generateZodSchemasFromIr", () => {
 
     await expect(formatted).toMatchFileSnapshot(path.join(snapshotDir, "union-before-records.ts"));
   });
+
+  it("should generate Zod schemas with custom discriminant", async () => {
+    const catRecord: IRecordDef = {
+      key: "Cat",
+      name: "Cat",
+      description: "A cat",
+      fields: [
+        {
+          key: "meow",
+          name: "Meow",
+          description: "Cat sound",
+          value: {
+            type: "value",
+            value: {
+              type: "string",
+              string: {},
+            },
+          },
+          meta: { addedIn: 1 },
+        },
+      ],
+      meta: { addedIn: 1 },
+    };
+
+    const dogRecord: IRecordDef = {
+      key: "Dog",
+      name: "Dog",
+      description: "A dog",
+      fields: [
+        {
+          key: "bark",
+          name: "Bark",
+          description: "Dog sound",
+          value: {
+            type: "value",
+            value: {
+              type: "string",
+              string: {},
+            },
+          },
+          meta: { addedIn: 1 },
+        },
+      ],
+      meta: { addedIn: 1 },
+    };
+
+    const animalUnion: IUnionDef = {
+      key: "Animal",
+      discriminant: "kind",
+      name: "Animal",
+      description: "An animal union with custom discriminant",
+      variants: {
+        cat: "Cat",
+        dog: "Dog",
+      },
+      meta: { addedIn: 1 },
+    };
+
+    const schema: IRealTimeDocumentSchema = {
+      name: "Test Schema",
+      description: "A test schema with custom discriminant",
+      version: 1,
+      primaryModelKeys: ["Cat", "Dog", "Animal"],
+      models: {
+        Cat: {
+          type: "record",
+          record: catRecord,
+        } as IModelDef,
+        Dog: {
+          type: "record",
+          record: dogRecord,
+        } as IModelDef,
+        Animal: {
+          type: "union",
+          union: animalUnion,
+        } as IModelDef,
+      },
+    };
+
+    const result = await generateZodSchemasFromIr(schema);
+    const formatted = await formatWithPrettier(result);
+
+    expect(formatted).toContain("z.discriminatedUnion('kind'");
+    expect(formatted).toContain("kind: z.literal('cat')");
+    expect(formatted).toContain("kind: z.literal('dog')");
+
+    await expect(formatted).toMatchFileSnapshot(
+      path.join(snapshotDir, "custom-discriminant.ts"),
+    );
+  });
 });
