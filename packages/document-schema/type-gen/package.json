@@ -31,6 +31,7 @@
   "dependencies": {
     "@osdk/client": "catalog:",
     "@osdk/foundry.pack": "catalog:",
+    "@palantir/pack.document-schema.model-types": "workspace:~",
     "@palantir/pack.schema": "workspace:*",
     "bun": "catalog:",
     "commander": "catalog:",

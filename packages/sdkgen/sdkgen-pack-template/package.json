@@ -42,6 +42,7 @@
     "typecheck": "tsc --noEmit --emitDeclarationOnly false"
   },
   "dependencies": {
+    "@palantir/pack.document-schema.model-types": "workspace:*",
     "@palantir/pack.document-schema.type-gen": "workspace:*",
     "fs-extra": "^11.3.2"
   },
