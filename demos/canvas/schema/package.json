@@ -9,7 +9,7 @@
     "url": "https://github.com/palantir/pack.git"
   },
   "scripts": {
-    "build:yaml": "type-gen schema yaml -i src/schema.ts -o build/migrations/schema.yaml",
+    "build:yaml": "type-gen schema yaml -i src/schema.mjs -o build/migrations/schema.yaml",
     "clean": "rimraf .turbo build dist lib test-output *.tgz tsconfig.tsbuildinfo",
     "lint": "eslint ./src && dprint check --config $(find-up dprint.json) --allow-no-files",
     "lint:fix": "eslint ./src --fix && dprint fmt --config $(find-up dprint.json) --allow-no-files",

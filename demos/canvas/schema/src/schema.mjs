@@ -16,6 +16,8 @@
 
 import * as S from "@palantir/pack.schema";
 
+// @ts-check
+
 const SHAPE_COMMON = {
   bottom: S.Double,
   left: S.Double,
