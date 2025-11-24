@@ -18,8 +18,7 @@
         "@palantir/pack.sdkgen#build",
         "@palantir/pack.sdkgen.pack-template#build"
       ],
-      "inputs": ["build/migrations/**", "pack-config.json", "scripts/**"],
-      "outputs": ["../sdk/**"]
+      "inputs": ["build/migrations/**", "pack-config.json", "scripts/**"]
     },
     "build": {
       "dependsOn": ["build:yaml", "sdk-gen"],
