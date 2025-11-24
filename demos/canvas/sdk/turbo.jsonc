@@ -3,25 +3,16 @@
   "extends": ["//"],
   "tasks": {
     "build": {
-      "dependsOn": ["@demo/canvas.schema#sdk-gen"]
-    },
-    "transpile": {
-      "dependsOn": ["@demo/canvas.schema#sdk-gen"]
-    },
-    "transpileBrowser": {
-      "dependsOn": ["@demo/canvas.schema#sdk-gen"]
-    },
-    "transpileCjs": {
-      "dependsOn": ["@demo/canvas.schema#sdk-gen"]
-    },
-    "transpileEsm": {
-      "dependsOn": ["@demo/canvas.schema#sdk-gen"]
+      "inputs": ["src/**", "tsconfig.json"],
+      "dependsOn": ["transpile", "transpileTypes"]
     },
     "transpileTypes": {
-      "dependsOn": ["@demo/canvas.schema#sdk-gen"]
+      "inputs": ["src/**", "tsconfig.json"],
+      "dependsOn": ["@demo/canvas.schema#sdk-gen", "^transpileTypes"]
     },
     "typecheck": {
-      "dependsOn": ["@demo/canvas.schema#sdk-gen"]
+      "inputs": ["src/**", "tsconfig.json"],
+      "dependsOn": ["@demo/canvas.schema#sdk-gen", "^transpileTypes", "transpileTypes"]
     }
   }
 }

@@ -108,6 +108,7 @@ console.log("");
 // Track if a build is currently running
 let buildRunning = false;
 let buildQueued = false;
+let currentBuildProcess = null;
 
 function runBuild() {
   if (buildRunning) {
@@ -124,8 +125,11 @@ function runBuild() {
     { stdio: "inherit" },
   );
 
+  currentBuildProcess = build;
+
   build.on("close", code => {
     buildRunning = false;
+    currentBuildProcess = null;
     if (code !== 0) {
       console.error(`Build failed with code ${code}`);
     }
@@ -150,5 +154,39 @@ watcher.on("all", (event, path) => {
   console.log(`[${event}] ${path}`);
   runBuild();
 });
+
+// Handle cleanup on exit signals
+function cleanup(signal) {
+  console.log(`\nReceived ${signal}, shutting down watch-dependencies...`);
+
+  // Close the file watcher
+  watcher.close();
+
+  // Kill any running build process
+  if (currentBuildProcess && !currentBuildProcess.killed) {
+    console.log("Terminating running build process...");
+    currentBuildProcess.kill("SIGTERM");
+
+    // Give it a moment to clean up, then force kill if needed
+    const killTimer = setTimeout(() => {
+      if (currentBuildProcess && !currentBuildProcess.killed) {
+        console.log("Force killing build process...");
+        currentBuildProcess.kill("SIGKILL");
+      }
+      process.exit(0);
+    }, 1000);
+
+    // If process exits cleanly, clear the timer and exit
+    currentBuildProcess.once("exit", () => {
+      clearTimeout(killTimer);
+      process.exit(0);
+    });
+  } else {
+    process.exit(0);
+  }
+}
+
+process.on("SIGINT", () => cleanup("SIGINT"));
+process.on("SIGTERM", () => cleanup("SIGTERM"));
 
 console.log("Watching for changes...");

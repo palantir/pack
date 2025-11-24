@@ -20,7 +20,7 @@ fi
 # This allows git to notice any removals (ie files that are not regenerated)
 # Preserve turbo.jsonc since it contains package-specific configuration
 echo "🗑️  Removing tracked files from SDK directory..."
-git ls-files "$GENERATED_DIR" | grep -v "turbo.jsonc" | while IFS= read -r file; do
+git ls-files "$GENERATED_DIR/src" | while IFS= read -r file; do
     rm -f "$file"
 done
 
@@ -33,9 +33,5 @@ pnpm exec sdkgen create "../sdk" --template @palantir/pack.sdkgen.pack-template 
 cd "$(git rev-parse --show-toplevel)" || exit 1
 echo "📋 SDK changes:"
 git status --short "$GENERATED_DIR"
-
-# Step 3: Update pnpm workspace cache to recognize the new/modified package
-echo "🔄 Updating pnpm workspace..."
-pnpm install --lockfile-only
 
 echo "✅ SDK generated successfully!"
