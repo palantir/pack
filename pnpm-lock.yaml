@@ -232,8 +232,8 @@ importers:
   demos/canvas/sdk:
     dependencies:
       '@palantir/pack.document-schema.model-types':
-        specifier: latest
-        version: 0.2.2(@osdk/api@2.4.2)(zod@4.1.12)
+        specifier: workspace:~
+        version: link:../../../packages/document-schema/model-types
       zod:
         specifier: ^4.1.7
         version: 4.1.12
@@ -429,6 +429,9 @@ importers:
       '@osdk/foundry.pack':
         specifier: 'catalog:'
         version: 2.39.0
+      '@palantir/pack.document-schema.model-types':
+        specifier: workspace:~
+        version: link:../model-types
       '@palantir/pack.schema':
         specifier: workspace:*
         version: link:../../schema
@@ -757,6 +760,9 @@ importers:
 
   packages/sdkgen/sdkgen-pack-template:
     dependencies:
+      '@palantir/pack.document-schema.model-types':
+        specifier: workspace:*
+        version: link:../../document-schema/model-types
       '@palantir/pack.document-schema.type-gen':
         specifier: workspace:*
         version: link:../../document-schema/type-gen
@@ -2248,16 +2254,6 @@ packages:
     engines: {node: ^20.19.0 || >=22.12.0}
     cpu: [x64]
     os: [win32]
-
-  '@palantir/pack.core@0.2.0':
-    resolution: {integrity: sha512-AyxNlgpQVysCPOxkq592OvQW9QOsDu/JN/YvFC8lvc6WZMTGBT9KLWpZYTMFgbhSVY3y0XfGY2Ew8oJzd0bScQ==}
-    peerDependencies:
-      '@osdk/api': ~2.4.2
-
-  '@palantir/pack.document-schema.model-types@0.2.2':
-    resolution: {integrity: sha512-K6M0LJpHSDrTSusX3As4UnH4cajh5+qbej23+hAUXNYjnE0UlTUjKlHjzMUARCky1A2WfsL/b3e0f1UiqnW0HA==}
-    peerDependencies:
-      zod: ^4.1.7
 
   '@pkgjs/parseargs@0.11.0':
     resolution: {integrity: sha512-+1VkjdD0QBLPodGrJUeqarH8VAIvQODIbwh9XpP5Syisf7YoQgsJKPNFoqqLQlu+VQ/tVSshMR6loPMn8U+dPg==}
@@ -6871,24 +6867,6 @@ snapshots:
 
   '@oxc-transform/binding-win32-x64-msvc@0.93.0':
     optional: true
-
-  '@palantir/pack.core@0.2.0(@osdk/api@2.4.2)':
-    dependencies:
-      '@osdk/api': 2.4.2
-      '@osdk/client': 2.4.2
-      remeda: 2.32.0
-    transitivePeerDependencies:
-      - bufferutil
-      - utf-8-validate
-
-  '@palantir/pack.document-schema.model-types@0.2.2(@osdk/api@2.4.2)(zod@4.1.12)':
-    dependencies:
-      '@palantir/pack.core': 0.2.0(@osdk/api@2.4.2)
-      zod: 4.1.12
-    transitivePeerDependencies:
-      - '@osdk/api'
-      - bufferutil
-      - utf-8-validate
 
   '@pkgjs/parseargs@0.11.0':
     optional: true

@@ -44,6 +44,11 @@ export default async function afterGenerate(context: HookContext): Promise<void>
         "../../../bin/cli-node.js",
       );
 
+      const pathToTypeGenPackageJson = path.resolve(
+        fileURLToPath(resolvedUrlForTypeGenPackage),
+        "../../../package.json",
+      );
+
       try {
         consola.log("Generating TypeScript types from YAML schema...");
 
@@ -121,10 +126,36 @@ export default async function afterGenerate(context: HookContext): Promise<void>
         }
 
         consola.log("Type, Zod schema, and Model constants generation complete!");
+
+        const typeGenPackageJson = await fs.readJson(pathToTypeGenPackageJson);
+        const modelTypesVersion = typeGenPackageJson.dependencies?.[
+          "@palantir/pack.document-schema.model-types"
+        ];
+
+        if (modelTypesVersion) {
+          consola.log(
+            `Updating model-types dependency to version ${modelTypesVersion}...`,
+          );
+
+          const outputPackageJsonPath = path.join(outputPath, "package.json");
+          const outputPackageJson = await fs.readJson(outputPackageJsonPath);
+
+          if (outputPackageJson.dependencies?.["@palantir/pack.document-schema.model-types"]) {
+            outputPackageJson.dependencies["@palantir/pack.document-schema.model-types"] =
+              modelTypesVersion;
+            await fs.writeJson(outputPackageJsonPath, outputPackageJson, { spaces: 2 });
+            consola.log("Successfully updated model-types dependency version");
+          }
+        } else {
+          consola.warn(
+            "Could not find model-types dependency in type-gen package.json",
+          );
+        }
       } catch (error) {
         consola.error(
           `Could not generate types: ${error instanceof Error ? error.message : String(error)}`,
         );
+        throw error;
       }
     }
   }
