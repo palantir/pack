@@ -38,6 +38,16 @@ describe("primitives", () => {
     });
   });
 
+  describe("Boolean", () => {
+    it("should create a boolean type", () => {
+      expect(P.Boolean).toEqual({ type: "boolean" });
+    });
+
+    it("should have correct type property", () => {
+      expect(P.Boolean.type).toBe("boolean");
+    });
+  });
+
   describe("Array", () => {
     it("should create an array of strings", () => {
       const stringArray = P.Array(P.String);
@@ -74,6 +84,14 @@ describe("primitives", () => {
           type: "optional",
           item: { type: "string" },
         },
+      });
+    });
+
+    it("should create an array of booleans", () => {
+      const booleanArray = P.Array(P.Boolean);
+      expect(booleanArray).toEqual({
+        type: "array",
+        items: { type: "boolean" },
       });
     });
   });
@@ -116,6 +134,36 @@ describe("primitives", () => {
         },
       });
     });
+
+    it("should create an optional boolean", () => {
+      const optionalBoolean = P.Optional(P.Boolean);
+      expect(optionalBoolean).toEqual({
+        type: "optional",
+        item: { type: "boolean" },
+      });
+    });
+
+    it("should create optional array of booleans", () => {
+      const optionalBooleanArray = P.Optional(P.Array(P.Boolean));
+      expect(optionalBooleanArray).toEqual({
+        type: "optional",
+        item: {
+          type: "array",
+          items: { type: "boolean" },
+        },
+      });
+    });
+
+    it("should create array of optional booleans", () => {
+      const arrayOfOptionalBooleans = P.Array(P.Optional(P.Boolean));
+      expect(arrayOfOptionalBooleans).toEqual({
+        type: "array",
+        items: {
+          type: "optional",
+          item: { type: "boolean" },
+        },
+      });
+    });
   });
 
   describe("Type combinations", () => {
@@ -148,6 +196,27 @@ describe("primitives", () => {
       const array2 = P.Array(P.String);
       expect(array1).toEqual(array2);
       expect(array1 === array2).toBe(false);
+    });
+
+    it("should create complex nested structures with booleans", () => {
+      const complexBooleanType = P.Optional(P.Array(P.Optional(P.Boolean)));
+      expect(complexBooleanType).toEqual({
+        type: "optional",
+        item: {
+          type: "array",
+          items: {
+            type: "optional",
+            item: { type: "boolean" },
+          },
+        },
+      });
+    });
+
+    it("should maintain immutability of boolean primitive", () => {
+      const boolean1 = P.Boolean;
+      const boolean2 = P.Boolean;
+      expect(boolean1).toBe(boolean2);
+      expect(boolean1 === boolean2).toBe(true);
     });
   });
 });

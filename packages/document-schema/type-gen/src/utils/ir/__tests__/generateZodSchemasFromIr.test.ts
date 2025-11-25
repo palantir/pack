@@ -207,6 +207,80 @@ describe("generateZodSchemasFromIr", () => {
     await expect(formatted).toMatchFileSnapshot(path.join(snapshotDir, "datetime-fields.ts"));
   });
 
+  it("should generate Zod schemas with boolean fields", async () => {
+    const booleanField: IFieldDef = {
+      key: "enabled",
+      name: "Enabled",
+      description: "Whether feature is enabled",
+      value: {
+        type: "value",
+        value: {
+          type: "boolean",
+          boolean: {},
+        },
+      },
+      meta: { addedIn: 1 },
+    };
+
+    const optionalBooleanField: IFieldDef = {
+      key: "isPublic",
+      name: "IsPublic",
+      description: "Whether feature is public",
+      isOptional: true,
+      value: {
+        type: "value",
+        value: {
+          type: "boolean",
+          boolean: {},
+        },
+      },
+      meta: { addedIn: 1 },
+    };
+
+    const booleanArrayField: IFieldDef = {
+      key: "flags",
+      name: "Flags",
+      description: "Array of boolean flags",
+      value: {
+        type: "array",
+        array: {
+          allowNullValue: false,
+          value: {
+            type: "boolean",
+            boolean: {},
+          },
+        },
+      },
+      meta: { addedIn: 1 },
+    };
+
+    const featureRecord: IRecordDef = {
+      key: "Feature",
+      name: "Feature",
+      description: "A feature toggle record",
+      fields: [booleanField, optionalBooleanField, booleanArrayField],
+      meta: { addedIn: 1 },
+    };
+
+    const schema: IRealTimeDocumentSchema = {
+      name: "Test Schema",
+      description: "A test schema",
+      version: 1,
+      primaryModelKeys: ["Feature"],
+      models: {
+        Feature: {
+          type: "record",
+          record: featureRecord,
+        } as IModelDef,
+      },
+    };
+
+    const result = await generateZodSchemasFromIr(schema);
+    const formatted = await formatWithPrettier(result);
+
+    await expect(formatted).toMatchFileSnapshot(path.join(snapshotDir, "boolean-fields.ts"));
+  });
+
   it("should generate Zod schemas for union types", async () => {
     // Define the ObjectNode record
     const objectNodeRecord: IRecordDef = {
