@@ -5,7 +5,7 @@
   "tasks": {
     "build": {
       "outputLogs": "new-only",
-      "dependsOn": ["transpile", "transpileTypes", "typecheck"],
+      "dependsOn": ["transpile", "transpileTypes"],
       "inputs": ["src/**", "tsconfig.json"],
       "outputs": []
     },
@@ -18,10 +18,16 @@
       "cache": false
     },
 
+    "dev": {
+      "cache": false,
+      "persistent": true
+    },
+
     "typecheck": {
       "outputLogs": "new-only",
       "dependsOn": [
-        "^transpileTypes"
+        "^transpileTypes",
+        "transpileTypes"
       ]
     },
 
@@ -29,7 +35,7 @@
       "outputLogs": "new-only",
       "dependsOn": [
         "^transpile",
-        "^typecheck",
+        "^transpileTypes",
         "transpileCjs",
         "transpileEsm",
         "transpileBrowser"
@@ -58,7 +64,8 @@
         // prepare their dependencies first. In the future we can decouple
         // transpile from bundling which should allow us to remove this
         // for everyone but the bundled packages
-        "^transpileEsm"
+        "^transpileEsm",
+        "transpileTypes"
       ],
       "inputs": [
         "bin/**",
@@ -75,7 +82,8 @@
     "transpileBrowser": {
       "outputLogs": "new-only",
       "dependsOn": [
-        "^transpileBrowser"
+        "^transpileBrowser",
+        "transpileTypes"
       ],
       "inputs": [
         "bin/**",
@@ -97,7 +105,8 @@
         "^transpileCjs",
 
         // tsup may be trying to resolve the module types and not the cjs types
-        "^transpileTypes"
+        "^transpileTypes",
+        "transpileTypes"
       ],
       "inputs": [
         "bin/**",
@@ -140,10 +149,10 @@
       "outputs": []
     },
     "check": {
-      "dependsOn": ["build", "test", "lint", "//#mrl:check"],
+      "dependsOn": ["build", "typecheck", "test", "lint", "//#mrl:check"],
       "outputs": []
     },
-    
+
     "ci:cspell": {
       "dependsOn": ["//#cspell:all"]
     },
@@ -162,34 +171,6 @@
         "packages/*/*/src/public/*",
         "templates/*"
       ]
-    },
-
-    // Example tasks - dependencies handled by sequential execution in package.json
-    "//#examples:clean": {
-      "cache": false
-    },
-    "//#examples:build": {
-      "outputLogs": "new-only",
-      "cache": false,
-      "dependsOn": ["//#examples:rebuild:schema"]
-    },
-    "//#examples:rebuild:schema": {
-      "outputLogs": "new-only",
-      "dependsOn": ["@palantir/pack.sdkgen#build", "@palantir/pack.sdkgen-template#build"],
-      "cache": true
-    },
-    "//#examples:lint": {
-      "cache": false
-    },
-    "//#examples:lint:fix": {
-      "cache": false
-    },
-    "//#examples:test": {
-      "outputLogs": "new-only",
-      "cache": false
-    },
-    "//#examples:check": {
-      "cache": false
     }
   }
 }
