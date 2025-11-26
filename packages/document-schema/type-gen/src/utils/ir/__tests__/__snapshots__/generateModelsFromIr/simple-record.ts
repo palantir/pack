@@ -1,12 +1,13 @@
 import type {
   DocumentSchema,
-  Model,
+  RecordModel,
+  UnionModel,
 } from '@palantir/pack.document-schema.model-types';
 import { Metadata } from '@palantir/pack.document-schema.model-types';
 import type { Person } from './types.js';
 import { PersonSchema } from './schema.js';
 
-export interface PersonModel extends Model<Person, typeof PersonSchema> {}
+export interface PersonModel extends RecordModel<Person, typeof PersonSchema> {}
 export const PersonModel: PersonModel = {
   __type: {} as Person,
   zodSchema: PersonSchema,

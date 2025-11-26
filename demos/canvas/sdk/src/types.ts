@@ -23,20 +23,20 @@ export interface ShapeCircle {
 }
 
 export interface NodeShapeBox extends ShapeBox {
-  readonly type: "box";
+  readonly shapeType: "box";
 }
 
 export interface NodeShapeCircle extends ShapeCircle {
-  readonly type: "circle";
+  readonly shapeType: "circle";
 }
 
 export type NodeShape = NodeShapeBox | NodeShapeCircle;
 
 export function isNodeShapeBox(value: NodeShape): value is NodeShapeBox {
-  return value.type === "box";
+  return value.shapeType === "box";
 }
 
 export function isNodeShapeCircle(value: NodeShape): value is NodeShapeCircle {
-  return value.type === "circle";
+  return value.shapeType === "circle";
 }
 

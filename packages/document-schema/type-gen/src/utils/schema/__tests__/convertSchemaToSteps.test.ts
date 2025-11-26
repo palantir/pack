@@ -79,8 +79,10 @@ describe("convertSchemaToSteps", () => {
     expect(steps[0]!["add-records"]).toHaveProperty("Company");
     expect(steps[1]!["add-union"]).toHaveProperty("Entity");
     expect(steps[1]!["add-union"]!.Entity).toEqual({
-      person: "Person",
-      company: "Company",
+      variants: {
+        person: "Person",
+        company: "Company",
+      },
     });
   });
 

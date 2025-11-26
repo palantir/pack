@@ -17,5 +17,7 @@
       docs: A circle.
 - add-union:
     NodeShape:
-      box: ShapeBox
-      circle: ShapeCircle
+      variants:
+        box: ShapeBox
+        circle: ShapeCircle
+      discriminant: shapeType

@@ -19,14 +19,14 @@ export const ShapeCircleSchema = z.object({
 }) satisfies ZodType<ShapeCircle>;
 
 export const NodeShapeBoxSchema = ShapeBoxSchema.extend({
-  type: z.literal("box")
+  shapeType: z.literal("box")
 }) satisfies ZodType<NodeShapeBox>;
 
 export const NodeShapeCircleSchema = ShapeCircleSchema.extend({
-  type: z.literal("circle")
+  shapeType: z.literal("circle")
 }) satisfies ZodType<NodeShapeCircle>;
 
-export const NodeShapeSchema = z.discriminatedUnion("type", [
+export const NodeShapeSchema = z.discriminatedUnion("shapeType", [
   NodeShapeBoxSchema,
   NodeShapeCircleSchema
 ]) satisfies ZodType<NodeShape>;

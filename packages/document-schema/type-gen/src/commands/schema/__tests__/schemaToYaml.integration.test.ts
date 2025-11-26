@@ -101,8 +101,10 @@ describe("Schema to YAML Integration", () => {
     expect(unionStep).toBeDefined();
     expect(unionStep?.["add-union"]).toMatchObject({
       Node: {
-        object: "ObjectNode",
-        textBox: "TextBox",
+        variants: {
+          object: "ObjectNode",
+          textBox: "TextBox",
+        },
       },
     });
   });

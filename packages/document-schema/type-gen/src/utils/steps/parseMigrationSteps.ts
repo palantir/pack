@@ -36,10 +36,15 @@ interface RecordDefinition {
   fields: Record<string, RecordFieldDefinition>;
 }
 
+interface UnionDefinition {
+  discriminant?: string;
+  variants: Record<string, string>;
+}
+
 interface MigrationStep {
   "local-fragment"?: Record<string, Record<string, RecordFieldDefinition>>;
   "add-records"?: Record<string, RecordDefinition>;
-  "add-union"?: Record<string, Record<string, string>>;
+  "add-union"?: Record<string, UnionDefinition>;
   "modify-records"?: Record<string, { "add-fields": Record<string, RecordFieldDefinition> }>;
 }
 
@@ -93,11 +98,14 @@ const addRecords: z.ZodType<Record<string, RecordDefinition>> = z.record(
   }),
 );
 
-// e.g. { "Optional": { "of": "Something", "empty": "Nothing" } }
-// TODO: could have a stronger type for key here.
-const addUnion: z.ZodType<Record<string, Record<string, string>>> = z.record(
+const unionDefinition: z.ZodType<UnionDefinition> = z.object({
+  discriminant: z.string().optional(),
+  variants: z.record(z.string(), z.string().regex(/^[A-Z][a-zA-Z0-9]*$/)),
+});
+
+const addUnion: z.ZodType<Record<string, UnionDefinition>> = z.record(
   z.string().regex(/^[A-Z][a-zA-Z0-9]*$/), // Union names must be capitalized
-  z.record(z.string(), z.string().regex(/^[A-Z][a-zA-Z0-9]*$/)), // Values are type references
+  unionDefinition,
 );
 
 const modifyRecords: z.ZodType<
@@ -118,7 +126,7 @@ const migrationStep: z.ZodType<MigrationStep> = z.object({
 
 const migrationStepsSchema: z.ZodType<MigrationStep[]> = z.array(migrationStep);
 
-export type { MigrationStep, RecordFieldDefinition };
+export type { MigrationStep, RecordFieldDefinition, UnionDefinition };
 
 export function parseMigrationSteps(unparsed: unknown): MigrationStep[] {
   const parsed = migrationStepsSchema.parse(unparsed);

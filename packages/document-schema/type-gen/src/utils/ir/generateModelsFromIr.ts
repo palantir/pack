@@ -35,7 +35,8 @@ export class ModelGenerator {
     const modelTypesPackage = "@palantir/pack.document-schema.model-types";
 
     // Generate imports
-    let imports = `import type { DocumentSchema, Model } from "${modelTypesPackage}";\n`;
+    let imports =
+      `import type { DocumentSchema, RecordModel, UnionModel } from "${modelTypesPackage}";\n`;
     imports += `import { Metadata } from "${modelTypesPackage}";\n`;
 
     // Collect all type names (primary models + union variants)
@@ -94,7 +95,8 @@ export class ModelGenerator {
 
       // Generate primary model constant
       if (!processedModels.has(modelKey)) {
-        const modelConstant = this.generateModelConstant(modelKey, modelKey);
+        const discriminant = model.type === "union" ? model.union.discriminant : undefined;
+        const modelConstant = this.generateModelConstant(modelKey, modelKey, discriminant);
         constants.push(modelConstant);
         processedModels.add(modelKey);
       }
@@ -106,7 +108,11 @@ export class ModelGenerator {
           const variantTypeName = `${model.union.key}${formattedVariantName}`;
 
           if (!processedModels.has(variantTypeName)) {
-            const modelConstant = this.generateModelConstant(variantTypeName, variantTypeName);
+            const modelConstant = this.generateModelConstant(
+              variantTypeName,
+              variantTypeName,
+              model.union.discriminant,
+            );
             constants.push(modelConstant);
             processedModels.add(variantTypeName);
           }
@@ -117,25 +123,37 @@ export class ModelGenerator {
     return constants.join("\n\n");
   }
 
-  private generateModelConstant(typeName: string, modelName: string): string {
+  private generateModelConstant(
+    typeName: string,
+    modelName: string,
+    discriminant?: string,
+  ): string {
     const schemaName = `${typeName}Schema`;
     const externalRefFields = this.extractExternalRefFieldTypes(modelName);
 
-    let externalRefFieldTypesCode = "";
+    const metadataFields: string[] = [];
+    const modelType = discriminant != null ? "UnionModel" : "RecordModel";
+
+    if (discriminant != null) {
+      metadataFields.push(`    discriminant: "${discriminant}",`);
+    }
+
     if (externalRefFields.length > 0) {
       const entries = externalRefFields.map(([field, type]) => `      ${field}: "${type}",`).join(
         "\n",
       );
-      externalRefFieldTypesCode = `\n    externalRefFieldTypes: {\n${entries}\n    },`;
+      metadataFields.push(`    externalRefFieldTypes: {\n${entries}\n    },`);
     }
 
-    return `export interface ${modelName}Model extends Model<${typeName}, typeof ${schemaName}> {}
+    metadataFields.push(`    name: "${modelName}",`);
+
+    const metadataCode = metadataFields.length > 0 ? `\n${metadataFields.join("\n")}\n  ` : "";
+
+    return `export interface ${modelName}Model extends ${modelType}<${typeName}, typeof ${schemaName}> {}
 export const ${modelName}Model: ${modelName}Model = {
   __type: {} as ${typeName},
   zodSchema: ${schemaName},
-  [Metadata]: {${externalRefFieldTypesCode}
-    name: "${modelName}",
-  },
+  [Metadata]: {${metadataCode}},
 };`;
   }
 

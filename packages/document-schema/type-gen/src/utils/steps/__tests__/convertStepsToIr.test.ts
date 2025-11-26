@@ -251,8 +251,10 @@ describe("convertStepsToIr", () => {
       {
         "add-union": {
           Node: {
-            object: "ObjectNode",
-            textBox: "TextBox",
+            variants: {
+              object: "ObjectNode",
+              textBox: "TextBox",
+            },
           },
         },
       },

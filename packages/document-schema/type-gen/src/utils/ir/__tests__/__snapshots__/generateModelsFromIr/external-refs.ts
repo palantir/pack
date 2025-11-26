@@ -1,12 +1,13 @@
 import type {
   DocumentSchema,
-  Model,
+  RecordModel,
+  UnionModel,
 } from '@palantir/pack.document-schema.model-types';
 import { Metadata } from '@palantir/pack.document-schema.model-types';
 import type { Event } from './types.js';
 import { EventSchema } from './schema.js';
 
-export interface EventModel extends Model<Event, typeof EventSchema> {}
+export interface EventModel extends RecordModel<Event, typeof EventSchema> {}
 export const EventModel: EventModel = {
   __type: {} as Event,
   zodSchema: EventSchema,

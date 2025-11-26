@@ -265,6 +265,7 @@ function generateUnionType(
 ): string {
   let output = "";
   const variantInterfaces: Array<{ name: string; discriminatorValue: string }> = [];
+  const discriminantField = union.discriminant;
 
   // First pass: generate variant interfaces
   for (const [variantName, variantType] of Object.entries(union.variants)) {
@@ -276,14 +277,14 @@ function generateUnionType(
       const recordName = findRecordExportName(variantType.name, schema);
       if (recordName) {
         output += `export interface ${interfaceName} extends ${recordName} {\n`;
-        output += `  readonly type: "${variantName}";\n`;
+        output += `  readonly ${discriminantField}: "${variantName}";\n`;
         output += "}\n\n";
       }
     } else {
       // Handle value types
       const tsType = convertTypeToTypeScript(variantType, schema);
       output += `export interface ${interfaceName} {\n`;
-      output += `  readonly type: "${variantName}";\n`;
+      output += `  readonly ${discriminantField}: "${variantName}";\n`;
       output += `  readonly value: ${tsType};\n`;
       output += "}\n\n";
     }
@@ -297,7 +298,7 @@ function generateUnionType(
     const variant = variantInterfaces[i]!;
     output +=
       `export function is${variant.name}(value: ${exportName}): value is ${variant.name} {\n`;
-    output += `  return value.type === "${variant.discriminatorValue}";\n`;
+    output += `  return value.${discriminantField} === "${variant.discriminatorValue}";\n`;
     output += "}\n\n";
   }
 
