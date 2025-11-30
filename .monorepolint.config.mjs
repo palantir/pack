@@ -192,7 +192,7 @@ const archetypeConfig = archetypes(
       ...shared,
       options: {
         excludedReferences: ["**/*"],
-        templateFile: rules.isDemo || rules.isDemoSchema
+        templateFile: rules.isDemoSchema || rules.isDemoApp
           ? "templates/tsconfig.demo.json"
           : (rules.isSdkgenTemplate
             ? "templates/tsconfig.sdkgen-template.json"
@@ -335,9 +335,40 @@ const archetypeConfig = archetypes(
         licenseAndRepositoryRule,
         privateRule,
         scriptsRule,
-        requiredScriptsDependenciesRule,
-        standardTsConfigRule,
         vitestConfigRule,
+        Rules.packageEntry({
+          ...shared,
+          options: {
+            entries: {
+              type: "module",
+              exports: {
+                ".": {
+                  browser: "./build/browser/index.js",
+                  import: {
+                    types: "./build/types/index.d.ts",
+                    default: "./build/esm/index.js",
+                  },
+                  require: "./build/cjs/index.js",
+                  default: "./build/browser/index.js",
+                },
+                "./*": {
+                  browser: "./build/browser/public/*.js",
+                  import: {
+                    types: "./build/types/public/*.d.ts",
+                    default: "./build/js/public/*.js",
+                  },
+                  require: "./build/cjs/public/*.js",
+                  default: "./build/browser/public/*.js",
+                },
+              },
+              main: "./build/cjs/index.js",
+              module: "./build/esm/index.js",
+              types: "./build/cjs/index.d.ts",
+            },
+          },
+        }),
+        standardTsConfigRule,
+        requiredScriptsDependenciesRule,
         ...baseRules,
       ];
     }
@@ -447,6 +478,7 @@ const packages = {
   "@palantir/pack.document-schema.model-types": {},
   "@palantir/pack.schema": {},
   "@palantir/pack.state.core": {},
+  "@palantir/pack.state.demo": { isPrivate: true },
   "@palantir/pack.state.foundry": {},
   "@palantir/pack.state.foundry-event": {},
   "@palantir/pack.state.react": {},
