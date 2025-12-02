@@ -19,8 +19,10 @@ import {
   TextBoxSchema,
 } from './schema.js';
 
-export interface ObjectNodeModel
-  extends RecordModel<ObjectNode, typeof ObjectNodeSchema> {}
+export interface ObjectNodeModel extends RecordModel<
+  ObjectNode,
+  typeof ObjectNodeSchema
+> {}
 export const ObjectNodeModel: ObjectNodeModel = {
   __type: {} as ObjectNode,
   zodSchema: ObjectNodeSchema,
@@ -29,8 +31,10 @@ export const ObjectNodeModel: ObjectNodeModel = {
   },
 };
 
-export interface TextBoxModel
-  extends RecordModel<TextBox, typeof TextBoxSchema> {}
+export interface TextBoxModel extends RecordModel<
+  TextBox,
+  typeof TextBoxSchema
+> {}
 export const TextBoxModel: TextBoxModel = {
   __type: {} as TextBox,
   zodSchema: TextBoxSchema,
@@ -49,8 +53,10 @@ export const NodeModel: NodeModel = {
   },
 };
 
-export interface NodeObjectModel
-  extends UnionModel<NodeObject, typeof NodeObjectSchema> {}
+export interface NodeObjectModel extends UnionModel<
+  NodeObject,
+  typeof NodeObjectSchema
+> {}
 export const NodeObjectModel: NodeObjectModel = {
   __type: {} as NodeObject,
   zodSchema: NodeObjectSchema,
@@ -60,8 +66,10 @@ export const NodeObjectModel: NodeObjectModel = {
   },
 };
 
-export interface NodeTextBoxModel
-  extends UnionModel<NodeTextBox, typeof NodeTextBoxSchema> {}
+export interface NodeTextBoxModel extends UnionModel<
+  NodeTextBox,
+  typeof NodeTextBoxSchema
+> {}
 export const NodeTextBoxModel: NodeTextBoxModel = {
   __type: {} as NodeTextBox,
   zodSchema: NodeTextBoxSchema,

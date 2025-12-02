@@ -96,9 +96,9 @@ const archetypeConfig = archetypes(
       ...shared,
       options: {
         devDependencies: {
-          rimraf: "^6.0.1",
-          typescript: "^5.9.2",
-          tslib: "^2.8.1",
+          rimraf: "catalog:",
+          typescript: "catalog:",
+          tslib: "catalog:",
           ...(rules.isCli ? { "@types/node": "catalog:" } : {}),
         },
       },
@@ -125,8 +125,8 @@ const archetypeConfig = archetypes(
       },
     });
 
-    // Rules that apply to all packages
-    const baseRules = [
+    // Common rules for most packages
+    const commonRules = [
       versionRule,
       Rules.packageOrder({
         options: {
@@ -159,7 +159,6 @@ const archetypeConfig = archetypes(
         },
       }),
       Rules.alphabeticalDependencies({ includeWorkspaceRoot: true }),
-      Rules.consistentDependencies({}),
       Rules.alphabeticalScripts({ includeWorkspaceRoot: true }),
 
       // Banned dependencies
@@ -168,6 +167,14 @@ const archetypeConfig = archetypes(
         options: {
           bannedDependencies: ["lodash", "lodash-es"],
         },
+      }),
+    ];
+
+    // Rules that apply to all packages except generated SDKs
+    const baseRules = [
+      ...commonRules,
+      Rules.consistentDependencies({
+        ...shared,
       }),
     ];
 
@@ -276,9 +283,41 @@ const archetypeConfig = archetypes(
     }
 
     if (rules.isDemoSdk) {
+      // Generated SDKs are permissive - minimal rules only
       return [
         privateRule,
-        ...baseRules,
+        versionRule,
+        Rules.packageOrder({
+          options: {
+            order: [
+              "name",
+              "private",
+              "version",
+              "description",
+              "access",
+              "author",
+              "license",
+              "repository",
+              "bin",
+              "exports",
+              "file",
+              "scripts",
+              "dependencies",
+              "peerDependencies",
+              "peerDependenciesMeta",
+              "devDependencies",
+              "publishConfig",
+              "imports",
+              "keywords",
+              "files",
+              "main",
+              "module",
+              "types",
+            ],
+          },
+        }),
+        Rules.alphabeticalDependencies({}), // No includeWorkspaceRoot
+        Rules.alphabeticalScripts({}), // No includeWorkspaceRoot
       ];
     }
 
@@ -286,6 +325,18 @@ const archetypeConfig = archetypes(
       return [
         licenseAndRepositoryRule,
         privateRule,
+        scriptsRule,
+        requiredScriptsDependenciesRule,
+        standardTsConfigRule,
+        vitestConfigRule,
+        ...baseRules,
+      ];
+    }
+
+    if (rules.isSdkgenTemplate) {
+      return [
+        licenseAndRepositoryRule,
+        ...(rules.isPrivate ? [privateRule] : publicRules),
         scriptsRule,
         requiredScriptsDependenciesRule,
         standardTsConfigRule,
@@ -356,67 +407,47 @@ const archetypeConfig = archetypes(
       ...baseRules,
     ];
   },
-  { unmatched: "error" }, // Error if any package doesn't match an archetype
-)
-  .addArchetype(
-    "build-tools",
-    [
-      "@palantir/pack.monorepo.tsconfig",
-      "@palantir/pack.monorepo.cspell",
-    ],
-    { isBuildTools: true },
-  )
-  .addArchetype(
-    "build-tools-clis",
-    [
-      "@palantir/pack.monorepo.release",
-      "@palantir/pack.monorepo.transpile",
-    ],
-    { isBuildTools: true, isCli: true },
-  )
-  .addArchetype(
-    "cli",
-    [
-      "@palantir/pack.document-schema.type-gen",
-    ],
-    { isCli: true },
-  )
-  .addArchetype(
-    "sdkgen-cli",
-    [
-      "@palantir/pack.sdkgen",
-    ],
-    { isCli: true, hasSdkgenTemplates: true },
-  )
-  .addArchetype(
-    "library",
-    [
-      "@palantir/pack.document-schema.model-types",
-      "@palantir/pack.app",
-      "@palantir/pack.auth",
-      "@palantir/pack.auth.foundry",
-      "@palantir/pack.core",
-      "@palantir/pack.schema",
-      "@palantir/pack.state.core",
-      "@palantir/pack.state.foundry",
-      "@palantir/pack.state.foundry-event",
-      "@palantir/pack.state.react",
-    ],
-    {},
-  )
-  .addArchetype("sdkgen-template", [
-    "@palantir/pack.sdkgen.demo-template",
-    "@palantir/pack.sdkgen.pack-template",
-  ], { isSdkgenTemplate: true })
-  .addArchetype("demo-app", [
-    "@demo/canvas.app",
-  ], { isDemo: true, isDemoApp: true })
-  .addArchetype("demo-schema", [
-    "@demo/canvas.schema",
-  ], { isDemo: true, isDemoSchema: true })
-  .addArchetype("demo-sdk", [
-    "@demo/canvas.sdk",
-  ], { isDemo: true, isDemoSdk: true });
+  { unmatched: "error" },
+);
+
+const packages = {
+  // Build tools
+  "@palantir/pack.monorepo.cspell": { isBuildTools: true },
+  "@palantir/pack.monorepo.release": { isBuildTools: true, isCli: true },
+  "@palantir/pack.monorepo.transpile": { isBuildTools: true, isCli: true },
+  "@palantir/pack.monorepo.tsconfig": { isBuildTools: true },
+
+  // CLI packages
+  "@palantir/pack.document-schema.type-gen": { isCli: true },
+  "@palantir/pack.sdkgen": { isCli: true, hasSdkgenTemplates: true },
+
+  // SDK generation templates
+  "@palantir/pack.sdkgen.demo-template": { isSdkgenTemplate: true, isPrivate: true },
+  "@palantir/pack.sdkgen.pack-template": { isSdkgenTemplate: true },
+
+  // Demo packages
+  "@demo/canvas.app": { isDemo: true, isDemoApp: true },
+  "@demo/canvas.schema": { isDemo: true, isDemoSchema: true },
+  "@demo/canvas.sdk": { isDemo: true, isDemoSdk: true },
+
+  // Library packages (default rules)
+  "@palantir/pack.app": {},
+  "@palantir/pack.auth": {},
+  "@palantir/pack.auth.foundry": {},
+  "@palantir/pack.core": {},
+  "@palantir/pack.document-schema.model-types": {},
+  "@palantir/pack.schema": {},
+  "@palantir/pack.state.core": {},
+  "@palantir/pack.state.foundry": {},
+  "@palantir/pack.state.foundry-event": {},
+  "@palantir/pack.state.react": {},
+};
+
+// Generate archetypes from package configuration
+Object.entries(packages).reduce((config, [packageName, flags]) => {
+  const archetypeName = packageName.replace("@palantir/pack.", "").replace("@demo/", "");
+  return config.addArchetype(archetypeName, [packageName], flags);
+}, archetypeConfig);
 
 const allLocalDepsMustNotBePrivate = Rules.createRuleFactory({
   name: "allLocalDepsMustNotBePrivate",
