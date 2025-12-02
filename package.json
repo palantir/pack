@@ -68,5 +68,10 @@
     "typescript": "catalog:",
     "typescript-eslint": "^8.48.0",
     "vitest": "catalog:"
+  },
+  "pnpm": {
+    "overrides": {
+      "trim@<0.0.3": ">=0.0.3"
+    }
   }
 }
