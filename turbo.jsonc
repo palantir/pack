@@ -149,7 +149,7 @@
       "outputs": []
     },
     "check": {
-      "dependsOn": ["build", "typecheck", "test", "lint", "//#mrl:check"],
+      "dependsOn": ["build", "typecheck", "test", "lint", "//#mrl:check", "//#cspell:all"],
       "outputs": []
     },
 

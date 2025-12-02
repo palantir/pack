@@ -9,7 +9,7 @@
     "url": "https://github.com/palantir/pack.git"
   },
   "dependencies": {
-    "@cspell/cspell-types": "^9.2.2",
-    "@types/node": "^18.19.124"
+    "@cspell/cspell-types": "^9.4.0",
+    "@types/node": "catalog:"
   }
 }

@@ -41,8 +41,10 @@ export const AnimalModel: AnimalModel = {
   },
 };
 
-export interface AnimalCatModel
-  extends UnionModel<AnimalCat, typeof AnimalCatSchema> {}
+export interface AnimalCatModel extends UnionModel<
+  AnimalCat,
+  typeof AnimalCatSchema
+> {}
 export const AnimalCatModel: AnimalCatModel = {
   __type: {} as AnimalCat,
   zodSchema: AnimalCatSchema,
@@ -52,8 +54,10 @@ export const AnimalCatModel: AnimalCatModel = {
   },
 };
 
-export interface AnimalDogModel
-  extends UnionModel<AnimalDog, typeof AnimalDogSchema> {}
+export interface AnimalDogModel extends UnionModel<
+  AnimalDog,
+  typeof AnimalDogSchema
+> {}
 export const AnimalDogModel: AnimalDogModel = {
   __type: {} as AnimalDog,
   zodSchema: AnimalDogSchema,
