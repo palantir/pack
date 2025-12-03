@@ -46,7 +46,7 @@
     "@palantir/pack.core": "workspace:*",
     "@palantir/pack.document-schema.model-types": "workspace:*",
     "@palantir/pack.state.core": "workspace:*",
-    "cometd": "^7.0.19",
+    "cometd": "catalog:",
     "js-base64": "^3.7.8",
     "yjs": "catalog:"
   },

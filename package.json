@@ -67,7 +67,8 @@
     "turbo": "^2.6.1",
     "typescript": "catalog:",
     "typescript-eslint": "^8.48.0",
-    "vitest": "catalog:"
+    "vitest": "catalog:",
+    "yaml": "^2.8.1"
   },
   "pnpm": {
     "overrides": {

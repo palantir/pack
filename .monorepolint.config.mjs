@@ -16,7 +16,9 @@
 
 import { archetypes } from "@monorepolint/archetypes";
 import * as Rules from "@monorepolint/rules";
+import * as fs from "fs";
 import * as path from "path";
+import { parse as parseYaml } from "yaml";
 
 // @ts-check
 
@@ -175,6 +177,13 @@ const archetypeConfig = archetypes(
       ...commonRules,
       Rules.consistentDependencies({
         ...shared,
+      }),
+      // Catalog versions - ensure packages in pnpm-workspace.yaml catalog use "catalog:"
+      Rules.consistentVersions({
+        ...shared,
+        options: {
+          matchDependencyVersions: getPnpmCatalogVersions(),
+        },
       }),
     ];
 
@@ -502,6 +511,32 @@ const noPackageEntry = Rules.createRuleFactory({
       && Array.isArray(options.entries);
   },
 });
+
+/**
+ * Parses pnpm-workspace.yaml catalog section
+ * @returns {Record<string, string>} Object mapping package names to "catalog:"
+ */
+function getPnpmCatalogVersions() {
+  const workspaceYamlPath = path.join(process.cwd(), "pnpm-workspace.yaml");
+  if (!fs.existsSync(workspaceYamlPath)) {
+    return {};
+  }
+
+  const content = fs.readFileSync(workspaceYamlPath, "utf-8");
+  const workspace = parseYaml(content);
+
+  if (!workspace || !workspace.catalog || typeof workspace.catalog !== "object") {
+    return {};
+  }
+
+  const catalogVersions = {};
+  for (const packageName of Object.keys(workspace.catalog)) {
+    // All catalog entries should use "catalog:" in package.json
+    catalogVersions[packageName] = "catalog:";
+  }
+
+  return catalogVersions;
+}
 
 const config = () => ({
   rules: archetypeConfig.buildRules(),
