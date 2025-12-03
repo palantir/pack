@@ -22,8 +22,6 @@ const path = require("path");
 
 const DICT_FOLDER = __dirname;
 
-const REGEX_PALANTIR_PACK_PACKAGE_NAME = /@palantir\/pack\.[\w\d.\-]+/g;
-
 /**
  * Helper function so creating a dictionary definition just involves creating a file
  * named `dict.<name>.txt` in this folder.
@@ -88,18 +86,6 @@ const cspell = {
   dictionaryDefinitions: [
     ...getDictionaryDefinitions(),
   ],
-  patterns: [
-    // In some test code we have some serialized urls that have oauth scopes in url params
-    { name: "url-oauth-scopes", pattern: "/api%3A[a-z]+/" },
-
-    // In some code we have a sample token which causes false positives
-    { name: "oauth-token", pattern: "/eyJ[a-zA-Z0-9_.]+5c/" },
-  ],
-  ignoreRegExpList: [
-    REGEX_PALANTIR_PACK_PACKAGE_NAME,
-    "/\/entitymetadata\//",
-  ],
-
   // TODO(FIRST_BUILD): Slim down dictionaries copied from OSDK 
   dictionaries: [
     // builtin dicts to always include
@@ -110,7 +96,7 @@ const cspell = {
     "npm",
 
     // our dictionaries to always include
-    "osdk",
+    "pack",
     "npm-packages",
     "foundry-words",
     "normal-dev-words",
@@ -123,49 +109,19 @@ const cspell = {
   overrides: [
     {
       filename: ["**/*.md"],
-      dictionaries: ["foundry-words", "dev-words"],
-    },
-    {
-      filename: [".changeset/**/*.md"],
+      words: [
+        // used in examples
+        "myapp",
+        "myorg"
+      ]
     },
     {
       filename: ["**/*.{mts,cts,ts,tsx}"],
-      dictionaries: ["osdk-code"],
-      words: [
-        // used in a regex
-        "0123456789bcdefghjkmnpqrstuvwxyz",
-
-        // used in a const (that is removed in a different PR)
-        "asdfasdfdhjlkajhgj",
-
-        // Used in a stub
-        "Clooney",
-        "Itask",
-        "Mobi",
-
-        // Authless client
-        "Authless",
-        "authless",
-      ],
-      ignoreWords: [
-        // it's an NPM package
-        "blueprintjs",
-        "picocolors",
-        // used in a RID template literal string
-        "widgetregistry",
-        // used in scopes
-        "mediasets",
-      ],
+      dictionaries: ["error-codes"],
     },
     {
       filename: "**/*.test.{mts,cts,ts,tsx}",
-      dictionaries: [
-        "test-words",
-      ],
-      ignoreRegExpList: [
-        "url-oauth-scopes",
-        "oauth-token",
-      ],
+      dictionaries: ["test-words"],
     },
   ],
 };

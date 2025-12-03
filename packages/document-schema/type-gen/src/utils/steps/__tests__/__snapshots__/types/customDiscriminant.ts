@@ -1,0 +1,36 @@
+// Generated TypeScript interfaces from document schema
+
+/**
+ * A cat
+ */
+export interface Cat {
+  readonly meow: string;
+  readonly whiskers: number;
+}
+
+/**
+ * A dog
+ */
+export interface Dog {
+  readonly bark: string;
+  readonly tailWags: number;
+}
+
+export interface AnimalCat extends Cat {
+  readonly kind: "cat";
+}
+
+export interface AnimalDog extends Dog {
+  readonly kind: "dog";
+}
+
+export type Animal = AnimalCat | AnimalDog;
+
+export function isAnimalCat(value: Animal): value is AnimalCat {
+  return value.kind === "cat";
+}
+
+export function isAnimalDog(value: Animal): value is AnimalDog {
+  return value.kind === "dog";
+}
+

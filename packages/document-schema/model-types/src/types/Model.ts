@@ -23,14 +23,36 @@ import type { WithMetadata } from "./Metadata.js";
  * It includes a zod schema for validation and type information.
  */
 // TODO: I think we can/should hide the zod types
-export interface Model<T = unknown, Z extends ZodType<T> = ZodType<T>>
-  extends WithMetadata<ModelMetadata<T>>
-{
+export interface Model<
+  T = unknown,
+  Z extends ZodType<T> = ZodType<T>,
+  M extends ModelMetadata<T> = ModelMetadata<T>,
+> extends WithMetadata<M> {
   readonly __type: T;
   readonly zodSchema: Readonly<Z>;
 }
 
+export type RecordModel<T = unknown, Z extends ZodType<T> = ZodType<T>> = Model<
+  T,
+  Z,
+  RecordModelMetadata<T>
+>;
+
+export type UnionModel<T = unknown, Z extends ZodType<T> = ZodType<T>> = Model<
+  T,
+  Z,
+  UnionModelMetadata<T>
+>;
+
 export type ModelData<M extends Model> = M["__type"];
+
+/**
+ * Describes an edit made to a document.
+ */
+export interface EditDescription<M extends Model = Model> {
+  readonly data: ModelData<M>;
+  readonly model: M;
+}
 
 export const ExternalRefType = {
   DOC_REF: "docRef",
@@ -41,7 +63,26 @@ export const ExternalRefType = {
 
 export type ExternalRefType = typeof ExternalRefType[keyof typeof ExternalRefType];
 
-export interface ModelMetadata<T = unknown> {
+export interface RecordModelMetadata<T = unknown> {
+  /**
+   * Which fields in the model are external references (e.g. UserRef, DocumentRef, etc).
+   */
   readonly externalRefFieldTypes?: Readonly<Record<keyof T, ExternalRefType>>;
+  /**
+   * The name of the model (should match the typescript symbol).
+   */
   readonly name: string;
 }
+
+export interface UnionModelMetadata<T = unknown> {
+  /**
+   * The field name used to discriminate between union variants.
+   */
+  readonly discriminant: keyof T;
+  /**
+   * The name of the model (should match the typescript symbol).
+   */
+  readonly name: string;
+}
+
+export type ModelMetadata<T = unknown> = RecordModelMetadata<T> | UnionModelMetadata<T>;

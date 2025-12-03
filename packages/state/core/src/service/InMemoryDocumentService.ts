@@ -14,15 +14,19 @@
  * limitations under the License.
  */
 
-import type { ModuleConfigTuple, PackAppInternal } from "@palantir/pack.core";
+import type { ModuleConfigTuple, PackAppInternal, Unsubscribe } from "@palantir/pack.core";
 import { generateId } from "@palantir/pack.core";
 import type {
+  ActivityEvent,
   DocumentId,
   DocumentMetadata,
   DocumentRef,
   DocumentSchema,
+  Model,
+  ModelData,
+  PresenceEvent,
+  PresenceSubscriptionOptions,
 } from "@palantir/pack.document-schema.model-types";
-import type * as Y from "yjs";
 import { createDocumentServiceConfig } from "../DocumentServiceModule.js";
 import { createDocRef } from "../types/DocumentRefImpl.js";
 import type { DocumentService } from "../types/DocumentService.js";
@@ -69,9 +73,8 @@ class InMemoryDocumentService extends BaseYjsDocumentService {
   override createInternalDoc(
     ref: DocumentRef,
     metadata?: DocumentMetadata,
-    yDoc?: Y.Doc,
   ): InternalYjsDoc {
-    return this.createBaseInternalDoc(ref, metadata, yDoc);
+    return this.createBaseInternalDoc(ref, metadata);
   }
 
   get hasMetadataSubscriptions() {
@@ -97,6 +100,36 @@ class InMemoryDocumentService extends BaseYjsDocumentService {
     this.getCreateInternalDoc(docRef, metadata, yDoc);
 
     return Promise.resolve(docRef);
+  };
+
+  readonly searchDocuments = <T extends DocumentSchema>(
+    documentTypeName: string,
+    schema: T,
+    options?: {
+      documentName?: string;
+      limit?: number;
+    },
+  ): Promise<ReadonlyArray<DocumentMetadata & { readonly id: DocumentId }>> => {
+    const results: Array<DocumentMetadata & { readonly id: DocumentId }> = [];
+    const { documentName, limit } = options ?? {};
+
+    for (const [docId, internalDoc] of this.documents.entries()) {
+      if (internalDoc.metadata?.documentTypeName === documentTypeName) {
+        if (documentName && !internalDoc.metadata.name.includes(documentName)) {
+          continue;
+        }
+        results.push({
+          ...internalDoc.metadata,
+          id: docId as DocumentId,
+        });
+
+        if (limit && results.length >= limit) {
+          break;
+        }
+      }
+    }
+
+    return Promise.resolve(results);
   };
 
   // Lifecycle method implementations
@@ -154,6 +187,28 @@ class InMemoryDocumentService extends BaseYjsDocumentService {
     _docRef: DocumentRef,
   ): void {
     // No cleanup needed for in-memory service
+  }
+
+  onActivity<T extends DocumentSchema>(
+    _docRef: DocumentRef<T>,
+    _callback: (docRef: DocumentRef<T>, event: ActivityEvent) => void,
+  ): Unsubscribe {
+    return () => {};
+  }
+
+  onPresence<T extends DocumentSchema>(
+    _docRef: DocumentRef<T>,
+    _callback: (docRef: DocumentRef<T>, event: PresenceEvent) => void,
+    _options?: PresenceSubscriptionOptions,
+  ): Unsubscribe {
+    return () => {};
+  }
+
+  updateCustomPresence<M extends Model>(
+    _docRef: DocumentRef,
+    _model: M,
+    _eventData: ModelData<M>,
+  ): void {
   }
 }
 

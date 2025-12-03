@@ -51,7 +51,7 @@ describe("StaticTokenService", () => {
         logger: mockLogger,
         osdkClient: mockOsdkClient,
         remote: {
-          packWsPath: "/pack/ws",
+          packWsPath: "/api/v2/packSubscriptions",
           baseUrl: "https://test.example.com",
           fetchFn: globalThis.fetch,
         },
@@ -65,6 +65,7 @@ describe("StaticTokenService", () => {
       username: "test-user",
       realm: "test-realm",
       attributes: {},
+      status: "ACTIVE",
     });
 
     service = createStaticTokenService(mockApp, mockTokenProvider);
@@ -180,7 +181,7 @@ describe("StaticTokenService", () => {
 
   describe("token validation", () => {
     beforeEach(() => {
-      global.fetch = vi.fn();
+      globalThis.fetch = vi.fn();
     });
 
     it("should validate token successfully with baseUrl", async () => {
@@ -229,7 +230,7 @@ describe("StaticTokenService", () => {
             logger: mockLogger,
             osdkClient: mock<Client>(),
             remote: {
-              packWsPath: "/pack/ws",
+              packWsPath: "/api/v2/packSubscriptions",
               baseUrl: "https://localhost:5173",
               fetchFn: globalThis.fetch,
             },
@@ -252,7 +253,7 @@ describe("StaticTokenService", () => {
     it("should reset validation state on signOut", async () => {
       await service.getToken();
 
-      global.fetch = vi.fn().mockResolvedValue({
+      globalThis.fetch = vi.fn().mockResolvedValue({
         ok: true,
         json: () => Promise.resolve({ userId: "test-user" }),
       });
@@ -280,7 +281,7 @@ describe("StaticTokenService", () => {
     });
 
     it("should reset validation state on dispose", async () => {
-      global.fetch = vi.fn().mockResolvedValue({
+      globalThis.fetch = vi.fn().mockResolvedValue({
         ok: true,
         json: () => Promise.resolve({ userId: "test-user" }),
       });

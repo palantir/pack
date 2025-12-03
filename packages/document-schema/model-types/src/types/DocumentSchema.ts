@@ -17,10 +17,16 @@
 import type { WithMetadata } from "./Metadata.js";
 import type { Model, ModelData } from "./Model.js";
 
+/**
+ * The base type for an application sdk's generated document schema.
+ */
 export interface DocumentSchema extends WithMetadata<DocumentSchemaMetadata> {
   readonly [modelName: string]: Model;
 }
 
+/**
+ * The plain object representation of the state of a document.
+ */
 export type DocumentState<S extends DocumentSchema> = {
   readonly [K in Exclude<keyof S, symbol>]: { readonly [key: string]: ModelData<S[K]> };
 };

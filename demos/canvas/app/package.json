@@ -1,0 +1,41 @@
+{
+  "name": "@demo/canvas.app",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Canvas demo application",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/palantir/pack.git"
+  },
+  "scripts": {
+    "build": "tsc && vite build",
+    "clean": "rimraf .turbo build dist lib test-output *.tgz tsconfig.tsbuildinfo",
+    "dev": "vite",
+    "lint": "eslint ./src && dprint check --config $(find-up dprint.json) --allow-no-files",
+    "lint:fix": "eslint ./src --fix && dprint fmt --config $(find-up dprint.json) --allow-no-files",
+    "preview": "vite preview",
+    "test": "vitest run --passWithNoTests -u",
+    "test:watch": "vitest --passWithNoTests",
+    "typecheck": "tsc --noEmit --emitDeclarationOnly false"
+  },
+  "dependencies": {
+    "@demo/canvas.sdk": "workspace:*",
+    "react": "^19",
+    "react-dom": "^19",
+    "react-router-dom": "^6.30.2"
+  },
+  "devDependencies": {
+    "@palantir/pack.monorepo.tsconfig": "workspace:~",
+    "@types/node": "catalog:",
+    "@types/react": "catalog:",
+    "@types/react-dom": "catalog:",
+    "@vitejs/plugin-react": "^5.1.1",
+    "rimraf": "catalog:",
+    "tslib": "catalog:",
+    "typescript": "catalog:",
+    "vite": "^7.2.6",
+    "vitest": "catalog:"
+  },
+  "type": "module"
+}

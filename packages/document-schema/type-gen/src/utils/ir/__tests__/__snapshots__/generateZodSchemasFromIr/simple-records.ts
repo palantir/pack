@@ -1,0 +1,7 @@
+import { z } from 'zod';
+
+export const PersonSchema = z.object({
+  name: z.string().min(2).max(50),
+  age: z.number().int().min(0).max(150),
+  email: z.string().optional(),
+});

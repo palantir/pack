@@ -19,14 +19,17 @@
 import type { Logger } from "@osdk/api";
 import type { PackAppInternal, Unsubscribe } from "@palantir/pack.core";
 import {
+  type ActivityEvent,
   type DocumentId,
   type DocumentMetadata,
   type DocumentRef,
   type DocumentSchema,
   type DocumentState,
+  type EditDescription,
   getMetadata,
   type Model,
   type ModelData,
+  type PresenceEvent,
   type RecordCollectionRef,
   type RecordId,
   type RecordRef,
@@ -124,6 +127,14 @@ export abstract class BaseYjsDocumentService<TDoc extends InternalYjsDoc = Inter
     metadata: DocumentMetadata,
     schema: T,
   ) => Promise<DocumentRef<T>>;
+  abstract readonly searchDocuments: <T extends DocumentSchema>(
+    documentTypeName: string,
+    schema: T,
+    options?: {
+      documentName?: string;
+      limit?: number;
+    },
+  ) => Promise<ReadonlyArray<DocumentMetadata & { readonly id: DocumentId }>>;
 
   readonly createDocRef = <const T extends DocumentSchema>(
     id: DocumentId,
@@ -230,7 +241,6 @@ export abstract class BaseYjsDocumentService<TDoc extends InternalYjsDoc = Inter
   protected readonly createBaseInternalDoc = <T extends DocumentSchema>(
     ref: DocumentRef<T>,
     metadata: DocumentMetadata | undefined,
-    yDoc?: Y.Doc,
   ): InternalYjsDoc => {
     const schema = ref.schema;
     return {
@@ -256,7 +266,7 @@ export abstract class BaseYjsDocumentService<TDoc extends InternalYjsDoc = Inter
       docStateSubscribers: new Set(),
       metadataSubscribers: new Set(),
       recordSubscriptions: new Map(),
-      yDoc: yDoc || this.initializeYDoc(schema),
+      yDoc: this.initializeYDoc(schema),
       yDocUpdateHandler: undefined,
       yjsCollectionHandlers: new Map(),
     };
@@ -486,6 +496,20 @@ export abstract class BaseYjsDocumentService<TDoc extends InternalYjsDoc = Inter
     return Promise.resolve();
   };
 
+  readonly withTransaction = (
+    docRef: DocumentRef,
+    fn: () => void,
+    description?: EditDescription,
+  ): void => {
+    const internalDoc = this.documents.get(docRef.id);
+    invariant(
+      internalDoc != null,
+      `Cannot start transaction as document not found: ${docRef.id}`,
+    );
+
+    internalDoc.yDoc.transact(fn, description);
+  };
+
   onMetadataChange<T extends DocumentSchema>(
     docRef: DocumentRef<T>,
     callback: DocumentMetadataChangeCallback<T>,
@@ -519,6 +543,22 @@ export abstract class BaseYjsDocumentService<TDoc extends InternalYjsDoc = Inter
       }
     };
   }
+
+  abstract onActivity<T extends DocumentSchema>(
+    docRef: DocumentRef<T>,
+    callback: (docRef: DocumentRef<T>, event: ActivityEvent) => void,
+  ): Unsubscribe;
+
+  abstract onPresence<T extends DocumentSchema>(
+    docRef: DocumentRef<T>,
+    callback: (docRef: DocumentRef<T>, event: PresenceEvent) => void,
+  ): Unsubscribe;
+
+  abstract updateCustomPresence<M extends Model>(
+    docRef: DocumentRef,
+    model: M,
+    eventData: ModelData<M>,
+  ): void;
 
   readonly onStateChange = <T extends DocumentSchema>(
     docRef: DocumentRef<T>,

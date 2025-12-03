@@ -1,0 +1,23 @@
+- add-records:
+    ShapeBox:
+      fields:
+        bottom: double
+        left: double
+        right: double
+        top: double
+        color: optional<string>
+      docs: A box.
+    ShapeCircle:
+      fields:
+        bottom: double
+        left: double
+        right: double
+        top: double
+        color: optional<string>
+      docs: A circle.
+- add-union:
+    NodeShape:
+      variants:
+        box: ShapeBox
+        circle: ShapeCircle
+      discriminant: shapeType

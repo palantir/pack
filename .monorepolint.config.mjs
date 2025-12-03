@@ -1,3 +1,19 @@
+/*
+ * Copyright 2025 Palantir Technologies, Inc. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 import { archetypes } from "@monorepolint/archetypes";
 import * as Rules from "@monorepolint/rules";
 import * as fs from "fs";
@@ -13,15 +29,20 @@ const REPOSITORY_URL = "https://github.com/palantir/pack.git";
  * @property {boolean} [isCli]
  * @property {boolean} [isSdkgenTemplate]
  * @property {boolean} [isBuildTools]
+ * @property {boolean} [hasSdkgenTemplates]
+ * @property {boolean} [isDemo]
+ * @property {boolean} [isDemoSchema]
+ * @property {boolean} [isDemoApp]
+ * @property {boolean} [isDemoSdk]
  */
 
 const archetypeConfig = archetypes(
   (shared, rules) => {
     const baseScripts = {
       clean: "rimraf .turbo build dist lib test-output *.tgz tsconfig.tsbuildinfo",
-      lint: "eslint ./src ; dprint check --config $(find-up dprint.json) --allow-no-files",
+      lint: "eslint ./src && dprint check --config $(find-up dprint.json) --allow-no-files",
       "lint:fix":
-        "eslint ./src --fix ; dprint fmt --config $(find-up dprint.json) --allow-no-files",
+        "eslint ./src --fix && dprint fmt --config $(find-up dprint.json) --allow-no-files",
       "test:watch": "vitest --passWithNoTests",
       test: "vitest run --passWithNoTests -u",
       typecheck: "tsc --noEmit --emitDeclarationOnly false",
@@ -49,13 +70,26 @@ const archetypeConfig = archetypes(
       transpileTypes: "tsc --emitDeclarationOnly",
     };
 
-    // Package scripts - different for CLI vs library vs sdkgen template
+    const demoSchemaScripts = baseScripts;
+
+    const demoAppScripts = {
+      ...baseScripts,
+      build: "tsc && vite build",
+      dev: "vite",
+      preview: "vite preview",
+    };
+
+    // Package scripts - different for CLI vs library vs sdkgen template vs schema vs demo app
     const scriptsRule = Rules.packageScript({
       ...shared,
       options: {
-        scripts: rules.isSdkgenTemplate
-          ? sdkgenTemplateScripts
-          : (rules.isCli ? cliScripts : libraryScripts),
+        scripts: rules.isDemoApp
+          ? demoAppScripts
+          : (rules.isDemoSchema
+            ? demoSchemaScripts
+            : (rules.isSdkgenTemplate
+              ? sdkgenTemplateScripts
+              : (rules.isCli ? cliScripts : libraryScripts))),
       },
     });
 
@@ -64,29 +98,38 @@ const archetypeConfig = archetypes(
       ...shared,
       options: {
         devDependencies: {
-          rimraf: "^6.0.1",
-          typescript: "^5.9.2",
-          tslib: "^2.8.1",
+          rimraf: "catalog:",
+          typescript: "catalog:",
+          tslib: "catalog:",
           ...(rules.isCli ? { "@types/node": "catalog:" } : {}),
         },
       },
     });
 
-    // Rules that apply to all packages
-    const baseRules = [
-      Rules.packageEntry({
-        ...shared,
-        options: {
-          entriesExist: ["version"],
-          entries: {
-            license: "Apache-2.0",
-            repository: {
-              "type": "git",
-              "url": REPOSITORY_URL,
-            },
+    const licenseAndRepositoryRule = Rules.packageEntry({
+      ...shared,
+      options: {
+        entries: {
+          license: "Apache-2.0",
+          repository: {
+            "type": "git",
+            "url": REPOSITORY_URL,
           },
         },
-      }),
+      },
+    });
+
+    // Version requirement for all packages
+    const versionRule = Rules.packageEntry({
+      ...shared,
+      options: {
+        entriesExist: ["version"],
+      },
+    });
+
+    // Common rules for most packages
+    const commonRules = [
+      versionRule,
       Rules.packageOrder({
         options: {
           order: [
@@ -118,7 +161,6 @@ const archetypeConfig = archetypes(
         },
       }),
       Rules.alphabeticalDependencies({ includeWorkspaceRoot: true }),
-      Rules.consistentDependencies({}),
       Rules.alphabeticalScripts({ includeWorkspaceRoot: true }),
 
       // Banned dependencies
@@ -138,14 +180,51 @@ const archetypeConfig = archetypes(
       }),
     ];
 
-    // TypeScript config - different templates for CLI vs library vs sdkgen template
+    // Rules that apply to all packages except generated SDKs
+    const baseRules = [
+      ...commonRules,
+      Rules.consistentDependencies({
+        ...shared,
+      }),
+    ];
+
+    // TypeScript config - different templates for CLI vs library vs sdkgen template vs demo
     const standardTsConfigRule = Rules.standardTsconfig({
       ...shared,
       options: {
         excludedReferences: ["**/*"],
-        templateFile: rules.isSdkgenTemplate
-          ? "templates/tsconfig.sdkgen-template.json"
-          : (rules.isCli ? "templates/tsconfig.cli.json" : "templates/tsconfig.json"),
+        templateFile: rules.isDemo || rules.isDemoSchema
+          ? "templates/tsconfig.demo.json"
+          : (rules.isSdkgenTemplate
+            ? "templates/tsconfig.sdkgen-template.json"
+            : (rules.isCli ? "templates/tsconfig.cli.json" : "templates/tsconfig.json")),
+      },
+    });
+
+    const vitestConfigRule = Rules.fileContents({
+      ...shared,
+      options: {
+        file: "vitest.config.mjs",
+        generator: context => {
+          const packageJson = context.getPackageJson();
+          const devDeps = packageJson.devDependencies ?? {};
+          const hasHappyDom = "happy-dom" in devDeps;
+
+          const templateFile = hasHappyDom
+            ? "templates/vitest.with-dom.config.mjs"
+            : "templates/vitest.config.mjs";
+
+          const { packageDir: workspacePackageDir } = context.getWorkspaceContext();
+          const fullPath = path.resolve(workspacePackageDir, templateFile);
+          return context.host.readFile(fullPath, { encoding: "utf-8" });
+        },
+      },
+    });
+
+    const noExportsRule = noPackageEntry({
+      ...shared,
+      options: {
+        entries: ["exports", "main", "module", "types"],
       },
     });
 
@@ -173,11 +252,13 @@ const archetypeConfig = archetypes(
     if (rules.isBuildTools) {
       if (!rules.isCli) {
         return [
+          licenseAndRepositoryRule,
           privateRule,
           ...baseRules,
         ];
       }
       return [
+        licenseAndRepositoryRule,
         privateRule,
         scriptsRule,
         requiredScriptsDependenciesRule,
@@ -186,18 +267,99 @@ const archetypeConfig = archetypes(
       ];
     }
 
+    if (rules.isDemoApp) {
+      return [
+        licenseAndRepositoryRule,
+        privateRule,
+        scriptsRule,
+        standardTsConfigRule,
+        vitestConfigRule,
+        noExportsRule,
+        ...baseRules,
+      ];
+    }
+
+    if (rules.isDemoSchema) {
+      return [
+        licenseAndRepositoryRule,
+        privateRule,
+        scriptsRule,
+        requiredScriptsDependenciesRule,
+        standardTsConfigRule,
+        vitestConfigRule,
+        noExportsRule,
+        ...baseRules,
+      ];
+    }
+
+    if (rules.isDemoSdk) {
+      // Generated SDKs are permissive - minimal rules only
+      return [
+        privateRule,
+        versionRule,
+        Rules.packageOrder({
+          options: {
+            order: [
+              "name",
+              "private",
+              "version",
+              "description",
+              "access",
+              "author",
+              "license",
+              "repository",
+              "bin",
+              "exports",
+              "file",
+              "scripts",
+              "dependencies",
+              "peerDependencies",
+              "peerDependenciesMeta",
+              "devDependencies",
+              "publishConfig",
+              "imports",
+              "keywords",
+              "files",
+              "main",
+              "module",
+              "types",
+            ],
+          },
+        }),
+        Rules.alphabeticalDependencies({}), // No includeWorkspaceRoot
+        Rules.alphabeticalScripts({}), // No includeWorkspaceRoot
+      ];
+    }
+
+    if (rules.isDemo) {
+      return [
+        licenseAndRepositoryRule,
+        privateRule,
+        scriptsRule,
+        requiredScriptsDependenciesRule,
+        standardTsConfigRule,
+        vitestConfigRule,
+        ...baseRules,
+      ];
+    }
+
+    if (rules.isSdkgenTemplate) {
+      return [
+        licenseAndRepositoryRule,
+        ...(rules.isPrivate ? [privateRule] : publicRules),
+        scriptsRule,
+        requiredScriptsDependenciesRule,
+        standardTsConfigRule,
+        vitestConfigRule,
+        ...baseRules,
+      ];
+    }
+
     return [
+      licenseAndRepositoryRule,
       ...publicRules,
       scriptsRule,
-
-      // Vitest config
-      Rules.fileContents({
-        ...shared,
-        options: {
-          file: "vitest.config.mjs",
-          templateFile: "templates/vitest.config.mjs",
-        },
-      }),
+      vitestConfigRule,
 
       // Package exports - CLI packages have simpler exports
       Rules.packageEntry({
@@ -217,7 +379,7 @@ const archetypeConfig = archetypes(
                     default: "./build/esm/index.js",
                   },
                 },
-                files: ["bin", "build"],
+                files: rules.hasSdkgenTemplates ? ["bin", "build", "templates"] : ["bin", "build"],
                 main: "./build/esm/index.js",
                 types: "./build/types/index.d.ts",
               }
@@ -255,42 +417,47 @@ const archetypeConfig = archetypes(
       ...baseRules,
     ];
   },
-  { unmatched: "error" }, // Error if any package doesn't match an archetype
-)
-  .addArchetype(
-    "build-tools",
-    [
-      "@palantir/pack.monorepo.tsconfig",
-      "@palantir/pack.monorepo.cspell",
-    ],
-    { isBuildTools: true },
-  )
-  .addArchetype(
-    "build-tools-clis",
-    [
-      "@palantir/pack.monorepo.release",
-      "@palantir/pack.monorepo.transpile",
-    ],
-    { isBuildTools: true, isCli: true },
-  )
-  .addArchetype(
-    "cli",
-    [],
-    { isCli: true },
-  )
-  .addArchetype(
-    "library",
-    [
-      "@palantir/pack.document-schema.model-types",
-      "@palantir/pack.auth",
-      "@palantir/pack.auth.foundry",
-      "@palantir/pack.core",
-      "@palantir/pack.schema",
-      "@palantir/pack.state.core",
-    ],
-    {},
-  )
-  .addArchetype("sdkgen-template", [], { isSdkgenTemplate: true });
+  { unmatched: "error" },
+);
+
+const packages = {
+  // Build tools
+  "@palantir/pack.monorepo.cspell": { isBuildTools: true },
+  "@palantir/pack.monorepo.release": { isBuildTools: true, isCli: true },
+  "@palantir/pack.monorepo.transpile": { isBuildTools: true, isCli: true },
+  "@palantir/pack.monorepo.tsconfig": { isBuildTools: true },
+
+  // CLI packages
+  "@palantir/pack.document-schema.type-gen": { isCli: true },
+  "@palantir/pack.sdkgen": { isCli: true, hasSdkgenTemplates: true },
+
+  // SDK generation templates
+  "@palantir/pack.sdkgen.demo-template": { isSdkgenTemplate: true, isPrivate: true },
+  "@palantir/pack.sdkgen.pack-template": { isSdkgenTemplate: true },
+
+  // Demo packages
+  "@demo/canvas.app": { isDemo: true, isDemoApp: true },
+  "@demo/canvas.schema": { isDemo: true, isDemoSchema: true },
+  "@demo/canvas.sdk": { isDemo: true, isDemoSdk: true },
+
+  // Library packages (default rules)
+  "@palantir/pack.app": {},
+  "@palantir/pack.auth": {},
+  "@palantir/pack.auth.foundry": {},
+  "@palantir/pack.core": {},
+  "@palantir/pack.document-schema.model-types": {},
+  "@palantir/pack.schema": {},
+  "@palantir/pack.state.core": {},
+  "@palantir/pack.state.foundry": {},
+  "@palantir/pack.state.foundry-event": {},
+  "@palantir/pack.state.react": {},
+};
+
+// Generate archetypes from package configuration
+Object.entries(packages).reduce((config, [packageName, flags]) => {
+  const archetypeName = packageName.replace("@palantir/pack.", "").replace("@demo/", "");
+  return config.addArchetype(archetypeName, [packageName], flags);
+}, archetypeConfig);
 
 const allLocalDepsMustNotBePrivate = Rules.createRuleFactory({
   name: "allLocalDepsMustNotBePrivate",

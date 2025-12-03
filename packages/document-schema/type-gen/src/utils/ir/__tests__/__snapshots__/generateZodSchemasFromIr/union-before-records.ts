@@ -1,0 +1,22 @@
+import { z } from 'zod';
+
+export const FooSchema = z.object({
+  value: z.string(),
+});
+
+export const BarSchema = z.object({
+  count: z.number().int(),
+});
+
+export const FooBarFooSchema = FooSchema.extend({
+  type: z.literal('foo'),
+});
+
+export const FooBarBarSchema = BarSchema.extend({
+  type: z.literal('bar'),
+});
+
+export const FooBarSchema = z.discriminatedUnion('type', [
+  FooBarFooSchema,
+  FooBarBarSchema,
+]);

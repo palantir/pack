@@ -16,12 +16,17 @@
 
 import type { PackAppInternal } from "@palantir/pack.core";
 import type {
+  ActivityEvent,
   DocumentId,
   DocumentMetadata,
   DocumentRef,
   DocumentSchema,
   DocumentState,
+  EditDescription,
   Model,
+  ModelData,
+  PresenceEvent,
+  PresenceSubscriptionOptions,
   RecordCollectionRef,
   Unsubscribe,
 } from "@palantir/pack.document-schema.model-types";
@@ -39,8 +44,14 @@ const INVALID_DOC_REF: DocumentRef = Object.freeze(
     getRecords: () => {
       throw new Error("Invalid document reference");
     },
+    onActivity: () => () => {},
     onMetadataChange: () => () => {},
+    onPresence: () => () => {},
     onStateChange: () => () => {},
+    updateCustomPresence: () => {},
+    withTransaction: () => {
+      throw new Error("Invalid document reference");
+    },
   } as const,
 );
 
@@ -52,10 +63,30 @@ export const createDocRef = <const D extends DocumentSchema>(
   return new DocumentRefImpl(app, id, schema);
 };
 
+/**
+ * Get an invalid document reference. This is a stable reference that can be
+ * used to represent a non-existent or invalid document.
+ *
+ * Not to be confused with a valid reference to a non-existent document, an
+ * invalid reference is one that is not properly initialized. For example, code
+ * that initializes with an undefined or empty documentId might produce an
+ * invalid document reference rather than propagate nullish types.
+ *
+ * Most operations on an invalid reference are no-ops. For the rest, it is
+ * recommended to check for validity using {@link isValidDocRef} before
+ * performing operations.
+ */
 export function invalidDocRef<D extends DocumentSchema = DocumentSchema>(): DocumentRef<D> {
   return INVALID_DOC_REF as DocumentRef<D>;
 }
 
+/**
+ * Check if a document reference is an invalid reference.
+ * Not to be confused with a valid reference to a non-existent document, an invalid reference is one that is not properly initialized.
+ * For example, code that initializes with an undefined or empty documentId might produce an invalid document reference rather than
+ * propagate nullish types, as most operations on an invalid reference are no-ops. For the rest, it is recommended to check for
+ * validity using this function before performing operations.
+ */
 export function isValidDocRef<D extends DocumentSchema = DocumentSchema>(
   docRef: DocumentRef<D>,
 ): docRef is DocumentRef<D> {
@@ -84,15 +115,42 @@ class DocumentRefImpl<T extends DocumentSchema> implements DocumentRef<T> {
     return this.#stateModule.getCreateRecordCollectionRef(this, model);
   }
 
+  onActivity(
+    callback: (docRef: DocumentRef<T>, event: ActivityEvent) => void,
+  ): Unsubscribe {
+    return this.#stateModule.onActivity(this, callback);
+  }
+
   onMetadataChange(
     cb: (docRef: DocumentRef<T>, metadata: DocumentMetadata) => void,
   ): Unsubscribe {
     return this.#stateModule.onMetadataChange(this, cb);
   }
 
+  onPresence(
+    callback: (docRef: DocumentRef<T>, event: PresenceEvent) => void,
+    options?: PresenceSubscriptionOptions,
+  ): Unsubscribe {
+    return this.#stateModule.onPresence(this, callback, options);
+  }
+
   onStateChange(
     callback: (docRef: DocumentRef<T>) => void,
   ): Unsubscribe {
     return this.#stateModule.onStateChange(this, callback);
+  }
+
+  updateCustomPresence<M extends Model = Model>(
+    model: M,
+    eventData: ModelData<M>,
+  ): void {
+    this.#stateModule.updateCustomPresence(this, model, eventData);
+  }
+
+  withTransaction(
+    fn: () => void,
+    description?: EditDescription,
+  ): void {
+    this.#stateModule.withTransaction(this, fn, description);
   }
 }

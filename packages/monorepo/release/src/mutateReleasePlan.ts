@@ -20,6 +20,42 @@ import * as path from "node:path";
 import { inc } from "semver";
 import { FailedWithUserMessage } from "./FailedWithUserMessage.js";
 
+/**
+ * Mutates a release plan to enforce branching model constraints.
+ *
+ * This function implements a branching strategy that prevents version collisions
+ * between main and release branches by enforcing different bump rules:
+ *
+ * - **Main branch**: All patch bumps are upgraded to minor bumps. This ensures
+ *   main always increments the minor version, leaving patch versions for stable
+ *   release branches.
+ *
+ * - **Release branches**: Only patch and none bumps are allowed. Any minor or
+ *   major bumps will throw an error. This ensures stable branches only receive
+ *   bug fixes, not new features.
+ *
+ * - **All branches**: Major version bumps are never allowed and will throw an
+ *   error, requiring explicit human intervention.
+ *
+ * @param cwd - The current working directory (used for error message paths)
+ * @param releasePlan - The release plan to mutate (modified in place)
+ * @param releaseType - Whether this is "main" or "release branch"
+ *
+ * @throws {FailedWithUserMessage} If major bumps are detected, or if non-patch
+ *   bumps are detected on a release branch
+ *
+ * @example
+ * // On main branch, patch -> minor
+ * // changeset has patch bump for pkg@1.2.3
+ * mutateReleasePlan(cwd, plan, "main");
+ * // pkg will be bumped to 1.3.0 instead of 1.2.4
+ *
+ * @example
+ * // On release branch, only patches allowed
+ * // changeset has minor bump
+ * mutateReleasePlan(cwd, plan, "release branch");
+ * // throws error listing the problematic changesets
+ */
 export function mutateReleasePlan(
   cwd: string,
   releasePlan: ReleasePlan,

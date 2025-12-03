@@ -27,24 +27,26 @@ import type { UserRef } from "./UserRef.js";
  * It wraps OSDK OAuth clients and provides a consistent interface for authentication
  * state management, token access, and auth lifecycle events.
  */
-// TODO: functions should be method style
 export interface AuthModule {
   /**
    * Get the current user information.
    * Returns undefined if not authenticated or user data not available.
+   *
+   * @param allowUnverified - If true, will extract userId from token without validation.
+   *                          Defaults to false (requires validated token).
    */
-  readonly getCurrentUser: () => UserRef | undefined;
+  getCurrentUser(allowUnverified?: boolean): UserRef | undefined;
 
   /**
    * Get an access token, automatically refreshing if needed.
    * Throws if authentication fails or user is not signed in.
    */
-  readonly getToken: () => Promise<string>;
+  getToken(): Promise<string>;
 
   /**
    * Get the current access token without refresh, returns undefined if expired or unavailable.
    */
-  readonly getTokenOrUndefined: () => string | undefined;
+  getTokenOrUndefined(): string | undefined;
 
   /**
    * Get user data for a specific user ID.
@@ -52,12 +54,12 @@ export interface AuthModule {
    * @param force - Force refresh of cached data
    * @returns Promise resolving to user data
    */
-  readonly getUserData: (userId: string, force?: boolean) => Promise<unknown>;
+  getUserData(userId: string, force?: boolean): Promise<unknown>;
 
   /**
    * Check if the user is currently authenticated with a valid token.
    */
-  readonly isAuthenticated: () => boolean;
+  isAuthenticated(): boolean;
 
   /**
    * Subscribe to authentication state changes.
@@ -65,7 +67,7 @@ export interface AuthModule {
    * @param callback Function called when auth state changes
    * @returns Unsubscribe function
    */
-  readonly onAuthStateChange: (callback: AuthStateCallback) => Unsubscribe;
+  onAuthStateChange(callback: AuthStateCallback): Unsubscribe;
 
   /**
    * Subscribe to token changes.
@@ -73,36 +75,36 @@ export interface AuthModule {
    * @param callback Function called when token changes
    * @returns Unsubscribe function
    */
-  readonly onTokenChange: (callback: TokenChangeCallback) => Unsubscribe;
+  onTokenChange(callback: TokenChangeCallback): Unsubscribe;
 
   /**
    * Manually refresh the access token using the refresh token.
    * Only available for public OAuth clients.
    */
-  readonly refresh?: () => Promise<void>;
+  refresh?(): Promise<void>;
 
   /**
    * Initiate sign-in flow. For public clients, this redirects to OAuth.
    * For confidential clients, this performs client credentials flow.
    */
-  readonly signIn: () => Promise<void>;
+  signIn(): Promise<void>;
 
   /**
    * Sign out the current user and clear tokens.
    */
-  readonly signOut: () => Promise<void>;
+  signOut(): Promise<void>;
 
   /**
    * Validate the current token by checking with the platform API.
    * Returns true if the token is valid, false otherwise.
    */
-  readonly validateToken: () => Promise<boolean>;
+  validateToken(): Promise<boolean>;
 
   /**
    * Wait for authentication to complete. Resolves when authenticated,
    * rejects if authentication fails or times out.
    */
-  readonly waitForAuth: () => Promise<void>;
+  waitForAuth(): Promise<void>;
 }
 
 /**

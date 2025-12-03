@@ -16,13 +16,17 @@
 
 import type { Unsubscribe } from "@palantir/pack.core";
 import type {
+  ActivityEvent,
   DocumentId,
   DocumentMetadata,
   DocumentRef,
   DocumentSchema,
   DocumentState,
+  EditDescription,
   Model,
   ModelData,
+  PresenceEvent,
+  PresenceSubscriptionOptions,
   RecordCollectionRef,
   RecordId,
   RecordRef,
@@ -83,6 +87,13 @@ export type RecordDeleteCallback<M extends Model = Model> = (
   record: RecordRef<M>,
 ) => void;
 
+/**
+ * Base interface for specific document service implementations.
+ * The DocumentService is responsible for persisting document state,
+ * metadata, and providing methods to subscribe and interact with documents.
+ *
+ * The main implementation communicates with the Foundry platform (see @palantir/pack.state.foundry).
+ */
 export interface DocumentService {
   readonly hasMetadataSubscriptions: boolean;
   readonly hasStateSubscriptions: boolean;
@@ -91,6 +102,15 @@ export interface DocumentService {
     metadata: DocumentMetadata,
     schema: T,
   ) => Promise<DocumentRef<T>>;
+
+  readonly searchDocuments: <T extends DocumentSchema>(
+    documentTypeName: string,
+    schema: T,
+    options?: {
+      documentName?: string;
+      limit?: number;
+    },
+  ) => Promise<ReadonlyArray<DocumentMetadata & { readonly id: DocumentId }>>;
 
   readonly createDocRef: <const T extends DocumentSchema>(
     id: DocumentId,
@@ -125,6 +145,12 @@ export interface DocumentService {
     record: RecordRef<R>,
     partialState: Partial<ModelData<R>>,
   ) => Promise<void>;
+
+  readonly withTransaction: (
+    docRef: DocumentRef,
+    fn: () => void,
+    description?: EditDescription,
+  ) => void;
 
   // Collection methods
   readonly getRecord: <M extends Model>(
@@ -170,15 +196,32 @@ export interface DocumentService {
     callback: RecordCollectionChangeCallback<M>,
   ) => Unsubscribe;
 
+  readonly onActivity: <T extends DocumentSchema>(
+    docRef: DocumentRef<T>,
+    callback: (docRef: DocumentRef<T>, event: ActivityEvent) => void,
+  ) => Unsubscribe;
+
   readonly onMetadataChange: <T extends DocumentSchema>(
     docRef: DocumentRef<T>,
     callback: DocumentMetadataChangeCallback<T>,
+  ) => Unsubscribe;
+
+  readonly onPresence: <T extends DocumentSchema>(
+    docRef: DocumentRef<T>,
+    callback: (docRef: DocumentRef<T>, event: PresenceEvent) => void,
+    options?: PresenceSubscriptionOptions,
   ) => Unsubscribe;
 
   readonly onStateChange: <T extends DocumentSchema>(
     docRef: DocumentRef<T>,
     callback: DocumentStateChangeCallback<T>,
   ) => Unsubscribe;
+
+  readonly updateCustomPresence: <M extends Model>(
+    docRef: DocumentRef,
+    model: M,
+    eventData: ModelData<M>,
+  ) => void;
 
   readonly onRecordChanged: <M extends Model>(
     record: RecordRef<M>,

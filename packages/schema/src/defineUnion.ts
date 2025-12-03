@@ -29,26 +29,36 @@ export type ResolvedUnionVariants<T extends UnionVariantArgs> = {
 };
 
 export type UnionArgs<T extends UnionVariantArgs> = {
+  /**
+   * The field name used to discriminate between union variants.
+   *
+   * @default "type"
+   */
+  readonly discriminant?: string;
   readonly docs: string;
   readonly variants: T;
 };
 
 export function defineUnion<const TVariants extends UnionVariantArgs>(
   name: string,
-  union: UnionArgs<TVariants>,
+  {
+    discriminant = "type",
+    docs,
+    variants,
+  }: UnionArgs<TVariants>,
 ): UnionDef<ResolvedUnionVariants<TVariants>> {
-  const entries = Object.entries(union.variants).map(
+  const entries = Object.entries(variants).map(
     ([key, value]) => [key, resolveUnionVariantArg(value)] as const,
   );
 
-  const variants = Object.fromEntries(entries) as ResolvedUnionVariants<TVariants>;
+  const resolvedVariants = Object.fromEntries(entries) as ResolvedUnionVariants<TVariants>;
 
   return {
     type: ModelDefType.UNION,
-    discriminant: "type",
-    name: name,
-    docs: union.docs,
-    variants,
+    discriminant,
+    name,
+    docs,
+    variants: resolvedVariants,
   };
 }
 

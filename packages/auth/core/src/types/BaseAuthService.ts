@@ -19,12 +19,15 @@ import type { AuthState, AuthStateCallback } from "./AuthState.js";
 import type { TokenChangeCallback } from "./TokenChange.js";
 
 /**
- * Base interface for auth services that wrap different OAuth client implementations
+ * Base interface for auth services that wrap different OAuth client implementations.
+ *
+ * This provides necessary functionality for other pack modules to seamlessly handle
+ * authentication flow & token management events such as initial login or token refresh.
  */
 export interface BaseAuthService {
   dispose(): void;
   getCurrentState(): AuthState;
-  getCurrentUserId(): string | undefined;
+  getCurrentUserId(allowUnverified?: boolean): string | undefined;
   getToken(): Promise<string>;
   getTokenOrUndefined(): string | undefined;
   getUserData(userId: string, force?: boolean): Promise<unknown>;

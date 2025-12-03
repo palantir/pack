@@ -1,0 +1,26 @@
+import { z } from 'zod';
+
+export const ObjectNodeSchema = z.object({
+  x: z.number(),
+  y: z.number(),
+  label: z.string().optional(),
+});
+
+export const TextBoxSchema = z.object({
+  x: z.number(),
+  y: z.number(),
+  text: z.string(),
+});
+
+export const NodeObjectSchema = ObjectNodeSchema.extend({
+  type: z.literal('object'),
+});
+
+export const NodeTextBoxSchema = TextBoxSchema.extend({
+  type: z.literal('text-box'),
+});
+
+export const NodeSchema = z.discriminatedUnion('type', [
+  NodeObjectSchema,
+  NodeTextBoxSchema,
+]);

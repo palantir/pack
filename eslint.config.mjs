@@ -16,11 +16,15 @@
 
 // @ts-check
 
+import { createRequire } from "node:module";
 import * as typescriptEslintParser from "@typescript-eslint/parser";
 import originalHeaderPlugin from "eslint-plugin-header";
 import * as importPlugin from "eslint-plugin-import";
 import unusedImports from "eslint-plugin-unused-imports";
 import * as tseslint from "typescript-eslint";
+
+const require = createRequire(import.meta.url);
+const requireExtensions = require("eslint-plugin-require-extensions");
 
 export default tseslint.config(
   {
@@ -35,6 +39,7 @@ export default tseslint.config(
     plugins: {
       header: getHeaderPlugin(),
       import: importPlugin,
+      "require-extensions": requireExtensions,
       "unused-imports": unusedImports,
     },
     languageOptions: {
@@ -94,6 +99,7 @@ export default tseslint.config(
       "import/no-named-as-default": "off", // this used to be an error but the plugin isnt updated for 9
       "no-console": "error",
 
+      "require-extensions/require-extensions": "error",
       "unused-imports/no-unused-imports": "error",
     },
     settings: {
@@ -102,7 +108,7 @@ export default tseslint.config(
       },
       "import/resolver": {
         typescript: true,
-      },
+      }
     },
   },
   //
@@ -242,6 +248,8 @@ export default tseslint.config(
       "**/src/generatedNoCheck/",
       "**/src/generatedNoCheck2/",
       "**/templates/",
+      "**/__tests__/**/fixtures/",
+      "**/__tests__/__snapshots__/",
     ],
   },
 );

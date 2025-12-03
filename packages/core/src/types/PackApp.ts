@@ -37,7 +37,7 @@ import type { ModuleKey } from "./ModuleKey.js";
  *   },
  * });
  *
- * const docRef = app.state.getDocument(docSchema, 'your-document-id');
+ * const docRef = app.state.createDocRef(docSchema, 'your-document-id');
  * const doc = await docRef.getSnapshot(); // get pojo of your doc state.
  * ```
  */
@@ -71,6 +71,12 @@ export interface PackAppInternal {
   getModule<T, TConfig = undefined>(moduleKey: ModuleKey<T, TConfig>): T;
 }
 
+/**
+ * To simplify the public type interface on methods taking a PackApp,
+ * this function asserts that the implementation is in fact a PackAppInternal
+ * implementation, which allows internal module access and perhaps other
+ * private functionality in the future.
+ */
 export function assertIsAppInternal(app: PackApp): asserts app is PackApp & PackAppInternal;
 export function assertIsAppInternal(
   app: PackAppInternal,
