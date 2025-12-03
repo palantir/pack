@@ -170,14 +170,6 @@ const archetypeConfig = archetypes(
           bannedDependencies: ["lodash", "lodash-es"],
         },
       }),
-
-      // Catalog versions - ensure packages in pnpm-workspace.yaml catalog use "catalog:"
-      Rules.consistentVersions({
-        ...shared,
-        options: {
-          matchDependencyVersions: getPnpmCatalogVersions(),
-        },
-      }),
     ];
 
     // Rules that apply to all packages except generated SDKs
@@ -185,6 +177,13 @@ const archetypeConfig = archetypes(
       ...commonRules,
       Rules.consistentDependencies({
         ...shared,
+      }),
+      // Catalog versions - ensure packages in pnpm-workspace.yaml catalog use "catalog:"
+      Rules.consistentVersions({
+        ...shared,
+        options: {
+          matchDependencyVersions: getPnpmCatalogVersions(),
+        },
       }),
     ];
 
