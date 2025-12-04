@@ -53,7 +53,7 @@
     "consola": "catalog:",
     "execa": "catalog:",
     "latest-version": "^9.0.0",
-    "octokit": "^4.1.4",
+    "octokit": "^5.0.5",
     "p-filter": "^4.1.0",
     "p-map": "^7.0.4",
     "package-json": "^10.0.1",
