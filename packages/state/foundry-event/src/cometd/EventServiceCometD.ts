@@ -17,8 +17,7 @@
 import type { Logger } from "@osdk/api";
 import { getAuthModule } from "@palantir/pack.auth";
 import type { AppConfig, PackAppInternal } from "@palantir/pack.core";
-import type { Message, SubscriptionHandle } from "cometd";
-import { AckExtension, CometD } from "cometd";
+import type { AckExtension, CometD, Message, SubscriptionHandle } from "cometd";
 import type {
   EventService,
   EventServiceLogLevel,
@@ -26,9 +25,7 @@ import type {
   TypedPublishChannelId,
   TypedReceiveChannelId,
 } from "../types/EventService.js";
-
-// side-effect shenanigans imports the class impl to cometd module
-import "cometd/AckExtension.js";
+import { lazyLoadCometD } from "./lazyLoadCometD.js";
 
 const BEARER_TOKEN_FIELD = "bearer-token";
 const EXTENSION_ACK = "AckExtension";
@@ -42,24 +39,26 @@ interface Subscription {
   readonly getSubscriptionRequest?: () => object;
 }
 
+export interface CometDLoader {
+  (): Promise<{
+    AckExtension: new() => AckExtension;
+    CometD: new() => CometD;
+  }>;
+}
+
 export class EventServiceCometD implements EventService {
   private readonly logger: Logger;
   private initializePromise: Promise<void> | undefined;
   private readonly subscriptionById: Map<SubscriptionId, Subscription> = new Map();
   private readonly tokenExtension = new TokenExtension();
   private nextSubscriptionHandle = 0;
+  private cometd?: CometD;
 
   constructor(
     private readonly app: PackAppInternal,
-    private readonly cometd: CometD = new CometD(),
+    private readonly cometdLoader: CometDLoader = lazyLoadCometD,
   ) {
     this.logger = app.config.logger.child({}, { msgPrefix: "EventServiceCometD" });
-    this.configureCometd();
-    this.cometd.registerExtension(EXTENSION_ACK, new AckExtension());
-    this.cometd.registerExtension(EXTENSION_HANDSHAKE_TOKEN, this.tokenExtension);
-
-    // TODO: Support binary messages
-    // this.cometd.registerExtension(BINARY_EXTENSION_NAME, new BinaryExtension());
 
     // Any time the token changes, update the extension so reconnection requests use the new token.
     // This will also be called on initial token set when the auth module is initialized.
@@ -68,44 +67,58 @@ export class EventServiceCometD implements EventService {
     });
   }
 
-  private initialize(): Promise<void> {
+  private async initialize(): Promise<void> {
     if (this.initializePromise != null) {
       return this.initializePromise;
     }
 
-    this.initializePromise = new Promise<void>(resolve => {
-      this.cometd.addListener(
-        META_CHANNEL_HANDSHAKE,
-        ({ clientId, connectionType, error, successful }) => {
-          if (successful) {
-            this.logger.info("CometD handshake successful", { clientId, connectionType });
-            resolve();
+    this.initializePromise = (async () => {
+      if (this.cometd == null) {
+        const { AckExtension, CometD } = await this.cometdLoader();
+        this.cometd = new CometD();
+        this.configureCometd();
 
-            this.cometd.batch(() => {
-              this.subscriptionById.forEach((subscription, subscriptionId) => {
-                this.logger.debug("Resubscribing to channel", {
-                  channel: subscription.eventChannel,
-                  subscriptionId,
-                });
-                const subscribeProps = subscription.getSubscriptionRequest?.();
-                subscription.handle = this.cometd.resubscribe(subscription.handle, {
-                  ext: subscribeProps,
+        this.cometd.registerExtension(EXTENSION_ACK, new AckExtension());
+        this.cometd.registerExtension(EXTENSION_HANDSHAKE_TOKEN, this.tokenExtension);
+
+        // TODO: Support binary messages
+        // this.cometd.registerExtension(BINARY_EXTENSION_NAME, new BinaryExtension());
+      }
+
+      await new Promise<void>(resolve => {
+        this.cometd!.addListener(
+          META_CHANNEL_HANDSHAKE,
+          ({ clientId, connectionType, error, successful }) => {
+            if (successful) {
+              this.logger.info("CometD handshake successful", { clientId, connectionType });
+              resolve();
+
+              this.cometd!.batch(() => {
+                this.subscriptionById.forEach((subscription, subscriptionId) => {
+                  this.logger.debug("Resubscribing to channel", {
+                    channel: subscription.eventChannel,
+                    subscriptionId,
+                  });
+                  const subscribeProps = subscription.getSubscriptionRequest?.();
+                  subscription.handle = this.cometd!.resubscribe(subscription.handle, {
+                    ext: subscribeProps,
+                  });
                 });
               });
-            });
-          } else {
-            this.logger.warn("CometD handshake failed", { clientId, error });
-          }
-        },
-      );
+            } else {
+              this.logger.warn("CometD handshake failed", { clientId, error });
+            }
+          },
+        );
 
-      const authModule = getAuthModule(this.app);
-      void authModule.getToken().then(token => {
-        this.logger.info("Initializing CometD with token");
-        this.tokenExtension.setToken(token);
-        this.cometd.handshake();
+        const authModule = getAuthModule(this.app);
+        void authModule.getToken().then(token => {
+          this.logger.info("Initializing CometD with token");
+          this.tokenExtension.setToken(token);
+          this.cometd!.handshake();
+        });
       });
-    });
+    })();
 
     return this.initializePromise;
   }
@@ -116,6 +129,11 @@ export class EventServiceCometD implements EventService {
     getSubscriptionRequest?: () => object,
   ): Promise<SubscriptionId> {
     await this.initialize();
+
+    if (this.cometd == null) {
+      throw new Error("CometD not initialized");
+    }
+
     const subscriptionId = (this.nextSubscriptionHandle++).toString(10) as SubscriptionId;
 
     return new Promise<SubscriptionId>(
@@ -172,13 +190,13 @@ export class EventServiceCometD implements EventService {
         const ext = getSubscriptionRequest?.();
 
         const subscriptionHandle = ext != null
-          ? this.cometd.subscribe(
+          ? this.cometd!.subscribe(
             channel,
             messageHandler,
             { ext },
             subscribeCallback,
           )
-          : this.cometd.subscribe(
+          : this.cometd!.subscribe(
             channel,
             messageHandler,
             subscribeCallback,
@@ -208,6 +226,11 @@ export class EventServiceCometD implements EventService {
 
     this.subscriptionById.delete(subscriptionId);
 
+    if (this.cometd == null) {
+      this.logger.warn("CometD not initialized, cannot unsubscribe", { subscriptionId });
+      return;
+    }
+
     this.cometd.unsubscribe(
       handle,
       message => {
@@ -227,8 +250,13 @@ export class EventServiceCometD implements EventService {
     content: T,
   ): Promise<void> {
     await this.initialize();
+
+    if (this.cometd == null) {
+      throw new Error("CometD not initialized");
+    }
+
     return new Promise<void>((resolve, reject) => {
-      this.cometd.publish(channel, content, message => {
+      this.cometd!.publish(channel, content, message => {
         if (message.successful) {
           this.logger.debug("Successfully published message", channel, { content });
           resolve();
@@ -249,6 +277,10 @@ export class EventServiceCometD implements EventService {
   }
 
   private configureCometd(logLevel?: EventServiceLogLevel) {
+    if (this.cometd == null) {
+      return;
+    }
+
     const url = getCometDWebsocketUrl(this.app.config);
     this.logger.info("Configuring cometD ", { url });
     this.cometd.configure({

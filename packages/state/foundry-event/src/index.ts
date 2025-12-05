@@ -14,22 +14,14 @@
  * limitations under the License.
  */
 
-export { EventServiceCometD } from "./cometd/EventServiceCometD.js";
-export { createFoundryEventService, FoundryEventService } from "./FoundryEventService.js";
+export { createFoundryEventService } from "./FoundryEventService.js";
 export type {
   CustomPresenceEvent,
   DocumentPresenceChangeEvent,
+  FoundryEventService,
   PresenceCollaborativeUpdate,
   PresencePublishMessage,
   PresencePublishMessageCustom,
   PresenceSubscriptionOptions,
   SyncSession,
 } from "./FoundryEventService.js";
-export type {
-  ChannelId,
-  EventService,
-  EventServiceLogLevel,
-  SubscriptionId,
-  TypedPublishChannelId,
-  TypedReceiveChannelId,
-} from "./types/EventService.js";
