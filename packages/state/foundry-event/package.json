@@ -67,5 +67,9 @@
   "main": "./build/cjs/index.js",
   "module": "./build/esm/index.js",
   "types": "./build/cjs/index.d.ts",
+  "sideEffects": [
+    "./build/*/cometd/lazyLoadCometD.js",
+    "./src/cometd/lazyLoadCometD.ts"
+  ],
   "type": "module"
 }
