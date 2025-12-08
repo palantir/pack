@@ -14,13 +14,15 @@
  * limitations under the License.
  */
 
+import { PackAppProvider } from "@palantir/pack.state.react";
 import { createRoot } from "react-dom/client";
-
-const isInMemoryMode = import.meta.env.VITE_FOUNDRY_CLIENT_ID === "in-memory-demo";
+import { app } from "./app.js";
 
 createRoot(document.getElementById("root")!).render(
-  <div>
-    <h1>Canvas Demo</h1>
-    <p>Hello World</p>
-  </div>,
+  <PackAppProvider value={app}>
+    <div>
+      <h1>Canvas Demo</h1>
+      <p>Hello World</p>
+    </div>
+  </PackAppProvider>,
 );
