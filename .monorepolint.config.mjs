@@ -30,6 +30,7 @@ const REPOSITORY_URL = "https://github.com/palantir/pack.git";
  * @property {boolean} [isSdkgenTemplate]
  * @property {boolean} [isBuildTools]
  * @property {boolean} [hasSdkgenTemplates]
+ * @property {boolean} [isPrivate]
  * @property {boolean} [isDemo]
  * @property {boolean} [isDemoSchema]
  * @property {boolean} [isDemoApp]
@@ -172,22 +173,49 @@ const archetypeConfig = archetypes(
       }),
     ];
 
-    // Rules that apply to all packages except generated SDKs
+    const privateRules = [
+      Rules.packageEntry({
+        ...shared,
+        options: {
+          entries: {
+            private: true,
+          },
+        },
+      }),
+      noPackageEntry({
+        ...shared,
+        options: {
+          entries: ["publishConfig"],
+        },
+      }),
+    ];
+
+    const publicRules = [
+      noPackageEntry({
+        ...shared,
+        options: {
+          entries: ["private"],
+        },
+      }),
+      allLocalDepsMustNotBePrivate({
+        ...shared,
+      }),
+    ];
+
     const baseRules = [
       ...commonRules,
       Rules.consistentDependencies({
         ...shared,
       }),
-      // Catalog versions - ensure packages in pnpm-workspace.yaml catalog use "catalog:"
       Rules.consistentVersions({
         ...shared,
         options: {
           matchDependencyVersions: getPnpmCatalogVersions(),
         },
       }),
+      ...(rules.isPrivate ? privateRules : publicRules),
     ];
 
-    // TypeScript config - different templates for CLI vs library vs sdkgen template vs demo
     const standardTsConfigRule = Rules.standardTsconfig({
       ...shared,
       options: {
@@ -227,38 +255,15 @@ const archetypeConfig = archetypes(
       },
     });
 
-    const privateRule = Rules.packageEntry({
-      ...shared,
-      options: {
-        entries: {
-          private: true,
-        },
-      },
-    });
-
-    const publicRules = [
-      noPackageEntry({
-        ...shared,
-        options: {
-          entries: ["private"],
-        },
-      }),
-      allLocalDepsMustNotBePrivate({
-        ...shared,
-      }),
-    ];
-
     if (rules.isBuildTools) {
       if (!rules.isCli) {
         return [
           licenseAndRepositoryRule,
-          privateRule,
           ...baseRules,
         ];
       }
       return [
         licenseAndRepositoryRule,
-        privateRule,
         scriptsRule,
         requiredScriptsDependenciesRule,
         standardTsConfigRule,
@@ -269,7 +274,6 @@ const archetypeConfig = archetypes(
     if (rules.isDemoApp) {
       return [
         licenseAndRepositoryRule,
-        privateRule,
         scriptsRule,
         standardTsConfigRule,
         vitestConfigRule,
@@ -281,7 +285,6 @@ const archetypeConfig = archetypes(
     if (rules.isDemoSchema) {
       return [
         licenseAndRepositoryRule,
-        privateRule,
         scriptsRule,
         requiredScriptsDependenciesRule,
         standardTsConfigRule,
@@ -292,9 +295,7 @@ const archetypeConfig = archetypes(
     }
 
     if (rules.isDemoSdk) {
-      // Generated SDKs are permissive - minimal rules only
       return [
-        privateRule,
         versionRule,
         Rules.packageOrder({
           options: {
@@ -325,15 +326,15 @@ const archetypeConfig = archetypes(
             ],
           },
         }),
-        Rules.alphabeticalDependencies({}), // No includeWorkspaceRoot
-        Rules.alphabeticalScripts({}), // No includeWorkspaceRoot
+        Rules.alphabeticalDependencies({}),
+        Rules.alphabeticalScripts({}),
+        ...privateRules,
       ];
     }
 
     if (rules.isDemo) {
       return [
         licenseAndRepositoryRule,
-        privateRule,
         scriptsRule,
         vitestConfigRule,
         Rules.packageEntry({
@@ -376,7 +377,6 @@ const archetypeConfig = archetypes(
     if (rules.isSdkgenTemplate) {
       return [
         licenseAndRepositoryRule,
-        ...(rules.isPrivate ? [privateRule] : publicRules),
         scriptsRule,
         requiredScriptsDependenciesRule,
         standardTsConfigRule,
@@ -387,7 +387,6 @@ const archetypeConfig = archetypes(
 
     return [
       licenseAndRepositoryRule,
-      ...publicRules,
       scriptsRule,
       vitestConfigRule,
 
@@ -397,9 +396,11 @@ const archetypeConfig = archetypes(
         options: {
           entries: {
             type: "module",
-            publishConfig: {
-              "access": "public",
-            },
+            ...(!rules.isPrivate && {
+              publishConfig: {
+                "access": "public",
+              },
+            }),
             ...(rules.isCli
               ? {
                 // CLI packages: simpler exports for Node.js only
@@ -452,10 +453,10 @@ const archetypeConfig = archetypes(
 
 const packages = {
   // Build tools
-  "@palantir/pack.monorepo.cspell": { isBuildTools: true },
-  "@palantir/pack.monorepo.release": { isBuildTools: true, isCli: true },
-  "@palantir/pack.monorepo.transpile": { isBuildTools: true, isCli: true },
-  "@palantir/pack.monorepo.tsconfig": { isBuildTools: true },
+  "@palantir/pack.monorepo.cspell": { isBuildTools: true, isPrivate: true },
+  "@palantir/pack.monorepo.release": { isBuildTools: true, isCli: true, isPrivate: true },
+  "@palantir/pack.monorepo.transpile": { isBuildTools: true, isCli: true, isPrivate: true },
+  "@palantir/pack.monorepo.tsconfig": { isBuildTools: true, isPrivate: true },
 
   // CLI packages
   "@palantir/pack.document-schema.type-gen": { isCli: true },
@@ -466,9 +467,9 @@ const packages = {
   "@palantir/pack.sdkgen.pack-template": { isSdkgenTemplate: true },
 
   // Demo packages
-  "@demo/canvas.app": { isDemo: true, isDemoApp: true },
-  "@demo/canvas.schema": { isDemo: true, isDemoSchema: true },
-  "@demo/canvas.sdk": { isDemo: true, isDemoSdk: true },
+  "@demo/canvas.app": { isDemo: true, isDemoApp: true, isPrivate: true },
+  "@demo/canvas.schema": { isDemo: true, isDemoSchema: true, isPrivate: true },
+  "@demo/canvas.sdk": { isDemo: true, isDemoSdk: true, isPrivate: true },
 
   // Library packages (default rules)
   "@palantir/pack.app": {},

@@ -249,7 +249,7 @@ export class DemoDocumentService extends BaseYjsDocumentService<DemoInternalDoc>
     const { internalDoc } = this.getCreateInternalDoc(docRef);
 
     if (!internalDoc.presenceManager) {
-      internalDoc.presenceManager = new PresenceManager(docRef.id, this.clientId);
+      internalDoc.presenceManager = new PresenceManager(docRef.id, this.clientId, docRef.schema);
     }
 
     const unsubscribe = internalDoc.presenceManager.onActivity(event => {
@@ -268,7 +268,7 @@ export class DemoDocumentService extends BaseYjsDocumentService<DemoInternalDoc>
     const { internalDoc } = this.getCreateInternalDoc(docRef);
 
     if (!internalDoc.presenceManager) {
-      internalDoc.presenceManager = new PresenceManager(docRef.id, this.clientId);
+      internalDoc.presenceManager = new PresenceManager(docRef.id, this.clientId, docRef.schema);
     }
 
     const unsubscribe = internalDoc.presenceManager.onPresence(event => {
@@ -288,7 +288,7 @@ export class DemoDocumentService extends BaseYjsDocumentService<DemoInternalDoc>
     const { internalDoc } = this.getCreateInternalDoc(docRef);
 
     if (!internalDoc.presenceManager) {
-      internalDoc.presenceManager = new PresenceManager(docRef.id, this.clientId);
+      internalDoc.presenceManager = new PresenceManager(docRef.id, this.clientId, docRef.schema);
     }
 
     const modelName = getMetadata(model).name;

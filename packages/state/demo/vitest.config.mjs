@@ -2,7 +2,9 @@ import { coverageConfigDefaults, defaultExclude, defineProject } from "vitest/co
 
 export default defineProject({
   test: {
+    environment: "happy-dom",
     exclude: [...defaultExclude, "**/build/**", "**/test-output/**"],
+    setupFiles: ["./vitest.setup.ts"],
     coverage: {
       provider: "v8",
       all: true,
