@@ -17,3 +17,4 @@
 export type { AuthModule } from "@palantir/pack.auth";
 export type { AppConfig, PackApp, TokenProvider } from "@palantir/pack.core";
 export { initPackApp } from "./utils/initPackApp.js";
+export type { AppBuilders } from "./utils/initPackApp.js";

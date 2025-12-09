@@ -50,9 +50,6 @@
     "tslib": "catalog:",
     "typescript": "catalog:"
   },
-  "publishConfig": {
-    "access": "public"
-  },
   "files": [
     "template",
     "scripts",

@@ -17,20 +17,34 @@
 import type {
   ActivityEvent,
   DocumentId,
+  DocumentSchema,
+  Model,
   PresenceEvent,
   PresenceEventDataType,
   UserId,
 } from "@palantir/pack.document-schema.model-types";
+import { getMetadata, hasMetadata } from "@palantir/pack.document-schema.model-types";
 
 const HEARTBEAT_INTERVAL_MS = 5000;
 const STALE_CLIENT_TIMEOUT_MS = 15000;
 
+type SerializableActivityEvent = Omit<ActivityEvent, "eventData"> & {
+  readonly eventData:
+    | { readonly type: "customEvent"; readonly eventData: unknown; readonly modelName: string }
+    | ActivityEvent["eventData"];
+};
+
 type PresenceChannelMessage =
   | { readonly type: "heartbeat"; readonly userId: string; readonly timestamp: number }
-  | { readonly type: "activity"; readonly userId: string; readonly event: ActivityEvent };
+  | {
+    readonly type: "activity";
+    readonly userId: string;
+    readonly event: SerializableActivityEvent;
+  };
 
 export class PresenceManager {
   private readonly channel: BroadcastChannel;
+  private readonly schema?: DocumentSchema;
   private readonly userId: UserId;
   private readonly activeClients = new Map<UserId, number>();
   private heartbeatInterval?: number;
@@ -38,8 +52,9 @@ export class PresenceManager {
   private presenceCallbacks = new Set<(event: PresenceEvent) => void>();
   private activityCallbacks = new Set<(event: ActivityEvent) => void>();
 
-  constructor(documentId: DocumentId, userId: string) {
+  constructor(documentId: DocumentId, userId: string, schema?: DocumentSchema) {
     this.userId = userId as UserId;
+    this.schema = schema;
     this.channel = new BroadcastChannel(`pack-demo-presence-${documentId}`);
 
     this.channel.onmessage = event => {
@@ -65,8 +80,19 @@ export class PresenceManager {
   }
 
   broadcastActivity(event: ActivityEvent): void {
+    const serializableEvent: SerializableActivityEvent = {
+      ...event,
+      eventData: event.eventData.type === "customEvent"
+        ? {
+          eventData: event.eventData.eventData,
+          modelName: getMetadata(event.eventData.model).name,
+          type: "customEvent",
+        }
+        : event.eventData,
+    };
+
     const message: PresenceChannelMessage = {
-      event,
+      event: serializableEvent,
       type: "activity",
       userId: this.userId,
     };
@@ -136,9 +162,46 @@ export class PresenceManager {
     }
   }
 
-  private handleActivity(event: ActivityEvent): void {
+  private handleActivity(event: SerializableActivityEvent): void {
+    let reconstructedEvent: ActivityEvent = event as ActivityEvent;
+
+    if (
+      event.eventData.type === "customEvent"
+      && "modelName" in event.eventData
+      && this.schema != null
+    ) {
+      const modelName = event.eventData.modelName;
+      let model: Model | undefined;
+
+      for (const key of Object.keys(this.schema)) {
+        const candidate = this.schema[key as keyof DocumentSchema];
+        if (
+          candidate != null
+          && typeof candidate === "object"
+          && hasMetadata(candidate)
+        ) {
+          const metadata = getMetadata(candidate);
+          if ("name" in metadata && metadata.name === modelName) {
+            model = candidate as Model;
+            break;
+          }
+        }
+      }
+
+      if (model != null) {
+        reconstructedEvent = {
+          ...event,
+          eventData: {
+            eventData: event.eventData.eventData,
+            model,
+            type: "customEvent",
+          },
+        };
+      }
+    }
+
     for (const callback of this.activityCallbacks) {
-      callback(event);
+      callback(reconstructedEvent);
     }
   }
 

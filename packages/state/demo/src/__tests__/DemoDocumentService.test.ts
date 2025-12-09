@@ -43,12 +43,14 @@ const TEST_SECURITY = {
   },
 };
 
+const TEST_DB_PREFIX = `test-${Date.now()}`;
+
 function createTestApp(
   config: Partial<AppConfig & { moduleConfigs: Record<symbol, unknown> }> = {},
 ): PackAppInternal {
   const modules = new Map<symbol, unknown>();
 
-  const docConfig = createDemoDocumentServiceConfig({ dbPrefix: `test-${Date.now()}` });
+  const docConfig = createDemoDocumentServiceConfig({ dbPrefix: TEST_DB_PREFIX });
   const allModuleConfigs = {
     [docConfig[0].key]: docConfig[1],
     ...config.moduleConfigs,
