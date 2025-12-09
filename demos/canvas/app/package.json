@@ -24,7 +24,7 @@
     "@vitejs/plugin-basic-ssl": "^2.1.0",
     "react": "^19",
     "react-dom": "^19",
-    "react-router-dom": "^6.30.2"
+    "react-router": "^7.10.1"
   },
   "devDependencies": {
     "@demo/canvas.sdk": "workspace:*",
@@ -32,12 +32,14 @@
     "@osdk/client": "catalog:",
     "@osdk/oauth": "catalog:",
     "@palantir/pack.app": "workspace:*",
+    "@palantir/pack.auth": "workspace:*",
     "@palantir/pack.monorepo.tsconfig": "workspace:~",
+    "@palantir/pack.state.demo": "workspace:*",
     "@palantir/pack.state.react": "workspace:*",
     "@types/node": "catalog:",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
-    "@vitejs/plugin-react": "^5.1.1",
+    "@vitejs/plugin-react": "^5.1.2",
     "rimraf": "catalog:",
     "tslib": "catalog:",
     "typescript": "catalog:",

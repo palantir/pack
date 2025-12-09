@@ -19,6 +19,7 @@ import { BrowserLogger } from "@osdk/client/internal";
 import type { PublicOauthClient } from "@osdk/oauth";
 import { createPublicOauthClient } from "@osdk/oauth";
 import { initPackApp } from "@palantir/pack.app";
+import { createDemoDocumentServiceConfig } from "@palantir/pack.state.demo";
 
 const ALLOW_DEV_TOKEN = true;
 const CLIENT_ID = "demo-canvas-app";
@@ -61,11 +62,12 @@ const authClient = createAuthClient();
 
 const osdkClient = createClient(FOUNDRY_URL, ONTOLOGY_RID, authClient, { logger });
 
-export const app: any = initPackApp(osdkClient, {
+export const app = initPackApp(osdkClient, {
   app: {
     appId: CLIENT_ID,
   },
   logLevel: "info",
-}).withState();
-
-export default app;
+  moduleOverrides: [
+    createDemoDocumentServiceConfig(),
+  ],
+}).withState().build();
