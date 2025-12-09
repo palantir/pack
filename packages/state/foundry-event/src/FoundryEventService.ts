@@ -33,10 +33,9 @@ import {
   hasMetadata,
 } from "@palantir/pack.document-schema.model-types";
 import { DocumentLoadStatus, type DocumentSyncStatus } from "@palantir/pack.state.core";
-import type { CometD } from "cometd";
 import { Base64 } from "js-base64";
 import * as y from "yjs";
-import { EventServiceCometD } from "./cometd/EventServiceCometD.js";
+import { type CometDLoader, EventServiceCometD } from "./cometd/EventServiceCometD.js";
 import type {
   EventService,
   SubscriptionId,
@@ -130,16 +129,43 @@ interface SyncSessionInternal extends SyncSession {
  * This manages event subscriptions and publishing of document related events via
  * our PACK Foundry backend's cometd service.
  */
-export class FoundryEventService {
+export interface FoundryEventService {
+  publishCustomPresence(
+    documentId: DocumentId,
+    eventType: string,
+    eventData: unknown,
+  ): Promise<void>;
+
+  startDocumentSync(
+    documentId: DocumentId,
+    yDoc: y.Doc,
+    onStatusChange: (status: Partial<DocumentSyncStatus>) => void,
+  ): SyncSession;
+
+  stopDocumentSync(session: SyncSession): void;
+
+  subscribeToActivityUpdates(
+    documentId: DocumentId,
+    callback: (event: ActivityCollaborativeUpdate) => void,
+  ): Promise<SubscriptionId>;
+
+  subscribeToPresenceUpdates(
+    documentId: DocumentId,
+    callback: (update: PresenceCollaborativeUpdate) => void,
+    options?: PresenceSubscriptionOptions,
+  ): Promise<SubscriptionId>;
+}
+
+class FoundryEventServiceImpl implements FoundryEventService {
   private readonly eventService: EventService;
   private readonly logger: Logger;
   private readonly sessions = new Map<string, SyncSessionInternal>();
 
   constructor(
     private readonly app: PackAppInternal,
-    cometd?: CometD,
+    cometdLoader?: CometDLoader,
   ) {
-    this.eventService = new EventServiceCometD(app, cometd);
+    this.eventService = new EventServiceCometD(app, cometdLoader);
     this.logger = app.config.logger.child({}, {
       level: "debug",
       msgPrefix: "FoundryEventService",
@@ -492,9 +518,10 @@ export class FoundryEventService {
 
 export function createFoundryEventService(
   app: PackAppInternal,
-  cometd?: CometD,
+  /** @internal */
+  cometdLoader?: CometDLoader,
 ): FoundryEventService {
-  return new FoundryEventService(app, cometd);
+  return new FoundryEventServiceImpl(app, cometdLoader);
 }
 
 function isEditDescription(obj: unknown): obj is EditDescription {

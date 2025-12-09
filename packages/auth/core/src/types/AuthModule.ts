@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import type { PackAppInternal, Unsubscribe } from "@palantir/pack.core";
+import type { PackApp, PackAppInternal, Unsubscribe } from "@palantir/pack.core";
 import { assertIsAppInternal } from "@palantir/pack.core";
 import { AUTH_MODULE_KEY } from "../constants/AuthModuleKey.js";
 import type { AuthStateCallback } from "./AuthState.js";
@@ -113,7 +113,7 @@ export interface AuthModule {
  * @param app - PACK app instance
  * @returns The auth module
  */
-export function getAuthModule(app: PackAppInternal): AuthModule {
+export function getAuthModule(app: PackApp | PackAppInternal): AuthModule {
   assertIsAppInternal(app);
   return app.getModule(AUTH_MODULE_KEY);
 }

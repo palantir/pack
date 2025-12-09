@@ -14,12 +14,8 @@
  * limitations under the License.
  */
 
-import {
-  assertIsAppInternal,
-  type ModuleKey,
-  type PackAppInternal,
-  type Unsubscribe,
-} from "@palantir/pack.core";
+import type { ModuleKey, PackApp, PackAppInternal, Unsubscribe } from "@palantir/pack.core";
+import { assertIsAppInternal } from "@palantir/pack.core";
 import type {
   ActivityEvent,
   DocumentId,
@@ -401,7 +397,7 @@ export class StateModuleImpl implements StateModule {
   }
 }
 
-export function getStateModule(app: PackAppInternal): StateModule {
+export function getStateModule(app: PackApp | PackAppInternal): StateModule {
   assertIsAppInternal(app);
   return app.getModule(STATE_MODULE_KEY);
 }
