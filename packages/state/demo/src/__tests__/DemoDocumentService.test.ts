@@ -26,7 +26,7 @@ import type {
 } from "@palantir/pack.document-schema.model-types";
 import { getMetadata, Metadata } from "@palantir/pack.document-schema.model-types";
 import { DocumentLiveStatus, DocumentLoadStatus, getStateModule } from "@palantir/pack.state.core";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { mock } from "vitest-mock-extended";
 import { z } from "zod";
 import { createDemoDocumentServiceConfig } from "../index.js";
@@ -304,23 +304,21 @@ describe("DemoDocumentService", () => {
       presenceEvents.push(event);
     });
 
-    await new Promise(resolve => setTimeout(resolve, 100));
-
     const app2 = createTestApp();
     const stateModule2 = getStateModule(app2);
     const docRef2 = stateModule2.createDocRef(docRef.id, schema);
 
     const unsubscribe2 = stateModule2.onPresence(docRef2, () => {});
 
-    await new Promise(resolve => setTimeout(resolve, 6000));
-
-    expect(presenceEvents.length).toBeGreaterThan(0);
-    const arriveEvents = presenceEvents.filter(e => e.eventData.type === "presenceArrived");
-    expect(arriveEvents.length).toBeGreaterThan(0);
+    await vi.waitFor(() => {
+      expect(presenceEvents.length).toBeGreaterThan(0);
+      const arriveEvents = presenceEvents.filter(e => e.eventData.type === "presenceArrived");
+      expect(arriveEvents.length).toBeGreaterThan(0);
+    }, { timeout: 10000 });
 
     unsubscribe1();
     unsubscribe2();
-  }, 10000);
+  });
 
   it("should handle activity events", async () => {
     const stateModule = getStateModule(app);
@@ -345,7 +343,7 @@ describe("DemoDocumentService", () => {
       activityEvents.push(event);
     });
 
-    await new Promise(resolve => setTimeout(resolve, 100));
+    await new Promise(resolve => setTimeout(resolve, 50));
 
     stateModule.updateCustomPresence(docRef, schema.User, {
       age: 25,
@@ -354,9 +352,10 @@ describe("DemoDocumentService", () => {
       name: "Activity User",
     });
 
-    await new Promise(resolve => setTimeout(resolve, 200));
+    await vi.waitFor(() => {
+      expect(activityEvents.length).toBeGreaterThan(0);
+    }, { timeout: 1000 });
 
-    expect(activityEvents.length).toBeGreaterThan(0);
     const firstEvent = activityEvents[0];
     expect(firstEvent).toBeDefined();
     if (firstEvent?.eventData.type === "customEvent") {
