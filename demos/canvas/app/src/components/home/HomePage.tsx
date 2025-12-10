@@ -14,19 +14,23 @@
  * limitations under the License.
  */
 
-import React from "react";
+import { Button } from "@blueprintjs/core";
+import React, { useCallback } from "react";
 import { useNavigate } from "react-router";
 import { useCanvasDocuments } from "../../hooks/useCanvasDocuments.js";
+import { usePackApp } from "../../hooks/usePackApp.js";
+import { CreateFileDialog } from "./CreateCanvasDialog.js";
 import css from "./HomePage.module.css";
 
 export const HomePage = React.memo(function HomePage() {
   const navigate = useNavigate();
   const { documents, isLoading } = useCanvasDocuments();
+  const app = usePackApp();
+  const [createDialogIsOpen, setCreateDialogIsOpen] = React.useState(false);
 
-  const handleCreateCanvas = () => {
-    const newCanvasId = `canvas-${Date.now()}`;
-    navigate(`/canvas/${newCanvasId}`);
-  };
+  const showCreateDialog = useCallback(() => {
+    setCreateDialogIsOpen(true);
+  }, []);
 
   if (isLoading) {
     return (
@@ -40,9 +44,9 @@ export const HomePage = React.memo(function HomePage() {
     <div className={css.pageWrapper}>
       <div className={css.pageHeader}>
         <h1>Canvas Demo</h1>
-        <button className={css.createButton} onClick={handleCreateCanvas} type="button">
+        <Button onClick={showCreateDialog}>
           Create New Canvas
-        </button>
+        </Button>
       </div>
       <div>
         <div>
@@ -70,6 +74,7 @@ export const HomePage = React.memo(function HomePage() {
                 </div>
               )}
           </div>
+          <CreateFileDialog isOpen={createDialogIsOpen} setIsOpen={setCreateDialogIsOpen} />
         </div>
       </div>
     </div>

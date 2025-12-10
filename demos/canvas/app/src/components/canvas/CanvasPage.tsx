@@ -14,9 +14,13 @@
  * limitations under the License.
  */
 
+import { DocumentModel } from "@demo/canvas.sdk";
+import { isValidDocRef } from "@palantir/pack.state.core";
+import { useDocRef } from "@palantir/pack.state.react";
 import type { KeyboardEvent } from "react";
-import { useCallback, useEffect } from "react";
+import { useCallback } from "react";
 import { useParams } from "react-router";
+import { app } from "../../app.js";
 import { useCanvasInteraction } from "../../hooks/useCanvasInteraction.js";
 import { CanvasContent } from "./CanvasContent.js";
 import styles from "./CanvasPage.module.css";
@@ -24,12 +28,12 @@ import { CanvasToolbar } from "./CanvasToolbar.js";
 
 export const CanvasPage = () => {
   const { canvasId } = useParams<{ canvasId: string }>();
-
-  if (canvasId == null) {
+  const docRef = useDocRef(app, DocumentModel, canvasId);
+  if (!isValidDocRef(docRef)) {
     return <div>Canvas ID is required</div>;
   }
 
-  const interaction = useCanvasInteraction(canvasId);
+  const interaction = useCanvasInteraction(docRef);
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
@@ -37,22 +41,11 @@ export const CanvasPage = () => {
         interaction.deleteSelected();
       }
     },
-    [interaction],
+    [interaction.deleteSelected],
   );
 
-  useEffect(() => {
-    const handleGlobalKeyDown = (e: globalThis.KeyboardEvent) => {
-      if (e.key === "Delete" || e.key === "Backspace") {
-        interaction.deleteSelected();
-      }
-    };
-
-    window.addEventListener("keydown", handleGlobalKeyDown);
-    return () => window.removeEventListener("keydown", handleGlobalKeyDown);
-  }, [interaction]);
-
   return (
-    <div className={styles.container} onKeyDown={handleKeyDown}>
+    <div className={styles.container} onKeyDown={handleKeyDown} tabIndex={0}>
       <CanvasToolbar
         canDelete={interaction.selectedShapeId != null}
         currentColor={interaction.currentColor}
@@ -64,7 +57,7 @@ export const CanvasPage = () => {
       <CanvasContent
         canvasProps={interaction.canvasProps}
         selectedShapeId={interaction.selectedShapeId}
-        shapes={interaction.shapes}
+        shapeRefs={interaction.shapeRefs}
       />
     </div>
   );

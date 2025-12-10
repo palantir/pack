@@ -14,15 +14,16 @@
  * limitations under the License.
  */
 
-import type { NodeShape } from "@demo/canvas.sdk";
+import type { DocumentModel, NodeShape, NodeShapeModel } from "@demo/canvas.sdk";
+import type { DocumentRef, RecordRef } from "@palantir/pack.document-schema.model-types";
 import type { MouseEvent } from "react";
 import { useCallback, useRef, useState } from "react";
 import { centerToBounds } from "../utils/centerToBounds.js";
 import { getDefaultColor } from "../utils/getDefaultColor.js";
 import { getDefaultShapeSize } from "../utils/getDefaultShapeSize.js";
-import type { ShapeWithId } from "./useCanvasShapes.js";
 import { useCanvasShapes } from "./useCanvasShapes.js";
 import { useShapeDrag } from "./useShapeDrag.js";
+import { useShapeIndex } from "./useShapeIndex.js";
 import { useShapeSelection } from "./useShapeSelection.js";
 
 export type ToolMode = "select" | "addBox" | "addCircle";
@@ -39,34 +40,35 @@ export interface UseCanvasInteractionResult {
   readonly selectedShapeId: string | undefined;
   setColor: (color: string) => void;
   setTool: (tool: ToolMode) => void;
-  readonly shapes: readonly ShapeWithId[];
+  readonly shapeRefs: readonly RecordRef<typeof NodeShapeModel>[];
 }
 
-export function useCanvasInteraction(canvasId: string): UseCanvasInteractionResult {
-  const { addShape, deleteShape, shapes, updateShape } = useCanvasShapes(canvasId);
-  const { clearSelection, selectedShapeId, selectShape } = useShapeSelection();
+export function useCanvasInteraction(doc: DocumentRef<DocumentModel>): UseCanvasInteractionResult {
+  const { addShape, shapeRefs } = useCanvasShapes(doc);
+  const shapeIndex = useShapeIndex(doc);
+  const { clearSelection, selectedShapeRef, selectShape } = useShapeSelection();
   const [currentTool, setCurrentTool] = useState<ToolMode>("select");
   const [currentColor, setCurrentColor] = useState<string>(getDefaultColor());
 
   const creationStateRef = useRef<{ startX: number; startY: number } | undefined>(undefined);
 
-  const dragHook = useShapeDrag(shapes, updateShape, selectShape, selectedShapeId);
+  const shapeDragHandlers = useShapeDrag(shapeIndex, selectedShapeRef, selectShape);
 
   const deleteSelected = useCallback(() => {
-    if (selectedShapeId != null) {
-      deleteShape(selectedShapeId);
+    if (selectedShapeRef != null) {
+      selectedShapeRef.delete();
       clearSelection();
     }
-  }, [clearSelection, deleteShape, selectedShapeId]);
+  }, [clearSelection, selectedShapeRef]);
 
   const setColor = useCallback(
-    (color: string) => {
+    async (color: string) => {
       setCurrentColor(color);
-      if (selectedShapeId != null) {
-        updateShape(selectedShapeId, { color });
+      if (selectedShapeRef != null) {
+        await selectedShapeRef.update({ color });
       }
     },
-    [selectedShapeId, updateShape],
+    [selectedShapeRef],
   );
 
   const setTool = useCallback((tool: ToolMode) => {
@@ -77,7 +79,7 @@ export function useCanvasInteraction(canvasId: string): UseCanvasInteractionResu
   const onMouseDown = useCallback(
     (e: MouseEvent<SVGSVGElement>) => {
       if (currentTool === "select") {
-        dragHook.canvasProps.onMouseDown(e);
+        shapeDragHandlers.onMouseDown(e);
       } else {
         const svg = e.currentTarget;
         const rect = svg.getBoundingClientRect();
@@ -87,22 +89,22 @@ export function useCanvasInteraction(canvasId: string): UseCanvasInteractionResu
         creationStateRef.current = { startX: x, startY: y };
       }
     },
-    [currentTool, dragHook.canvasProps],
+    [currentTool, shapeDragHandlers],
   );
 
   const onMouseMove = useCallback(
     (e: MouseEvent<SVGSVGElement>) => {
       if (currentTool === "select") {
-        dragHook.canvasProps.onMouseMove(e);
+        shapeDragHandlers.onMouseMove(e);
       }
     },
-    [currentTool, dragHook.canvasProps],
+    [currentTool, shapeDragHandlers],
   );
 
   const onMouseUp = useCallback(
     (e: MouseEvent<SVGSVGElement>) => {
       if (currentTool === "select") {
-        dragHook.canvasProps.onMouseUp();
+        shapeDragHandlers.onMouseUp();
         return;
       }
 
@@ -138,14 +140,15 @@ export function useCanvasInteraction(canvasId: string): UseCanvasInteractionResu
           shapeType,
         };
 
-        const newId = addShape(newShape);
-        selectShape(newId);
+        addShape(newShape).then(recordRef => {
+          selectShape(recordRef);
+        });
 
         creationStateRef.current = undefined;
         setCurrentTool("select");
       }
     },
-    [addShape, currentColor, currentTool, dragHook.canvasProps, selectShape],
+    [addShape, currentColor, currentTool, selectShape, shapeDragHandlers],
   );
 
   return {
@@ -157,9 +160,9 @@ export function useCanvasInteraction(canvasId: string): UseCanvasInteractionResu
     currentColor,
     currentTool,
     deleteSelected,
-    selectedShapeId,
+    selectedShapeId: selectedShapeRef?.id,
     setColor,
     setTool,
-    shapes,
+    shapeRefs,
   };
 }

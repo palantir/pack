@@ -14,28 +14,32 @@
  * limitations under the License.
  */
 
+import type { NodeShapeModel } from "@demo/canvas.sdk";
+import type { RecordRef } from "@palantir/pack.document-schema.model-types";
 import { useCallback, useState } from "react";
 
 export interface UseShapeSelectionResult {
   clearSelection: () => void;
-  readonly selectedShapeId: string | undefined;
-  selectShape: (id: string | undefined) => void;
+  readonly selectedShapeRef: RecordRef<typeof NodeShapeModel> | undefined;
+  selectShape: (ref: RecordRef<typeof NodeShapeModel> | undefined) => void;
 }
 
 export function useShapeSelection(): UseShapeSelectionResult {
-  const [selectedShapeId, setSelectedShapeId] = useState<string | undefined>();
+  const [selectedShapeRef, setSelectedShapeRef] = useState<
+    RecordRef<typeof NodeShapeModel> | undefined
+  >();
 
-  const selectShape = useCallback((id: string | undefined) => {
-    setSelectedShapeId(id);
+  const selectShape = useCallback((ref: RecordRef<typeof NodeShapeModel> | undefined) => {
+    setSelectedShapeRef(ref);
   }, []);
 
   const clearSelection = useCallback(() => {
-    setSelectedShapeId(undefined);
+    setSelectedShapeRef(undefined);
   }, []);
 
   return {
     clearSelection,
-    selectedShapeId,
+    selectedShapeRef,
     selectShape,
   };
 }

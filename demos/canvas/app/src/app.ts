@@ -70,4 +70,5 @@ export const app = initPackApp(osdkClient, {
   moduleOverrides: [
     createDemoDocumentServiceConfig(),
   ],
+  ontologyRid: ONTOLOGY_RID,
 }).withState().build();
