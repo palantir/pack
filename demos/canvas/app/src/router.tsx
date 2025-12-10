@@ -14,15 +14,26 @@
  * limitations under the License.
  */
 
-import { PackAppProvider } from "@palantir/pack.state.react";
-import { createRoot } from "react-dom/client";
-import { RouterProvider } from "react-router";
-import { app } from "./app.js";
-import "./index.css";
-import { router } from "./router.js";
+import { createBrowserRouter } from "react-router";
+import { AuthCallback } from "./AuthCallback.js";
+import { CanvasPage } from "./components/canvas/CanvasPage.js";
+import { HomePage } from "./components/home/HomePage.js";
 
-createRoot(document.getElementById("root")!).render(
-  <PackAppProvider value={app}>
-    <RouterProvider router={router} />
-  </PackAppProvider>,
+export const router = createBrowserRouter(
+  [
+    {
+      path: "/",
+      element: <HomePage />,
+    },
+    {
+      path: "/canvas/:canvasId",
+      element: <CanvasPage />,
+    },
+    {
+      // This is the route defined in your application's redirect URL
+      path: "/auth/callback",
+      element: <AuthCallback />,
+    },
+  ],
+  { basename: import.meta.env.BASE_URL },
 );
