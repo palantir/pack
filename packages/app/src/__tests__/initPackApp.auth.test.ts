@@ -32,6 +32,12 @@ vi.mock("../utils/getDocumentServiceConfig.js", () => ({
   ]),
 }));
 
+const TEST_FOUNDRY_URL = "https://test.palantir.com";
+const TEST_CLIENT_ID = "test-client-id";
+const TEST_REDIRECT_URL = "http://localhost:3000/auth/callback";
+const TEST_ONTOLOGY_RID = "ri.ontology.main.ontology.test-ontology";
+const TEST_CLIENT_SECRET = "test-client-secret";
+
 describe("initPackApp - Auth Integration", () => {
   const TEST_APP_CONFIG = {
     appId: "test-app",
@@ -45,15 +51,10 @@ describe("initPackApp - Auth Integration", () => {
       appVersion: "1.0.0",
       baseUrl: "https://page-env.example.com",
       clientId: "page-env-client-id",
+      ontologyRid: TEST_ONTOLOGY_RID,
       redirectUrl: "http://localhost:3000/page-env-callback",
     });
   });
-
-  const TEST_FOUNDRY_URL = "https://test.palantir.com";
-  const TEST_CLIENT_ID = "test-client-id";
-  const TEST_REDIRECT_URL = "http://localhost:3000/auth/callback";
-  const TEST_ONTOLOGY_RID = "ri.ontology.main.ontology.test-ontology";
-  const TEST_CLIENT_SECRET = "test-client-secret";
 
   function createTestPublicClient(): Client {
     const auth = createPublicOauthClient(

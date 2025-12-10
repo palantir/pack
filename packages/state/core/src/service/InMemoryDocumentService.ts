@@ -28,6 +28,7 @@ import type {
   PresenceSubscriptionOptions,
 } from "@palantir/pack.document-schema.model-types";
 import { createDocumentServiceConfig } from "../DocumentServiceModule.js";
+import type { CreateDocumentMetadata } from "../types/CreateDocumentMetadata.js";
 import { createDocRef } from "../types/DocumentRefImpl.js";
 import type { DocumentService } from "../types/DocumentService.js";
 import { DocumentLoadStatus } from "../types/DocumentService.js";
@@ -90,7 +91,7 @@ class InMemoryDocumentService extends BaseYjsDocumentService {
   }
 
   readonly createDocument = <T extends DocumentSchema>(
-    metadata: DocumentMetadata,
+    metadata: CreateDocumentMetadata,
     schema: T,
   ): Promise<DocumentRef<T>> => {
     const id = generateDocumentId();

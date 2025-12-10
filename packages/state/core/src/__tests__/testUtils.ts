@@ -44,6 +44,7 @@ export function createTestApp(
       },
       isTestMode: config.isTestMode ?? true,
       logger: config.logger ?? consoleLogger({}),
+      ontologyRid: config.ontologyRid ?? Promise.resolve("ri.ontology...test"),
       osdkClient: mockClient,
       remote: {
         packWsPath: "/api/v2/packSubscriptions",

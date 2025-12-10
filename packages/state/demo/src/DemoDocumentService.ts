@@ -15,7 +15,7 @@
  */
 
 import type { PackAppInternal, Unsubscribe } from "@palantir/pack.core";
-import { generateId } from "@palantir/pack.core";
+import { generateId, getOntologyRid } from "@palantir/pack.core";
 import type {
   ActivityEvent,
   ActivityEventId,
@@ -29,18 +29,23 @@ import type {
   UserId,
 } from "@palantir/pack.document-schema.model-types";
 import { ActivityEventDataType, getMetadata } from "@palantir/pack.document-schema.model-types";
+import type { CreateDocumentMetadata, InternalYjsDoc } from "@palantir/pack.state.core";
 import {
   BaseYjsDocumentService,
   createDocRef,
   DocumentLiveStatus,
   DocumentLoadStatus,
-  type InternalYjsDoc,
 } from "@palantir/pack.state.core";
 import { Base64 } from "js-base64";
 import { IndexeddbPersistence } from "y-indexeddb";
 import * as Y from "yjs";
 import { MetadataStore } from "./MetadataStore.js";
 import { PresenceManager } from "./PresenceManager.js";
+
+const EMPTY_DOCUMENT_SECURITY = Object.freeze({
+  discretionary: {},
+  mandatory: {},
+});
 
 export interface DemoDocumentServiceOptions {
   readonly dbPrefix?: string;
@@ -87,13 +92,21 @@ export class DemoDocumentService extends BaseYjsDocumentService<DemoInternalDoc>
   }
 
   readonly createDocument = async <T extends DocumentSchema>(
-    metadata: DocumentMetadata,
+    { documentTypeName, name, security = EMPTY_DOCUMENT_SECURITY }: CreateDocumentMetadata,
     schema: T,
   ): Promise<DocumentRef<T>> => {
     await this.metadataStore.whenReady();
+    const ontologyRid = await getOntologyRid(this.app);
 
     const id = generateDocumentId();
     const docRef = createDocRef(this.app, id, schema);
+
+    const metadata: DocumentMetadata = {
+      documentTypeName,
+      name,
+      ontologyRid,
+      security, // TODO: may want to add in auth.getUserId() as owner here
+    };
 
     this.metadataStore.addDocument(id, metadata);
 

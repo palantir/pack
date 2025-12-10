@@ -32,19 +32,25 @@ export type DiscretionaryPrincipal =
   | DiscretionaryPrincipal_GroupId
   | DiscretionaryPrincipal_UserId;
 
+export interface DocumentSecurityDiscretionary {
+  readonly editors?: readonly DiscretionaryPrincipal[];
+  readonly owners?: readonly DiscretionaryPrincipal[];
+  readonly viewers?: readonly DiscretionaryPrincipal[];
+}
+
+export interface DocumentSecurityMandatory {
+  readonly classification?: readonly string[];
+  readonly markings?: readonly string[];
+}
+
+export interface DocumentSecurity {
+  readonly discretionary: DocumentSecurityDiscretionary;
+  readonly mandatory: DocumentSecurityMandatory;
+}
+
 export interface DocumentMetadata {
   readonly documentTypeName: string;
   readonly name: string;
   readonly ontologyRid: string;
-  readonly security: {
-    readonly discretionary: {
-      readonly editors?: readonly DiscretionaryPrincipal[];
-      readonly owners: readonly DiscretionaryPrincipal[];
-      readonly viewers?: readonly DiscretionaryPrincipal[];
-    };
-    readonly mandatory: {
-      readonly classification?: readonly string[];
-      readonly markings?: readonly string[];
-    };
-  };
+  readonly security: DocumentSecurity;
 }

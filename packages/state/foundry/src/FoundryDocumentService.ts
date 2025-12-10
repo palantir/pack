@@ -16,24 +16,37 @@
 
 import type {
   CreateDocumentRequest,
-  DocumentSecurity,
+  DiscretionaryPrincipal,
+  DiscretionaryPrincipal as WireDiscretionaryPrincipal,
+  DocumentSecurity as WireDocumentSecurity,
   SearchDocumentsRequest,
 } from "@osdk/foundry.pack";
 import { Documents } from "@osdk/foundry.pack";
-import type { ModuleConfigTuple, PackAppInternal, Unsubscribe } from "@palantir/pack.core";
+import {
+  assertNever,
+  getOntologyRid,
+  type ModuleConfigTuple,
+  type PackAppInternal,
+  type Unsubscribe,
+} from "@palantir/pack.core";
 import type {
   ActivityEvent,
   DocumentId,
   DocumentMetadata,
   DocumentRef,
   DocumentSchema,
+  DocumentSecurity,
   Model,
   ModelData,
   PresenceEvent,
   PresenceSubscriptionOptions,
 } from "@palantir/pack.document-schema.model-types";
 import { getMetadata } from "@palantir/pack.document-schema.model-types";
-import type { DocumentService, InternalYjsDoc } from "@palantir/pack.state.core";
+import type {
+  CreateDocumentMetadata,
+  DocumentService,
+  InternalYjsDoc,
+} from "@palantir/pack.state.core";
 import {
   BaseYjsDocumentService,
   createDocumentServiceConfig,
@@ -44,6 +57,10 @@ import { createFoundryEventService } from "@palantir/pack.state.foundry-event";
 import { getActivityEvent, getPresenceEvent } from "./eventMappers.js";
 
 const DEFAULT_USE_PREVIEW_API = true;
+const EMPTY_DOCUMENT_SECURITY: DocumentSecurity = Object.freeze({
+  discretionary: {},
+  mandatory: {},
+});
 
 interface FoundryDocumentServiceConfig {
   readonly usePreviewApi?: boolean;
@@ -110,10 +127,11 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
   }
 
   readonly createDocument = async <T extends DocumentSchema>(
-    metadata: DocumentMetadata,
+    metadata: CreateDocumentMetadata,
     schema: T,
   ): Promise<DocumentRef<T>> => {
-    const { documentTypeName, name, ontologyRid, security } = metadata;
+    const { documentTypeName, name, security } = metadata;
+    const ontologyRid = await getOntologyRid(this.app);
 
     const request: CreateDocumentRequest = {
       documentTypeName: documentTypeName,
@@ -305,22 +323,35 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
   }
 }
 
-function mutableArray<T>(array?: readonly T[]): T[] {
-  return array == null ? [] : (array as T[]);
-}
-
 function getWireSecurity(
-  security: DocumentMetadata["security"],
-): DocumentSecurity {
+  { discretionary, mandatory }: DocumentSecurity = EMPTY_DOCUMENT_SECURITY,
+): WireDocumentSecurity {
+  const { editors = [], owners = [], viewers = [] } = discretionary;
+
   return {
     discretionary: {
-      editors: [...(security.discretionary.editors ?? [])],
-      owners: [...security.discretionary.owners],
-      viewers: [...(security.discretionary.viewers ?? [])],
+      editors: editors.map(getWirePrincipal),
+      owners: owners.map(getWirePrincipal),
+      viewers: viewers.map(getWirePrincipal),
     },
     mandatory: {
-      classification: mutableArray(security.mandatory.classification),
-      markings: mutableArray(security.mandatory.markings),
+      classification: mandatory.classification != null ? [...mandatory.classification] : [],
+      markings: mandatory.markings != null ? [...mandatory.markings] : [],
     },
   };
+}
+
+function getWirePrincipal(
+  principal: DiscretionaryPrincipal,
+): WireDiscretionaryPrincipal {
+  switch (principal.type) {
+    case "all":
+      return { type: "all" };
+    case "groupId":
+      return { type: "groupId", groupId: principal.groupId };
+    case "userId":
+      return { type: "userId", userId: principal.userId };
+    default:
+      assertNever(principal);
+  }
 }
