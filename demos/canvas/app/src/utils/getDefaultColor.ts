@@ -14,14 +14,8 @@
  * limitations under the License.
  */
 
-import { PackAppProvider } from "@palantir/pack.state.react";
-import { createRoot } from "react-dom/client";
-import { RouterProvider } from "react-router";
-import { app } from "./app.js";
-import { router } from "./router.js";
+export const AVAILABLE_COLORS = ["#000000", "#dc3545", "#0066cc", "#28a745", "#ffc107"] as const;
 
-createRoot(document.getElementById("root")!).render(
-  <PackAppProvider value={app}>
-    <RouterProvider router={router} />
-  </PackAppProvider>,
-);
+export function getDefaultColor(): string {
+  return AVAILABLE_COLORS[2];
+}

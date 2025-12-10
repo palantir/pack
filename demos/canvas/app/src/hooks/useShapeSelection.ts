@@ -14,20 +14,28 @@
  * limitations under the License.
  */
 
-export interface CanvasDocument {
-  readonly id: string;
-  readonly name: string;
+import { useCallback, useState } from "react";
+
+export interface UseShapeSelectionResult {
+  clearSelection: () => void;
+  readonly selectedShapeId: string | undefined;
+  selectShape: (id: string | undefined) => void;
 }
 
-export interface UseCanvasDocumentsResult {
-  readonly documents: readonly CanvasDocument[];
-  readonly isLoading: boolean;
-}
+export function useShapeSelection(): UseShapeSelectionResult {
+  const [selectedShapeId, setSelectedShapeId] = useState<string | undefined>();
 
-export function useCanvasDocuments(): UseCanvasDocumentsResult {
-  // TODO: Replace with useSearchDocuments(app, "Canvas", schema, ...)
+  const selectShape = useCallback((id: string | undefined) => {
+    setSelectedShapeId(id);
+  }, []);
+
+  const clearSelection = useCallback(() => {
+    setSelectedShapeId(undefined);
+  }, []);
+
   return {
-    documents: [],
-    isLoading: false,
+    clearSelection,
+    selectedShapeId,
+    selectShape,
   };
 }

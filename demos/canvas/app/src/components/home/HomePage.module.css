@@ -14,15 +14,50 @@
 }
 
 .pageHeader {
+  align-items: center;
   border-bottom: 1px solid #e0e0e0;
+  display: flex;
+  gap: 1rem;
+  justify-content: space-between;
   padding: 2rem;
-  text-align: center;
 }
 
 .pageHeader h1 {
-  margin: 0;
+  flex: 1;
   font-size: 2rem;
+  margin: 0;
   color: #222;
+}
+
+.createButton {
+  background-color: #0066cc;
+  border: none;
+  border-radius: 6px;
+  color: white;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 600;
+  padding: 0.75rem 1.5rem;
+  transition: background-color 0.2s;
+}
+
+.createButton:hover {
+  background-color: #0055aa;
+}
+
+.canvasLink {
+  background: none;
+  border: none;
+  color: #0066cc;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 600;
+  padding: 0;
+  text-align: left;
+}
+
+.canvasLink:hover {
+  text-decoration: underline;
 }
 
 .emptyList {
