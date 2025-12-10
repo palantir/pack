@@ -14,14 +14,6 @@
  * limitations under the License.
  */
 
-import { PackAppProvider } from "@palantir/pack.state.react";
-import { createRoot } from "react-dom/client";
-import { RouterProvider } from "react-router";
-import { app } from "./app.js";
-import { router } from "./router.js";
-
-createRoot(document.getElementById("root")!).render(
-  <PackAppProvider value={app}>
-    <RouterProvider router={router} />
-  </PackAppProvider>,
-);
+export function getDefaultShapeSize(): { readonly height: number; readonly width: number } {
+  return { height: 100, width: 100 };
+}

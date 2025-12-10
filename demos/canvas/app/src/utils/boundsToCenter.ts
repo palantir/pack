@@ -14,14 +14,25 @@
  * limitations under the License.
  */
 
-import { PackAppProvider } from "@palantir/pack.state.react";
-import { createRoot } from "react-dom/client";
-import { RouterProvider } from "react-router";
-import { app } from "./app.js";
-import { router } from "./router.js";
+export interface CenterSize {
+  readonly centerX: number;
+  readonly centerY: number;
+  readonly height: number;
+  readonly width: number;
+}
 
-createRoot(document.getElementById("root")!).render(
-  <PackAppProvider value={app}>
-    <RouterProvider router={router} />
-  </PackAppProvider>,
-);
+export interface Bounds {
+  readonly bottom: number;
+  readonly left: number;
+  readonly right: number;
+  readonly top: number;
+}
+
+export function boundsToCenter(bounds: Bounds): CenterSize {
+  return {
+    centerX: (bounds.left + bounds.right) / 2,
+    centerY: (bounds.top + bounds.bottom) / 2,
+    height: bounds.bottom - bounds.top,
+    width: bounds.right - bounds.left,
+  };
+}

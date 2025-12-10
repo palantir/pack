@@ -23,6 +23,11 @@ export const HomePage = React.memo(function HomePage() {
   const navigate = useNavigate();
   const { documents, isLoading } = useCanvasDocuments();
 
+  const handleCreateCanvas = () => {
+    const newCanvasId = `canvas-${Date.now()}`;
+    navigate(`/canvas/${newCanvasId}`);
+  };
+
   if (isLoading) {
     return (
       <div className={css.pageWrapper}>
@@ -34,7 +39,10 @@ export const HomePage = React.memo(function HomePage() {
   return (
     <div className={css.pageWrapper}>
       <div className={css.pageHeader}>
-        <h1>Projects</h1>
+        <h1>Canvas Demo</h1>
+        <button className={css.createButton} onClick={handleCreateCanvas} type="button">
+          Create New Canvas
+        </button>
       </div>
       <div>
         <div>
@@ -43,12 +51,22 @@ export const HomePage = React.memo(function HomePage() {
             {documents.length === 0
               ? (
                 <div className={css.emptyList}>
-                  <p>No canvases found in the ontology</p>
+                  <p>No canvases yet. Create one to get started!</p>
                 </div>
               )
               : (
                 <div className={css.listItems}>
-                  {/* TODO: Render list of documents */}
+                  {documents.map(doc => (
+                    <div key={doc.id} className={css.listItem}>
+                      <button
+                        className={css.canvasLink}
+                        onClick={() => navigate(`/canvas/${doc.id}`)}
+                        type="button"
+                      >
+                        {doc.name}
+                      </button>
+                    </div>
+                  ))}
                 </div>
               )}
           </div>
