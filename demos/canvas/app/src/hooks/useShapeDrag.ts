@@ -14,93 +14,62 @@
  * limitations under the License.
  */
 
-import type { NodeShape } from "@demo/canvas.sdk";
+import type { NodeShape, NodeShapeModel } from "@demo/canvas.sdk";
+import type { RecordRef } from "@palantir/pack.document-schema.model-types";
 import type { MouseEvent } from "react";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useState } from "react";
 import { boundsToCenter } from "../utils/boundsToCenter.js";
 import { centerToBounds } from "../utils/centerToBounds.js";
 import type { ResizeHandle } from "../utils/getResizeHandles.js";
 import { getResizeHandles } from "../utils/getResizeHandles.js";
-import { isPointInShape } from "../utils/isPointInShape.js";
-import type { ShapeWithId } from "./useCanvasShapes.js";
+import type { ShapeIndex } from "./useShapeIndex.js";
 
-export type DragMode = "move" | "resize";
+type DragMode = "move" | "resize";
 
-export interface DragState {
+interface DragState {
   readonly dragMode: DragMode;
   readonly handle?: ResizeHandle;
-  readonly shapeId: string;
+  readonly initialShape: NodeShape;
+  readonly shapeRef: RecordRef<typeof NodeShapeModel>;
   readonly startX: number;
   readonly startY: number;
 }
 
-export interface UseShapeDragResult {
-  readonly canvasProps: {
-    onMouseDown: (e: MouseEvent<SVGSVGElement>) => void;
-    onMouseMove: (e: MouseEvent<SVGSVGElement>) => void;
-    onMouseUp: () => void;
-  };
-  readonly dragState: DragState | undefined;
-  readonly isDragging: boolean;
+interface UseShapeDragResult {
+  onMouseDown: (e: MouseEvent<SVGSVGElement>) => void;
+  onMouseMove: (e: MouseEvent<SVGSVGElement>) => void;
+  onMouseUp: () => void;
 }
 
 const HANDLE_INTERACTION_RADIUS_PX = 10;
 
 export function useShapeDrag(
-  shapes: readonly ShapeWithId[],
-  onUpdateShape: (id: string, updates: Partial<NodeShape>) => void,
-  onShapeSelect: (id: string | undefined) => void,
-  selectedShapeId: string | undefined,
+  shapeIndex: ShapeIndex,
+  selectedShapeRef: RecordRef<typeof NodeShapeModel> | undefined,
+  onShapeSelect: (ref: RecordRef<typeof NodeShapeModel> | undefined) => void,
 ): UseShapeDragResult {
   const [dragState, setDragState] = useState<DragState | undefined>();
-  const initialShapeRef = useRef<ShapeWithId | undefined>(undefined);
-
-  const findShapeAtPoint = useCallback(
-    (x: number, y: number): ShapeWithId | undefined => {
-      for (let i = shapes.length - 1; i >= 0; i--) {
-        const shape = shapes[i];
-        if (shape != null && isPointInShape(x, y, shape)) {
-          return shape;
-        }
-      }
-      return undefined;
-    },
-    [shapes],
-  );
-
-  const findHandleAtPoint = useCallback(
-    (x: number, y: number, shape: ShapeWithId): ResizeHandle | undefined => {
-      const handles = getResizeHandles(shape);
-      for (const { handle, x: hx, y: hy } of handles) {
-        const distance = Math.sqrt((x - hx) ** 2 + (y - hy) ** 2);
-        if (distance <= HANDLE_INTERACTION_RADIUS_PX) {
-          return handle;
-        }
-      }
-      return undefined;
-    },
-    [],
-  );
 
   const onMouseDown = useCallback(
-    (e: MouseEvent<SVGSVGElement>) => {
+    async (e: MouseEvent<SVGSVGElement>) => {
       const svg = e.currentTarget;
       const rect = svg.getBoundingClientRect();
       const x = e.clientX - rect.left;
       const y = e.clientY - rect.top;
 
-      const selectedShape = selectedShapeId != null
-        ? shapes.find(s => s.id === selectedShapeId)
-        : undefined;
+      if (selectedShapeRef != null) {
+        const selectedShape = await selectedShapeRef.getSnapshot();
+        if (selectedShape == null) {
+          return;
+        }
 
-      if (selectedShape != null) {
         const handle = findHandleAtPoint(x, y, selectedShape);
         if (handle != null && handle !== "center") {
-          initialShapeRef.current = selectedShape;
           setDragState({
             dragMode: "resize",
             handle,
-            shapeId: selectedShape.id,
+            initialShape: selectedShape,
+            shapeRef: selectedShapeRef,
             startX: x,
             startY: y,
           });
@@ -108,26 +77,30 @@ export function useShapeDrag(
         }
       }
 
-      const shape = findShapeAtPoint(x, y);
-      if (shape != null) {
-        onShapeSelect(shape.id);
-        initialShapeRef.current = shape;
-        setDragState({
-          dragMode: "move",
-          shapeId: shape.id,
-          startX: x,
-          startY: y,
-        });
-      } else {
+      const shapeRef = shapeIndex.findShapesAtPoint(x, y)[0];
+      if (shapeRef == null) {
         onShapeSelect(undefined);
+        return;
       }
+
+      const shape = await shapeRef.getSnapshot();
+      if (shape == null) return;
+
+      onShapeSelect(shapeRef);
+      setDragState({
+        dragMode: "move",
+        initialShape: shape,
+        shapeRef,
+        startX: x,
+        startY: y,
+      });
     },
-    [findHandleAtPoint, findShapeAtPoint, onShapeSelect, selectedShapeId, shapes],
+    [onShapeSelect, selectedShapeRef, shapeIndex],
   );
 
   const onMouseMove = useCallback(
     (e: MouseEvent<SVGSVGElement>) => {
-      if (dragState == null || initialShapeRef.current == null) return;
+      if (dragState == null) return;
 
       const svg = e.currentTarget;
       const rect = svg.getBoundingClientRect();
@@ -138,15 +111,15 @@ export function useShapeDrag(
       const dy = y - dragState.startY;
 
       if (dragState.dragMode === "move") {
-        const initial = initialShapeRef.current;
-        onUpdateShape(dragState.shapeId, {
+        const initial = dragState.initialShape;
+        dragState.shapeRef.update({
           bottom: initial.bottom + dy,
           left: initial.left + dx,
           right: initial.right + dx,
           top: initial.top + dy,
         });
       } else if (dragState.dragMode === "resize" && dragState.handle != null) {
-        const initial = initialShapeRef.current;
+        const initial = dragState.initialShape;
         const centerSize = boundsToCenter(initial);
 
         let newCenterX = centerSize.centerX;
@@ -191,24 +164,30 @@ export function useShapeDrag(
           width: newWidth,
         });
 
-        onUpdateShape(dragState.shapeId, newBounds);
+        dragState.shapeRef.update(newBounds);
       }
     },
-    [dragState, onUpdateShape],
+    [dragState],
   );
 
   const onMouseUp = useCallback(() => {
     setDragState(undefined);
-    initialShapeRef.current = undefined;
   }, []);
 
   return {
-    canvasProps: {
-      onMouseDown,
-      onMouseMove,
-      onMouseUp,
-    },
-    dragState,
-    isDragging: dragState != null,
+    onMouseDown,
+    onMouseMove,
+    onMouseUp,
   };
+}
+
+function findHandleAtPoint(x: number, y: number, shape: NodeShape): ResizeHandle | undefined {
+  const handles = getResizeHandles(shape);
+  for (const { handle, x: hx, y: hy } of handles) {
+    const distance = Math.sqrt((x - hx) ** 2 + (y - hy) ** 2);
+    if (distance <= HANDLE_INTERACTION_RADIUS_PX) {
+      return handle;
+    }
+  }
+  return undefined;
 }

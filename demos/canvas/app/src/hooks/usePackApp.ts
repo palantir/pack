@@ -14,15 +14,7 @@
  * limitations under the License.
  */
 
-import { PackAppProvider } from "@palantir/pack.state.react";
-import { createRoot } from "react-dom/client";
-import { RouterProvider } from "react-router";
-import { app } from "./app.js";
-import "./index.css";
-import { router } from "./router.js";
+import { usePackApp as pack_usePackApp } from "@palantir/pack.state.react";
+import type { app } from "../app.js";
 
-createRoot(document.getElementById("root")!).render(
-  <PackAppProvider value={app}>
-    <RouterProvider router={router} />
-  </PackAppProvider>,
-);
+export const usePackApp = pack_usePackApp as () => typeof app;

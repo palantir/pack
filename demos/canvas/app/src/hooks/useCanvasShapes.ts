@@ -14,61 +14,39 @@
  * limitations under the License.
  */
 
-import type { NodeShape } from "@demo/canvas.sdk";
-import { useCallback, useState } from "react";
-
-export type ShapeWithId = NodeShape & {
-  readonly id: string;
-};
+import type { DocumentModel, NodeShape } from "@demo/canvas.sdk";
+import { NodeShapeModel } from "@demo/canvas.sdk";
+import { generateId } from "@palantir/pack.core";
+import type { DocumentRef, RecordRef } from "@palantir/pack.document-schema.model-types";
+import { isValidRecordRef } from "@palantir/pack.state.core";
+import { useRecords } from "@palantir/pack.state.react";
+import { useCallback } from "react";
 
 export interface UseCanvasShapesResult {
-  readonly shapes: readonly ShapeWithId[];
-  addShape: (shape: NodeShape) => string;
-  deleteShape: (id: string) => void;
-  updateShape: (id: string, updates: Partial<NodeShape>) => void;
+  readonly addShape: (shape: NodeShape) => Promise<RecordRef<typeof NodeShapeModel>>;
+  readonly shapeRefs: readonly RecordRef<typeof NodeShapeModel>[];
 }
 
-export function useCanvasShapes(canvasId: string): UseCanvasShapesResult {
-  // TODO: Replace with useRecords(docRef, NodeShapeModel)
-  const [shapes, setShapes] = useState<Map<string, ShapeWithId>>(new Map());
+export function useCanvasShapes(docRef: DocumentRef<DocumentModel>): UseCanvasShapesResult {
+  const shapeRefs = useRecords(docRef, NodeShapeModel);
 
   const addShape = useCallback(
-    (shape: NodeShape): string => {
-      const id = `shape-${Date.now()}-${Math.random()}`;
-      const shapeWithId: ShapeWithId = { ...shape, id };
-
-      // TODO: Replace with Pack mutation API to create record
-      setShapes(prev => new Map(prev).set(id, shapeWithId));
-
-      return id;
+    async (shape: NodeShape): Promise<RecordRef<typeof NodeShapeModel>> => {
+      const collection = docRef.getRecords(NodeShapeModel);
+      // TODO: should have generated ids
+      const id = `shape-${generateId()}`;
+      await collection.set(id, shape);
+      const recordRef = collection.get(id);
+      if (recordRef == null || !isValidRecordRef(recordRef)) {
+        throw new Error(`Failed to create shape with id: ${id}`);
+      }
+      return recordRef;
     },
-    [],
+    [docRef],
   );
-
-  const updateShape = useCallback((id: string, updates: Partial<NodeShape>) => {
-    // TODO: Replace with Pack mutation API to update record
-    setShapes(prev => {
-      const shape = prev.get(id);
-      if (shape == null) return prev;
-
-      const updated: ShapeWithId = { ...shape, ...updates };
-      return new Map(prev).set(id, updated);
-    });
-  }, []);
-
-  const deleteShape = useCallback((id: string) => {
-    // TODO: Replace with Pack mutation API to delete record
-    setShapes(prev => {
-      const next = new Map(prev);
-      next.delete(id);
-      return next;
-    });
-  }, []);
 
   return {
     addShape,
-    deleteShape,
-    shapes: Array.from(shapes.values()),
-    updateShape,
+    shapeRefs,
   };
 }
