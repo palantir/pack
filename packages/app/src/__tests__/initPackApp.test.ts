@@ -34,12 +34,23 @@ vi.mock("../utils/getDocumentServiceConfig.js", () => ({
   ]),
 }));
 
-describe("initPackApp", () => {
-  const TEST_APP_CONFIG = {
-    appId: "test-app",
-    appVersion: "1.0.0",
-  };
+const TEST_FOUNDRY_URL = "https://test.palantir.com";
+const TEST_FOUNDRY_URL_WITH_SLASH = "https://test.palantir.com/";
+const TEST_CLIENT_ID = "test-client-id";
+const TEST_REDIRECT_URL = "http://localhost:3000/auth/callback";
+const TEST_ONTOLOGY_RID = "ri.ontology.main.ontology.test-ontology";
+const TEST_CLIENT_SECRET = "test-client-secret";
 
+const TEST_APP_CONFIG = Object.freeze({
+  appId: "test-app",
+  appVersion: "1.0.0",
+});
+
+const APP_CONFIG = Object.freeze({
+  app: TEST_APP_CONFIG,
+});
+
+describe("initPackApp", () => {
   // Set up default mock return values
   beforeEach(() => {
     // Reset to default page env values for most tests
@@ -48,16 +59,10 @@ describe("initPackApp", () => {
       appVersion: "1.0.0",
       baseUrl: "https://page-env.example.com",
       clientId: "page-env-client-id",
+      ontologyRid: TEST_ONTOLOGY_RID,
       redirectUrl: "http://localhost:3000/page-env-callback",
     });
   });
-
-  const TEST_FOUNDRY_URL = "https://test.palantir.com";
-  const TEST_FOUNDRY_URL_WITH_SLASH = "https://test.palantir.com/";
-  const TEST_CLIENT_ID = "test-client-id";
-  const TEST_REDIRECT_URL = "http://localhost:3000/auth/callback";
-  const TEST_ONTOLOGY_RID = "ri.ontology.main.ontology.test-ontology";
-  const TEST_CLIENT_SECRET = "test-client-secret";
 
   // Test utility functions
   function createTestPublicClient(options?: { logger?: Logger }): Client {
@@ -85,9 +90,7 @@ describe("initPackApp", () => {
   describe("with OSDK client", () => {
     it("should create app from public OSDK client", () => {
       const client = createTestPublicClient();
-      const options: AppOptions = {
-        app: TEST_APP_CONFIG,
-      };
+      const options = APP_CONFIG;
 
       const app = initPackApp(client, options);
 
@@ -100,9 +103,7 @@ describe("initPackApp", () => {
 
     it("should create app from confidential OSDK client", () => {
       const client = createTestConfidentialClient();
-      const options: AppOptions = {
-        app: TEST_APP_CONFIG,
-      };
+      const options = APP_CONFIG;
 
       const app = initPackApp(client, options);
 
@@ -117,7 +118,7 @@ describe("initPackApp", () => {
       const client = createTestPublicClient();
       const customTokenProvider = createCustomTokenProvider();
       const options: AppOptions = {
-        app: TEST_APP_CONFIG,
+        ...APP_CONFIG,
         auth: customTokenProvider,
       };
 
@@ -133,7 +134,7 @@ describe("initPackApp", () => {
       const client = createTestPublicClient();
       const customBaseUrl = "https://custom.example.com";
       const options: AppOptions = {
-        app: TEST_APP_CONFIG,
+        ...APP_CONFIG,
         remote: {
           baseUrl: customBaseUrl,
         },
@@ -150,7 +151,7 @@ describe("initPackApp", () => {
       const client = createTestPublicClient();
       const customLogger = new MinimalLogger({ level: "debug", msgPrefix: "[CustomLogger]" });
       const options: AppOptions = {
-        app: TEST_APP_CONFIG,
+        ...APP_CONFIG,
         logger: customLogger,
       };
 
@@ -166,9 +167,7 @@ describe("initPackApp", () => {
 
       const clientWithLogger = createTestPublicClient({ logger: customLogger });
 
-      const options: AppOptions = {
-        app: TEST_APP_CONFIG,
-      };
+      const options: AppOptions = APP_CONFIG;
 
       initPackApp(clientWithLogger, options);
 
@@ -190,6 +189,7 @@ describe("initPackApp", () => {
     it("should override page environment app config when provided", () => {
       const client = createTestPublicClient();
       const options: AppOptions = {
+        ...APP_CONFIG,
         app: {
           appId: "override-app-id",
           appVersion: "2.0.0",
@@ -208,6 +208,7 @@ describe("initPackApp", () => {
         appVersion: null,
         baseUrl: "https://page-env.example.com",
         clientId: "page-env-client-id",
+        ontologyRid: TEST_ONTOLOGY_RID,
         redirectUrl: "http://localhost:3000/page-env-callback",
       });
 
@@ -219,6 +220,78 @@ describe("initPackApp", () => {
       expect(() => {
         initPackApp(client, options);
       }).toThrow("No appId provided or present in document meta[pack-appId]");
+    });
+  });
+
+  describe("ontologyRid configuration", () => {
+    it("should use ontologyRid from page environment when not provided", async () => {
+      const client = createTestPublicClient();
+      const options: AppOptions = {
+        app: TEST_APP_CONFIG,
+      };
+
+      const app = initPackApp(client, options);
+
+      const ontologyRid = await app.config.ontologyRid;
+      expect(ontologyRid).toBe(TEST_ONTOLOGY_RID);
+    });
+
+    it("should override page environment ontologyRid when provided in options", async () => {
+      const client = createTestPublicClient();
+      const overrideOntologyRid = "ri.ontology.main.ontology.override";
+      const options: AppOptions = {
+        app: TEST_APP_CONFIG,
+        ontologyRid: overrideOntologyRid,
+      };
+
+      const app = initPackApp(client, options);
+
+      const ontologyRid = await app.config.ontologyRid;
+      expect(ontologyRid).toBe(overrideOntologyRid);
+    });
+
+    it("should reject promise when no ontologyRid in options and page env is null", async () => {
+      vi.mocked(getPageEnv).mockReturnValue({
+        appId: "page-env-app-id",
+        appVersion: "1.0.0",
+        baseUrl: "https://page-env.example.com",
+        clientId: "page-env-client-id",
+        ontologyRid: null,
+        redirectUrl: "http://localhost:3000/page-env-callback",
+      });
+
+      const client = createTestPublicClient();
+      const options: AppOptions = {
+        app: TEST_APP_CONFIG,
+      };
+
+      const app = initPackApp(client, options);
+
+      await expect(app.config.ontologyRid).rejects.toThrow(
+        "No ontologyRid provided or present in document meta[osdk-ontologyRid]",
+      );
+    });
+
+    it("should reject promise when page env is empty string", async () => {
+      vi.mocked(getPageEnv).mockReturnValue({
+        appId: "page-env-app-id",
+        appVersion: "1.0.0",
+        baseUrl: "https://page-env.example.com",
+        clientId: "page-env-client-id",
+        ontologyRid: "",
+        redirectUrl: "http://localhost:3000/page-env-callback",
+      });
+
+      const client = createTestPublicClient();
+      const options: AppOptions = {
+        app: TEST_APP_CONFIG,
+      };
+
+      const app = initPackApp(client, options);
+
+      await expect(app.config.ontologyRid).rejects.toThrow(
+        "No ontologyRid provided or present in document meta[osdk-ontologyRid]",
+      );
     });
   });
 });

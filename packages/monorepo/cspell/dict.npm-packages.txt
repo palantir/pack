@@ -1,5 +1,6 @@
 arethetypeswrong
 attw
+blueprintjs
 cometd
 consola
 dprint
@@ -18,4 +19,5 @@ Momentjs
 monorepolint
 ngeohash
 npmjs
+rbush
 tsup
