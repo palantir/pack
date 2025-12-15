@@ -61,7 +61,7 @@ describe("initPackApp", () => {
       clientId: "page-env-client-id",
       ontologyRid: TEST_ONTOLOGY_RID,
       redirectUrl: "http://localhost:3000/page-env-callback",
-    });
+    } as any);
   });
 
   // Test utility functions
@@ -97,7 +97,7 @@ describe("initPackApp", () => {
       expect(app).toBeDefined();
       expect(app.config.app).toEqual(TEST_APP_CONFIG);
       expect(app.config.remote.baseUrl).toBe(TEST_FOUNDRY_URL_WITH_SLASH);
-      expect(app.config.isTestMode).toBe(false);
+      expect(app.config.isDemoMode).toBe(false);
       expect(app.config.osdkClient).toBe(client);
     });
 
@@ -110,7 +110,7 @@ describe("initPackApp", () => {
       expect(app).toBeDefined();
       expect(app.config.app).toEqual(TEST_APP_CONFIG);
       expect(app.config.remote.baseUrl).toBe(TEST_FOUNDRY_URL_WITH_SLASH);
-      expect(app.config.isTestMode).toBe(false);
+      expect(app.config.isDemoMode).toBe(false);
       expect(app.config.osdkClient).toBe(client);
     });
 
@@ -144,7 +144,7 @@ describe("initPackApp", () => {
 
       expect(app).toBeDefined();
       expect(app.config.remote.baseUrl).toBe(customBaseUrl);
-      expect(app.config.isTestMode).toBe(false);
+      expect(app.config.isDemoMode).toBe(false);
     });
 
     it("should use custom logger when provided", () => {
@@ -207,10 +207,10 @@ describe("initPackApp", () => {
         appId: null,
         appVersion: null,
         baseUrl: "https://page-env.example.com",
-        clientId: "page-env-client-id",
+        clientId: null,
         ontologyRid: TEST_ONTOLOGY_RID,
         redirectUrl: "http://localhost:3000/page-env-callback",
-      });
+      } as any);
 
       const client = createTestPublicClient();
       const options: AppOptions = {
@@ -258,7 +258,7 @@ describe("initPackApp", () => {
         clientId: "page-env-client-id",
         ontologyRid: null,
         redirectUrl: "http://localhost:3000/page-env-callback",
-      });
+      } as any);
 
       const client = createTestPublicClient();
       const options: AppOptions = {
@@ -280,7 +280,7 @@ describe("initPackApp", () => {
         clientId: "page-env-client-id",
         ontologyRid: "",
         redirectUrl: "http://localhost:3000/page-env-callback",
-      });
+      } as any);
 
       const client = createTestPublicClient();
       const options: AppOptions = {

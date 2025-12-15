@@ -308,13 +308,15 @@ export abstract class BaseYjsDocumentService<TDoc extends InternalYjsDoc = Inter
     internalDoc: TDoc,
     docRef: DocumentRef,
     update: {
+      isDemo?: boolean;
       load?: DocumentLoadStatus;
       live?: DocumentLiveStatus;
       error?: unknown;
     },
   ): void {
-    if (update.load != null || update.live != null) {
+    if (update.load != null || update.live != null || update.isDemo != null) {
       internalDoc.metadataStatus = {
+        isDemo: update.isDemo ?? internalDoc.metadataStatus.isDemo,
         load: update.load ?? internalDoc.metadataStatus.load,
         live: update.live ?? internalDoc.metadataStatus.live,
       };
@@ -332,13 +334,15 @@ export abstract class BaseYjsDocumentService<TDoc extends InternalYjsDoc = Inter
     internalDoc: TDoc,
     docRef: DocumentRef,
     update: {
+      isDemo?: boolean;
       load?: DocumentLoadStatus;
       live?: DocumentLiveStatus;
       error?: unknown;
     },
   ): void {
-    if (update.load != null || update.live != null) {
+    if (update.load != null || update.live != null || update.isDemo != null) {
       internalDoc.dataStatus = {
+        isDemo: update.isDemo ?? internalDoc.dataStatus.isDemo,
         load: update.load ?? internalDoc.dataStatus.load,
         live: update.live ?? internalDoc.dataStatus.live,
       };

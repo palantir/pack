@@ -86,7 +86,7 @@ export abstract class AuthServiceBase implements BaseAuthService {
       return false;
     }
 
-    if (this.app.config.isTestMode) {
+    if (this.app.config.isDemoMode) {
       this.isTokenValidated = true;
       return true;
     }
@@ -158,7 +158,7 @@ export abstract class AuthServiceBase implements BaseAuthService {
       return this.cachedUserData;
     }
 
-    if (this.app.config.isTestMode) {
+    if (this.app.config.isDemoMode) {
       throw new Error("Cannot refresh user data in test mode");
     }
 

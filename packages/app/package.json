@@ -45,6 +45,7 @@
     "@palantir/pack.auth.foundry": "workspace:*",
     "@palantir/pack.core": "workspace:*",
     "@palantir/pack.state.core": "workspace:*",
+    "@palantir/pack.state.demo": "workspace:*",
     "@palantir/pack.state.foundry": "workspace:*",
     "remeda": "catalog:",
     "tiny-invariant": "catalog:"

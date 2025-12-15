@@ -16,5 +16,16 @@
 
 export type { AuthModule } from "@palantir/pack.auth";
 export type { AppConfig, PackApp, TokenProvider } from "@palantir/pack.core";
+export {
+  createDemoPublicOauthClient,
+  DemoPublicOauthClient,
+} from "./auth/DemoPublicOauthClient.js";
+export type {
+  CreateDemoPublicOauthClientOptions,
+  DemoPublicOauthClientOptions,
+} from "./auth/DemoPublicOauthClient.js";
+export { getPageEnv, getPageEnvOrThrow } from "./utils/getPageEnv.js";
+export type { PageEnv, RequiredPageEnv } from "./utils/getPageEnv.js";
 export { initPackApp } from "./utils/initPackApp.js";
 export type { AppBuilders } from "./utils/initPackApp.js";
+export { isDemoEnv } from "./utils/isDemoEnv.js";

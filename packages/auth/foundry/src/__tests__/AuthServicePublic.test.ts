@@ -50,7 +50,7 @@ describe("PublicOauthService", () => {
     mockApp = {
       config: {
         app: { appId: "test-app" },
-        isTestMode: false,
+        isDemoMode: false,
         logger: mockLogger,
         ontologyRid: Promise.resolve("ri.ontology...test"),
         osdkClient: mockOsdkClient,

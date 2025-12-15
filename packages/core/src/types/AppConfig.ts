@@ -25,7 +25,14 @@ export interface AppConfig {
     readonly appVersion?: string;
   };
 
-  readonly isTestMode: boolean;
+  /**
+   * Test/demo mode configuration:
+   * - `true`: Is in demo mode (always use demo services, ignore real Foundry config)
+   * - `false`: Production only (never use demo services)
+   *
+   * @default false (production mode)
+   */
+  readonly isDemoMode: boolean;
 
   readonly logger: Logger;
 
@@ -55,6 +62,18 @@ export interface AppOptions {
     readonly appId: string;
     readonly appVersion?: string;
   };
+
+  /**
+   * Test/demo mode configuration:
+   * - `true`: Force demo mode (always use demo services)
+   * - `"auto"`: Auto-detect - use demo mode when no real Foundry config in environment, otherwise production
+   * - `false`: Production only
+   *
+   * When `"auto"`, checks for non-localhost FOUNDRY_URL in environment variables.
+   *
+   * @default Auto-detected: true if no baseUrl, otherwise false
+   */
+  readonly demoMode?: boolean | "auto";
 
   /**
    * Logger configuration.

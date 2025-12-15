@@ -47,7 +47,7 @@ describe("StaticTokenService", () => {
     mockApp = {
       config: {
         app: { appId: "test-app" },
-        isTestMode: false,
+        isDemoMode: false,
         logger: mockLogger,
         ontologyRid: Promise.resolve("ri.ontology...test"),
         osdkClient: mockOsdkClient,
@@ -224,10 +224,10 @@ describe("StaticTokenService", () => {
       it("should always return true for validation without baseUrl", async () => {
         vi.clearAllMocks();
 
-        const testModeApp: PackAppInternal = {
+        const demoModeApp: PackAppInternal = {
           config: {
             app: { appId: "test-app" },
-            isTestMode: true,
+            isDemoMode: true,
             logger: mockLogger,
             ontologyRid: Promise.resolve("ri.ontology...test"),
             osdkClient: mock<Client>(),
@@ -240,7 +240,7 @@ describe("StaticTokenService", () => {
           getModule: vi.fn(),
         };
 
-        service = createStaticTokenService(testModeApp, mockTokenProvider);
+        service = createStaticTokenService(demoModeApp, mockTokenProvider);
         await service.getToken();
 
         const isValid = await service.validateToken();

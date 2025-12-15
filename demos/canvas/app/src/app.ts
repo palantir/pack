@@ -18,14 +18,14 @@ import { createClient } from "@osdk/client";
 import { BrowserLogger } from "@osdk/client/internal";
 import type { PublicOauthClient } from "@osdk/oauth";
 import { createPublicOauthClient } from "@osdk/oauth";
-import { initPackApp } from "@palantir/pack.app";
-import { createDemoDocumentServiceConfig } from "@palantir/pack.state.demo";
+import {
+  createDemoPublicOauthClient,
+  getPageEnvOrThrow,
+  initPackApp,
+  isDemoEnv,
+} from "@palantir/pack.app";
 
 const ALLOW_DEV_TOKEN = true;
-const CLIENT_ID = "demo-canvas-app";
-const FOUNDRY_URL = "https://localhost:5173";
-const ONTOLOGY_RID = "ri.foundry.main.ontology.0000000-0000-0000-0000-000000000000";
-const REDIRECT_URL = "https://localhost:5173/auth/callback";
 
 const SCOPES = [
   "api:use-admin-read",
@@ -39,8 +39,14 @@ const SCOPES = [
 ];
 
 const logger = new BrowserLogger();
+const pageEnv = getPageEnvOrThrow();
 
-function createAuthClient() {
+const CLIENT_ID = pageEnv.clientId;
+const FOUNDRY_URL = pageEnv.baseUrl;
+const ONTOLOGY_RID = pageEnv.ontologyRid;
+const REDIRECT_URL = pageEnv.redirectUrl ?? `${FOUNDRY_URL}/auth/callback`;
+
+function createAuthClient(): PublicOauthClient | (() => Promise<string>) {
   const DEV_TOKEN: string | undefined = import.meta.env.VITE_DEV_FOUNDRY_TOKEN;
 
   if (ALLOW_DEV_TOKEN && DEV_TOKEN != null) {
@@ -48,14 +54,11 @@ function createAuthClient() {
     return () => Promise.resolve(DEV_TOKEN);
   }
 
-  const authClient: PublicOauthClient = createPublicOauthClient(
-    CLIENT_ID,
-    FOUNDRY_URL,
-    REDIRECT_URL,
-    { scopes: SCOPES },
-  );
+  if (isDemoEnv()) {
+    return createDemoPublicOauthClient(CLIENT_ID, FOUNDRY_URL, REDIRECT_URL, { autoSignIn: true });
+  }
 
-  return authClient;
+  return createPublicOauthClient(CLIENT_ID, FOUNDRY_URL, REDIRECT_URL, { scopes: SCOPES });
 }
 
 const authClient = createAuthClient();
@@ -63,12 +66,13 @@ const authClient = createAuthClient();
 const osdkClient = createClient(FOUNDRY_URL, ONTOLOGY_RID, authClient, { logger });
 
 export const app = initPackApp(osdkClient, {
-  app: {
-    appId: CLIENT_ID,
-  },
+  app: pageEnv.appId != null
+    ? {
+      appId: pageEnv.appId,
+      appVersion: pageEnv.appVersion ?? undefined,
+    }
+    : undefined,
+  demoMode: isDemoEnv(),
   logLevel: "info",
-  moduleOverrides: [
-    createDemoDocumentServiceConfig(),
-  ],
   ontologyRid: ONTOLOGY_RID,
 }).withState().build();

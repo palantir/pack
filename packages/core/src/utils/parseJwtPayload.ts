@@ -14,17 +14,19 @@
  * limitations under the License.
  */
 
-import type { AppConfig, ModuleConfigTuple } from "@palantir/pack.core";
-import type { DocumentService } from "@palantir/pack.state.core";
-import { createDemoDocumentServiceConfig } from "@palantir/pack.state.demo";
-import { createFoundryDocumentServiceConfig } from "@palantir/pack.state.foundry";
-
-export function getDocumentServiceConfig(
-  config: AppConfig,
-): ModuleConfigTuple<DocumentService> {
-  if (config.isDemoMode) {
-    return createDemoDocumentServiceConfig();
+/**
+ * Parse JWT token payload without verification.
+ * This does NOT verify the token signature - it only extracts payload data.
+ * Use only for non-security-critical operations like testing or logging.
+ *
+ * @param token - JWT token string
+ * @returns Parsed payload object
+ * @throws Error if token format is invalid
+ */
+export function parseJwtPayload(token: string): Record<string, unknown> {
+  const parts = token.split(".");
+  if (parts.length !== 3 || !parts[1]) {
+    throw new Error("Invalid JWT token format");
   }
-
-  return createFoundryDocumentServiceConfig();
+  return JSON.parse(atob(parts[1]));
 }

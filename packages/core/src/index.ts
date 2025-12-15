@@ -25,3 +25,4 @@ export { assertNever } from "./utils/assertNever.js";
 export { generateId } from "./utils/generateId.js";
 export { getOntologyRid } from "./utils/getOntologyRid.js";
 export { justOnce } from "./utils/justOnce.js";
+export { parseJwtPayload } from "./utils/parseJwtPayload.js";
