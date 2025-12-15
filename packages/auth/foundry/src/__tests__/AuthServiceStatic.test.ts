@@ -220,35 +220,26 @@ describe("StaticTokenService", () => {
       expect(service.getCurrentUserId()).toBeUndefined();
     });
 
-    describe("in test mode", () => {
-      it("should always return true for validation without baseUrl", async () => {
+    describe("with mocked Users.getCurrent", () => {
+      it("should return true for validation when Users.getCurrent is mocked", async () => {
         vi.clearAllMocks();
 
-        const demoModeApp: PackAppInternal = {
-          config: {
-            app: { appId: "test-app" },
-            isDemoMode: true,
-            logger: mockLogger,
-            ontologyRid: Promise.resolve("ri.ontology...test"),
-            osdkClient: mock<Client>(),
-            remote: {
-              packWsPath: "/api/v2/packSubscriptions",
-              baseUrl: "https://localhost:5173",
-              fetchFn: globalThis.fetch,
-            },
-          },
-          getModule: vi.fn(),
-        };
+        vi.mocked(Users.getCurrent).mockResolvedValue({
+          id: "mocked-user-id",
+          username: "mocked-user",
+          realm: "test-realm",
+          attributes: {},
+          status: "ACTIVE",
+        });
 
-        service = createStaticTokenService(demoModeApp, mockTokenProvider);
         await service.getToken();
 
         const isValid = await service.validateToken();
 
         expect(isValid).toBe(true);
         expect(service.isValidated()).toBe(true);
-        expect(service.getCurrentUserId()).toBeUndefined();
-        expect(Users.getCurrent).not.toHaveBeenCalled();
+        expect(service.getCurrentUserId()).toBe("mocked-user-id");
+        expect(Users.getCurrent).toHaveBeenCalledOnce();
       });
     });
 
