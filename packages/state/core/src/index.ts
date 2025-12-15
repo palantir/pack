@@ -15,7 +15,11 @@
  */
 
 export { createDocumentServiceConfig, getDocumentService } from "./DocumentServiceModule.js";
-export { BaseYjsDocumentService, type InternalYjsDoc } from "./service/BaseYjsDocumentService.js";
+export {
+  BaseYjsDocumentService,
+  type BaseYjsDocumentServiceOptions,
+  type InternalYjsDoc,
+} from "./service/BaseYjsDocumentService.js";
 export { createInMemoryDocumentServiceConfig } from "./service/InMemoryDocumentService.js";
 export type { CreateDocumentMetadata } from "./types/CreateDocumentMetadata.js";
 export { createDocRef, invalidDocRef, isValidDocRef } from "./types/DocumentRefImpl.js";

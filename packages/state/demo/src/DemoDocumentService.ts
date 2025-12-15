@@ -65,7 +65,9 @@ export class DemoDocumentService extends BaseYjsDocumentService<DemoInternalDoc>
   private readonly metadataStore: MetadataStore;
 
   constructor(app: PackAppInternal, options: DemoDocumentServiceOptions = {}) {
-    super(app, app.config.logger.child({}, { level: "debug", msgPrefix: "DemoDocumentService" }));
+    super(app, app.config.logger.child({}, { level: "debug", msgPrefix: "DemoDocumentService" }), {
+      isDemo: true,
+    });
 
     this.clientId = crypto.randomUUID();
     this.dbPrefix = options.dbPrefix ?? "pack-demo";
@@ -133,7 +135,6 @@ export class DemoDocumentService extends BaseYjsDocumentService<DemoInternalDoc>
     docRef: DocumentRef,
   ): void {
     this.updateMetadataStatus(internalDoc, docRef, {
-      isDemo: true,
       load: DocumentLoadStatus.LOADING,
     });
 
@@ -143,7 +144,6 @@ export class DemoDocumentService extends BaseYjsDocumentService<DemoInternalDoc>
       if (metadata == null) {
         this.updateMetadataStatus(internalDoc, docRef, {
           error: new Error("Document not found"),
-          isDemo: true,
           load: DocumentLoadStatus.ERROR,
         });
         return;
@@ -159,13 +159,11 @@ export class DemoDocumentService extends BaseYjsDocumentService<DemoInternalDoc>
       });
 
       this.updateMetadataStatus(internalDoc, docRef, {
-        isDemo: true,
         load: DocumentLoadStatus.LOADED,
       });
     }).catch((error: unknown) => {
       this.updateMetadataStatus(internalDoc, docRef, {
         error,
-        isDemo: true,
         load: DocumentLoadStatus.ERROR,
       });
     });
@@ -176,7 +174,6 @@ export class DemoDocumentService extends BaseYjsDocumentService<DemoInternalDoc>
     docRef: DocumentRef,
   ): void {
     this.updateDataStatus(internalDoc, docRef, {
-      isDemo: true,
       load: DocumentLoadStatus.LOADING,
       live: DocumentLiveStatus.CONNECTING,
     });
@@ -210,14 +207,12 @@ export class DemoDocumentService extends BaseYjsDocumentService<DemoInternalDoc>
 
       provider.whenSynced.then(() => {
         this.updateDataStatus(internalDoc, docRef, {
-          isDemo: true,
           load: DocumentLoadStatus.LOADED,
           live: DocumentLiveStatus.CONNECTED,
         });
       }).catch((error: unknown) => {
         this.updateDataStatus(internalDoc, docRef, {
           error,
-          isDemo: true,
           load: DocumentLoadStatus.ERROR,
           live: DocumentLiveStatus.ERROR,
         });
@@ -225,7 +220,6 @@ export class DemoDocumentService extends BaseYjsDocumentService<DemoInternalDoc>
     } catch (error) {
       this.updateDataStatus(internalDoc, docRef, {
         error,
-        isDemo: true,
         load: DocumentLoadStatus.ERROR,
         live: DocumentLiveStatus.ERROR,
       });

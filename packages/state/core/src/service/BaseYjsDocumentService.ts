@@ -106,6 +106,10 @@ export interface InternalYjsDoc {
   readonly yjsCollectionHandlers: Map<string, () => void>;
 }
 
+export interface BaseYjsDocumentServiceOptions {
+  readonly isDemo?: boolean;
+}
+
 /**
  * Base class for document services that use Y.js for local state management.
  * Provides common Y.js operations for both in-memory and backend services.
@@ -116,11 +120,15 @@ export abstract class BaseYjsDocumentService<TDoc extends InternalYjsDoc = Inter
   implements DocumentService
 {
   protected readonly documents: Map<DocumentId, TDoc> = new Map();
+  protected readonly isDemo?: boolean;
 
   constructor(
     protected readonly app: PackAppInternal,
     protected readonly logger: Logger,
-  ) {}
+    options?: BaseYjsDocumentServiceOptions,
+  ) {
+    this.isDemo = options?.isDemo;
+  }
 
   abstract get hasMetadataSubscriptions(): boolean;
   abstract get hasStateSubscriptions(): boolean;
@@ -308,15 +316,14 @@ export abstract class BaseYjsDocumentService<TDoc extends InternalYjsDoc = Inter
     internalDoc: TDoc,
     docRef: DocumentRef,
     update: {
-      isDemo?: boolean;
       load?: DocumentLoadStatus;
       live?: DocumentLiveStatus;
       error?: unknown;
     },
   ): void {
-    if (update.load != null || update.live != null || update.isDemo != null) {
+    if (update.load != null || update.live != null) {
       internalDoc.metadataStatus = {
-        isDemo: update.isDemo ?? internalDoc.metadataStatus.isDemo,
+        isDemo: this.isDemo,
         load: update.load ?? internalDoc.metadataStatus.load,
         live: update.live ?? internalDoc.metadataStatus.live,
       };
@@ -334,15 +341,14 @@ export abstract class BaseYjsDocumentService<TDoc extends InternalYjsDoc = Inter
     internalDoc: TDoc,
     docRef: DocumentRef,
     update: {
-      isDemo?: boolean;
       load?: DocumentLoadStatus;
       live?: DocumentLiveStatus;
       error?: unknown;
     },
   ): void {
-    if (update.load != null || update.live != null || update.isDemo != null) {
+    if (update.load != null || update.live != null) {
       internalDoc.dataStatus = {
-        isDemo: update.isDemo ?? internalDoc.dataStatus.isDemo,
+        isDemo: this.isDemo,
         load: update.load ?? internalDoc.dataStatus.load,
         live: update.live ?? internalDoc.dataStatus.live,
       };
