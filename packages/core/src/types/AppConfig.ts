@@ -32,7 +32,7 @@ export interface AppConfig {
    *
    * @default false (production mode)
    */
-  readonly isDemoMode: boolean;
+  readonly isDemoMode?: boolean;
 
   readonly logger: Logger;
 

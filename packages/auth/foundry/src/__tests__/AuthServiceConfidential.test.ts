@@ -51,7 +51,6 @@ describe("ConfidentialOauthService", () => {
     mockApp = {
       config: {
         app: { appId: "test-app" },
-        isDemoMode: false,
         logger: mockLogger,
         ontologyRid: Promise.resolve("ri.ontology...test"),
         osdkClient: mockOsdkClient,

@@ -89,7 +89,6 @@ describe("initPackApp - Auth Integration", () => {
       const app = initPackApp(client, options);
 
       expect(app.auth).toBeDefined();
-      expect(app.config.isDemoMode).toBe(false);
     });
 
     it("should create auth service from confidential oauth client", () => {
@@ -101,7 +100,6 @@ describe("initPackApp - Auth Integration", () => {
       const app = initPackApp(client, options);
 
       expect(app.auth).toBeDefined();
-      expect(app.config.isDemoMode).toBe(false);
     });
 
     it("should use custom token provider when provided", () => {
@@ -115,7 +113,6 @@ describe("initPackApp - Auth Integration", () => {
       const app = initPackApp(client, options);
 
       expect(app.auth).toBeDefined();
-      expect(app.config.isDemoMode).toBe(false);
     });
 
     it("should create auth service even with overridden baseUrl", () => {
@@ -131,7 +128,6 @@ describe("initPackApp - Auth Integration", () => {
       const app = initPackApp(client, options);
 
       expect(app.auth).toBeDefined();
-      expect(app.config.isDemoMode).toBe(false);
       expect(app.config.remote.baseUrl).toBe(customBaseUrl);
     });
   });

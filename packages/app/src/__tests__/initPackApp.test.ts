@@ -97,7 +97,6 @@ describe("initPackApp", () => {
       expect(app).toBeDefined();
       expect(app.config.app).toEqual(TEST_APP_CONFIG);
       expect(app.config.remote.baseUrl).toBe(TEST_FOUNDRY_URL_WITH_SLASH);
-      expect(app.config.isDemoMode).toBe(false);
       expect(app.config.osdkClient).toBe(client);
     });
 
@@ -110,7 +109,6 @@ describe("initPackApp", () => {
       expect(app).toBeDefined();
       expect(app.config.app).toEqual(TEST_APP_CONFIG);
       expect(app.config.remote.baseUrl).toBe(TEST_FOUNDRY_URL_WITH_SLASH);
-      expect(app.config.isDemoMode).toBe(false);
       expect(app.config.osdkClient).toBe(client);
     });
 
@@ -144,7 +142,6 @@ describe("initPackApp", () => {
 
       expect(app).toBeDefined();
       expect(app.config.remote.baseUrl).toBe(customBaseUrl);
-      expect(app.config.isDemoMode).toBe(false);
     });
 
     it("should use custom logger when provided", () => {

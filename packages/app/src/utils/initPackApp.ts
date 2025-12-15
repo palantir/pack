@@ -342,7 +342,7 @@ function getAppConfig(
       ),
     osdkClient: client,
     remote: {
-      baseUrl: isDemoMode ? "https://localhost:5173" : (baseUrl || ""),
+      baseUrl,
       fetchFn,
       packWsPath: options.remote?.packWsPath ?? "/api/v2/packSubscriptions",
     },
