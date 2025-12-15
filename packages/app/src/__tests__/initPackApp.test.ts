@@ -59,9 +59,10 @@ describe("initPackApp", () => {
       appVersion: "1.0.0",
       baseUrl: "https://page-env.example.com",
       clientId: "page-env-client-id",
+      demoMode: null,
       ontologyRid: TEST_ONTOLOGY_RID,
       redirectUrl: "http://localhost:3000/page-env-callback",
-    } as any);
+    });
   });
 
   // Test utility functions
@@ -205,9 +206,10 @@ describe("initPackApp", () => {
         appVersion: null,
         baseUrl: "https://page-env.example.com",
         clientId: null,
+        demoMode: null,
         ontologyRid: TEST_ONTOLOGY_RID,
         redirectUrl: "http://localhost:3000/page-env-callback",
-      } as any);
+      });
 
       const client = createTestPublicClient();
       const options: AppOptions = {
@@ -253,9 +255,10 @@ describe("initPackApp", () => {
         appVersion: "1.0.0",
         baseUrl: "https://page-env.example.com",
         clientId: "page-env-client-id",
+        demoMode: null,
         ontologyRid: null,
         redirectUrl: "http://localhost:3000/page-env-callback",
-      } as any);
+      });
 
       const client = createTestPublicClient();
       const options: AppOptions = {
@@ -275,9 +278,10 @@ describe("initPackApp", () => {
         appVersion: "1.0.0",
         baseUrl: "https://page-env.example.com",
         clientId: "page-env-client-id",
+        demoMode: null,
         ontologyRid: "",
         redirectUrl: "http://localhost:3000/page-env-callback",
-      } as any);
+      });
 
       const client = createTestPublicClient();
       const options: AppOptions = {
