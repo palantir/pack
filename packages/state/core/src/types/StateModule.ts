@@ -33,6 +33,7 @@ import type {
   RecordRef,
 } from "@palantir/pack.document-schema.model-types";
 import { DOCUMENT_SERVICE_MODULE_KEY } from "../DocumentServiceModule.js";
+import type { CreateDocumentMetadata } from "./CreateDocumentMetadata.js";
 import type {
   DocumentService,
   RecordChangeCallback,
@@ -65,7 +66,7 @@ export interface StateModule {
   ) => RecordRef<M>;
 
   readonly createDocument: <T extends DocumentSchema>(
-    metadata: DocumentMetadata,
+    metadata: CreateDocumentMetadata,
     schema: T,
   ) => Promise<DocumentRef<T>>;
 
@@ -198,7 +199,7 @@ export class StateModuleImpl implements StateModule {
   }
 
   async createDocument<T extends DocumentSchema>(
-    metadata: DocumentMetadata,
+    metadata: CreateDocumentMetadata,
     schema: T,
   ): Promise<DocumentRef<T>> {
     return this.documentService.createDocument(metadata, schema);

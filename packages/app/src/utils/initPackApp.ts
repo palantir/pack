@@ -312,6 +312,8 @@ function getAppConfig(
     throw new Error("No appId provided or present in document meta[pack-appId]");
   }
 
+  const ontologyRid = options.ontologyRid ?? pageEnv.ontologyRid;
+
   return {
     app: {
       appId,
@@ -319,6 +321,11 @@ function getAppConfig(
     },
     isTestMode,
     logger,
+    ontologyRid: ontologyRid != null && ontologyRid !== ""
+      ? Promise.resolve(ontologyRid)
+      : Promise.reject(
+        new Error("No ontologyRid provided or present in document meta[osdk-ontologyRid]"),
+      ),
     osdkClient: client,
     remote: {
       packWsPath: options.remote?.packWsPath ?? "/api/v2/packSubscriptions",

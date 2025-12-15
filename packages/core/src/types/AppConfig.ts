@@ -29,6 +29,7 @@ export interface AppConfig {
 
   readonly logger: Logger;
 
+  readonly ontologyRid: Promise<string>;
   readonly osdkClient: Client;
 
   readonly remote: {
@@ -67,6 +68,9 @@ export interface AppOptions {
    * Internal testing overrides.
    */
   readonly moduleOverrides?: readonly ModuleConfigTuple[];
+
+  // TODO: ideally we can extract this from the osdkClient but it hides everything and provides no util.
+  readonly ontologyRid?: string | Promise<string>;
 
   readonly remote?: {
     /**
