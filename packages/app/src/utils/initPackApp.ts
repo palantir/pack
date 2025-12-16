@@ -64,7 +64,7 @@ type SimplifyOmit<T, K extends PropertyKey> = Simplify<Omit<T, K>>;
 /**
  * Helper type to extract module types from ModuleConfig record
  */
-type WithNamedModules<T extends Record<string, ModuleConfig>> = {
+export type WithNamedModules<T extends Record<string, ModuleConfig>> = {
   readonly [K in keyof T]: T[K] extends readonly [ModuleKey<infer M>, unknown] ? M
     : T[K] extends ModuleKey<infer M> ? M
     : never;
@@ -73,14 +73,16 @@ type WithNamedModules<T extends Record<string, ModuleConfig>> = {
 /**
  * Pack app with auth module automatically added
  */
-type PackAppWithAuth = PackApp & {
+export type PackAppWithAuth = PackApp & {
   readonly auth: AuthModule;
 };
 
 /**
  * Builder methods for configuring modules
  */
-interface AppBuilders {
+export interface AppBuilders {
+  build(): SimplifyOmit<this, keyof AppBuilders>;
+
   /**
    * Configure and initialize modules without adding accessor properties.
    */
@@ -161,6 +163,10 @@ class PackAppImpl implements PackAppInternal, AppBuilders {
 
     // Always initialize the auth module
     getAuthModule(this);
+  }
+
+  build(): this {
+    return this;
   }
 
   private createAuthService(client: Client, options: AppOptions): BaseAuthService {

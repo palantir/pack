@@ -1,8 +1,7 @@
 {
-  "name": "@palantir/pack.sdkgen.demo-template",
+  "name": "@palantir/pack.state.demo",
   "private": true,
-  "version": "0.1.0",
-  "description": "Demo template for sdkgen CLI",
+  "version": "0.0.0",
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
@@ -34,28 +33,38 @@
     "lint:fix": "eslint ./src --fix && dprint fmt --config $(find-up dprint.json) --allow-no-files",
     "test": "vitest run --passWithNoTests -u",
     "test:watch": "vitest --passWithNoTests",
-    "transpile": "tsc",
     "transpileBrowser": "monorepo-transpile -f esm -m bundle -t browser",
     "transpileCjs": "monorepo-transpile -f cjs -m bundle -t node",
-    "transpileEsm": "tsc",
-    "transpileTypes": "tsc --emitDeclarationOnly",
+    "transpileEsm": "monorepo-transpile -f esm -m bundle -t node",
+    "transpileTypes": "monorepo-transpile -f esm -m types -t node",
     "typecheck": "tsc --noEmit --emitDeclarationOnly false"
   },
   "dependencies": {
-    "fs-extra": "catalog:"
+    "@osdk/api": "catalog:",
+    "@palantir/pack.core": "workspace:*",
+    "@palantir/pack.document-schema.model-types": "workspace:*",
+    "@palantir/pack.state.core": "workspace:*",
+    "js-base64": "^3.7.8",
+    "remeda": "catalog:",
+    "tiny-invariant": "catalog:",
+    "y-indexeddb": "^9.0.12",
+    "yjs": "catalog:"
+  },
+  "peerDependencies": {
+    "zod": "^4.1.0"
   },
   "devDependencies": {
+    "@osdk/client": "catalog:",
     "@palantir/pack.monorepo.tsconfig": "workspace:~",
+    "@types/node": "catalog:",
+    "fake-indexeddb": "^6.2.5",
+    "happy-dom": "catalog:",
     "rimraf": "catalog:",
     "tslib": "catalog:",
-    "typescript": "catalog:"
+    "typescript": "catalog:",
+    "vitest-mock-extended": "catalog:",
+    "zod": "catalog:"
   },
-  "files": [
-    "template",
-    "scripts",
-    "transformers",
-    "template.config.js"
-  ],
   "main": "./build/cjs/index.js",
   "module": "./build/esm/index.js",
   "types": "./build/cjs/index.d.ts",
