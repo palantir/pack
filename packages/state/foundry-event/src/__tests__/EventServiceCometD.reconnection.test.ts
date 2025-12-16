@@ -19,6 +19,7 @@ import type { Callback, CometD, ListenerHandle, SubscriptionHandle } from "comet
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { MockProxy } from "vitest-mock-extended";
 import { mock } from "vitest-mock-extended";
+import type { CometDLoader } from "../cometd/EventServiceCometD.js";
 import { EventServiceCometD } from "../cometd/EventServiceCometD.js";
 import type { TypedReceiveChannelId } from "../types/EventService.js";
 
@@ -88,7 +89,20 @@ describe("EventServiceCometD Reconnection Handling", () => {
       callback();
     });
 
-    service = new EventServiceCometD(mockApp, mockCometD);
+    const mockLoader = () => {
+      class MockAckExtension {}
+      class MockCometD {
+        constructor() {
+          return mockCometD;
+        }
+      }
+      return Promise.resolve({
+        AckExtension: MockAckExtension,
+        CometD: MockCometD,
+      });
+    };
+
+    service = new EventServiceCometD(mockApp, mockLoader as CometDLoader);
   });
 
   afterEach(() => {
