@@ -24,6 +24,21 @@ export interface ActivityShapeUpdateEvent {
 }
 
 /**
+ * Cursor position for remote user.
+ */
+export interface PresenceCursorEvent {
+  readonly x: number;
+  readonly y: number;
+}
+
+/**
+ * Selected nodes for remote user.
+ */
+export interface PresenceSelectionEvent {
+  readonly selectedNodeIds: readonly string[];
+}
+
+/**
  * A box.
  */
 export interface ShapeBox {
@@ -88,5 +103,24 @@ export function isNodeShapeBox(value: NodeShape): value is NodeShapeBox {
 
 export function isNodeShapeCircle(value: NodeShape): value is NodeShapeCircle {
   return value.shapeType === "circle";
+}
+
+
+export interface PresenceEventCursor extends PresenceCursorEvent {
+  readonly eventType: "cursor";
+}
+
+export interface PresenceEventSelection extends PresenceSelectionEvent {
+  readonly eventType: "selection";
+}
+
+export type PresenceEvent = PresenceEventCursor | PresenceEventSelection;
+
+export function isPresenceEventCursor(value: PresenceEvent): value is PresenceEventCursor {
+  return value.eventType === "cursor";
+}
+
+export function isPresenceEventSelection(value: PresenceEvent): value is PresenceEventSelection {
+  return value.eventType === "selection";
 }
 

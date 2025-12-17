@@ -13,6 +13,15 @@
         oldShape: NodeShape
         newShape: NodeShape
       docs: An event representing the update of a shape node.
+    PresenceCursorEvent:
+      fields:
+        x: double
+        'y': double
+      docs: Cursor position for remote user.
+    PresenceSelectionEvent:
+      fields:
+        selectedNodeIds: array<string>
+      docs: Selected nodes for remote user.
     ShapeBox:
       fields:
         bottom: double
@@ -41,3 +50,8 @@
         box: ShapeBox
         circle: ShapeCircle
       discriminant: shapeType
+    PresenceEvent:
+      variants:
+        cursor: PresenceCursorEvent
+        selection: PresenceSelectionEvent
+      discriminant: eventType

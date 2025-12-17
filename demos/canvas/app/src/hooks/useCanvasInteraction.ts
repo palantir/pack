@@ -30,6 +30,7 @@ import { useShapeSelection } from "./useShapeSelection.js";
 export type ToolMode = "select" | "addBox" | "addCircle";
 
 export interface UseCanvasInteractionResult {
+  broadcastSelection: (nodeIds: readonly string[]) => void;
   readonly canvasProps: {
     onMouseDown: (e: MouseEvent<SVGSVGElement>) => void;
     onMouseMove: (e: MouseEvent<SVGSVGElement>) => void;
@@ -44,7 +45,10 @@ export interface UseCanvasInteractionResult {
   readonly shapeRefs: readonly RecordRef<typeof NodeShapeModel>[];
 }
 
-export function useCanvasInteraction(doc: DocumentRef<DocumentModel>): UseCanvasInteractionResult {
+export function useCanvasInteraction(
+  doc: DocumentRef<DocumentModel>,
+  broadcastSelection: (nodeIds: readonly string[]) => void,
+): UseCanvasInteractionResult {
   const { addShape, shapeRefs } = useCanvasShapes(doc);
   const shapeIndex = useShapeIndex(doc);
   const { clearSelection, selectedShapeRef, selectShape } = useShapeSelection();
@@ -53,7 +57,20 @@ export function useCanvasInteraction(doc: DocumentRef<DocumentModel>): UseCanvas
 
   const creationStateRef = useRef<{ startX: number; startY: number } | undefined>(undefined);
 
-  const shapeDragHandlers = useShapeDrag(doc, shapeIndex, selectedShapeRef, selectShape);
+  const selectShapeWithBroadcast = useCallback(
+    (ref: RecordRef<typeof NodeShapeModel> | undefined) => {
+      selectShape(ref);
+      broadcastSelection(ref != null ? [ref.id] : []);
+    },
+    [broadcastSelection, selectShape],
+  );
+
+  const shapeDragHandlers = useShapeDrag(
+    doc,
+    shapeIndex,
+    selectedShapeRef,
+    selectShapeWithBroadcast,
+  );
 
   const deleteSelected = useCallback(() => {
     if (selectedShapeRef != null) {
@@ -68,8 +85,9 @@ export function useCanvasInteraction(doc: DocumentRef<DocumentModel>): UseCanvas
         model: ActivityEventModel,
       });
       clearSelection();
+      broadcastSelection([]);
     }
-  }, [clearSelection, doc, selectedShapeRef]);
+  }, [broadcastSelection, clearSelection, doc, selectedShapeRef]);
 
   const setColor = useCallback(
     async (color: string) => {
@@ -164,17 +182,18 @@ export function useCanvasInteraction(doc: DocumentRef<DocumentModel>): UseCanvas
         };
 
         addShape(newShape).then(recordRef => {
-          selectShape(recordRef);
+          selectShapeWithBroadcast(recordRef);
         });
 
         creationStateRef.current = undefined;
         setCurrentTool("select");
       }
     },
-    [addShape, currentColor, currentTool, selectShape, shapeDragHandlers],
+    [addShape, currentColor, currentTool, selectShapeWithBroadcast, shapeDragHandlers],
   );
 
   return {
+    broadcastSelection,
     canvasProps: {
       onMouseDown,
       onMouseMove,

@@ -80,12 +80,39 @@ const migration000 = S.defineMigration({}, () => {
     },
   });
 
+  const PresenceCursorEvent = S.defineRecord("PresenceCursorEvent", {
+    docs: "Cursor position for remote user.",
+    fields: {
+      x: S.Double,
+      y: S.Double,
+    },
+  });
+
+  const PresenceSelectionEvent = S.defineRecord("PresenceSelectionEvent", {
+    docs: "Selected nodes for remote user.",
+    fields: {
+      selectedNodeIds: S.Array(S.String),
+    },
+  });
+
+  const PresenceEvent = S.defineUnion("PresenceEvent", {
+    discriminant: "eventType",
+    docs: "A presence event describing user cursor or selection state.",
+    variants: {
+      "cursor": PresenceCursorEvent,
+      "selection": PresenceSelectionEvent,
+    },
+  });
+
   return {
     ActivityEvent,
     ActivityShapeAddEvent,
     ActivityShapeDeleteEvent,
     ActivityShapeUpdateEvent,
     NodeShape,
+    PresenceCursorEvent,
+    PresenceEvent,
+    PresenceSelectionEvent,
     ShapeBox,
     ShapeCircle,
   };

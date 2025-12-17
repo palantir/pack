@@ -1,6 +1,6 @@
 import type { ZodType } from "zod";
 import { z } from 'zod';
-import type { ActivityEvent, ActivityEventShapeAdd, ActivityEventShapeDelete, ActivityEventShapeUpdate, ActivityShapeAddEvent, ActivityShapeDeleteEvent, ActivityShapeUpdateEvent, NodeShape, NodeShapeBox, NodeShapeCircle, ShapeBox, ShapeCircle } from "./types.js";
+import type { ActivityEvent, ActivityEventShapeAdd, ActivityEventShapeDelete, ActivityEventShapeUpdate, ActivityShapeAddEvent, ActivityShapeDeleteEvent, ActivityShapeUpdateEvent, NodeShape, NodeShapeBox, NodeShapeCircle, PresenceCursorEvent, PresenceEvent, PresenceEventCursor, PresenceEventSelection, PresenceSelectionEvent, ShapeBox, ShapeCircle } from "./types.js";
 
 export const ActivityShapeAddEventSchema = z.object({
   nodeId: z.string()
@@ -15,6 +15,15 @@ export const ActivityShapeUpdateEventSchema = z.object({
   oldShape: z.lazy(() => NodeShapeSchema),
   newShape: z.lazy(() => NodeShapeSchema)
 }) satisfies ZodType<ActivityShapeUpdateEvent>;
+
+export const PresenceCursorEventSchema = z.object({
+  x: z.number(),
+  y: z.number()
+}) satisfies ZodType<PresenceCursorEvent>;
+
+export const PresenceSelectionEventSchema = z.object({
+  selectedNodeIds: z.array(z.string())
+}) satisfies ZodType<PresenceSelectionEvent>;
 
 export const ShapeBoxSchema = z.object({
   bottom: z.number(),
@@ -62,3 +71,16 @@ export const NodeShapeSchema = z.discriminatedUnion("shapeType", [
   NodeShapeBoxSchema,
   NodeShapeCircleSchema
 ]) satisfies ZodType<NodeShape>;
+
+export const PresenceEventCursorSchema = PresenceCursorEventSchema.extend({
+  eventType: z.literal("cursor")
+}) satisfies ZodType<PresenceEventCursor>;
+
+export const PresenceEventSelectionSchema = PresenceSelectionEventSchema.extend({
+  eventType: z.literal("selection")
+}) satisfies ZodType<PresenceEventSelection>;
+
+export const PresenceEventSchema = z.discriminatedUnion("eventType", [
+  PresenceEventCursorSchema,
+  PresenceEventSelectionSchema
+]) satisfies ZodType<PresenceEvent>;
