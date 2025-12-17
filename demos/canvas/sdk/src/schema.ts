@@ -1,6 +1,20 @@
 import type { ZodType } from "zod";
 import { z } from 'zod';
-import type { NodeShape, NodeShapeBox, NodeShapeCircle, ShapeBox, ShapeCircle } from "./types.js";
+import type { ActivityEvent, ActivityEventShapeAdd, ActivityEventShapeDelete, ActivityEventShapeUpdate, ActivityShapeAddEvent, ActivityShapeDeleteEvent, ActivityShapeUpdateEvent, NodeShape, NodeShapeBox, NodeShapeCircle, ShapeBox, ShapeCircle } from "./types.js";
+
+export const ActivityShapeAddEventSchema = z.object({
+  nodeId: z.string()
+}) satisfies ZodType<ActivityShapeAddEvent>;
+
+export const ActivityShapeDeleteEventSchema = z.object({
+  nodeId: z.string()
+}) satisfies ZodType<ActivityShapeDeleteEvent>;
+
+export const ActivityShapeUpdateEventSchema = z.object({
+  nodeId: z.string(),
+  oldShape: z.lazy(() => NodeShapeSchema),
+  newShape: z.lazy(() => NodeShapeSchema)
+}) satisfies ZodType<ActivityShapeUpdateEvent>;
 
 export const ShapeBoxSchema = z.object({
   bottom: z.number(),
@@ -17,6 +31,24 @@ export const ShapeCircleSchema = z.object({
   top: z.number(),
   color: z.string().optional()
 }) satisfies ZodType<ShapeCircle>;
+
+export const ActivityEventShapeAddSchema = ActivityShapeAddEventSchema.extend({
+  eventType: z.literal("shapeAdd")
+}) satisfies ZodType<ActivityEventShapeAdd>;
+
+export const ActivityEventShapeDeleteSchema = ActivityShapeDeleteEventSchema.extend({
+  eventType: z.literal("shapeDelete")
+}) satisfies ZodType<ActivityEventShapeDelete>;
+
+export const ActivityEventShapeUpdateSchema = ActivityShapeUpdateEventSchema.extend({
+  eventType: z.literal("shapeUpdate")
+}) satisfies ZodType<ActivityEventShapeUpdate>;
+
+export const ActivityEventSchema = z.discriminatedUnion("eventType", [
+  ActivityEventShapeAddSchema,
+  ActivityEventShapeDeleteSchema,
+  ActivityEventShapeUpdateSchema
+]) satisfies ZodType<ActivityEvent>;
 
 export const NodeShapeBoxSchema = ShapeBoxSchema.extend({
   shapeType: z.literal("box")

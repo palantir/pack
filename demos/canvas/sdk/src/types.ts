@@ -1,6 +1,29 @@
 // Generated TypeScript interfaces from document schema
 
 /**
+ * An event representing the addition of a shape node.
+ */
+export interface ActivityShapeAddEvent {
+  readonly nodeId: string;
+}
+
+/**
+ * An event representing the deletion of a shape node.
+ */
+export interface ActivityShapeDeleteEvent {
+  readonly nodeId: string;
+}
+
+/**
+ * An event representing the update of a shape node.
+ */
+export interface ActivityShapeUpdateEvent {
+  readonly nodeId: string;
+  readonly oldShape: NodeShape;
+  readonly newShape: NodeShape;
+}
+
+/**
  * A box.
  */
 export interface ShapeBox {
@@ -21,6 +44,33 @@ export interface ShapeCircle {
   readonly top: number;
   readonly color?: string;
 }
+
+export interface ActivityEventShapeAdd extends ActivityShapeAddEvent {
+  readonly eventType: "shapeAdd";
+}
+
+export interface ActivityEventShapeDelete extends ActivityShapeDeleteEvent {
+  readonly eventType: "shapeDelete";
+}
+
+export interface ActivityEventShapeUpdate extends ActivityShapeUpdateEvent {
+  readonly eventType: "shapeUpdate";
+}
+
+export type ActivityEvent = ActivityEventShapeAdd | ActivityEventShapeDelete | ActivityEventShapeUpdate;
+
+export function isActivityEventShapeAdd(value: ActivityEvent): value is ActivityEventShapeAdd {
+  return value.eventType === "shapeAdd";
+}
+
+export function isActivityEventShapeDelete(value: ActivityEvent): value is ActivityEventShapeDelete {
+  return value.eventType === "shapeDelete";
+}
+
+export function isActivityEventShapeUpdate(value: ActivityEvent): value is ActivityEventShapeUpdate {
+  return value.eventType === "shapeUpdate";
+}
+
 
 export interface NodeShapeBox extends ShapeBox {
   readonly shapeType: "box";

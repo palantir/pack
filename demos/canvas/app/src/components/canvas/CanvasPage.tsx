@@ -14,13 +14,16 @@
  * limitations under the License.
  */
 
+import type { Toaster } from "@blueprintjs/core";
+import { OverlayToaster, Position } from "@blueprintjs/core";
 import { DocumentModel } from "@demo/canvas.sdk";
 import { isValidDocRef } from "@palantir/pack.state.core";
 import { useDocRef } from "@palantir/pack.state.react";
 import type { KeyboardEvent } from "react";
-import { useCallback } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { useParams } from "react-router";
 import { app } from "../../app.js";
+import { useActivityToast } from "../../hooks/useActivityToast.js";
 import { useCanvasInteraction } from "../../hooks/useCanvasInteraction.js";
 import { CanvasContent } from "./CanvasContent.js";
 import styles from "./CanvasPage.module.css";
@@ -29,11 +32,26 @@ import { CanvasToolbar } from "./CanvasToolbar.js";
 export const CanvasPage = () => {
   const { canvasId } = useParams<{ canvasId: string }>();
   const docRef = useDocRef(app, DocumentModel, canvasId);
+  const toasterRef = useRef<Toaster | null>(null);
+
+  useEffect(() => {
+    OverlayToaster.create({
+      position: Position.TOP_RIGHT,
+    }).then(toaster => {
+      toasterRef.current = toaster;
+    });
+
+    return () => {
+      toasterRef.current?.clear();
+    };
+  }, []);
+
   if (!isValidDocRef(docRef)) {
     return <div>Canvas ID is required</div>;
   }
 
   const interaction = useCanvasInteraction(docRef);
+  useActivityToast(docRef, toasterRef);
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {

@@ -37,13 +37,26 @@ type SerializableActivityEvent = Omit<ActivityEvent, "eventData"> & {
 type PresenceChannelMessage =
   | { readonly type: "heartbeat"; readonly userId: string; readonly timestamp: number }
   | {
-    readonly type: "activity";
+    readonly type: "presence";
     readonly userId: string;
-    readonly event: SerializableActivityEvent;
+    readonly event: SerializablePresenceEvent;
   };
 
+type ActivityChannelMessage = {
+  readonly type: "activity";
+  readonly userId: string;
+  readonly event: SerializableActivityEvent;
+};
+
+type SerializablePresenceEvent = Omit<PresenceEvent, "eventData"> & {
+  readonly eventData:
+    | { readonly type: "customEvent"; readonly eventData: unknown; readonly modelName: string }
+    | PresenceEvent["eventData"];
+};
+
 export class PresenceManager {
-  private readonly channel: BroadcastChannel;
+  private readonly activityChannel: BroadcastChannel;
+  private readonly presenceChannel: BroadcastChannel;
   private readonly schema?: DocumentSchema;
   private readonly userId: UserId;
   private readonly activeClients = new Map<UserId, number>();
@@ -55,10 +68,15 @@ export class PresenceManager {
   constructor(documentId: DocumentId, userId: string, schema?: DocumentSchema) {
     this.userId = userId as UserId;
     this.schema = schema;
-    this.channel = new BroadcastChannel(`pack-demo-presence-${documentId}`);
+    this.activityChannel = new BroadcastChannel(`pack-demo-activity-${documentId}`);
+    this.presenceChannel = new BroadcastChannel(`pack-demo-presence-${documentId}`);
 
-    this.channel.onmessage = event => {
-      this.handleMessage(event.data as PresenceChannelMessage);
+    this.activityChannel.onmessage = event => {
+      this.handleActivityMessage(event.data as ActivityChannelMessage);
+    };
+
+    this.presenceChannel.onmessage = event => {
+      this.handlePresenceMessage(event.data as PresenceChannelMessage);
     };
 
     this.startHeartbeat();
@@ -91,12 +109,32 @@ export class PresenceManager {
         : event.eventData,
     };
 
-    const message: PresenceChannelMessage = {
+    const message: ActivityChannelMessage = {
       event: serializableEvent,
       type: "activity",
       userId: this.userId,
     };
-    this.channel.postMessage(message);
+    this.activityChannel.postMessage(message);
+  }
+
+  broadcastPresence(event: PresenceEvent): void {
+    const serializableEvent: SerializablePresenceEvent = {
+      ...event,
+      eventData: event.eventData.type === "customEvent"
+        ? {
+          eventData: event.eventData.eventData,
+          modelName: getMetadata(event.eventData.model).name,
+          type: "customEvent",
+        }
+        : event.eventData,
+    };
+
+    const message: PresenceChannelMessage = {
+      event: serializableEvent,
+      type: "presence",
+      userId: this.userId,
+    };
+    this.presenceChannel.postMessage(message);
   }
 
   dispose(): void {
@@ -110,7 +148,8 @@ export class PresenceManager {
       this.staleCheckInterval = undefined;
     }
 
-    this.channel.close();
+    this.activityChannel.close();
+    this.presenceChannel.close();
     this.presenceCallbacks.clear();
     this.activityCallbacks.clear();
     this.activeClients.clear();
@@ -123,7 +162,7 @@ export class PresenceManager {
         type: "heartbeat",
         userId: this.userId,
       };
-      this.channel.postMessage(message);
+      this.presenceChannel.postMessage(message);
     };
 
     sendHeartbeat();
@@ -136,13 +175,19 @@ export class PresenceManager {
     }, HEARTBEAT_INTERVAL_MS) as unknown as number;
   }
 
-  private handleMessage(message: PresenceChannelMessage): void {
+  private handleActivityMessage(message: ActivityChannelMessage): void {
+    if (message.type === "activity") {
+      this.handleActivity(message.event);
+    }
+  }
+
+  private handlePresenceMessage(message: PresenceChannelMessage): void {
     switch (message.type) {
       case "heartbeat":
         this.handleHeartbeat(message.userId, message.timestamp);
         break;
-      case "activity":
-        this.handleActivity(message.event);
+      case "presence":
+        this.handlePresence(message.event);
         break;
     }
   }
@@ -201,6 +246,49 @@ export class PresenceManager {
     }
 
     for (const callback of this.activityCallbacks) {
+      callback(reconstructedEvent);
+    }
+  }
+
+  private handlePresence(event: SerializablePresenceEvent): void {
+    let reconstructedEvent: PresenceEvent = event as PresenceEvent;
+
+    if (
+      event.eventData.type === "customEvent"
+      && "modelName" in event.eventData
+      && this.schema != null
+    ) {
+      const modelName = event.eventData.modelName;
+      let model: Model | undefined;
+
+      for (const key of Object.keys(this.schema)) {
+        const candidate = this.schema[key as keyof DocumentSchema];
+        if (
+          candidate != null
+          && typeof candidate === "object"
+          && hasMetadata(candidate)
+        ) {
+          const metadata = getMetadata(candidate);
+          if ("name" in metadata && metadata.name === modelName) {
+            model = candidate as Model;
+            break;
+          }
+        }
+      }
+
+      if (model != null) {
+        reconstructedEvent = {
+          ...event,
+          eventData: {
+            eventData: event.eventData.eventData,
+            model,
+            type: "customEvent",
+          },
+        };
+      }
+    }
+
+    for (const callback of this.presenceCallbacks) {
       callback(reconstructedEvent);
     }
   }

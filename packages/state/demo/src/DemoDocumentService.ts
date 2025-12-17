@@ -23,12 +23,17 @@ import type {
   DocumentMetadata,
   DocumentRef,
   DocumentSchema,
+  EditDescription,
   Model,
   ModelData,
   PresenceEvent,
   UserId,
 } from "@palantir/pack.document-schema.model-types";
-import { ActivityEventDataType, getMetadata } from "@palantir/pack.document-schema.model-types";
+import {
+  ActivityEventDataType,
+  getMetadata,
+  hasMetadata,
+} from "@palantir/pack.document-schema.model-types";
 import type { CreateDocumentMetadata, InternalYjsDoc } from "@palantir/pack.state.core";
 import {
   BaseYjsDocumentService,
@@ -190,6 +195,33 @@ export class DemoDocumentService extends BaseYjsDocumentService<DemoInternalDoc>
 
       const updateHandler = (update: Uint8Array, origin: unknown) => {
         if (origin === "remote") return;
+
+        if (isEditDescription(origin)) {
+          if (!internalDoc.presenceManager) {
+            internalDoc.presenceManager = new PresenceManager(
+              docRef.id,
+              this.clientId,
+              docRef.schema,
+            );
+          }
+
+          const modelName = getMetadata(origin.model).name;
+          const event: ActivityEvent = {
+            aggregationKey: `${docRef.id}-${modelName}`,
+            createdBy: this.clientId as UserId,
+            createdInstant: Date.now(),
+            eventData: {
+              eventData: origin.data,
+              model: origin.model,
+              type: ActivityEventDataType.CUSTOM_EVENT,
+            },
+            eventId: generateId() as ActivityEventId,
+            isRead: false,
+          };
+
+          internalDoc.presenceManager.broadcastActivity(event);
+        }
+
         channel.postMessage({
           type: "update",
           data: Base64.fromUint8Array(update),
@@ -306,24 +338,31 @@ export class DemoDocumentService extends BaseYjsDocumentService<DemoInternalDoc>
       internalDoc.presenceManager = new PresenceManager(docRef.id, this.clientId, docRef.schema);
     }
 
-    const modelName = getMetadata(model).name;
-    const event: ActivityEvent = {
-      aggregationKey: `${docRef.id}-${modelName}`,
-      createdBy: this.clientId as UserId,
-      createdInstant: Date.now(),
+    const event: PresenceEvent = {
       eventData: {
         eventData,
         model,
         type: ActivityEventDataType.CUSTOM_EVENT,
       },
-      eventId: generateId() as ActivityEventId,
-      isRead: false,
+      userId: this.clientId as UserId,
     };
 
-    internalDoc.presenceManager.broadcastActivity(event);
+    internalDoc.presenceManager.broadcastPresence(event);
   }
 }
 
 function generateDocumentId(): DocumentId {
   return generateId() as DocumentId;
+}
+
+function isEditDescription(obj: unknown): obj is EditDescription {
+  return (
+    obj != null
+    && typeof obj === "object"
+    && "data" in obj
+    && "model" in obj
+    && typeof obj.model === "object"
+    && obj.model != null
+    && hasMetadata(obj.model)
+  );
 }

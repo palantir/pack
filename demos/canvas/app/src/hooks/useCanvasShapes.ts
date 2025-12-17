@@ -15,7 +15,7 @@
  */
 
 import type { DocumentModel, NodeShape } from "@demo/canvas.sdk";
-import { NodeShapeModel } from "@demo/canvas.sdk";
+import { ActivityEventModel, NodeShapeModel } from "@demo/canvas.sdk";
 import { generateId } from "@palantir/pack.core";
 import type { DocumentRef, RecordRef } from "@palantir/pack.document-schema.model-types";
 import { isValidRecordRef } from "@palantir/pack.state.core";
@@ -33,9 +33,18 @@ export function useCanvasShapes(docRef: DocumentRef<DocumentModel>): UseCanvasSh
   const addShape = useCallback(
     async (shape: NodeShape): Promise<RecordRef<typeof NodeShapeModel>> => {
       const collection = docRef.getRecords(NodeShapeModel);
-      // TODO: should have generated ids
       const id = `shape-${generateId()}`;
-      await collection.set(id, shape);
+
+      await docRef.withTransaction(() => {
+        return collection.set(id, shape);
+      }, {
+        data: {
+          eventType: "shapeAdd",
+          nodeId: id,
+        },
+        model: ActivityEventModel,
+      });
+
       const recordRef = collection.get(id);
       if (recordRef == null || !isValidRecordRef(recordRef)) {
         throw new Error(`Failed to create shape with id: ${id}`);

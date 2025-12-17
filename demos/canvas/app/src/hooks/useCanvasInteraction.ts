@@ -15,6 +15,7 @@
  */
 
 import type { DocumentModel, NodeShape, NodeShapeModel } from "@demo/canvas.sdk";
+import { ActivityEventModel } from "@demo/canvas.sdk";
 import type { DocumentRef, RecordRef } from "@palantir/pack.document-schema.model-types";
 import type { MouseEvent } from "react";
 import { useCallback, useRef, useState } from "react";
@@ -52,23 +53,45 @@ export function useCanvasInteraction(doc: DocumentRef<DocumentModel>): UseCanvas
 
   const creationStateRef = useRef<{ startX: number; startY: number } | undefined>(undefined);
 
-  const shapeDragHandlers = useShapeDrag(shapeIndex, selectedShapeRef, selectShape);
+  const shapeDragHandlers = useShapeDrag(doc, shapeIndex, selectedShapeRef, selectShape);
 
   const deleteSelected = useCallback(() => {
     if (selectedShapeRef != null) {
-      selectedShapeRef.delete();
+      const nodeId = selectedShapeRef.id;
+      doc.withTransaction(() => {
+        selectedShapeRef.delete();
+      }, {
+        data: {
+          eventType: "shapeDelete",
+          nodeId,
+        },
+        model: ActivityEventModel,
+      });
       clearSelection();
     }
-  }, [clearSelection, selectedShapeRef]);
+  }, [clearSelection, doc, selectedShapeRef]);
 
   const setColor = useCallback(
     async (color: string) => {
       setCurrentColor(color);
       if (selectedShapeRef != null) {
-        await selectedShapeRef.update({ color });
+        const oldShape = await selectedShapeRef.getSnapshot();
+        if (oldShape == null) return;
+
+        await doc.withTransaction(() => {
+          return selectedShapeRef.update({ color });
+        }, {
+          data: {
+            eventType: "shapeUpdate",
+            newShape: { ...oldShape, color },
+            nodeId: selectedShapeRef.id,
+            oldShape,
+          },
+          model: ActivityEventModel,
+        });
       }
     },
-    [selectedShapeRef],
+    [doc, selectedShapeRef],
   );
 
   const setTool = useCallback((tool: ToolMode) => {

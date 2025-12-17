@@ -47,7 +47,44 @@ const migration000 = S.defineMigration({}, () => {
     },
   });
 
+  const ActivityShapeAddEvent = S.defineRecord("ActivityShapeAddEvent", {
+    docs: "An event representing the addition of a shape node.",
+    fields: {
+      nodeId: S.String,
+    },
+  });
+
+  const ActivityShapeDeleteEvent = S.defineRecord("ActivityShapeDeleteEvent", {
+    docs: "An event representing the deletion of a shape node.",
+    fields: {
+      nodeId: S.String,
+    },
+  });
+
+  const ActivityShapeUpdateEvent = S.defineRecord("ActivityShapeUpdateEvent", {
+    docs: "An event representing the update of a shape node.",
+    fields: {
+      nodeId: S.String,
+      oldShape: NodeShape,
+      newShape: NodeShape,
+    },
+  });
+
+  const ActivityEvent = S.defineUnion("ActivityEvent", {
+    discriminant: "eventType",
+    docs: "An activity event describing a change to the document model.",
+    variants: {
+      "shapeAdd": ActivityShapeAddEvent,
+      "shapeDelete": ActivityShapeDeleteEvent,
+      "shapeUpdate": ActivityShapeUpdateEvent,
+    },
+  });
+
   return {
+    ActivityEvent,
+    ActivityShapeAddEvent,
+    ActivityShapeDeleteEvent,
+    ActivityShapeUpdateEvent,
     NodeShape,
     ShapeBox,
     ShapeCircle,

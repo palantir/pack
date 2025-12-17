@@ -1,4 +1,18 @@
 - add-records:
+    ActivityShapeAddEvent:
+      fields:
+        nodeId: string
+      docs: An event representing the addition of a shape node.
+    ActivityShapeDeleteEvent:
+      fields:
+        nodeId: string
+      docs: An event representing the deletion of a shape node.
+    ActivityShapeUpdateEvent:
+      fields:
+        nodeId: string
+        oldShape: NodeShape
+        newShape: NodeShape
+      docs: An event representing the update of a shape node.
     ShapeBox:
       fields:
         bottom: double
@@ -16,6 +30,12 @@
         color: optional<string>
       docs: A circle.
 - add-union:
+    ActivityEvent:
+      variants:
+        shapeAdd: ActivityShapeAddEvent
+        shapeDelete: ActivityShapeDeleteEvent
+        shapeUpdate: ActivityShapeUpdateEvent
+      discriminant: eventType
     NodeShape:
       variants:
         box: ShapeBox
