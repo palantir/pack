@@ -17,6 +17,7 @@
 import type { DocumentModel, NodeShape, NodeShapeModel } from "@demo/canvas.sdk";
 import { ActivityEventModel } from "@demo/canvas.sdk";
 import type { DocumentRef, RecordRef } from "@palantir/pack.document-schema.model-types";
+import { ActivityEvents } from "@palantir/pack.document-schema.model-types";
 import type { MouseEvent } from "react";
 import { useCallback, useRef, useState } from "react";
 import { centerToBounds } from "../utils/centerToBounds.js";
@@ -75,15 +76,15 @@ export function useCanvasInteraction(
   const deleteSelected = useCallback(() => {
     if (selectedShapeRef != null) {
       const nodeId = selectedShapeRef.id;
-      doc.withTransaction(() => {
-        selectedShapeRef.delete();
-      }, {
-        data: {
+      doc.withTransaction(
+        () => {
+          selectedShapeRef.delete();
+        },
+        ActivityEvents.describeEdit(ActivityEventModel, {
           eventType: "shapeDelete",
           nodeId,
-        },
-        model: ActivityEventModel,
-      });
+        }),
+      );
       clearSelection();
       broadcastSelection([]);
     }
@@ -96,17 +97,17 @@ export function useCanvasInteraction(
         const oldShape = await selectedShapeRef.getSnapshot();
         if (oldShape == null) return;
 
-        await doc.withTransaction(() => {
-          return selectedShapeRef.update({ color });
-        }, {
-          data: {
+        await doc.withTransaction(
+          () => {
+            return selectedShapeRef.update({ color });
+          },
+          ActivityEvents.describeEdit(ActivityEventModel, {
             eventType: "shapeUpdate",
             newShape: { ...oldShape, color },
             nodeId: selectedShapeRef.id,
             oldShape,
-          },
-          model: ActivityEventModel,
-        });
+          }),
+        );
       }
     },
     [doc, selectedShapeRef],

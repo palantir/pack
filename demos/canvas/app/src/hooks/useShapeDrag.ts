@@ -17,6 +17,7 @@
 import type { DocumentModel, NodeShape, NodeShapeModel } from "@demo/canvas.sdk";
 import { ActivityEventModel } from "@demo/canvas.sdk";
 import type { DocumentRef, RecordRef } from "@palantir/pack.document-schema.model-types";
+import { ActivityEvents } from "@palantir/pack.document-schema.model-types";
 import type { MouseEvent } from "react";
 import { useCallback, useState } from "react";
 import { boundsToCenter } from "../utils/boundsToCenter.js";
@@ -120,17 +121,17 @@ export function useShapeDrag(
           right: initial.right + dx,
           top: initial.top + dy,
         };
-        docRef.withTransaction(() => {
-          dragState.shapeRef.update(newBounds);
-        }, {
-          data: {
+        docRef.withTransaction(
+          () => {
+            dragState.shapeRef.update(newBounds);
+          },
+          ActivityEvents.describeEdit(ActivityEventModel, {
             eventType: "shapeUpdate",
             newShape: { ...initial, ...newBounds },
             nodeId: dragState.shapeRef.id,
             oldShape: dragState.initialShape,
-          },
-          model: ActivityEventModel,
-        });
+          }),
+        );
       } else if (dragState.dragMode === "resize" && dragState.handle != null) {
         const initial = dragState.initialShape;
         const centerSize = boundsToCenter(initial);
@@ -177,17 +178,17 @@ export function useShapeDrag(
           width: newWidth,
         });
 
-        docRef.withTransaction(() => {
-          dragState.shapeRef.update(newBounds);
-        }, {
-          data: {
+        docRef.withTransaction(
+          () => {
+            dragState.shapeRef.update(newBounds);
+          },
+          ActivityEvents.describeEdit(ActivityEventModel, {
             eventType: "shapeUpdate",
             newShape: { ...initial, ...newBounds },
             nodeId: dragState.shapeRef.id,
             oldShape: dragState.initialShape,
-          },
-          model: ActivityEventModel,
-        });
+          }),
+        );
       }
     },
     [docRef, dragState],

@@ -18,6 +18,7 @@ import type { DocumentModel, NodeShape } from "@demo/canvas.sdk";
 import { ActivityEventModel, NodeShapeModel } from "@demo/canvas.sdk";
 import { generateId } from "@palantir/pack.core";
 import type { DocumentRef, RecordRef } from "@palantir/pack.document-schema.model-types";
+import { ActivityEvents } from "@palantir/pack.document-schema.model-types";
 import { isValidRecordRef } from "@palantir/pack.state.core";
 import { useRecords } from "@palantir/pack.state.react";
 import { useCallback } from "react";
@@ -35,15 +36,15 @@ export function useCanvasShapes(docRef: DocumentRef<DocumentModel>): UseCanvasSh
       const collection = docRef.getRecords(NodeShapeModel);
       const id = `shape-${generateId()}`;
 
-      await docRef.withTransaction(() => {
-        return collection.set(id, shape);
-      }, {
-        data: {
+      await docRef.withTransaction(
+        () => {
+          return collection.set(id, shape);
+        },
+        ActivityEvents.describeEdit(ActivityEventModel, {
           eventType: "shapeAdd",
           nodeId: id,
-        },
-        model: ActivityEventModel,
-      });
+        }),
+      );
 
       const recordRef = collection.get(id);
       if (recordRef == null || !isValidRecordRef(recordRef)) {
