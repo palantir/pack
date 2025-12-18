@@ -14,17 +14,21 @@
  * limitations under the License.
  */
 
-import type { AppConfig, ModuleConfigTuple } from "@palantir/pack.core";
-import type { DocumentService } from "@palantir/pack.state.core";
-import { createDemoDocumentServiceConfig } from "@palantir/pack.state.demo";
-import { createFoundryDocumentServiceConfig } from "@palantir/pack.state.foundry";
+import { getPageEnv } from "./getPageEnv.js";
 
-export function getDocumentServiceConfig(
-  config: AppConfig,
-): ModuleConfigTuple<DocumentService> {
-  if (config.isDemoMode) {
-    return createDemoDocumentServiceConfig();
+/**
+ * Check if the current environment should use demo mode.
+ * First checks for explicit pack-demoMode meta tag, then falls back to checking
+ * if baseUrl is missing or empty.
+ *
+ * @returns true if demo mode should be used, false otherwise
+ */
+export function isDemoEnv(): boolean {
+  const pageEnv = getPageEnv();
+
+  if (pageEnv.demoMode != null) {
+    return pageEnv.demoMode;
   }
 
-  return createFoundryDocumentServiceConfig();
+  return pageEnv.baseUrl == null || pageEnv.baseUrl === "";
 }

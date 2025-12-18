@@ -65,7 +65,7 @@ function createTestApp(
         appId: "test-app-id",
         ...config.app,
       },
-      isTestMode: config.isTestMode ?? true,
+      isDemoMode: config.isDemoMode ?? true,
       logger: config.logger ?? consoleLogger({}),
       ontologyRid: Promise.resolve("ri.ontology...test"),
       osdkClient,

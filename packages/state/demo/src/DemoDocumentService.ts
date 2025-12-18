@@ -65,7 +65,9 @@ export class DemoDocumentService extends BaseYjsDocumentService<DemoInternalDoc>
   private readonly metadataStore: MetadataStore;
 
   constructor(app: PackAppInternal, options: DemoDocumentServiceOptions = {}) {
-    super(app, app.config.logger.child({}, { level: "debug", msgPrefix: "DemoDocumentService" }));
+    super(app, app.config.logger.child({}, { level: "debug", msgPrefix: "DemoDocumentService" }), {
+      isDemo: true,
+    });
 
     this.clientId = crypto.randomUUID();
     this.dbPrefix = options.dbPrefix ?? "pack-demo";

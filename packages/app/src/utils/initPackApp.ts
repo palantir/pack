@@ -148,7 +148,7 @@ class PackAppImpl implements PackAppInternal, AppBuilders {
 
     const moduleOverrides = options.moduleOverrides ?? [];
 
-    const authService = this.createAuthService(client, options);
+    const authService = this.createAuthService(client);
     const authModuleConfig = createAuthModuleConfig(authService);
 
     const [defaultDocModule, defaultDocModuleConfig] = getDocumentServiceConfig(this.config);
@@ -169,14 +169,9 @@ class PackAppImpl implements PackAppInternal, AppBuilders {
     return this;
   }
 
-  private createAuthService(client: Client, options: AppOptions): BaseAuthService {
+  private createAuthService(client: Client): BaseAuthService {
     const osdkClientContext = getOsdkClientSharedContext(client);
-    const tokenProvider = options.auth ?? osdkClientContext.tokenProvider;
-
-    // Test mode - shortcut early
-    if (this.config.isTestMode) {
-      return createStaticTokenService(this, () => Promise.resolve("test-token"));
-    }
+    const tokenProvider = osdkClientContext.tokenProvider;
 
     if (isPublicOauthClient(tokenProvider)) {
       return createPublicOauthService(this, tokenProvider);
@@ -186,7 +181,6 @@ class PackAppImpl implements PackAppInternal, AppBuilders {
       return createConfidentialOauthService(this, tokenProvider);
     }
 
-    // If it is otherwise already a token provider function
     if (typeof tokenProvider === "function") {
       return createStaticTokenService(this, tokenProvider);
     }
@@ -289,6 +283,15 @@ class PackAppImpl implements PackAppInternal, AppBuilders {
   }
 }
 
+function hasRealFoundryConfig(baseUrl: string | undefined): boolean {
+  if (baseUrl == null || baseUrl === "") {
+    return false;
+  }
+
+  const isLocalhost = baseUrl.includes("localhost") || baseUrl.includes("127.0.0.1");
+  return !isLocalhost;
+}
+
 function getAppConfig(
   client: Client,
   options: AppOptions,
@@ -305,9 +308,20 @@ function getAppConfig(
   const baseUrl = options.remote?.baseUrl || osdkClientContext.baseUrl;
   const fetchFn = options.remote?.fetchFn ?? osdkClientContext.fetch;
 
-  const isTestMode = !baseUrl;
+  const hasRealConfig = hasRealFoundryConfig(baseUrl);
+  const explicitDemoMode = options.demoMode;
 
-  const appId = options.app?.appId ?? pageEnv.appId;
+  let demoModeOption: boolean | "auto";
+  if (explicitDemoMode != null) {
+    demoModeOption = explicitDemoMode;
+  } else {
+    demoModeOption = !baseUrl ? true : "auto";
+  }
+
+  const isDemoMode = demoModeOption === true
+    || (demoModeOption === "auto" && !hasRealConfig);
+
+  const appId = options.app?.appId ?? pageEnv.appId ?? pageEnv.clientId;
   if (appId == null) {
     throw new Error("No appId provided or present in document meta[pack-appId]");
   }
@@ -319,7 +333,7 @@ function getAppConfig(
       appId,
       appVersion: options.app?.appVersion ?? (pageEnv.appVersion || undefined),
     },
-    isTestMode,
+    isDemoMode,
     logger,
     ontologyRid: ontologyRid != null && ontologyRid !== ""
       ? Promise.resolve(ontologyRid)
@@ -328,9 +342,9 @@ function getAppConfig(
       ),
     osdkClient: client,
     remote: {
-      packWsPath: options.remote?.packWsPath ?? "/api/v2/packSubscriptions",
-      baseUrl: isTestMode ? "https://localhost:5173" : (baseUrl || ""),
+      baseUrl,
       fetchFn,
+      packWsPath: options.remote?.packWsPath ?? "/api/v2/packSubscriptions",
     },
   };
 }

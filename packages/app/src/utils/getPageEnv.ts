@@ -14,29 +14,71 @@
  * limitations under the License.
  */
 
-interface Return {
-  appId: string | null;
-  appVersion: string | null;
-  baseUrl: string | null;
-  clientId: string | null;
-  ontologyRid: string | null;
-  redirectUrl: string | null;
+export interface PageEnv {
+  readonly appId: string | null;
+  readonly appVersion: string | null;
+  readonly baseUrl: string | null;
+  readonly clientId: string | null;
+  readonly demoMode: boolean | null;
+  readonly ontologyRid: string | null;
+  readonly redirectUrl: string | null;
 }
 
-export function getPageEnv(): Return {
+export interface RequiredPageEnv {
+  readonly appId: string | null;
+  readonly appVersion: string | null;
+  readonly baseUrl: string;
+  readonly clientId: string;
+  readonly demoMode: boolean | null;
+  readonly ontologyRid: string;
+  readonly redirectUrl: string | null;
+}
+
+export function getPageEnv(): PageEnv {
   const appId = getMetaTagContent("pack-appId");
   const appVersion = getMetaTagContent("pack-appVersion");
+  const demoModeStr = getMetaTagContent("pack-demoMode");
   const foundryUrl = getMetaTagContent("osdk-foundryUrl");
   const clientId = getMetaTagContent("osdk-clientId");
   const ontologyRid = getMetaTagContent("osdk-ontologyRid");
   const redirectUrl = getMetaTagContent("osdk-redirectUrl");
+
+  const demoMode = demoModeStr === "true";
+
   return {
     appId,
     appVersion,
     baseUrl: foundryUrl,
     clientId,
+    demoMode,
     ontologyRid,
     redirectUrl,
+  };
+}
+
+export function getPageEnvOrThrow(): RequiredPageEnv {
+  const env = getPageEnv();
+
+  const missing: string[] = [];
+  if (env.baseUrl == null) missing.push("osdk-foundryUrl");
+  if (env.clientId == null) missing.push("osdk-clientId");
+  if (env.ontologyRid == null) missing.push("osdk-ontologyRid");
+
+  if (missing.length > 0) {
+    throw new Error(
+      `Missing required page environment meta tags: ${missing.join(", ")}. `
+        + `Please ensure these are set in your index.html or via your build configuration.`,
+    );
+  }
+
+  return {
+    appId: env.appId,
+    appVersion: env.appVersion,
+    baseUrl: env.baseUrl!,
+    clientId: env.clientId!,
+    demoMode: env.demoMode,
+    ontologyRid: env.ontologyRid!,
+    redirectUrl: env.redirectUrl,
   };
 }
 

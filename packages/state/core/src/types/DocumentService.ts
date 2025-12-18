@@ -51,6 +51,11 @@ export type DocumentLiveStatus = typeof DocumentLiveStatus[keyof typeof Document
 
 export type DocumentSyncStatus = {
   readonly error?: unknown;
+  /**
+   * When true, indicates this is a demo/test service not connected to real Foundry.
+   * UI can use this to display a badge or indicator that data is local-only.
+   */
+  readonly isDemo?: boolean;
   readonly live: DocumentLiveStatus;
   readonly load: DocumentLoadStatus;
 };

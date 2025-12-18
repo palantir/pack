@@ -59,6 +59,7 @@ describe("initPackApp", () => {
       appVersion: "1.0.0",
       baseUrl: "https://page-env.example.com",
       clientId: "page-env-client-id",
+      demoMode: null,
       ontologyRid: TEST_ONTOLOGY_RID,
       redirectUrl: "http://localhost:3000/page-env-callback",
     });
@@ -97,7 +98,6 @@ describe("initPackApp", () => {
       expect(app).toBeDefined();
       expect(app.config.app).toEqual(TEST_APP_CONFIG);
       expect(app.config.remote.baseUrl).toBe(TEST_FOUNDRY_URL_WITH_SLASH);
-      expect(app.config.isTestMode).toBe(false);
       expect(app.config.osdkClient).toBe(client);
     });
 
@@ -110,7 +110,6 @@ describe("initPackApp", () => {
       expect(app).toBeDefined();
       expect(app.config.app).toEqual(TEST_APP_CONFIG);
       expect(app.config.remote.baseUrl).toBe(TEST_FOUNDRY_URL_WITH_SLASH);
-      expect(app.config.isTestMode).toBe(false);
       expect(app.config.osdkClient).toBe(client);
     });
 
@@ -144,7 +143,6 @@ describe("initPackApp", () => {
 
       expect(app).toBeDefined();
       expect(app.config.remote.baseUrl).toBe(customBaseUrl);
-      expect(app.config.isTestMode).toBe(false);
     });
 
     it("should use custom logger when provided", () => {
@@ -207,7 +205,8 @@ describe("initPackApp", () => {
         appId: null,
         appVersion: null,
         baseUrl: "https://page-env.example.com",
-        clientId: "page-env-client-id",
+        clientId: null,
+        demoMode: null,
         ontologyRid: TEST_ONTOLOGY_RID,
         redirectUrl: "http://localhost:3000/page-env-callback",
       });
@@ -256,6 +255,7 @@ describe("initPackApp", () => {
         appVersion: "1.0.0",
         baseUrl: "https://page-env.example.com",
         clientId: "page-env-client-id",
+        demoMode: null,
         ontologyRid: null,
         redirectUrl: "http://localhost:3000/page-env-callback",
       });
@@ -278,6 +278,7 @@ describe("initPackApp", () => {
         appVersion: "1.0.0",
         baseUrl: "https://page-env.example.com",
         clientId: "page-env-client-id",
+        demoMode: null,
         ontologyRid: "",
         redirectUrl: "http://localhost:3000/page-env-callback",
       });

@@ -86,11 +86,6 @@ export abstract class AuthServiceBase implements BaseAuthService {
       return false;
     }
 
-    if (this.app.config.isTestMode) {
-      this.isTokenValidated = true;
-      return true;
-    }
-
     try {
       const user = await Users.getCurrent(this.app.config.osdkClient);
       this.isTokenValidated = true;
@@ -156,10 +151,6 @@ export abstract class AuthServiceBase implements BaseAuthService {
 
     if (!force && this.cachedUserData) {
       return this.cachedUserData;
-    }
-
-    if (this.app.config.isTestMode) {
-      throw new Error("Cannot refresh user data in test mode");
     }
 
     try {

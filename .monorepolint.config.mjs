@@ -213,7 +213,7 @@ const archetypeConfig = archetypes(
           matchDependencyVersions: getPnpmCatalogVersions(),
         },
       }),
-      ...(rules.isPrivate ? privateRules : publicRules),
+      ...(rules.isPrivate || rules.isDemo ? privateRules : publicRules),
     ];
 
     const standardTsConfigRule = Rules.standardTsconfig({
@@ -370,7 +370,17 @@ const archetypeConfig = archetypes(
         }),
         standardTsConfigRule,
         requiredScriptsDependenciesRule,
-        ...baseRules,
+        ...commonRules,
+        Rules.consistentDependencies({
+          ...shared,
+        }),
+        Rules.consistentVersions({
+          ...shared,
+          options: {
+            matchDependencyVersions: getPnpmCatalogVersions(),
+          },
+        }),
+        ...privateRules,
       ];
     }
 
@@ -467,9 +477,9 @@ const packages = {
   "@palantir/pack.sdkgen.pack-template": { isSdkgenTemplate: true },
 
   // Demo packages
-  "@demo/canvas.app": { isDemo: true, isDemoApp: true, isPrivate: true },
-  "@demo/canvas.schema": { isDemo: true, isDemoSchema: true, isPrivate: true },
-  "@demo/canvas.sdk": { isDemo: true, isDemoSdk: true, isPrivate: true },
+  "@demo/canvas.app": { isDemo: true, isDemoApp: true },
+  "@demo/canvas.schema": { isDemo: true, isDemoSchema: true },
+  "@demo/canvas.sdk": { isDemo: true, isDemoSdk: true },
 
   // Library packages (default rules)
   "@palantir/pack.app": {},
@@ -479,7 +489,7 @@ const packages = {
   "@palantir/pack.document-schema.model-types": {},
   "@palantir/pack.schema": {},
   "@palantir/pack.state.core": {},
-  "@palantir/pack.state.demo": { isPrivate: true },
+  "@palantir/pack.state.demo": { isDemo: true },
   "@palantir/pack.state.foundry": {},
   "@palantir/pack.state.foundry-event": {},
   "@palantir/pack.state.react": {},
@@ -507,7 +517,10 @@ const allLocalDepsMustNotBePrivate = Rules.createRuleFactory({
           path.join(packageDir, "package.json"),
         );
 
-        if (theirPackageJson.private) {
+        // Allow demo packages (those with names starting with @demo/ or containing .demo) to be used as dependencies
+        const isDemoPackage = dep.startsWith("@demo/") || dep.includes(".demo");
+
+        if (theirPackageJson.private && !isDemoPackage) {
           const message =
             `${dep} is private and cannot be used as a regular dependency for this package`;
           context.addError({
