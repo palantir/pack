@@ -14,14 +14,19 @@
  * limitations under the License.
  */
 
+import type { Toaster } from "@blueprintjs/core";
+import { OverlayToaster, Position } from "@blueprintjs/core";
 import { DocumentModel } from "@demo/canvas.sdk";
 import { isValidDocRef } from "@palantir/pack.state.core";
 import { useDocRef } from "@palantir/pack.state.react";
-import type { KeyboardEvent } from "react";
-import { useCallback } from "react";
+import type { KeyboardEvent, MouseEvent } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useParams } from "react-router";
 import { app } from "../../app.js";
+import { useActivityToast } from "../../hooks/useActivityToast.js";
+import { useBroadcastPresence } from "../../hooks/useBroadcastPresence.js";
 import { useCanvasInteraction } from "../../hooks/useCanvasInteraction.js";
+import { useRemotePresence } from "../../hooks/useRemotePresence.js";
 import { CanvasContent } from "./CanvasContent.js";
 import styles from "./CanvasPage.module.css";
 import { CanvasToolbar } from "./CanvasToolbar.js";
@@ -29,11 +34,36 @@ import { CanvasToolbar } from "./CanvasToolbar.js";
 export const CanvasPage = () => {
   const { canvasId } = useParams<{ canvasId: string }>();
   const docRef = useDocRef(app, DocumentModel, canvasId);
+  const [toaster, setToaster] = useState<Toaster | null>(null);
+
+  useEffect(() => {
+    let mounted = true;
+
+    OverlayToaster.create({
+      position: Position.TOP_RIGHT,
+    }).then(createdToaster => {
+      if (mounted) {
+        setToaster(createdToaster);
+      }
+    });
+
+    return () => {
+      mounted = false;
+      setToaster(prev => {
+        prev?.clear();
+        return null;
+      });
+    };
+  }, []);
+
   if (!isValidDocRef(docRef)) {
     return <div>Canvas ID is required</div>;
   }
 
-  const interaction = useCanvasInteraction(docRef);
+  const { broadcastCursor, broadcastSelection } = useBroadcastPresence(docRef);
+  const { remoteUsersByUserId, userIdsBySelectedNodeId } = useRemotePresence(docRef);
+  const interaction = useCanvasInteraction(docRef, broadcastSelection);
+  useActivityToast(docRef, toaster);
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
@@ -42,6 +72,18 @@ export const CanvasPage = () => {
       }
     },
     [interaction.deleteSelected],
+  );
+
+  const handleCanvasMouseMove = useCallback(
+    (e: MouseEvent<SVGSVGElement>) => {
+      const svg = e.currentTarget;
+      const rect = svg.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      broadcastCursor(x, y);
+      interaction.canvasProps.onMouseMove(e);
+    },
+    [broadcastCursor, interaction.canvasProps],
   );
 
   return (
@@ -55,9 +97,14 @@ export const CanvasPage = () => {
         onToolChange={interaction.setTool}
       />
       <CanvasContent
-        canvasProps={interaction.canvasProps}
+        canvasProps={{
+          ...interaction.canvasProps,
+          onMouseMove: handleCanvasMouseMove,
+        }}
+        remoteUsersByUserId={remoteUsersByUserId}
         selectedShapeId={interaction.selectedShapeId}
         shapeRefs={interaction.shapeRefs}
+        userIdsBySelectedNodeId={userIdsBySelectedNodeId}
       />
     </div>
   );

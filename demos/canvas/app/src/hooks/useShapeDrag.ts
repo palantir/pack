@@ -14,8 +14,10 @@
  * limitations under the License.
  */
 
-import type { NodeShape, NodeShapeModel } from "@demo/canvas.sdk";
-import type { RecordRef } from "@palantir/pack.document-schema.model-types";
+import type { DocumentModel, NodeShape, NodeShapeModel } from "@demo/canvas.sdk";
+import { ActivityEventModel } from "@demo/canvas.sdk";
+import type { DocumentRef, RecordRef } from "@palantir/pack.document-schema.model-types";
+import { ActivityEvents } from "@palantir/pack.document-schema.model-types";
 import type { MouseEvent } from "react";
 import { useCallback, useState } from "react";
 import { boundsToCenter } from "../utils/boundsToCenter.js";
@@ -44,6 +46,7 @@ interface UseShapeDragResult {
 const HANDLE_INTERACTION_RADIUS_PX = 10;
 
 export function useShapeDrag(
+  docRef: DocumentRef<DocumentModel>,
   shapeIndex: ShapeIndex,
   selectedShapeRef: RecordRef<typeof NodeShapeModel> | undefined,
   onShapeSelect: (ref: RecordRef<typeof NodeShapeModel> | undefined) => void,
@@ -112,12 +115,23 @@ export function useShapeDrag(
 
       if (dragState.dragMode === "move") {
         const initial = dragState.initialShape;
-        dragState.shapeRef.update({
+        const newBounds = {
           bottom: initial.bottom + dy,
           left: initial.left + dx,
           right: initial.right + dx,
           top: initial.top + dy,
-        });
+        };
+        docRef.withTransaction(
+          () => {
+            dragState.shapeRef.update(newBounds);
+          },
+          ActivityEvents.describeEdit(ActivityEventModel, {
+            eventType: "shapeUpdate",
+            newShape: { ...initial, ...newBounds },
+            nodeId: dragState.shapeRef.id,
+            oldShape: dragState.initialShape,
+          }),
+        );
       } else if (dragState.dragMode === "resize" && dragState.handle != null) {
         const initial = dragState.initialShape;
         const centerSize = boundsToCenter(initial);
@@ -164,10 +178,20 @@ export function useShapeDrag(
           width: newWidth,
         });
 
-        dragState.shapeRef.update(newBounds);
+        docRef.withTransaction(
+          () => {
+            dragState.shapeRef.update(newBounds);
+          },
+          ActivityEvents.describeEdit(ActivityEventModel, {
+            eventType: "shapeUpdate",
+            newShape: { ...initial, ...newBounds },
+            nodeId: dragState.shapeRef.id,
+            oldShape: dragState.initialShape,
+          }),
+        );
       }
     },
-    [dragState],
+    [docRef, dragState],
   );
 
   const onMouseUp = useCallback(() => {

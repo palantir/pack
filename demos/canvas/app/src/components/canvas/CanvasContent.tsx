@@ -15,16 +15,22 @@
  */
 
 import type { NodeShapeModel } from "@demo/canvas.sdk";
-import type { RecordRef } from "@palantir/pack.document-schema.model-types";
+import type { RecordRef, UserId } from "@palantir/pack.document-schema.model-types";
 import { useRecord } from "@palantir/pack.state.react";
 import type { MouseEvent } from "react";
-import { memo } from "react";
+import { memo, useMemo } from "react";
+import { getUserColor } from "../../hooks/useRemotePresence.js";
 import { boundsToCenter } from "../../utils/boundsToCenter.js";
 import { getResizeHandles } from "../../utils/getResizeHandles.js";
 import styles from "./CanvasContent.module.css";
+import { RemoteCursor } from "./RemoteCursor.js";
 
 const PRIMARY_COLOR = "#0066cc";
 const DEFAULT_SHAPE_COLOR = "#000000";
+
+interface UserPresence {
+  readonly cursor?: { readonly x: number; readonly y: number };
+}
 
 export interface CanvasContentProps {
   readonly canvasProps: {
@@ -32,16 +38,20 @@ export interface CanvasContentProps {
     onMouseMove: (e: MouseEvent<SVGSVGElement>) => void;
     onMouseUp: (e: MouseEvent<SVGSVGElement>) => void;
   };
+  readonly remoteUsersByUserId: ReadonlyMap<UserId, UserPresence>;
   readonly selectedShapeId: string | undefined;
   readonly shapeRefs: readonly RecordRef<typeof NodeShapeModel>[];
+  readonly userIdsBySelectedNodeId: ReadonlyMap<string, ReadonlySet<UserId>>;
 }
 
 const ShapeRenderer = memo(function ShapeRenderer({
-  shapeRef,
   selectedShapeId,
+  shapeRef,
+  userIdsBySelectedNodeId,
 }: {
-  shapeRef: RecordRef<typeof NodeShapeModel>;
   selectedShapeId: string | undefined;
+  shapeRef: RecordRef<typeof NodeShapeModel>;
+  userIdsBySelectedNodeId: ReadonlyMap<string, ReadonlySet<UserId>>;
 }) {
   const { data: shape } = useRecord(shapeRef);
 
@@ -50,6 +60,16 @@ const ShapeRenderer = memo(function ShapeRenderer({
   const isSelected = shapeRef.id === selectedShapeId;
   const color = shape.color ?? DEFAULT_SHAPE_COLOR;
   const fillColor = `${color}4D`;
+
+  const remoteSelectingUserIds = useMemo(
+    () => userIdsBySelectedNodeId.get(shapeRef.id) ?? new Set<UserId>(),
+    [shapeRef.id, userIdsBySelectedNodeId],
+  );
+
+  const remoteSelectingUserIdsArray = useMemo(
+    () => Array.from(remoteSelectingUserIds),
+    [remoteSelectingUserIds],
+  );
 
   if (shape.shapeType === "box") {
     return (
@@ -87,6 +107,17 @@ const ShapeRenderer = memo(function ShapeRenderer({
             ))}
           </>
         )}
+        {remoteSelectingUserIdsArray.map((userId, index) => (
+          <circle
+            key={userId}
+            cx={shape.right - 6}
+            cy={shape.bottom - 6 - index * 10}
+            fill={getUserColor(userId)}
+            r={4}
+            stroke="white"
+            strokeWidth={1}
+          />
+        ))}
       </g>
     );
   }
@@ -130,20 +161,50 @@ const ShapeRenderer = memo(function ShapeRenderer({
           ))}
         </>
       )}
+      {remoteSelectingUserIdsArray.map((userId, index) => (
+        <circle
+          key={userId}
+          cx={shape.right - 6}
+          cy={shape.bottom - 6 - index * 10}
+          fill={getUserColor(userId)}
+          r={4}
+          stroke="white"
+          strokeWidth={1}
+        />
+      ))}
     </g>
   );
 });
 
 export const CanvasContent = memo(function CanvasContent({
   canvasProps,
+  remoteUsersByUserId,
   selectedShapeId,
   shapeRefs,
+  userIdsBySelectedNodeId,
 }: CanvasContentProps) {
   return (
     <svg className={styles.canvas} {...canvasProps}>
       {shapeRefs.map(shapeRef => (
-        <ShapeRenderer key={shapeRef.id} selectedShapeId={selectedShapeId} shapeRef={shapeRef} />
+        <ShapeRenderer
+          key={shapeRef.id}
+          selectedShapeId={selectedShapeId}
+          shapeRef={shapeRef}
+          userIdsBySelectedNodeId={userIdsBySelectedNodeId}
+        />
       ))}
+      {Array.from(remoteUsersByUserId.entries()).map(([userId, presence]) => {
+        if (presence.cursor == null) return null;
+        return (
+          <RemoteCursor
+            key={userId}
+            color={getUserColor(userId)}
+            label={userId.substring(0, 2)}
+            x={presence.cursor.x}
+            y={presence.cursor.y}
+          />
+        );
+      })}
     </svg>
   );
 });

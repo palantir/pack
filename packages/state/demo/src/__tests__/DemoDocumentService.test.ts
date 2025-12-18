@@ -347,11 +347,22 @@ describe("DemoDocumentService", () => {
 
     await new Promise(resolve => setTimeout(resolve, 50));
 
-    stateModule.updateCustomPresence(docRef, schema.User, {
-      age: 25,
-      email: "activity@example.com",
-      id: "activity-user",
-      name: "Activity User",
+    const userCollection = docRef.getRecords(schema.User);
+    void docRef.withTransaction(() => {
+      return userCollection.set("activity-user", {
+        age: 25,
+        email: "activity@example.com",
+        id: "activity-user",
+        name: "Activity User",
+      });
+    }, {
+      data: {
+        age: 25,
+        email: "activity@example.com",
+        id: "activity-user",
+        name: "Activity User",
+      },
+      model: schema.User,
     });
 
     await vi.waitFor(() => {

@@ -15,7 +15,9 @@
  */
 
 import type { DocumentModel, NodeShape, NodeShapeModel } from "@demo/canvas.sdk";
+import { ActivityEventModel } from "@demo/canvas.sdk";
 import type { DocumentRef, RecordRef } from "@palantir/pack.document-schema.model-types";
+import { ActivityEvents } from "@palantir/pack.document-schema.model-types";
 import type { MouseEvent } from "react";
 import { useCallback, useRef, useState } from "react";
 import { centerToBounds } from "../utils/centerToBounds.js";
@@ -29,6 +31,7 @@ import { useShapeSelection } from "./useShapeSelection.js";
 export type ToolMode = "select" | "addBox" | "addCircle";
 
 export interface UseCanvasInteractionResult {
+  broadcastSelection: (nodeIds: readonly string[]) => void;
   readonly canvasProps: {
     onMouseDown: (e: MouseEvent<SVGSVGElement>) => void;
     onMouseMove: (e: MouseEvent<SVGSVGElement>) => void;
@@ -43,7 +46,10 @@ export interface UseCanvasInteractionResult {
   readonly shapeRefs: readonly RecordRef<typeof NodeShapeModel>[];
 }
 
-export function useCanvasInteraction(doc: DocumentRef<DocumentModel>): UseCanvasInteractionResult {
+export function useCanvasInteraction(
+  doc: DocumentRef<DocumentModel>,
+  broadcastSelection: (nodeIds: readonly string[]) => void,
+): UseCanvasInteractionResult {
   const { addShape, shapeRefs } = useCanvasShapes(doc);
   const shapeIndex = useShapeIndex(doc);
   const { clearSelection, selectedShapeRef, selectShape } = useShapeSelection();
@@ -52,23 +58,59 @@ export function useCanvasInteraction(doc: DocumentRef<DocumentModel>): UseCanvas
 
   const creationStateRef = useRef<{ startX: number; startY: number } | undefined>(undefined);
 
-  const shapeDragHandlers = useShapeDrag(shapeIndex, selectedShapeRef, selectShape);
+  const selectShapeWithBroadcast = useCallback(
+    (ref: RecordRef<typeof NodeShapeModel> | undefined) => {
+      selectShape(ref);
+      broadcastSelection(ref != null ? [ref.id] : []);
+    },
+    [broadcastSelection, selectShape],
+  );
+
+  const shapeDragHandlers = useShapeDrag(
+    doc,
+    shapeIndex,
+    selectedShapeRef,
+    selectShapeWithBroadcast,
+  );
 
   const deleteSelected = useCallback(() => {
     if (selectedShapeRef != null) {
-      selectedShapeRef.delete();
+      const nodeId = selectedShapeRef.id;
+      doc.withTransaction(
+        () => {
+          selectedShapeRef.delete();
+        },
+        ActivityEvents.describeEdit(ActivityEventModel, {
+          eventType: "shapeDelete",
+          nodeId,
+        }),
+      );
       clearSelection();
+      broadcastSelection([]);
     }
-  }, [clearSelection, selectedShapeRef]);
+  }, [broadcastSelection, clearSelection, doc, selectedShapeRef]);
 
   const setColor = useCallback(
     async (color: string) => {
       setCurrentColor(color);
       if (selectedShapeRef != null) {
-        await selectedShapeRef.update({ color });
+        const oldShape = await selectedShapeRef.getSnapshot();
+        if (oldShape == null) return;
+
+        await doc.withTransaction(
+          () => {
+            return selectedShapeRef.update({ color });
+          },
+          ActivityEvents.describeEdit(ActivityEventModel, {
+            eventType: "shapeUpdate",
+            newShape: { ...oldShape, color },
+            nodeId: selectedShapeRef.id,
+            oldShape,
+          }),
+        );
       }
     },
-    [selectedShapeRef],
+    [doc, selectedShapeRef],
   );
 
   const setTool = useCallback((tool: ToolMode) => {
@@ -141,17 +183,18 @@ export function useCanvasInteraction(doc: DocumentRef<DocumentModel>): UseCanvas
         };
 
         addShape(newShape).then(recordRef => {
-          selectShape(recordRef);
+          selectShapeWithBroadcast(recordRef);
         });
 
         creationStateRef.current = undefined;
         setCurrentTool("select");
       }
     },
-    [addShape, currentColor, currentTool, selectShape, shapeDragHandlers],
+    [addShape, currentColor, currentTool, selectShapeWithBroadcast, shapeDragHandlers],
   );
 
   return {
+    broadcastSelection,
     canvasProps: {
       onMouseDown,
       onMouseMove,

@@ -47,8 +47,72 @@ const migration000 = S.defineMigration({}, () => {
     },
   });
 
+  const ActivityShapeAddEvent = S.defineRecord("ActivityShapeAddEvent", {
+    docs: "An event representing the addition of a shape node.",
+    fields: {
+      nodeId: S.String,
+    },
+  });
+
+  const ActivityShapeDeleteEvent = S.defineRecord("ActivityShapeDeleteEvent", {
+    docs: "An event representing the deletion of a shape node.",
+    fields: {
+      nodeId: S.String,
+    },
+  });
+
+  const ActivityShapeUpdateEvent = S.defineRecord("ActivityShapeUpdateEvent", {
+    docs: "An event representing the update of a shape node.",
+    fields: {
+      nodeId: S.String,
+      oldShape: NodeShape,
+      newShape: NodeShape,
+    },
+  });
+
+  const ActivityEvent = S.defineUnion("ActivityEvent", {
+    discriminant: "eventType",
+    docs: "An activity event describing a change to the document model.",
+    variants: {
+      "shapeAdd": ActivityShapeAddEvent,
+      "shapeDelete": ActivityShapeDeleteEvent,
+      "shapeUpdate": ActivityShapeUpdateEvent,
+    },
+  });
+
+  const PresenceCursorEvent = S.defineRecord("PresenceCursorEvent", {
+    docs: "Cursor position for remote user.",
+    fields: {
+      x: S.Double,
+      y: S.Double,
+    },
+  });
+
+  const PresenceSelectionEvent = S.defineRecord("PresenceSelectionEvent", {
+    docs: "Selected nodes for remote user.",
+    fields: {
+      selectedNodeIds: S.Array(S.String),
+    },
+  });
+
+  const PresenceEvent = S.defineUnion("PresenceEvent", {
+    discriminant: "eventType",
+    docs: "A presence event describing user cursor or selection state.",
+    variants: {
+      "cursor": PresenceCursorEvent,
+      "selection": PresenceSelectionEvent,
+    },
+  });
+
   return {
+    ActivityEvent,
+    ActivityShapeAddEvent,
+    ActivityShapeDeleteEvent,
+    ActivityShapeUpdateEvent,
     NodeShape,
+    PresenceCursorEvent,
+    PresenceEvent,
+    PresenceSelectionEvent,
     ShapeBox,
     ShapeCircle,
   };

@@ -23,12 +23,17 @@ import type {
   DocumentMetadata,
   DocumentRef,
   DocumentSchema,
+  EditDescription,
   Model,
   ModelData,
   PresenceEvent,
   UserId,
 } from "@palantir/pack.document-schema.model-types";
-import { ActivityEventDataType, getMetadata } from "@palantir/pack.document-schema.model-types";
+import {
+  ActivityEventDataType,
+  getMetadata,
+  hasMetadata,
+} from "@palantir/pack.document-schema.model-types";
 import type { CreateDocumentMetadata, InternalYjsDoc } from "@palantir/pack.state.core";
 import {
   BaseYjsDocumentService,
@@ -78,7 +83,63 @@ export class DemoDocumentService extends BaseYjsDocumentService<DemoInternalDoc>
     ref: DocumentRef,
     metadata?: DocumentMetadata,
   ): DemoInternalDoc {
-    return this.createBaseInternalDoc(ref, metadata) as DemoInternalDoc;
+    const internalDoc = this.createBaseInternalDoc(ref, metadata) as DemoInternalDoc;
+    this.ensureUpdateHandler(internalDoc, ref);
+    return internalDoc;
+  }
+
+  private ensureUpdateHandler(internalDoc: DemoInternalDoc, docRef: DocumentRef): void {
+    if (internalDoc.updateHandler) {
+      return;
+    }
+
+    const channel = new BroadcastChannel(`pack-demo-doc-${docRef.id}`);
+    internalDoc.channel = channel;
+
+    const updateHandler = (update: Uint8Array, origin: unknown) => {
+      if (origin === "remote") return;
+
+      if (isEditDescription(origin)) {
+        if (!internalDoc.presenceManager) {
+          internalDoc.presenceManager = new PresenceManager(
+            docRef.id,
+            this.clientId,
+            docRef.schema,
+          );
+        }
+
+        const modelName = getMetadata(origin.model).name;
+        const event: ActivityEvent = {
+          aggregationKey: `${docRef.id}-${modelName}`,
+          createdBy: this.clientId as UserId,
+          createdInstant: Date.now(),
+          eventData: {
+            eventData: origin.data,
+            model: origin.model,
+            type: ActivityEventDataType.CUSTOM_EVENT,
+          },
+          eventId: generateId() as ActivityEventId,
+          isRead: false,
+        };
+
+        internalDoc.presenceManager.broadcastActivity(event);
+      }
+
+      channel.postMessage({
+        type: "update",
+        data: Base64.fromUint8Array(update),
+      });
+    };
+
+    internalDoc.yDoc.on("update", updateHandler);
+    internalDoc.updateHandler = updateHandler;
+
+    channel.onmessage = event => {
+      if (event.data.type === "update") {
+        const update = Base64.toUint8Array(event.data.data);
+        Y.applyUpdate(internalDoc.yDoc, update, "remote");
+      }
+    };
   }
 
   get hasMetadataSubscriptions(): boolean {
@@ -179,44 +240,36 @@ export class DemoDocumentService extends BaseYjsDocumentService<DemoInternalDoc>
     });
 
     try {
-      const provider = new IndexeddbPersistence(
-        `${this.dbPrefix}-doc-${docRef.id}`,
-        internalDoc.yDoc,
-      );
-      internalDoc.provider = provider;
+      // Ensure update handler is set up (may already be done in createInternalDoc)
+      this.ensureUpdateHandler(internalDoc, docRef);
 
-      const channel = new BroadcastChannel(`pack-demo-doc-${docRef.id}`);
-      internalDoc.channel = channel;
+      // Set up persistence
+      if (!internalDoc.provider) {
+        const provider = new IndexeddbPersistence(
+          `${this.dbPrefix}-doc-${docRef.id}`,
+          internalDoc.yDoc,
+        );
+        internalDoc.provider = provider;
 
-      const updateHandler = (update: Uint8Array, origin: unknown) => {
-        if (origin === "remote") return;
-        channel.postMessage({
-          type: "update",
-          data: Base64.fromUint8Array(update),
+        provider.whenSynced.then(() => {
+          this.updateDataStatus(internalDoc, docRef, {
+            load: DocumentLoadStatus.LOADED,
+            live: DocumentLiveStatus.CONNECTED,
+          });
+        }).catch((error: unknown) => {
+          this.updateDataStatus(internalDoc, docRef, {
+            error,
+            load: DocumentLoadStatus.ERROR,
+            live: DocumentLiveStatus.ERROR,
+          });
         });
-      };
-      internalDoc.yDoc.on("update", updateHandler);
-      internalDoc.updateHandler = updateHandler;
-
-      channel.onmessage = event => {
-        if (event.data.type === "update") {
-          const update = Base64.toUint8Array(event.data.data);
-          Y.applyUpdate(internalDoc.yDoc, update, "remote");
-        }
-      };
-
-      provider.whenSynced.then(() => {
+      } else {
+        // Provider already exists, just update status
         this.updateDataStatus(internalDoc, docRef, {
           load: DocumentLoadStatus.LOADED,
           live: DocumentLiveStatus.CONNECTED,
         });
-      }).catch((error: unknown) => {
-        this.updateDataStatus(internalDoc, docRef, {
-          error,
-          load: DocumentLoadStatus.ERROR,
-          live: DocumentLiveStatus.ERROR,
-        });
-      });
+      }
     } catch (error) {
       this.updateDataStatus(internalDoc, docRef, {
         error,
@@ -306,24 +359,31 @@ export class DemoDocumentService extends BaseYjsDocumentService<DemoInternalDoc>
       internalDoc.presenceManager = new PresenceManager(docRef.id, this.clientId, docRef.schema);
     }
 
-    const modelName = getMetadata(model).name;
-    const event: ActivityEvent = {
-      aggregationKey: `${docRef.id}-${modelName}`,
-      createdBy: this.clientId as UserId,
-      createdInstant: Date.now(),
+    const event: PresenceEvent = {
       eventData: {
         eventData,
         model,
         type: ActivityEventDataType.CUSTOM_EVENT,
       },
-      eventId: generateId() as ActivityEventId,
-      isRead: false,
+      userId: this.clientId as UserId,
     };
 
-    internalDoc.presenceManager.broadcastActivity(event);
+    internalDoc.presenceManager.broadcastPresence(event);
   }
 }
 
 function generateDocumentId(): DocumentId {
   return generateId() as DocumentId;
+}
+
+function isEditDescription(obj: unknown): obj is EditDescription {
+  return (
+    obj != null
+    && typeof obj === "object"
+    && "data" in obj
+    && "model" in obj
+    && typeof obj.model === "object"
+    && obj.model != null
+    && hasMetadata(obj.model)
+  );
 }
