@@ -18,21 +18,17 @@ import type { Toaster } from "@blueprintjs/core";
 import type { ActivityEvent } from "@demo/canvas.sdk";
 import { ActivityEventModel } from "@demo/canvas.sdk";
 import type { DocumentRef } from "@palantir/pack.document-schema.model-types";
-import { type RefObject, useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { ShapeUpdateToast } from "../components/toast/ShapeUpdateToast.js";
 
-export function useActivityToast(
-  docRef: DocumentRef,
-  toasterRef: RefObject<Toaster | null>,
-): void {
+export function useActivityToast(docRef: DocumentRef, toaster: Toaster | null): void {
   const updateCountsRef = useRef<Map<string, { count: number; key: string }>>(new Map());
-  const [, forceUpdate] = useState({});
-
-  const triggerUpdate = useCallback(() => {
-    forceUpdate({});
-  }, []);
 
   useEffect(() => {
+    if (toaster == null) {
+      return;
+    }
+
     const unsubscribe = docRef.onActivity((_docRef, event) => {
       if (event.eventData.type !== "customEvent") {
         return;
@@ -42,11 +38,6 @@ export function useActivityToast(
       // if (event.createdBy === docRef.getClientId()) { return; }
 
       if (event.eventData.model !== ActivityEventModel) {
-        return;
-      }
-
-      const toaster = toasterRef.current;
-      if (toaster == null) {
         return;
       }
 
@@ -108,5 +99,5 @@ export function useActivityToast(
       unsubscribe();
       updateCountsRef.current.clear();
     };
-  }, [docRef, toasterRef, triggerUpdate]);
+  }, [docRef, toaster]);
 }

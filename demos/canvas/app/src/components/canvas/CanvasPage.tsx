@@ -20,7 +20,7 @@ import { DocumentModel } from "@demo/canvas.sdk";
 import { isValidDocRef } from "@palantir/pack.state.core";
 import { useDocRef } from "@palantir/pack.state.react";
 import type { KeyboardEvent, MouseEvent } from "react";
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useParams } from "react-router";
 import { app } from "../../app.js";
 import { useActivityToast } from "../../hooks/useActivityToast.js";
@@ -34,17 +34,25 @@ import { CanvasToolbar } from "./CanvasToolbar.js";
 export const CanvasPage = () => {
   const { canvasId } = useParams<{ canvasId: string }>();
   const docRef = useDocRef(app, DocumentModel, canvasId);
-  const toasterRef = useRef<Toaster | null>(null);
+  const [toaster, setToaster] = useState<Toaster | null>(null);
 
   useEffect(() => {
+    let mounted = true;
+
     OverlayToaster.create({
       position: Position.TOP_RIGHT,
-    }).then(toaster => {
-      toasterRef.current = toaster;
+    }).then(createdToaster => {
+      if (mounted) {
+        setToaster(createdToaster);
+      }
     });
 
     return () => {
-      toasterRef.current?.clear();
+      mounted = false;
+      setToaster(prev => {
+        prev?.clear();
+        return null;
+      });
     };
   }, []);
 
@@ -55,7 +63,7 @@ export const CanvasPage = () => {
   const { broadcastCursor, broadcastSelection } = useBroadcastPresence(docRef);
   const { remoteUsersByUserId, userIdsBySelectedNodeId } = useRemotePresence(docRef);
   const interaction = useCanvasInteraction(docRef, broadcastSelection);
-  useActivityToast(docRef, toasterRef);
+  useActivityToast(docRef, toaster);
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
