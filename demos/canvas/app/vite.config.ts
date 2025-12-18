@@ -14,11 +14,12 @@
  * limitations under the License.
  */
 
+import basicSsl from "@vitejs/plugin-basic-ssl";
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [basicSsl(), react()],
   base: process.env.NODE_ENV === "development" ? process.env.DEV_SERVER_BASE_PATH : undefined,
   server: {
     host: process.env.DEV_SERVER_HOST,
@@ -31,5 +32,8 @@ export default defineConfig({
         ws: true,
       },
     },
+  },
+  resolve: {
+    dedupe: ["@osdk/client", "@osdk/api", "@demo/canvas.sdk"],
   },
 });
