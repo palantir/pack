@@ -37,6 +37,7 @@ import {
 import { isDeepEqual } from "remeda";
 import invariant from "tiny-invariant";
 import * as Y from "yjs";
+import type { CreateDocumentMetadata } from "../types/CreateDocumentMetadata.js";
 import { createDocRef } from "../types/DocumentRefImpl.js";
 import type {
   DocumentMetadataChangeCallback,
@@ -124,7 +125,7 @@ export abstract class BaseYjsDocumentService<TDoc extends InternalYjsDoc = Inter
   abstract get hasMetadataSubscriptions(): boolean;
   abstract get hasStateSubscriptions(): boolean;
   abstract readonly createDocument: <T extends DocumentSchema>(
-    metadata: DocumentMetadata,
+    metadata: CreateDocumentMetadata,
     schema: T,
   ) => Promise<DocumentRef<T>>;
   abstract readonly searchDocuments: <T extends DocumentSchema>(
@@ -190,7 +191,7 @@ export abstract class BaseYjsDocumentService<TDoc extends InternalYjsDoc = Inter
 
   protected abstract createInternalDoc(
     ref: DocumentRef,
-    metadata?: DocumentMetadata,
+    metadata?: CreateDocumentMetadata,
     yDoc?: Y.Doc,
   ): TDoc;
 
@@ -374,7 +375,7 @@ export abstract class BaseYjsDocumentService<TDoc extends InternalYjsDoc = Inter
    */
   protected getCreateInternalDoc<T extends DocumentSchema>(
     ref: DocumentRef<T>,
-    metadata?: DocumentMetadata,
+    metadata?: CreateDocumentMetadata,
     initialYDoc?: Y.Doc,
   ): { internalDocRef: DocumentRef<T>; internalDoc: TDoc; wasExisting: boolean } {
     const { id, schema } = ref;

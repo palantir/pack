@@ -31,6 +31,7 @@ import type {
   RecordId,
   RecordRef,
 } from "@palantir/pack.document-schema.model-types";
+import type { CreateDocumentMetadata } from "./CreateDocumentMetadata.js";
 
 export const DocumentLoadStatus = {
   UNLOADED: "unloaded", // Not yet loaded
@@ -99,7 +100,7 @@ export interface DocumentService {
   readonly hasStateSubscriptions: boolean;
 
   readonly createDocument: <T extends DocumentSchema>(
-    metadata: DocumentMetadata,
+    metadata: CreateDocumentMetadata,
     schema: T,
   ) => Promise<DocumentRef<T>>;
 

@@ -27,7 +27,6 @@ import type {
 import { getMetadata, Metadata } from "@palantir/pack.document-schema.model-types";
 import { DocumentLiveStatus, DocumentLoadStatus, getStateModule } from "@palantir/pack.state.core";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { mock } from "vitest-mock-extended";
 import { z } from "zod";
 import { createDemoDocumentServiceConfig } from "../index.js";
 
@@ -56,7 +55,9 @@ function createTestApp(
     ...config.moduleConfigs,
   };
 
-  const mockClient = config.osdkClient ?? mock<Client>();
+  const osdkClient = {
+    ontologyRid: "ri.ontology...test",
+  } as unknown as Client;
 
   const app: PackAppInternal = {
     config: {
@@ -66,7 +67,8 @@ function createTestApp(
       },
       isTestMode: config.isTestMode ?? true,
       logger: config.logger ?? consoleLogger({}),
-      osdkClient: mockClient,
+      ontologyRid: Promise.resolve("ri.ontology...test"),
+      osdkClient,
       remote: {
         baseUrl: "http://localhost",
         fetchFn: fetch,

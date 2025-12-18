@@ -49,6 +49,7 @@ describe("StaticTokenService", () => {
         app: { appId: "test-app" },
         isTestMode: false,
         logger: mockLogger,
+        ontologyRid: Promise.resolve("ri.ontology...test"),
         osdkClient: mockOsdkClient,
         remote: {
           packWsPath: "/api/v2/packSubscriptions",
@@ -228,6 +229,7 @@ describe("StaticTokenService", () => {
             app: { appId: "test-app" },
             isTestMode: true,
             logger: mockLogger,
+            ontologyRid: Promise.resolve("ri.ontology...test"),
             osdkClient: mock<Client>(),
             remote: {
               packWsPath: "/api/v2/packSubscriptions",

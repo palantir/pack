@@ -19,6 +19,7 @@ interface Return {
   appVersion: string | null;
   baseUrl: string | null;
   clientId: string | null;
+  ontologyRid: string | null;
   redirectUrl: string | null;
 }
 
@@ -27,12 +28,14 @@ export function getPageEnv(): Return {
   const appVersion = getMetaTagContent("pack-appVersion");
   const foundryUrl = getMetaTagContent("osdk-foundryUrl");
   const clientId = getMetaTagContent("osdk-clientId");
+  const ontologyRid = getMetaTagContent("osdk-ontologyRid");
   const redirectUrl = getMetaTagContent("osdk-redirectUrl");
   return {
     appId,
     appVersion,
     baseUrl: foundryUrl,
     clientId,
+    ontologyRid,
     redirectUrl,
   };
 }
