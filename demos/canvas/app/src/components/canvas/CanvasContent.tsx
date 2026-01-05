@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import type { NodeShapeModel } from "@demo/canvas.sdk";
+import type { NodeShape, NodeShapeModel } from "@demo/canvas.sdk";
 import type { RecordRef, UserId } from "@palantir/pack.document-schema.model-types";
 import { useRecord } from "@palantir/pack.state.react";
 import type { MouseEvent } from "react";
@@ -57,6 +57,27 @@ const ShapeRenderer = memo(function ShapeRenderer({
 
   if (shape == null) return null;
 
+  return (
+    <ConnectedShapeRenderer
+      selectedShapeId={selectedShapeId}
+      shapeRef={shapeRef}
+      userIdsBySelectedNodeId={userIdsBySelectedNodeId}
+      shape={shape}
+    />
+  );
+});
+
+const ConnectedShapeRenderer = memo(function ShapeRenderer({
+  selectedShapeId,
+  shapeRef,
+  userIdsBySelectedNodeId,
+  shape,
+}: {
+  selectedShapeId: string | undefined;
+  shapeRef: RecordRef<typeof NodeShapeModel>;
+  userIdsBySelectedNodeId: ReadonlyMap<string, ReadonlySet<UserId>>;
+  shape: NodeShape;
+}) {
   const isSelected = shapeRef.id === selectedShapeId;
   const color = shape.color ?? DEFAULT_SHAPE_COLOR;
   const fillColor = `${color}4D`;
