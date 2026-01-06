@@ -15,7 +15,6 @@
  */
 
 export interface DiscretionaryPrincipal_All {
-  "all": Record<string, never>;
   "type": "all";
 }
 export interface DiscretionaryPrincipal_UserId {
