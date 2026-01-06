@@ -52,6 +52,26 @@ const EMPTY_DOCUMENT_SECURITY = Object.freeze({
   mandatory: {},
 });
 
+const CLIENT_ID_STORAGE_KEY = "pack-demo-client-id";
+
+function getOrCreateClientId(): string {
+  try {
+    const storedId = sessionStorage.getItem(CLIENT_ID_STORAGE_KEY);
+
+    if (storedId != null) {
+      return storedId;
+    }
+
+    const newId = crypto.randomUUID();
+
+    sessionStorage.setItem(CLIENT_ID_STORAGE_KEY, newId);
+
+    return newId;
+  } catch {
+    return crypto.randomUUID();
+  }
+}
+
 export interface DemoDocumentServiceOptions {
   readonly dbPrefix?: string;
   readonly clearOnInit?: boolean;
@@ -74,7 +94,7 @@ export class DemoDocumentService extends BaseYjsDocumentService<DemoInternalDoc>
       isDemo: true,
     });
 
-    this.clientId = crypto.randomUUID();
+    this.clientId = getOrCreateClientId();
     this.dbPrefix = options.dbPrefix ?? "pack-demo";
     this.metadataStore = new MetadataStore(this.dbPrefix);
   }
