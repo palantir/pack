@@ -24,6 +24,14 @@ jobs:
       - name: Checkout Repo
         uses: actions/checkout@v4
 
+      - name: Cache turbo build setup
+        uses: actions/cache@v4
+        with:
+          path: .turbo
+          key: ${{ runner.os }}-turbo-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-turbo-
+
       - name: Setup PNPM
         uses: pnpm/action-setup@v4
 
@@ -31,7 +39,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
-          registry-url: 'https://registry.npmjs.org'
+          registry-url: "https://registry.npmjs.org"
           cache: "pnpm"
 
       - name: Install dependencies
@@ -74,16 +82,16 @@ jobs:
 
   #     - name: Build code
   #       run: pnpm exec turbo run build
-      
+
   #     - name: Update versions for snapshots
   #       run: pnpm exec changeset version --snapshot ${GITHUB_REF_NAME//\//__}
-      
+
   #     - name: Make sure code is up to date
   #       run: pnpm exec turbo run postVersioning
-      
+
   #     - name: Rebuild things
   #       run: pnpm exec turbo run build
-      
+
   #     - name: Publish results
   #       run: pnpm exec changeset publish --no-git-tag --tag next-${GITHUB_REF_NAME//\//__}
   #       env:
