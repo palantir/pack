@@ -27,6 +27,7 @@ import type {
 } from "../../lib/pack-docschema-api/pack-docschema-ir/index.js";
 import { assertNever } from "../assertNever.js";
 import { formatVariantName } from "../formatVariantName.js";
+import { GENERATED_FILE_HEADER } from "../generatedFileHeader.js";
 
 export interface ZodGeneratorOptions {
   namespace?: string;
@@ -75,7 +76,7 @@ class ZodSchemaGenerator {
 
     imports += "\n";
     const schemasCode = this.generateZodSchemas();
-    return imports + schemasCode + "\n";
+    return GENERATED_FILE_HEADER + imports + schemasCode + "\n";
   }
 
   private generateZodSchemas(): string {

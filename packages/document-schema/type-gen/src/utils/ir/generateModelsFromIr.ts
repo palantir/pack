@@ -17,6 +17,7 @@
 import invariant from "tiny-invariant";
 import type { IRealTimeDocumentSchema } from "../../lib/pack-docschema-api/pack-docschema-ir/index.js";
 import { formatVariantName } from "../formatVariantName.js";
+import { GENERATED_FILE_HEADER } from "../generatedFileHeader.js";
 
 export interface ModelGeneratorOptions {
   typeImportPath?: string;
@@ -81,7 +82,9 @@ export class ModelGenerator {
     // Generate DocumentSchema
     const documentSchema = this.generateDocumentSchema();
 
-    return Promise.resolve(imports + modelConstants + "\n\n" + documentSchema + "\n");
+    return Promise.resolve(
+      GENERATED_FILE_HEADER + imports + modelConstants + "\n\n" + documentSchema + "\n",
+    );
   }
 
   private generateModelConstants(): string {
