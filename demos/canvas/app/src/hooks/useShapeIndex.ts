@@ -83,7 +83,9 @@ export function useShapeIndex(docRef: DocumentRef<DocumentModel>): ShapeIndex {
         }
       })
     );
-    const unsubscribeChanged = shapeCollection.onItemsChanged(items =>
+    const unsubscribeChanged = shapeCollection.onItemsChanged(items => {
+      const oldEntries = items.map(recordRef => entryCache.current?.get(recordRef));
+
       Promise.all(items.map(recordRef =>
         recordRef.getSnapshot()
           .then(shape => {
@@ -92,15 +94,14 @@ export function useShapeIndex(docRef: DocumentRef<DocumentModel>): ShapeIndex {
             return entry;
           })
       )).then(entries => {
-        entries.forEach(entry => {
-          const oldEntry = entryCache.current?.get(entry.recordRef);
+        oldEntries.forEach(oldEntry => {
           if (oldEntry != null) {
             rbush.current?.remove(oldEntry);
           }
         });
         rbush.current?.load(entries);
-      })
-    );
+      });
+    });
 
     return () => {
       rbush.current = null;
