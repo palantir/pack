@@ -18,7 +18,7 @@ import fs from "fs-extra";
 import path from "path";
 import { fileURLToPath } from "url";
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const currentDir = path.dirname(fileURLToPath(import.meta.url));
 
 // Walk up directories to find the nearest package.json (works for both src and build/esm locations)
 function findPackageJson(startDir: string): string {
@@ -33,7 +33,7 @@ function findPackageJson(startDir: string): string {
   throw new Error("Could not find package.json");
 }
 
-const packageJsonPath = findPackageJson(__dirname);
+const packageJsonPath = findPackageJson(currentDir);
 const { name: packageName, version } = fs.readJsonSync(packageJsonPath) as {
   name: string;
   version: string;
