@@ -25,12 +25,13 @@ export interface CanvasDocument {
 
 export interface UseCanvasDocumentsResult {
   readonly documents: readonly CanvasDocument[];
+  readonly error: Error | undefined;
   readonly isLoading: boolean;
 }
 
 export function useCanvasDocuments(): UseCanvasDocumentsResult {
   const app = usePackApp();
-  const { results, isLoading } = useSearchDocuments(
+  const { results, isLoading, error } = useSearchDocuments(
     app,
     "Demo Canvas",
     DocumentModel,
@@ -38,6 +39,7 @@ export function useCanvasDocuments(): UseCanvasDocumentsResult {
 
   return {
     documents: results ?? [],
+    error,
     isLoading,
   };
 }
