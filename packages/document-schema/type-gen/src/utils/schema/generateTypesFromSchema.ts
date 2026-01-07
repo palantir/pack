@@ -16,6 +16,7 @@
 
 import type { ReturnedSchema, Schema } from "@palantir/pack.schema";
 import { formatVariantName } from "../formatVariantName.js";
+import { GENERATED_FILE_HEADER } from "../generatedFileHeader.js";
 
 // Define schema types for internal use
 const SchemaDefKind = {
@@ -194,7 +195,7 @@ export function generateTypesFromSchema<T extends ReturnedSchema>(
   // Detect which ref types are used in the schema
   const usedRefTypes = detectUsedRefTypes(runtimeSchema);
 
-  let output = "// Generated TypeScript interfaces from document schema\n";
+  let output = GENERATED_FILE_HEADER;
 
   // Add conditional imports based on which ref types are used
   if (usedRefTypes.size > 0) {
