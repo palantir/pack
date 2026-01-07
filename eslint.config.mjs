@@ -16,11 +16,11 @@
 
 // @ts-check
 
+import { createRequire } from "node:module";
 import * as typescriptEslintParser from "@typescript-eslint/parser";
 import originalHeaderPlugin from "eslint-plugin-header";
 import * as importPlugin from "eslint-plugin-import";
 import unusedImports from "eslint-plugin-unused-imports";
-import { createRequire } from "node:module";
 import * as tseslint from "typescript-eslint";
 
 const require = createRequire(import.meta.url);
