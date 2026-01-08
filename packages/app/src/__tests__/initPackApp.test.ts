@@ -40,6 +40,7 @@ const TEST_CLIENT_ID = "test-client-id";
 const TEST_REDIRECT_URL = "http://localhost:3000/auth/callback";
 const TEST_ONTOLOGY_RID = "ri.ontology.main.ontology.test-ontology";
 const TEST_CLIENT_SECRET = "test-client-secret";
+const TEST_DOCUMENT_TYPE_NAME = "test-document-type";
 
 const TEST_APP_CONFIG = Object.freeze({
   appId: "test-app",
@@ -60,7 +61,7 @@ describe("initPackApp", () => {
       baseUrl: "https://page-env.example.com",
       clientId: "page-env-client-id",
       demoMode: null,
-      documentTypeName: "test-document-type",
+      documentTypeName: TEST_DOCUMENT_TYPE_NAME,
       ontologyRid: TEST_ONTOLOGY_RID,
       redirectUrl: "http://localhost:3000/page-env-callback",
     });
@@ -208,7 +209,7 @@ describe("initPackApp", () => {
         baseUrl: "https://page-env.example.com",
         clientId: null,
         demoMode: null,
-        documentTypeName: "test-document-type",
+        documentTypeName: TEST_DOCUMENT_TYPE_NAME,
         ontologyRid: TEST_ONTOLOGY_RID,
         redirectUrl: "http://localhost:3000/page-env-callback",
       });
@@ -258,7 +259,7 @@ describe("initPackApp", () => {
         baseUrl: "https://page-env.example.com",
         clientId: "page-env-client-id",
         demoMode: null,
-        documentTypeName: "test-document-type",
+        documentTypeName: TEST_DOCUMENT_TYPE_NAME,
         ontologyRid: null,
         redirectUrl: "http://localhost:3000/page-env-callback",
       });
@@ -282,7 +283,7 @@ describe("initPackApp", () => {
         baseUrl: "https://page-env.example.com",
         clientId: "page-env-client-id",
         demoMode: null,
-        documentTypeName: "test-document-type",
+        documentTypeName: TEST_DOCUMENT_TYPE_NAME,
         ontologyRid: "",
         redirectUrl: "http://localhost:3000/page-env-callback",
       });
