@@ -16,6 +16,7 @@
 
 import { DocumentModel } from "@demo/canvas.sdk";
 import { useSearchDocuments } from "@palantir/pack.state.react";
+import { DOCUMENT_TYPE_NAME } from "../app.js";
 import { usePackApp } from "./usePackApp.js";
 
 export interface CanvasDocument {
@@ -33,7 +34,7 @@ export function useCanvasDocuments(): UseCanvasDocumentsResult {
   const app = usePackApp();
   const { results, isLoading, error } = useSearchDocuments(
     app,
-    "Demo Canvas",
+    DOCUMENT_TYPE_NAME,
     DocumentModel,
   );
 

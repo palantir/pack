@@ -18,7 +18,7 @@ import { Button, Dialog, DialogBody, DialogFooter, InputGroup } from "@blueprint
 import { DocumentModel } from "@demo/canvas.sdk";
 import React, { useCallback, useState } from "react";
 import { useNavigate } from "react-router";
-import { app } from "../../app.js";
+import { app, DOCUMENT_TYPE_NAME } from "../../app.js";
 
 interface CreateFileDialogProps {
   isOpen: boolean;
@@ -40,7 +40,7 @@ export function CreateFileDialog({ isOpen, setIsOpen }: CreateFileDialogProps) {
 
       const response = await app.state.createDocument({
         name,
-        documentTypeName: "Demo Canvas",
+        documentTypeName: DOCUMENT_TYPE_NAME,
       }, DocumentModel);
       navigate(`/canvas/${response.id}`);
     }

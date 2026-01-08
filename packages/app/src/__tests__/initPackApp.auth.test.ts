@@ -52,6 +52,7 @@ describe("initPackApp - Auth Integration", () => {
       baseUrl: "https://page-env.example.com",
       clientId: "page-env-client-id",
       demoMode: null,
+      documentTypeName: "test-document-type",
       ontologyRid: TEST_ONTOLOGY_RID,
       redirectUrl: "http://localhost:3000/page-env-callback",
     });

@@ -46,6 +46,8 @@ const FOUNDRY_URL = pageEnv.baseUrl;
 const ONTOLOGY_RID = pageEnv.ontologyRid;
 const REDIRECT_URL = pageEnv.redirectUrl ?? `${FOUNDRY_URL}/auth/callback`;
 
+export const DOCUMENT_TYPE_NAME = pageEnv.documentTypeName;
+
 function createAuthClient(): PublicOauthClient | (() => Promise<string>) {
   const DEV_TOKEN: string | undefined = import.meta.env.VITE_DEV_FOUNDRY_TOKEN;
 
