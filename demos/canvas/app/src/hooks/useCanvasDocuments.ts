@@ -14,6 +14,11 @@
  * limitations under the License.
  */
 
+import { DocumentModel } from "@demo/canvas.sdk";
+import { useSearchDocuments } from "@palantir/pack.state.react";
+import { DOCUMENT_TYPE_NAME } from "../app.js";
+import { usePackApp } from "./usePackApp.js";
+
 export interface CanvasDocument {
   readonly id: string;
   readonly name: string;
@@ -21,13 +26,23 @@ export interface CanvasDocument {
 
 export interface UseCanvasDocumentsResult {
   readonly documents: readonly CanvasDocument[];
+  readonly error: Error | undefined;
   readonly isLoading: boolean;
 }
 
 export function useCanvasDocuments(): UseCanvasDocumentsResult {
-  // TODO: Replace with useSearchDocuments(app, "Canvas", schema, ...)
+  const app = usePackApp();
+  const { results, isLoading, error } = useSearchDocuments(
+    app,
+    DOCUMENT_TYPE_NAME,
+    DocumentModel,
+  );
+
+  const documents = results?.map(r => ({ id: r.id, name: r.name })) ?? [];
+
   return {
-    documents: [],
-    isLoading: false,
+    documents,
+    error,
+    isLoading,
   };
 }

@@ -13,6 +13,12 @@
   color: #333;
 }
 
+.error {
+  text-align: center;
+  padding: 2rem;
+  color: #c23030;
+}
+
 .pageHeader {
   align-items: center;
   border-bottom: 1px solid #e0e0e0;

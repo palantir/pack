@@ -20,6 +20,7 @@ export interface PageEnv {
   readonly baseUrl: string | null;
   readonly clientId: string | null;
   readonly demoMode: boolean | null;
+  readonly documentTypeName: string | null;
   readonly ontologyRid: string | null;
   readonly redirectUrl: string | null;
 }
@@ -30,6 +31,7 @@ export interface RequiredPageEnv {
   readonly baseUrl: string;
   readonly clientId: string;
   readonly demoMode: boolean | null;
+  readonly documentTypeName: string;
   readonly ontologyRid: string;
   readonly redirectUrl: string | null;
 }
@@ -38,6 +40,7 @@ export function getPageEnv(): PageEnv {
   const appId = getMetaTagContent("pack-appId");
   const appVersion = getMetaTagContent("pack-appVersion");
   const demoModeStr = getMetaTagContent("pack-demoMode");
+  const documentTypeName = getMetaTagContent("pack-documentTypeName");
   const foundryUrl = getMetaTagContent("osdk-foundryUrl");
   const clientId = getMetaTagContent("osdk-clientId");
   const ontologyRid = getMetaTagContent("osdk-ontologyRid");
@@ -51,6 +54,7 @@ export function getPageEnv(): PageEnv {
     baseUrl: foundryUrl,
     clientId,
     demoMode,
+    documentTypeName,
     ontologyRid,
     redirectUrl,
   };
@@ -62,6 +66,7 @@ export function getPageEnvOrThrow(): RequiredPageEnv {
   const missing: string[] = [];
   if (env.baseUrl == null) missing.push("osdk-foundryUrl");
   if (env.clientId == null) missing.push("osdk-clientId");
+  if (env.documentTypeName == null) missing.push("pack-documentTypeName");
   if (env.ontologyRid == null) missing.push("osdk-ontologyRid");
 
   if (missing.length > 0) {
@@ -77,6 +82,7 @@ export function getPageEnvOrThrow(): RequiredPageEnv {
     baseUrl: env.baseUrl!,
     clientId: env.clientId!,
     demoMode: env.demoMode,
+    documentTypeName: env.documentTypeName!,
     ontologyRid: env.ontologyRid!,
     redirectUrl: env.redirectUrl,
   };
