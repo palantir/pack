@@ -38,8 +38,10 @@ export function useCanvasDocuments(): UseCanvasDocumentsResult {
     DocumentModel,
   );
 
+  const documents = results?.map(r => ({ id: r.id, name: r.name })) ?? [];
+
   return {
-    documents: results ?? [],
+    documents,
     error,
     isLoading,
   };
