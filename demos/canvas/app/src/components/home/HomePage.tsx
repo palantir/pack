@@ -16,13 +16,12 @@
 
 import { Button } from "@blueprintjs/core";
 import React, { useCallback } from "react";
-import { useNavigate } from "react-router";
 import { useCanvasDocuments } from "../../hooks/useCanvasDocuments.js";
 import { CreateFileDialog } from "./CreateCanvasDialog.js";
+import { DocumentList } from "./DocumentList.js";
 import css from "./HomePage.module.css";
 
 export const HomePage = React.memo(function HomePage() {
-  const navigate = useNavigate();
   const { documents, isLoading, error } = useCanvasDocuments();
   const [createDialogIsOpen, setCreateDialogIsOpen] = React.useState(false);
 
@@ -38,40 +37,6 @@ export const HomePage = React.memo(function HomePage() {
     );
   }
 
-  const renderCanvasDocuments = () => {
-    if (error != null) {
-      return (
-        <div className={css.emptyList}>
-          <p className={css.error}>Failed to load canvases!</p>
-        </div>
-      );
-    }
-
-    if (documents.length === 0) {
-      return (
-        <div className={css.emptyList}>
-          <p>No canvases yet. Create one to get started!</p>
-        </div>
-      );
-    }
-
-    return (
-      <div className={css.listItems}>
-        {documents.map(doc => (
-          <div key={doc.id} className={css.listItem}>
-            <button
-              className={css.canvasLink}
-              onClick={() => navigate(`/canvas/${doc.id}`)}
-              type="button"
-            >
-              {doc.name}
-            </button>
-          </div>
-        ))}
-      </div>
-    );
-  };
-
   return (
     <div className={css.pageWrapper}>
       <div className={css.pageHeader}>
@@ -84,7 +49,7 @@ export const HomePage = React.memo(function HomePage() {
         <div>
           <h2>Canvases ({documents.length} items)</h2>
           <div>
-            {renderCanvasDocuments()}
+            <DocumentList documents={documents} error={error} />
           </div>
           <CreateFileDialog isOpen={createDialogIsOpen} setIsOpen={setCreateDialogIsOpen} />
         </div>
