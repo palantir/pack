@@ -56,7 +56,7 @@ export function useRecord<M extends Model>(
     setResult({ status: "loading", data: undefined });
 
     const unsubscribeToOnChange = ref.onChange(newSnapshot => {
-      setResult({ status: "loaded", data: newSnapshot as ModelData<M> });
+      setResult({ status: "loaded", data: newSnapshot });
     });
 
     const unsubscribeToOnDeleted = ref.onDeleted(() => {
