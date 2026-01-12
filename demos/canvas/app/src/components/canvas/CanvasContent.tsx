@@ -53,9 +53,11 @@ const ShapeRenderer = memo(function ShapeRenderer({
   shapeRef: RecordRef<typeof NodeShapeModel>;
   userIdsBySelectedNodeId: ReadonlyMap<string, ReadonlySet<UserId>>;
 }) {
-  const { data: shape } = useRecord(shapeRef);
+  const record = useRecord(shapeRef);
 
-  if (shape == null) return null;
+  if (record.status !== "loaded") return null;
+
+  const shape = record.data;
 
   return (
     <ConnectedShapeRenderer

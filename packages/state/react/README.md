@@ -58,16 +58,24 @@ export function MyComponent() {
 }
 
 const NoteComponent = React.memo<{ noteRef: NoteRef }>(({ noteRef }) => {
-  const {note, isLoading} = useRecord(noteRef);
+  const record = useRecord(noteRef);
 
   const handleUpdate = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
     noteRef.update({ text: e.target.value });
   }, [noteRef]);
 
+  if (record.status === "loading") {
+    return <div>Loading...</div>;
+  }
+
+  if (record.status === "deleted") {
+    return null;
+  }
+
   return (
     <div>
-      <textarea disabled={isLoading} onChange={handleUpdate}>
-        {localValue}
+      <textarea onChange={handleUpdate}>
+        {record.data.text}
       </textarea>
     </div>
   );

@@ -17,58 +17,57 @@
 import type { Model, ModelData, RecordRef } from "@palantir/pack.document-schema.model-types";
 import { useEffect, useState } from "react";
 
-interface Return<M extends Model> {
-  data: ModelData<M> | undefined;
-  isLoading: boolean;
-}
+type UseRecordResult<M extends Model> =
+  | { status: "loading"; data: undefined }
+  | { status: "loaded"; data: ModelData<M> }
+  | { status: "deleted"; data: undefined };
 
 /**
  * Subscribes to an individual record and subscribes to its changes.
  *
  * @param ref The record to subscribe to.
- * @returns The latest data and loading state.
+ * @returns The latest data and status.
  * @example
  * ```tsx
- * import { useDocRef, useRecord } from "@palantir/pack.state.react";
- * import { DocumentSchema, MyModel } from "@myapp/schema";
- * import { app } from "./appInstance";
+ * import { useRecord } from "@palantir/pack.state.react";
+ * import { MyModel } from "@myapp/schema";
  *
  * const MyComponent: React.FC<{ recordRef: RecordRef<MyModel> }> = ({ recordRef }) => {
- *   const { data, isLoading } = useRecord(recordRef);
+ *   const record = useRecord(recordRef);
  *
- *   if (isLoading) {
+ *   if (record.status === "loading") {
  *     return <Spinner />;
  *   }
  *
- *   if (data == null) {
+ *   if (record.status === "deleted") {
  *     return <div>Record not found</div>;
  *   }
  *
- *   return <div>Hello, {data.myFieldName}</div>;
+ *   return <div>Hello, {record.data.myFieldName}</div>;
  * }
+ * ```
  */
 export function useRecord<M extends Model>(
   ref: RecordRef<M>,
-): Return<M> {
-  const [data, setData] = useState<ModelData<Model>>();
-  const [isLoading, setIsLoading] = useState(true);
+): UseRecordResult<M> {
+  const [result, setResult] = useState<UseRecordResult<M>>({ status: "loading", data: undefined });
 
   useEffect(() => {
+    setResult({ status: "loading", data: undefined });
+
     const unsubscribeToOnChange = ref.onChange(newSnapshot => {
-      setIsLoading(false);
-      setData(newSnapshot);
+      setResult({ status: "loaded", data: newSnapshot as ModelData<M> });
     });
 
     const unsubscribeToOnDeleted = ref.onDeleted(() => {
-      setIsLoading(false);
-      setData(undefined);
+      setResult({ status: "deleted", data: undefined });
     });
 
     return () => {
-      setData(undefined);
       unsubscribeToOnChange();
       unsubscribeToOnDeleted();
     };
   }, [ref]);
-  return { data, isLoading };
+
+  return result;
 }
