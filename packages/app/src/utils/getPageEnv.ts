@@ -21,6 +21,7 @@ export interface PageEnv {
   readonly clientId: string | null;
   readonly demoMode: boolean | null;
   readonly documentTypeName: string | null;
+  readonly foundryApiUrl: string | null;
   readonly ontologyRid: string | null;
   readonly redirectUrl: string | null;
 }
@@ -32,6 +33,7 @@ export interface RequiredPageEnv {
   readonly clientId: string;
   readonly demoMode: boolean | null;
   readonly documentTypeName: string;
+  readonly foundryApiUrl: string | null;
   readonly ontologyRid: string;
   readonly redirectUrl: string | null;
 }
@@ -42,6 +44,7 @@ export function getPageEnv(): PageEnv {
   const demoModeStr = getMetaTagContent("pack-demoMode");
   const documentTypeName = getMetaTagContent("pack-documentTypeName");
   const foundryUrl = getMetaTagContent("osdk-foundryUrl");
+  const foundryApiUrl = getMetaTagContent("osdk-foundryApiUrl");
   const clientId = getMetaTagContent("osdk-clientId");
   const ontologyRid = getMetaTagContent("osdk-ontologyRid");
   const redirectUrl = getMetaTagContent("osdk-redirectUrl");
@@ -55,6 +58,7 @@ export function getPageEnv(): PageEnv {
     clientId,
     demoMode,
     documentTypeName,
+    foundryApiUrl,
     ontologyRid,
     redirectUrl,
   };
@@ -83,6 +87,7 @@ export function getPageEnvOrThrow(): RequiredPageEnv {
     clientId: env.clientId!,
     demoMode: env.demoMode,
     documentTypeName: env.documentTypeName!,
+    foundryApiUrl: env.foundryApiUrl,
     ontologyRid: env.ontologyRid!,
     redirectUrl: env.redirectUrl,
   };

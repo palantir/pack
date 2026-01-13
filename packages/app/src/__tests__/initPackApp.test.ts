@@ -62,6 +62,7 @@ describe("initPackApp", () => {
       clientId: "page-env-client-id",
       demoMode: null,
       documentTypeName: TEST_DOCUMENT_TYPE_NAME,
+      foundryApiUrl: null,
       ontologyRid: TEST_ONTOLOGY_RID,
       redirectUrl: "http://localhost:3000/page-env-callback",
     });
@@ -210,6 +211,7 @@ describe("initPackApp", () => {
         clientId: null,
         demoMode: null,
         documentTypeName: TEST_DOCUMENT_TYPE_NAME,
+        foundryApiUrl: null,
         ontologyRid: TEST_ONTOLOGY_RID,
         redirectUrl: "http://localhost:3000/page-env-callback",
       });
@@ -260,6 +262,7 @@ describe("initPackApp", () => {
         clientId: "page-env-client-id",
         demoMode: null,
         documentTypeName: TEST_DOCUMENT_TYPE_NAME,
+        foundryApiUrl: null,
         ontologyRid: null,
         redirectUrl: "http://localhost:3000/page-env-callback",
       });
@@ -284,6 +287,7 @@ describe("initPackApp", () => {
         clientId: "page-env-client-id",
         demoMode: null,
         documentTypeName: TEST_DOCUMENT_TYPE_NAME,
+        foundryApiUrl: null,
         ontologyRid: "",
         redirectUrl: "http://localhost:3000/page-env-callback",
       });

@@ -45,6 +45,7 @@ const CLIENT_ID = pageEnv.clientId;
 const FOUNDRY_URL = pageEnv.baseUrl;
 const ONTOLOGY_RID = pageEnv.ontologyRid;
 const REDIRECT_URL = pageEnv.redirectUrl ?? `${FOUNDRY_URL}/auth/callback`;
+const FOUNDRY_API_URL = pageEnv.foundryApiUrl ?? "https://danube-staging.palantircloud.com";
 
 export const DOCUMENT_TYPE_NAME = pageEnv.documentTypeName;
 
@@ -60,7 +61,7 @@ function createAuthClient(): PublicOauthClient | (() => Promise<string>) {
     return createDemoPublicOauthClient(CLIENT_ID, FOUNDRY_URL, REDIRECT_URL, { autoSignIn: true });
   }
 
-  return createPublicOauthClient(CLIENT_ID, FOUNDRY_URL, REDIRECT_URL, { scopes: SCOPES });
+  return createPublicOauthClient(CLIENT_ID, FOUNDRY_API_URL, REDIRECT_URL, { scopes: SCOPES });
 }
 
 const authClient = createAuthClient();
