@@ -43,9 +43,9 @@ const pageEnv = getPageEnvOrThrow();
 
 const CLIENT_ID = pageEnv.clientId;
 const FOUNDRY_URL = pageEnv.baseUrl;
+const FOUNDRY_API_URL = pageEnv.foundryApiUrl;
 const ONTOLOGY_RID = pageEnv.ontologyRid;
 const REDIRECT_URL = pageEnv.redirectUrl ?? `${FOUNDRY_URL}/auth/callback`;
-const FOUNDRY_API_URL = pageEnv.foundryApiUrl;
 
 export const DOCUMENT_TYPE_NAME = pageEnv.documentTypeName;
 
