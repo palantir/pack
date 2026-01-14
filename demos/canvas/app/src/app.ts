@@ -45,7 +45,7 @@ const CLIENT_ID = pageEnv.clientId;
 const FOUNDRY_URL = pageEnv.baseUrl;
 const ONTOLOGY_RID = pageEnv.ontologyRid;
 const REDIRECT_URL = pageEnv.redirectUrl ?? `${FOUNDRY_URL}/auth/callback`;
-const FOUNDRY_API_URL = pageEnv.foundryApiUrl ?? "https://danube-staging.palantircloud.com";
+const FOUNDRY_API_URL = pageEnv.foundryApiUrl;
 
 export const DOCUMENT_TYPE_NAME = pageEnv.documentTypeName;
 
@@ -59,6 +59,10 @@ function createAuthClient(): PublicOauthClient | (() => Promise<string>) {
 
   if (isDemoEnv()) {
     return createDemoPublicOauthClient(CLIENT_ID, FOUNDRY_URL, REDIRECT_URL, { autoSignIn: true });
+  }
+
+  if (!FOUNDRY_API_URL) {
+    throw new Error("FOUNDRY_API_URL is not defined in non-demo mode");
   }
 
   return createPublicOauthClient(CLIENT_ID, FOUNDRY_API_URL, REDIRECT_URL, { scopes: SCOPES });
