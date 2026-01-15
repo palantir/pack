@@ -183,12 +183,12 @@ export function useShapeDrag(
     if (finalShape != null) {
       const initial = dragState.initialShape;
 
-      const hasMoved = finalShape.left !== initial.left
+      const wasModified = finalShape.left !== initial.left
         || finalShape.top !== initial.top
         || finalShape.right !== initial.right
         || finalShape.bottom !== initial.bottom;
 
-      if (hasMoved) {
+      if (wasModified) {
         const finalBounds = {
           bottom: finalShape.bottom,
           left: finalShape.left,
