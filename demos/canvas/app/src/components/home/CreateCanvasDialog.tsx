@@ -21,10 +21,13 @@ import React, { useCallback, useState } from "react";
 import { useNavigate } from "react-router";
 import { app, DOCUMENT_TYPE_NAME } from "../../app.js";
 
+// TODO: Set your organization's classification (e.g. ["MU"])
+const DEFAULT_CLASSIFICATION: readonly string[] = [];
+
 const DEFAULT_DOCUMENT_SECURITY: DocumentSecurity = Object.freeze({
   discretionary: {},
   mandatory: {
-    classification: ["MU"],
+    classification: DEFAULT_CLASSIFICATION,
   },
 });
 
@@ -44,6 +47,10 @@ export function CreateFileDialog({ isOpen, setIsOpen }: CreateFileDialogProps) {
 
   const createNew = useCallback(() => {
     async function createCanvas() {
+      if (DEFAULT_CLASSIFICATION.length === 0) {
+        throw new Error("DEFAULT_CLASSIFICATION is not configured.");
+      }
+
       setCreatingCanvas(true);
 
       const response = await app.state.createDocument({
