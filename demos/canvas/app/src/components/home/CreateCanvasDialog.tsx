@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { Button, Dialog, DialogBody, DialogFooter, InputGroup } from "@blueprintjs/core";
+import { Button, Callout, Dialog, DialogBody, DialogFooter, InputGroup } from "@blueprintjs/core";
 import { DocumentModel } from "@demo/canvas.sdk";
 import type { DocumentSecurity } from "@palantir/pack.document-schema.model-types";
 import React, { useCallback, useState } from "react";
@@ -37,35 +37,46 @@ interface CreateFileDialogProps {
 }
 export function CreateFileDialog({ isOpen, setIsOpen }: CreateFileDialogProps) {
   const [creatingCanvas, setCreatingCanvas] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [name, setName] = useState("");
 
   const navigate = useNavigate();
 
   const closeCreateDialog = useCallback(() => {
     setIsOpen(false);
+    setError(null);
   }, [setIsOpen]);
 
-  const createNew = useCallback(() => {
-    async function createCanvas() {
-      if (DEFAULT_CLASSIFICATION.length === 0) {
-        throw new Error("DEFAULT_CLASSIFICATION is not configured.");
-      }
+  const createNew = useCallback(async () => {
+    if (DEFAULT_CLASSIFICATION.length === 0) {
+      setError("DEFAULT_CLASSIFICATION is not configured.");
+      return;
+    }
 
-      setCreatingCanvas(true);
+    setError(null);
+    setCreatingCanvas(true);
 
+    try {
       const response = await app.state.createDocument({
         name,
         documentTypeName: DOCUMENT_TYPE_NAME,
         security: DEFAULT_DOCUMENT_SECURITY,
       }, DocumentModel);
       navigate(`/canvas/${response.id}`);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Failed to create canvas");
+      setCreatingCanvas(false);
     }
-    createCanvas();
-  }, [name]);
+  }, [name, navigate]);
 
   return (
     <Dialog isOpen={isOpen} onClose={closeCreateDialog} title="Create new file">
       <DialogBody>
+        {error && (
+          <Callout intent="danger" style={{ marginBottom: "15px" }}>
+            {error}
+          </Callout>
+        )}
         <div style={{ marginBottom: "15px" }}>
           <div style={{ marginBottom: "5px" }}>Canvas name</div>
           <InputGroup
