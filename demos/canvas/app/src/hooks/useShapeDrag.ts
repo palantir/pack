@@ -121,17 +121,7 @@ export function useShapeDrag(
           right: initial.right + dx,
           top: initial.top + dy,
         };
-        docRef.withTransaction(
-          () => {
-            dragState.shapeRef.update(newBounds);
-          },
-          ActivityEvents.describeEdit(ActivityEventModel, {
-            eventType: "shapeUpdate",
-            newShape: { ...initial, ...newBounds },
-            nodeId: dragState.shapeRef.id,
-            oldShape: dragState.initialShape,
-          }),
-        );
+        dragState.shapeRef.update(newBounds);
       } else if (dragState.dragMode === "resize" && dragState.handle != null) {
         const initial = dragState.initialShape;
         const centerSize = boundsToCenter(initial);
@@ -178,25 +168,49 @@ export function useShapeDrag(
           width: newWidth,
         });
 
+        dragState.shapeRef.update(newBounds);
+      }
+    },
+    [dragState],
+  );
+
+  const onMouseUp = useCallback(async () => {
+    if (dragState == null) {
+      return;
+    }
+
+    const finalShape = await dragState.shapeRef.getSnapshot();
+    if (finalShape != null) {
+      const initial = dragState.initialShape;
+
+      const hasMoved = finalShape.left !== initial.left
+        || finalShape.top !== initial.top
+        || finalShape.right !== initial.right
+        || finalShape.bottom !== initial.bottom;
+
+      if (hasMoved) {
+        const finalBounds = {
+          bottom: finalShape.bottom,
+          left: finalShape.left,
+          right: finalShape.right,
+          top: finalShape.top,
+        };
         docRef.withTransaction(
           () => {
-            dragState.shapeRef.update(newBounds);
+            dragState.shapeRef.update(finalBounds);
           },
           ActivityEvents.describeEdit(ActivityEventModel, {
             eventType: "shapeUpdate",
-            newShape: { ...initial, ...newBounds },
+            newShape: finalShape,
             nodeId: dragState.shapeRef.id,
             oldShape: dragState.initialShape,
           }),
         );
       }
-    },
-    [docRef, dragState],
-  );
+    }
 
-  const onMouseUp = useCallback(() => {
     setDragState(undefined);
-  }, []);
+  }, [docRef, dragState]);
 
   return {
     onMouseDown,
