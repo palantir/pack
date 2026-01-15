@@ -14,11 +14,22 @@
  * limitations under the License.
  */
 
-import { Button, Dialog, DialogBody, DialogFooter, InputGroup } from "@blueprintjs/core";
+import { Button, Callout, Dialog, DialogBody, DialogFooter, InputGroup } from "@blueprintjs/core";
 import { DocumentModel } from "@demo/canvas.sdk";
+import type { DocumentSecurity } from "@palantir/pack.document-schema.model-types";
 import React, { useCallback, useState } from "react";
 import { useNavigate } from "react-router";
 import { app, DOCUMENT_TYPE_NAME } from "../../app.js";
+
+// TODO: Set your organization's classification (e.g. ["MU"])
+const DEFAULT_CLASSIFICATION: readonly string[] = [];
+
+const DEFAULT_DOCUMENT_SECURITY: DocumentSecurity = Object.freeze({
+  discretionary: {},
+  mandatory: {
+    classification: DEFAULT_CLASSIFICATION,
+  },
+});
 
 interface CreateFileDialogProps {
   isOpen: boolean;
@@ -26,30 +37,48 @@ interface CreateFileDialogProps {
 }
 export function CreateFileDialog({ isOpen, setIsOpen }: CreateFileDialogProps) {
   const [creatingCanvas, setCreatingCanvas] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [name, setName] = useState("");
 
   const navigate = useNavigate();
 
   const closeCreateDialog = useCallback(() => {
     setIsOpen(false);
+    setError(null);
   }, [setIsOpen]);
 
-  const createNew = useCallback(() => {
-    async function createCanvas() {
-      setCreatingCanvas(true);
+  const createNew = useCallback(async () => {
+    setError(null);
 
+    if (DEFAULT_CLASSIFICATION.length === 0) {
+      setError("DEFAULT_CLASSIFICATION is not configured.");
+      return;
+    }
+
+    setCreatingCanvas(true);
+
+    try {
       const response = await app.state.createDocument({
         name,
         documentTypeName: DOCUMENT_TYPE_NAME,
+        security: DEFAULT_DOCUMENT_SECURITY,
       }, DocumentModel);
       navigate(`/canvas/${response.id}`);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Failed to create canvas");
+    } finally {
+      setCreatingCanvas(false);
     }
-    createCanvas();
-  }, [name]);
+  }, [name, navigate]);
 
   return (
     <Dialog isOpen={isOpen} onClose={closeCreateDialog} title="Create new file">
       <DialogBody>
+        {error && (
+          <Callout intent="danger" style={{ marginBottom: "15px" }}>
+            {error}
+          </Callout>
+        )}
         <div style={{ marginBottom: "15px" }}>
           <div style={{ marginBottom: "5px" }}>Canvas name</div>
           <InputGroup
