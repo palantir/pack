@@ -22,6 +22,8 @@ export async function lazyLoadCometD(): Promise<typeof cometd> {
   // by importing the submodule extension files. So for any we use we'll need to import them explicitly.
   // Note that this file should be included in package.json "sideEffects" to avoid tree-shaking.
 
+  // TODO: switch back to dynamic import with side-effect loading when supported by new cometD version. Requires
+  // backend version upgrade first.
   // AckExtension.js modifies the cometd module as a side-effect to add AckExtension.
   // We need to capture the returned constructor because with ESM bundlers, the module reference
   // may not reflect the mutation.
