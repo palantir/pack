@@ -16,9 +16,17 @@
 
 import { Button, Dialog, DialogBody, DialogFooter, InputGroup } from "@blueprintjs/core";
 import { DocumentModel } from "@demo/canvas.sdk";
+import type { DocumentSecurity } from "@palantir/pack.document-schema.model-types";
 import React, { useCallback, useState } from "react";
 import { useNavigate } from "react-router";
 import { app, DOCUMENT_TYPE_NAME } from "../../app.js";
+
+const DEFAULT_DOCUMENT_SECURITY: DocumentSecurity = Object.freeze({
+  discretionary: {},
+  mandatory: {
+    classification: ["MU"],
+  },
+});
 
 interface CreateFileDialogProps {
   isOpen: boolean;
@@ -41,6 +49,7 @@ export function CreateFileDialog({ isOpen, setIsOpen }: CreateFileDialogProps) {
       const response = await app.state.createDocument({
         name,
         documentTypeName: DOCUMENT_TYPE_NAME,
+        security: DEFAULT_DOCUMENT_SECURITY,
       }, DocumentModel);
       navigate(`/canvas/${response.id}`);
     }
