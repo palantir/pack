@@ -48,12 +48,13 @@ export function CreateFileDialog({ isOpen, setIsOpen }: CreateFileDialogProps) {
   }, [setIsOpen]);
 
   const createNew = useCallback(async () => {
+    setError(null);
+
     if (DEFAULT_CLASSIFICATION.length === 0) {
       setError("DEFAULT_CLASSIFICATION is not configured.");
       return;
     }
 
-    setError(null);
     setCreatingCanvas(true);
 
     try {
@@ -65,6 +66,7 @@ export function CreateFileDialog({ isOpen, setIsOpen }: CreateFileDialogProps) {
       navigate(`/canvas/${response.id}`);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to create canvas");
+    } finally {
       setCreatingCanvas(false);
     }
   }, [name, navigate]);
