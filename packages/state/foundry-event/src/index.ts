@@ -16,12 +16,7 @@
 
 export { createFoundryEventService } from "./FoundryEventService.js";
 export type {
-  CustomPresenceEvent,
-  DocumentPresenceChangeEvent,
   FoundryEventService,
-  PresenceCollaborativeUpdate,
-  PresencePublishMessage,
-  PresencePublishMessageCustom,
   PresenceSubscriptionOptions,
   SyncSession,
 } from "./FoundryEventService.js";

@@ -17,12 +17,12 @@
 import type { Logger } from "@osdk/api";
 import type {
   ActivityCollaborativeUpdate,
-  ClientId,
   DocumentEditDescription,
   DocumentPublishMessage,
   DocumentUpdateMessage,
   DocumentUpdateSubscriptionRequest,
-  UserId,
+  PresenceCollaborativeUpdate,
+  PresencePublishMessage,
 } from "@osdk/foundry.pack";
 import { getAuthModule } from "@palantir/pack.auth";
 import { generateId, justOnce, type PackAppInternal } from "@palantir/pack.core";
@@ -47,36 +47,6 @@ import type {
 export interface PresenceSubscriptionOptions {
   readonly ignoreSelfUpdates?: boolean;
 }
-
-export interface PresencePublishMessageCustom {
-  readonly type: "custom";
-  readonly custom: {
-    userId: UserId;
-    clientId: ClientId;
-    eventData: any;
-  };
-}
-
-export type PresencePublishMessage = PresencePublishMessageCustom;
-
-export interface DocumentPresenceChangeEvent {
-  readonly type: "presenceChangeEvent";
-  readonly presenceChangeEvent: {
-    readonly userId: UserId;
-    readonly status: "PRESENT" | "NOT_PRESENT";
-  };
-}
-
-export interface CustomPresenceEvent {
-  readonly type: "customPresenceEvent";
-  readonly customPresenceEvent: {
-    readonly userId: UserId;
-    readonly clientId: ClientId;
-    readonly eventData: any;
-  };
-}
-
-export type PresenceCollaborativeUpdate = DocumentPresenceChangeEvent | CustomPresenceEvent;
 
 // TODO: presence api should have an eventType so we don't need extra wrapper here.
 interface PresencePublishMessageData {
@@ -337,12 +307,12 @@ class FoundryEventServiceImpl implements FoundryEventService {
         if (ignoreSelfUpdates && localUserId != null) {
           switch (update.type) {
             case "presenceChangeEvent":
-              if (update.presenceChangeEvent.userId === localUserId) {
+              if (update.userId === localUserId) {
                 return;
               }
               break;
             case "customPresenceEvent":
-              if (update.customPresenceEvent.userId === localUserId) {
+              if (update.userId === localUserId) {
                 return;
               }
               break;
@@ -389,12 +359,10 @@ class FoundryEventServiceImpl implements FoundryEventService {
     }
 
     return this.eventService.publish(channelId, {
-      custom: {
-        clientId: session.clientId,
-        eventData: messageData,
-        // FIXME: why do we have to send this, we are authenticated
-        userId,
-      },
+      clientId: session.clientId,
+      eventData: messageData,
+      // FIXME: why do we have to send this, we are authenticated
+      userId,
       type: "custom",
     }).catch((error: unknown) => {
       this.logger.error("Failed to publish custom presence", error, {
