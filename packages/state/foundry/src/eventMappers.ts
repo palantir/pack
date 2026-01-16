@@ -17,6 +17,7 @@
 import type {
   ActivityCollaborativeUpdate,
   ActivityEvent as FoundryActivityEvent,
+  PresenceCollaborativeUpdate,
 } from "@osdk/foundry.pack";
 import { invalidUserRef } from "@palantir/pack.auth";
 import type {
@@ -35,7 +36,6 @@ import {
   ActivityEventDataType,
   PresenceEventDataType,
 } from "@palantir/pack.document-schema.model-types";
-import type { PresenceCollaborativeUpdate } from "@palantir/pack.state.foundry-event";
 
 export function getActivityEvent(
   documentSchema: DocumentSchema,
@@ -96,7 +96,7 @@ export function getPresenceEvent(
 ): PresenceEvent {
   switch (foundryUpdate.type) {
     case "presenceChangeEvent": {
-      const { userId, status } = foundryUpdate.presenceChangeEvent;
+      const { userId, status } = foundryUpdate;
       const eventData = status === "PRESENT" ? ARRIVED_DATA : DEPARTED_DATA;
       return {
         eventData,
@@ -105,7 +105,7 @@ export function getPresenceEvent(
     }
 
     case "customPresenceEvent": {
-      const { userId, eventData } = foundryUpdate.customPresenceEvent;
+      const { userId, eventData } = foundryUpdate;
       const presenceEventData = getPresenceEventData(documentSchema, eventData);
       return {
         eventData: presenceEventData,
