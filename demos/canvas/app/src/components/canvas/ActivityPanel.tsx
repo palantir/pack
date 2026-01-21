@@ -51,21 +51,26 @@ export const ActivityPanel = memo(function ActivityPanel({
   const activities = useActivityHistory(docRef);
 
   const content = (
-    <div className={styles.panel}>
-      <div className={styles.header}>Activity</div>
+    <aside className={styles.panel}>
+      <h2 className={styles.header}>Activity</h2>
       {activities.length === 0
-        ? <div className={styles.empty}>No activity yet</div>
+        ? <p className={styles.empty}>No activity yet</p>
         : (
-          <div className={styles.list}>
+          <ul className={styles.list}>
             {activities.map(activity => (
-              <div className={styles.item} key={activity.eventId}>
+              <li className={styles.item} key={activity.eventId}>
                 <div className={styles.message}>{activity.message}</div>
-                <div className={styles.time}>{formatTimeAgo(activity.createdInstant)}</div>
-              </div>
+                <time
+                  className={styles.time}
+                  dateTime={new Date(activity.createdInstant).toISOString()}
+                >
+                  {formatTimeAgo(activity.createdInstant)}
+                </time>
+              </li>
             ))}
-          </div>
+          </ul>
         )}
-    </div>
+    </aside>
   );
 
   return (
