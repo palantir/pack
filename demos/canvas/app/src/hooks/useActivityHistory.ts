@@ -21,7 +21,6 @@ import { ActivityEventDataType } from "@palantir/pack.document-schema.model-type
 import { useEffect, useState } from "react";
 
 export interface ActivityHistoryItem {
-  readonly createdBy: string;
   readonly createdInstant: number;
   readonly eventId: string;
   readonly message: string;
@@ -68,7 +67,6 @@ export function useActivityHistory(docRef: DocumentRef): ActivityHistoryItem[] {
       }
 
       const historyItem: ActivityHistoryItem = {
-        createdBy: event.createdBy,
         createdInstant: event.createdInstant,
         eventId: event.eventId,
         message,
