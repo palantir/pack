@@ -23,6 +23,10 @@ import { invalidUserRef } from "@palantir/pack.auth";
 import type {
   ActivityEvent,
   ActivityEventData,
+  ActivityEventDataDocumentCreate,
+  ActivityEventDataDocumentDescriptionUpdate,
+  ActivityEventDataDocumentRename,
+  ActivityEventDataDocumentSecurityUpdate,
   DocumentSchema,
   Model,
   ModelData,
@@ -58,11 +62,27 @@ export function getActivityEvent(
   };
 }
 
+/** Platform event type names as sent by backpack */
+const PlatformEventType = {
+  DOCUMENT_CREATE: "DocumentCreateEvent",
+  DOCUMENT_DESCRIPTION_UPDATE: "DocumentDescriptionUpdateEvent",
+  DOCUMENT_RENAME: "DocumentRenameEvent",
+  DOCUMENT_SECURITY_UPDATE: "DocumentMandatorySecurityUpdateEvent",
+} as const;
+
 function getActivityEventData(
   docSchema: DocumentSchema,
   { eventData, eventType }: FoundryActivityEvent,
 ): ActivityEventData {
-  // TODO: handle standard activity events
+  const platformEventData = getPlatformActivityEventData(
+    eventType,
+    eventData.data,
+  );
+  if (platformEventData != null) {
+    return platformEventData;
+  }
+
+  // Handle custom application-defined activity events
   // TODO: validate model is valid for activity events
   const model = docSchema[eventType];
   if (model == null) {
@@ -80,6 +100,47 @@ function getActivityEventData(
     model,
     type: ActivityEventDataType.CUSTOM_EVENT,
   };
+}
+
+function getPlatformActivityEventData(
+  eventType: string,
+  data: any,
+): ActivityEventData | undefined {
+  switch (eventType) {
+    case PlatformEventType.DOCUMENT_CREATE:
+      return {
+        initialMandatorySecurity: {
+          classification: data.initialMandatorySecurity?.classification,
+          markings: data.initialMandatorySecurity?.markings,
+        },
+        name: data.name,
+        type: ActivityEventDataType.DOCUMENT_CREATE,
+      } satisfies ActivityEventDataDocumentCreate;
+
+    case PlatformEventType.DOCUMENT_RENAME:
+      return {
+        newName: data.newName,
+        previousName: data.previousName,
+        type: ActivityEventDataType.DOCUMENT_RENAME,
+      } satisfies ActivityEventDataDocumentRename;
+
+    case PlatformEventType.DOCUMENT_DESCRIPTION_UPDATE:
+      return {
+        isInitial: data.isInitial,
+        newDescription: data.newDescription,
+        type: ActivityEventDataType.DOCUMENT_DESCRIPTION_UPDATE,
+      } satisfies ActivityEventDataDocumentDescriptionUpdate;
+
+    case PlatformEventType.DOCUMENT_SECURITY_UPDATE:
+      return {
+        newClassification: data.newClassification ?? [],
+        newMarkings: data.newMarkings ?? [],
+        type: ActivityEventDataType.DOCUMENT_SECURITY_UPDATE,
+      } satisfies ActivityEventDataDocumentSecurityUpdate;
+
+    default:
+      return undefined;
+  }
 }
 
 const ARRIVED_DATA: PresenceEventDataArrived = {
