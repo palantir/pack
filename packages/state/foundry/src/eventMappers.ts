@@ -65,7 +65,7 @@ export function getActivityEvent(
 /**
  * Platform event type names as sent by backpack.
  * Note: Only DOCUMENT_CREATE is currently emitted by the backend.
- * Update comment once other event types are supported.
+ * Remaining types are included for future use.
  */
 const PlatformEventType = {
   DOCUMENT_CREATE: "DocumentCreateEvent",

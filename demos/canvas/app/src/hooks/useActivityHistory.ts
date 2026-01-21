@@ -31,7 +31,8 @@ function getActivityMessage(event: ActivityEvent): string | undefined {
   switch (event.eventData.type) {
     case ActivityEventDataType.DOCUMENT_CREATE:
       return `Created document "${event.eventData.name}"`;
-    // TODO: Add other platform event types (rename, description update, security update) when api is available
+    // TODO: Add other platform event types (rename, description update, security update)
+    // once the other metadata apis become available
     case ActivityEventDataType.CUSTOM_EVENT:
       if (event.eventData.model === ActivityEventModel) {
         const customEvent = event.eventData.eventData as CustomActivityEvent;
