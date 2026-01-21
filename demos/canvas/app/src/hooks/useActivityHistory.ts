@@ -38,11 +38,11 @@ function getActivityMessage(event: ActivityEvent): string | undefined {
         const customEvent = event.eventData.eventData as CustomActivityEvent;
         switch (customEvent.eventType) {
           case "shapeAdd":
-            return "Added a shape";
+            return "User added a shape";
           case "shapeDelete":
-            return "Deleted a shape";
+            return "User deleted a shape";
           case "shapeUpdate":
-            return "Updated a shape";
+            return "User updated a shape";
           default:
             return undefined;
         }
