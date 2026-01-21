@@ -15,6 +15,7 @@
  */
 
 import type { DocumentRef } from "@palantir/pack.document-schema.model-types";
+import { useDocMetadata } from "@palantir/pack.state.react";
 import type { ChangeEvent } from "react";
 import { memo } from "react";
 import type { ToolMode } from "../../hooks/useCanvasInteraction.js";
@@ -41,12 +42,16 @@ export const CanvasToolbar = memo(function CanvasToolbar({
   onDelete,
   onToolChange,
 }: CanvasToolbarProps) {
+  const { metadata } = useDocMetadata(docRef);
+
   const handleColorChange = (e: ChangeEvent<HTMLSelectElement>) => {
     onColorChange(e.target.value);
   };
 
   return (
     <div className={styles.toolbar}>
+      <div className={styles.documentName}>{metadata?.name ?? "Untitled"}</div>
+
       <div className={styles.toolGroup}>
         <button
           className={currentTool === "select" ? styles.activeButton : styles.button}
