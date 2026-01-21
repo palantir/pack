@@ -74,6 +74,29 @@ const PlatformEventType = {
   DOCUMENT_SECURITY_UPDATE: "DocumentMandatorySecurityUpdateEvent",
 } as const;
 
+interface WireDocumentCreateEvent {
+  readonly name?: string;
+  readonly initialMandatorySecurity?: {
+    readonly classification?: readonly string[];
+    readonly markings?: readonly string[];
+  };
+}
+
+interface WireDocumentRenameEvent {
+  readonly previousName?: string;
+  readonly newName?: string;
+}
+
+interface WireDocumentDescriptionUpdateEvent {
+  readonly newDescription?: string;
+  readonly isInitial?: boolean;
+}
+
+interface WireDocumentSecurityUpdateEvent {
+  readonly newClassification?: readonly string[];
+  readonly newMarkings?: readonly string[];
+}
+
 function getActivityEventData(
   docSchema: DocumentSchema,
   { eventData, eventType }: FoundryActivityEvent,
@@ -108,39 +131,47 @@ function getActivityEventData(
 
 function getPlatformActivityEventData(
   eventType: string,
-  data: any,
+  data: unknown,
 ): ActivityEventData | undefined {
   switch (eventType) {
-    case PlatformEventType.DOCUMENT_CREATE:
+    case PlatformEventType.DOCUMENT_CREATE: {
+      const wireData = data as WireDocumentCreateEvent;
       return {
         initialMandatorySecurity: {
-          classification: data.initialMandatorySecurity?.classification,
-          markings: data.initialMandatorySecurity?.markings,
+          classification: wireData.initialMandatorySecurity?.classification,
+          markings: wireData.initialMandatorySecurity?.markings,
         },
-        name: data.name,
+        name: wireData.name ?? "",
         type: ActivityEventDataType.DOCUMENT_CREATE,
       } satisfies ActivityEventDataDocumentCreate;
+    }
 
-    case PlatformEventType.DOCUMENT_RENAME:
+    case PlatformEventType.DOCUMENT_RENAME: {
+      const wireData = data as WireDocumentRenameEvent;
       return {
-        newName: data.newName,
-        previousName: data.previousName,
+        newName: wireData.newName ?? "",
+        previousName: wireData.previousName ?? "",
         type: ActivityEventDataType.DOCUMENT_RENAME,
       } satisfies ActivityEventDataDocumentRename;
+    }
 
-    case PlatformEventType.DOCUMENT_DESCRIPTION_UPDATE:
+    case PlatformEventType.DOCUMENT_DESCRIPTION_UPDATE: {
+      const wireData = data as WireDocumentDescriptionUpdateEvent;
       return {
-        isInitial: data.isInitial,
-        newDescription: data.newDescription,
+        isInitial: wireData.isInitial ?? false,
+        newDescription: wireData.newDescription ?? "",
         type: ActivityEventDataType.DOCUMENT_DESCRIPTION_UPDATE,
       } satisfies ActivityEventDataDocumentDescriptionUpdate;
+    }
 
-    case PlatformEventType.DOCUMENT_SECURITY_UPDATE:
+    case PlatformEventType.DOCUMENT_SECURITY_UPDATE: {
+      const wireData = data as WireDocumentSecurityUpdateEvent;
       return {
-        newClassification: data.newClassification ?? [],
-        newMarkings: data.newMarkings ?? [],
+        newClassification: wireData.newClassification ?? [],
+        newMarkings: wireData.newMarkings ?? [],
         type: ActivityEventDataType.DOCUMENT_SECURITY_UPDATE,
       } satisfies ActivityEventDataDocumentSecurityUpdate;
+    }
 
     default:
       return undefined;
