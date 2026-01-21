@@ -15,6 +15,7 @@
  */
 
 import type { Flavored } from "@palantir/pack.core";
+import type { DocumentSecurityMandatory } from "./DocumentMetadata.js";
 import type { Model, ModelData } from "./Model.js";
 import type { UserId } from "./UserRef.js";
 
@@ -22,6 +23,10 @@ export type ActivityEventId = Flavored<"pack:EventId">;
 
 export const ActivityEventDataType = {
   CUSTOM_EVENT: "customEvent",
+  DOCUMENT_CREATE: "documentCreate",
+  DOCUMENT_DESCRIPTION_UPDATE: "documentDescriptionUpdate",
+  DOCUMENT_RENAME: "documentRename",
+  DOCUMENT_SECURITY_UPDATE: "documentSecurityUpdate",
   UNKNOWN: "unknown",
 } as const;
 
@@ -52,7 +57,45 @@ export interface ActivityEventDataCustom<M extends Model = Model> {
   readonly eventData: ModelData<M>;
 }
 
-// TODO: add standard document activity events (need to be added to api types)
+/**
+ * Activity event emitted when a document is created.
+ */
+export interface ActivityEventDataDocumentCreate {
+  readonly type: typeof ActivityEventDataType.DOCUMENT_CREATE;
+  readonly initialMandatorySecurity: DocumentSecurityMandatory;
+  readonly name: string;
+}
+
+/**
+ * Activity event emitted when a document is renamed.
+ */
+export interface ActivityEventDataDocumentRename {
+  readonly type: typeof ActivityEventDataType.DOCUMENT_RENAME;
+  readonly previousName: string;
+  readonly newName: string;
+}
+
+/**
+ * Activity event emitted when a document's description is updated.
+ */
+export interface ActivityEventDataDocumentDescriptionUpdate {
+  readonly type: typeof ActivityEventDataType.DOCUMENT_DESCRIPTION_UPDATE;
+  readonly newDescription: string;
+  /**
+   * True if this is the first time the description is being set,
+   * false if updating an existing description.
+   */
+  readonly isInitial: boolean;
+}
+
+/**
+ * Activity event emitted when a document's mandatory security is updated.
+ */
+export interface ActivityEventDataDocumentSecurityUpdate {
+  readonly type: typeof ActivityEventDataType.DOCUMENT_SECURITY_UPDATE;
+  readonly newClassification: readonly string[];
+  readonly newMarkings: readonly string[];
+}
 
 /**
  * Fallback for unrecognized activity event types.
@@ -68,7 +111,13 @@ export interface ActivityEventDataUnknown {
   readonly rawData: unknown;
 }
 
-export type ActivityEventData = ActivityEventDataCustom | ActivityEventDataUnknown;
+export type ActivityEventData =
+  | ActivityEventDataCustom
+  | ActivityEventDataDocumentCreate
+  | ActivityEventDataDocumentDescriptionUpdate
+  | ActivityEventDataDocumentRename
+  | ActivityEventDataDocumentSecurityUpdate
+  | ActivityEventDataUnknown;
 
 /**
  * An event representing an activity that has occurred on a document. This

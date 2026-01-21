@@ -19,6 +19,10 @@ export type {
   ActivityEvent,
   ActivityEventData,
   ActivityEventDataCustom,
+  ActivityEventDataDocumentCreate,
+  ActivityEventDataDocumentDescriptionUpdate,
+  ActivityEventDataDocumentRename,
+  ActivityEventDataDocumentSecurityUpdate,
   ActivityEventDataUnknown,
   ActivityEventId,
 } from "./types/ActivityEvent.js";
