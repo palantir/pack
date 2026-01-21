@@ -15,12 +15,13 @@
  */
 
 import { Button, Popover } from "@blueprintjs/core";
+import type { DocumentRef } from "@palantir/pack.document-schema.model-types";
 import { memo } from "react";
-import type { ActivityHistoryItem } from "../../hooks/useActivityHistory.js";
+import { useActivityHistory } from "../../hooks/useActivityHistory.js";
 import styles from "./ActivityPanel.module.css";
 
 export interface ActivityPanelProps {
-  readonly activities: ActivityHistoryItem[];
+  readonly docRef: DocumentRef;
 }
 
 function formatTimeAgo(timestamp: number): string {
@@ -45,8 +46,10 @@ function formatTimeAgo(timestamp: number): string {
 }
 
 export const ActivityPanel = memo(function ActivityPanel({
-  activities,
+  docRef,
 }: ActivityPanelProps) {
+  const activities = useActivityHistory(docRef);
+
   const content = (
     <div className={styles.panel}>
       <div className={styles.header}>Activity</div>

@@ -92,6 +92,7 @@ export const CanvasPage = () => {
         canDelete={interaction.selectedShapeId != null}
         currentColor={interaction.currentColor}
         currentTool={interaction.currentTool}
+        docRef={docRef}
         onColorChange={interaction.setColor}
         onDelete={interaction.deleteSelected}
         onToolChange={interaction.setTool}
