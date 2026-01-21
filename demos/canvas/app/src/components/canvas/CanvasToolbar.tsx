@@ -16,11 +16,14 @@
 
 import type { ChangeEvent } from "react";
 import { memo } from "react";
+import type { ActivityHistoryItem } from "../../hooks/useActivityHistory.js";
 import type { ToolMode } from "../../hooks/useCanvasInteraction.js";
 import { AVAILABLE_COLORS } from "../../utils/getDefaultColor.js";
+import { ActivityPanel } from "./ActivityPanel.js";
 import styles from "./CanvasToolbar.module.css";
 
 export interface CanvasToolbarProps {
+  readonly activities: ActivityHistoryItem[];
   readonly canDelete: boolean;
   readonly currentColor: string;
   readonly currentTool: ToolMode;
@@ -30,6 +33,7 @@ export interface CanvasToolbarProps {
 }
 
 export const CanvasToolbar = memo(function CanvasToolbar({
+  activities,
   canDelete,
   currentColor,
   currentTool,
@@ -89,6 +93,10 @@ export const CanvasToolbar = memo(function CanvasToolbar({
         >
           Delete
         </button>
+      </div>
+
+      <div className={styles.toolGroupRight}>
+        <ActivityPanel activities={activities} />
       </div>
     </div>
   );
