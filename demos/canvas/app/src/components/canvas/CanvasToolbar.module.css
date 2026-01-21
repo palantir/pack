@@ -71,3 +71,10 @@
   border-radius: 4px;
   padding: 4px 8px;
 }
+
+.toolGroupRight {
+  align-items: center;
+  display: flex;
+  gap: 8px;
+  margin-left: auto;
+}
