@@ -14,16 +14,20 @@
  * limitations under the License.
  */
 
+import type { DocumentRef } from "@palantir/pack.document-schema.model-types";
+import { useDocMetadata } from "@palantir/pack.state.react";
 import type { ChangeEvent } from "react";
 import { memo } from "react";
 import type { ToolMode } from "../../hooks/useCanvasInteraction.js";
 import { AVAILABLE_COLORS } from "../../utils/getDefaultColor.js";
+import { ActivityPanel } from "./ActivityPanel.js";
 import styles from "./CanvasToolbar.module.css";
 
 export interface CanvasToolbarProps {
   readonly canDelete: boolean;
   readonly currentColor: string;
   readonly currentTool: ToolMode;
+  readonly docRef: DocumentRef;
   onColorChange: (color: string) => void;
   onDelete: () => void;
   onToolChange: (tool: ToolMode) => void;
@@ -33,16 +37,21 @@ export const CanvasToolbar = memo(function CanvasToolbar({
   canDelete,
   currentColor,
   currentTool,
+  docRef,
   onColorChange,
   onDelete,
   onToolChange,
 }: CanvasToolbarProps) {
+  const { metadata } = useDocMetadata(docRef);
+
   const handleColorChange = (e: ChangeEvent<HTMLSelectElement>) => {
     onColorChange(e.target.value);
   };
 
   return (
     <div className={styles.toolbar}>
+      <div className={styles.documentName}>{metadata?.name ?? "Untitled"}</div>
+
       <div className={styles.toolGroup}>
         <button
           className={currentTool === "select" ? styles.activeButton : styles.button}
@@ -89,6 +98,10 @@ export const CanvasToolbar = memo(function CanvasToolbar({
         >
           Delete
         </button>
+      </div>
+
+      <div className={styles.toolGroupRight}>
+        <ActivityPanel docRef={docRef} />
       </div>
     </div>
   );

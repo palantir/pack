@@ -23,6 +23,15 @@
   padding: 12px 16px;
 }
 
+.documentName {
+  font-size: 16px;
+  font-weight: 600;
+  overflow: hidden;
+  padding-right: 8px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .toolGroup {
   align-items: center;
   display: flex;
@@ -70,4 +79,11 @@
   border: 1px solid #ddd;
   border-radius: 4px;
   padding: 4px 8px;
+}
+
+.toolGroupRight {
+  align-items: center;
+  display: flex;
+  gap: 8px;
+  margin-left: auto;
 }

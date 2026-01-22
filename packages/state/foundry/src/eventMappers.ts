@@ -23,6 +23,10 @@ import { invalidUserRef } from "@palantir/pack.auth";
 import type {
   ActivityEvent,
   ActivityEventData,
+  ActivityEventDataDocumentCreate,
+  ActivityEventDataDocumentDescriptionUpdate,
+  ActivityEventDataDocumentRename,
+  ActivityEventDataDocumentSecurityUpdate,
   DocumentSchema,
   Model,
   ModelData,
@@ -58,11 +62,54 @@ export function getActivityEvent(
   };
 }
 
+/**
+ * Platform event type names as sent by backpack.
+ * Note: Only DOCUMENT_CREATE is currently emitted by the backend.
+ * Remaining types are included for future use.
+ */
+const PlatformEventType = {
+  DOCUMENT_CREATE: "DocumentCreateEvent",
+  DOCUMENT_DESCRIPTION_UPDATE: "DocumentDescriptionUpdateEvent",
+  DOCUMENT_RENAME: "DocumentRenameEvent",
+  DOCUMENT_SECURITY_UPDATE: "DocumentMandatorySecurityUpdateEvent",
+} as const;
+
+interface WireDocumentCreateEvent {
+  readonly name?: string;
+  readonly initialMandatorySecurity?: {
+    readonly classification?: readonly string[];
+    readonly markings?: readonly string[];
+  };
+}
+
+interface WireDocumentRenameEvent {
+  readonly previousName?: string;
+  readonly newName?: string;
+}
+
+interface WireDocumentDescriptionUpdateEvent {
+  readonly newDescription?: string;
+  readonly isInitial?: boolean;
+}
+
+interface WireDocumentSecurityUpdateEvent {
+  readonly newClassification?: readonly string[];
+  readonly newMarkings?: readonly string[];
+}
+
 function getActivityEventData(
   docSchema: DocumentSchema,
   { eventData, eventType }: FoundryActivityEvent,
 ): ActivityEventData {
-  // TODO: handle standard activity events
+  const platformEventData = getPlatformActivityEventData(
+    eventType,
+    eventData.data,
+  );
+  if (platformEventData != null) {
+    return platformEventData;
+  }
+
+  // Handle custom application-defined activity events
   // TODO: validate model is valid for activity events
   const model = docSchema[eventType];
   if (model == null) {
@@ -80,6 +127,55 @@ function getActivityEventData(
     model,
     type: ActivityEventDataType.CUSTOM_EVENT,
   };
+}
+
+function getPlatformActivityEventData(
+  eventType: string,
+  data: unknown,
+): ActivityEventData | undefined {
+  switch (eventType) {
+    case PlatformEventType.DOCUMENT_CREATE: {
+      const wireData = data as WireDocumentCreateEvent;
+      return {
+        initialMandatorySecurity: {
+          classification: wireData.initialMandatorySecurity?.classification,
+          markings: wireData.initialMandatorySecurity?.markings,
+        },
+        name: wireData.name ?? "",
+        type: ActivityEventDataType.DOCUMENT_CREATE,
+      } satisfies ActivityEventDataDocumentCreate;
+    }
+
+    case PlatformEventType.DOCUMENT_RENAME: {
+      const wireData = data as WireDocumentRenameEvent;
+      return {
+        newName: wireData.newName ?? "",
+        previousName: wireData.previousName ?? "",
+        type: ActivityEventDataType.DOCUMENT_RENAME,
+      } satisfies ActivityEventDataDocumentRename;
+    }
+
+    case PlatformEventType.DOCUMENT_DESCRIPTION_UPDATE: {
+      const wireData = data as WireDocumentDescriptionUpdateEvent;
+      return {
+        isInitial: wireData.isInitial ?? false,
+        newDescription: wireData.newDescription ?? "",
+        type: ActivityEventDataType.DOCUMENT_DESCRIPTION_UPDATE,
+      } satisfies ActivityEventDataDocumentDescriptionUpdate;
+    }
+
+    case PlatformEventType.DOCUMENT_SECURITY_UPDATE: {
+      const wireData = data as WireDocumentSecurityUpdateEvent;
+      return {
+        newClassification: wireData.newClassification ?? [],
+        newMarkings: wireData.newMarkings ?? [],
+        type: ActivityEventDataType.DOCUMENT_SECURITY_UPDATE,
+      } satisfies ActivityEventDataDocumentSecurityUpdate;
+    }
+
+    default:
+      return undefined;
+  }
 }
 
 const ARRIVED_DATA: PresenceEventDataArrived = {

@@ -18,19 +18,40 @@ import type { Toaster } from "@blueprintjs/core";
 import type { ActivityEvent } from "@demo/canvas.sdk";
 import { ActivityEventModel } from "@demo/canvas.sdk";
 import type { DocumentRef } from "@palantir/pack.document-schema.model-types";
+import { ActivityEventDataType } from "@palantir/pack.document-schema.model-types";
 import { useEffect, useRef } from "react";
 import { ShapeUpdateToast } from "../components/toast/ShapeUpdateToast.js";
 
-export function useActivityToast(docRef: DocumentRef, toaster: Toaster | null): void {
-  const updateCountsRef = useRef<Map<string, { count: number; key: string }>>(new Map());
+export function useActivityToast(
+  docRef: DocumentRef,
+  toaster: Toaster | null,
+): void {
+  const updateCountsRef = useRef<Map<string, { count: number; key: string }>>(
+    new Map(),
+  );
 
   useEffect(() => {
     if (toaster == null) {
       return;
     }
 
+    const subscribedAt = Date.now();
+
     const unsubscribe = docRef.onActivity((_docRef, event) => {
-      if (event.eventData.type !== "customEvent") {
+      if (event.createdInstant < subscribedAt - 5000) {
+        return;
+      }
+      if (event.eventData.type === ActivityEventDataType.DOCUMENT_CREATE) {
+        toaster.show({
+          icon: "document",
+          intent: "success",
+          message: `Document "${event.eventData.name}" created`,
+          timeout: 3000,
+        });
+        return;
+      }
+
+      if (event.eventData.type !== ActivityEventDataType.CUSTOM_EVENT) {
         return;
       }
 
