@@ -207,9 +207,9 @@ describe("DemoDocumentService", () => {
     const stateModule2 = getStateModule(app2);
 
     const foundDocs = await stateModule2.searchDocuments("TestType", schema);
-    expect(foundDocs.length).toBeGreaterThan(0);
+    expect(foundDocs.data.length).toBeGreaterThan(0);
 
-    const foundDoc = foundDocs.find(doc => doc.id === docRef.id);
+    const foundDoc = foundDocs.data.find(d => d.id === docRef.id);
     expect(foundDoc).toBeDefined();
     expect(foundDoc?.name).toBe("Persistent Document");
   });
@@ -280,9 +280,9 @@ describe("DemoDocumentService", () => {
     await stateModule.createDocument(metadata3, schema);
 
     const typeADocs = await stateModule.searchDocuments("TypeA", schema);
-    expect(typeADocs.length).toBeGreaterThanOrEqual(2);
+    expect(typeADocs.data.length).toBeGreaterThanOrEqual(2);
 
-    const typeANames = typeADocs.map(doc => doc.name);
+    const typeANames = typeADocs.data.map(doc => doc.name);
     expect(typeANames).toContain("Doc A1");
     expect(typeANames).toContain("Doc A2");
   });
