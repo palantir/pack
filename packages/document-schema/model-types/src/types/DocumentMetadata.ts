@@ -48,8 +48,12 @@ export interface DocumentSecurity {
 }
 
 export interface DocumentMetadata {
+  readonly createdBy?: string;
+  readonly createdTime?: string;
   readonly documentTypeName: string;
   readonly name: string;
   readonly ontologyRid: string;
   readonly security: DocumentSecurity;
+  readonly updatedBy?: string;
+  readonly updatedTime?: string;
 }

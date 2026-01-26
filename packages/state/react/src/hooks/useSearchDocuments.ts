@@ -23,10 +23,18 @@ import type {
 import type { WithStateModule } from "@palantir/pack.state.core";
 import { useCallback, useEffect, useRef, useState } from "react";
 
+const DEFAULT_PAGE_SIZE = 10;
+
 interface UseSearchDocumentsResult {
-  isLoading: boolean;
-  error: Error | undefined;
-  results: ReadonlyArray<DocumentMetadata & { readonly id: DocumentId }> | undefined;
+  readonly isLoading: boolean;
+  readonly error: Error | undefined;
+  readonly results: ReadonlyArray<DocumentMetadata & { readonly id: DocumentId }> | undefined;
+  readonly hasNextPage: boolean;
+  readonly hasPreviousPage: boolean;
+  readonly goToNextPage: () => void;
+  readonly goToPreviousPage: () => void;
+  readonly goToFirstPage: () => void;
+  readonly currentPage: number;
 }
 
 export function useSearchDocuments<T extends DocumentSchema>(
@@ -34,31 +42,38 @@ export function useSearchDocuments<T extends DocumentSchema>(
   documentTypeName: string,
   schema: T,
   documentName?: string,
-  limit?: number,
+  pageSize: number = DEFAULT_PAGE_SIZE,
 ): UseSearchDocumentsResult {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<Error | undefined>(undefined);
   const [results, setResults] = useState<
     ReadonlyArray<DocumentMetadata & { readonly id: DocumentId }> | undefined
   >(undefined);
+  const [nextPageToken, setNextPageToken] = useState<string | undefined>(undefined);
+  const [currentPage, setCurrentPage] = useState(1);
 
   const pendingRequestRef = useRef<number>(0);
 
   const search = useCallback(
-    async (documentName?: string, limit?: number) => {
+    async (
+      searchDocumentName?: string,
+      searchPageSize: number = DEFAULT_PAGE_SIZE,
+      pageToken?: string,
+    ) => {
       const requestRef = ++pendingRequestRef.current;
 
       setIsLoading(true);
       setError(undefined);
 
       try {
-        const searchResults = await app.state.searchDocuments(
+        const searchResult = await app.state.searchDocuments(
           documentTypeName,
           schema,
-          { documentName, limit },
+          { documentName: searchDocumentName, pageSize: searchPageSize, pageToken },
         );
         if (requestRef === pendingRequestRef.current) {
-          setResults(searchResults);
+          setResults(searchResult.data);
+          setNextPageToken(searchResult.nextPageToken);
         }
       } catch (e) {
         if (requestRef === pendingRequestRef.current) {
@@ -75,8 +90,15 @@ export function useSearchDocuments<T extends DocumentSchema>(
   );
 
   useEffect(() => {
-    void search(documentName, limit);
-  }, [search, documentName, limit]);
+    setCurrentPage(1);
+    setNextPageToken(undefined);
+  }, [documentName, pageSize]);
+
+  useEffect(() => {
+    if (currentPage === 1) {
+      void search(documentName, pageSize, undefined);
+    }
+  }, [search, documentName, pageSize, currentPage]);
 
   useEffect(() => {
     return () => {
@@ -85,8 +107,37 @@ export function useSearchDocuments<T extends DocumentSchema>(
     };
   }, []);
 
+  const goToNextPage = useCallback(() => {
+    if (nextPageToken != null) {
+      setCurrentPage(p => p + 1);
+      void search(documentName, pageSize, nextPageToken);
+    }
+  }, [search, documentName, pageSize, nextPageToken]);
+
+  const goToPreviousPage = useCallback(() => {
+    if (currentPage > 1) {
+      const newPage = currentPage - 1;
+      const token = newPage > 1 ? String((newPage - 1) * pageSize) : undefined;
+      setCurrentPage(newPage);
+      void search(documentName, pageSize, token);
+    }
+  }, [search, documentName, pageSize, currentPage]);
+
+  const goToFirstPage = useCallback(() => {
+    setCurrentPage(1);
+    void search(documentName, pageSize, undefined);
+  }, [search, documentName, pageSize]);
+
+  const hasNextPage = nextPageToken != null;
+
   return {
+    currentPage,
     error,
+    goToFirstPage,
+    goToNextPage,
+    goToPreviousPage,
+    hasNextPage,
+    hasPreviousPage: currentPage > 1,
     isLoading,
     results,
   };

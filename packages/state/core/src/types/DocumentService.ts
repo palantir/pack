@@ -94,6 +94,14 @@ export type RecordDeleteCallback<M extends Model = Model> = (
 ) => void;
 
 /**
+ * Result of a document search operation, including pagination information.
+ */
+export interface SearchDocumentsResult {
+  readonly data: ReadonlyArray<DocumentMetadata & { readonly id: DocumentId }>;
+  readonly nextPageToken?: string;
+}
+
+/**
  * Base interface for specific document service implementations.
  * The DocumentService is responsible for persisting document state,
  * metadata, and providing methods to subscribe and interact with documents.
@@ -114,9 +122,10 @@ export interface DocumentService {
     schema: T,
     options?: {
       documentName?: string;
-      limit?: number;
+      pageSize?: number;
+      pageToken?: string;
     },
-  ) => Promise<ReadonlyArray<DocumentMetadata & { readonly id: DocumentId }>>;
+  ) => Promise<SearchDocumentsResult>;
 
   readonly createDocRef: <const T extends DocumentSchema>(
     id: DocumentId,

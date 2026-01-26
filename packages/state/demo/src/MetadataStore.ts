@@ -15,6 +15,7 @@
  */
 
 import type { DocumentId, DocumentMetadata } from "@palantir/pack.document-schema.model-types";
+import type { SearchDocumentsResult } from "@palantir/pack.state.core";
 import { IndexeddbPersistence } from "y-indexeddb";
 import * as Y from "yjs";
 
@@ -52,9 +53,9 @@ export class MetadataStore {
 
   searchDocuments(
     typeName: string,
-    options?: { documentName?: string; limit?: number },
-  ): ReadonlyArray<DocumentMetadata & { readonly id: DocumentId }> {
-    const results: Array<DocumentMetadata & { readonly id: DocumentId }> = [];
+    options?: { documentName?: string; pageSize?: number; pageToken?: string },
+  ): SearchDocumentsResult {
+    const allResults: Array<DocumentMetadata & { readonly id: DocumentId }> = [];
 
     for (const [id, metadata] of this.metadataMap.entries()) {
       if (metadata.documentTypeName !== typeName) {
@@ -65,14 +66,16 @@ export class MetadataStore {
         continue;
       }
 
-      results.push({ ...metadata, id });
-
-      if (options?.limit && results.length >= options.limit) {
-        break;
-      }
+      allResults.push({ ...metadata, id: id as DocumentId });
     }
 
-    return results;
+    const pageSize = options?.pageSize ?? allResults.length;
+    const offset = options?.pageToken != null ? parseInt(options.pageToken, 10) : 0;
+    const paginatedResults = allResults.slice(offset, offset + pageSize);
+    const hasMore = offset + pageSize < allResults.length;
+    const nextPageToken = hasMore ? String(offset + pageSize) : undefined;
+
+    return { data: paginatedResults, nextPageToken };
   }
 
   observeDocument(

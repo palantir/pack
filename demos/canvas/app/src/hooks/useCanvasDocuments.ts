@@ -20,6 +20,7 @@ import { DOCUMENT_TYPE_NAME } from "../app.js";
 import { usePackApp } from "./usePackApp.js";
 
 export interface CanvasDocument {
+  readonly createdTime?: string;
   readonly id: string;
   readonly name: string;
 }
@@ -28,21 +29,42 @@ export interface UseCanvasDocumentsResult {
   readonly documents: readonly CanvasDocument[];
   readonly error: Error | undefined;
   readonly isLoading: boolean;
+  readonly hasNextPage: boolean;
+  readonly hasPreviousPage: boolean;
+  readonly goToNextPage: () => void;
+  readonly goToPreviousPage: () => void;
+  readonly goToFirstPage: () => void;
+  readonly currentPage: number;
 }
+
+const PAGE_SIZE = 10;
 
 export function useCanvasDocuments(): UseCanvasDocumentsResult {
   const app = usePackApp();
-  const { results, isLoading, error } = useSearchDocuments(
-    app,
-    DOCUMENT_TYPE_NAME,
-    DocumentModel,
-  );
+  const {
+    results,
+    isLoading,
+    error,
+    hasNextPage,
+    hasPreviousPage,
+    goToNextPage,
+    goToPreviousPage,
+    goToFirstPage,
+    currentPage,
+  } = useSearchDocuments(app, DOCUMENT_TYPE_NAME, DocumentModel, undefined, PAGE_SIZE);
 
-  const documents = results?.map(r => ({ id: r.id, name: r.name })) ?? [];
+  const documents = results?.map(r => ({ createdTime: r.createdTime, id: r.id, name: r.name }))
+    ?? [];
 
   return {
+    currentPage,
     documents,
     error,
+    goToFirstPage,
+    goToNextPage,
+    goToPreviousPage,
+    hasNextPage,
+    hasPreviousPage,
     isLoading,
   };
 }

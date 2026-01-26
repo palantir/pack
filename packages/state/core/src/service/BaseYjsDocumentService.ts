@@ -49,6 +49,7 @@ import type {
   RecordChangeCallback,
   RecordCollectionChangeCallback,
   RecordDeleteCallback,
+  SearchDocumentsResult,
 } from "../types/DocumentService.js";
 import { DocumentLiveStatus, DocumentLoadStatus } from "../types/DocumentService.js";
 import { createRecordCollectionRef } from "../types/RecordCollectionRefImpl.js";
@@ -141,9 +142,10 @@ export abstract class BaseYjsDocumentService<TDoc extends InternalYjsDoc = Inter
     schema: T,
     options?: {
       documentName?: string;
-      limit?: number;
+      pageSize?: number;
+      pageToken?: string;
     },
-  ) => Promise<ReadonlyArray<DocumentMetadata & { readonly id: DocumentId }>>;
+  ) => Promise<SearchDocumentsResult>;
 
   readonly createDocRef = <const T extends DocumentSchema>(
     id: DocumentId,
