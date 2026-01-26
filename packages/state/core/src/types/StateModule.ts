@@ -39,6 +39,7 @@ import type {
   RecordChangeCallback,
   RecordCollectionChangeCallback,
   RecordDeleteCallback,
+  SearchDocumentsResult,
 } from "./DocumentService.js";
 
 // Ensure state module is accessible on PackApp instances.
@@ -75,9 +76,10 @@ export interface StateModule {
     schema: T,
     options?: {
       documentName?: string;
-      limit?: number;
+      pageSize?: number;
+      pageToken?: string;
     },
-  ) => Promise<ReadonlyArray<DocumentMetadata & { readonly id: DocumentId }>>;
+  ) => Promise<SearchDocumentsResult>;
 
   readonly getDocumentSnapshot: <T extends DocumentSchema>(
     docRef: DocumentRef<T>,
@@ -210,9 +212,10 @@ export class StateModuleImpl implements StateModule {
     schema: T,
     options?: {
       documentName?: string;
-      limit?: number;
+      pageSize?: number;
+      pageToken?: string;
     },
-  ): Promise<ReadonlyArray<DocumentMetadata & { readonly id: DocumentId }>> {
+  ): Promise<SearchDocumentsResult> {
     return this.documentService.searchDocuments(documentTypeName, schema, options);
   }
 

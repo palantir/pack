@@ -9,7 +9,7 @@ catalog:
   "@osdk/api": ~2.5.2
   "@osdk/client": ~2.5.2
   "@osdk/foundry.admin": ~2.42.0
-  "@osdk/foundry.pack": ~2.45.0
+  "@osdk/foundry.pack": ~2.46.0
   "@osdk/oauth": ~1.4.0
   "@osdk/react": ~0.6.0
   "@osdk/shared.client2": ~1.0.0

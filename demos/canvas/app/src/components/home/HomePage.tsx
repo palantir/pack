@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { Button } from "@blueprintjs/core";
+import { Button, ButtonGroup } from "@blueprintjs/core";
 import React, { useCallback } from "react";
 import { useCanvasDocuments } from "../../hooks/useCanvasDocuments.js";
 import { CreateFileDialog } from "./CreateCanvasDialog.js";
@@ -22,14 +22,26 @@ import { DocumentList } from "./DocumentList.js";
 import css from "./HomePage.module.css";
 
 export const HomePage = React.memo(function HomePage() {
-  const { documents, isLoading, error } = useCanvasDocuments();
+  const {
+    currentPage,
+    documents,
+    error,
+    goToNextPage,
+    goToPreviousPage,
+    hasNextPage,
+    hasPreviousPage,
+    isLoading,
+  } = useCanvasDocuments();
   const [createDialogIsOpen, setCreateDialogIsOpen] = React.useState(false);
 
   const showCreateDialog = useCallback(() => {
     setCreateDialogIsOpen(true);
   }, []);
 
-  if (isLoading) {
+  // Only show full-page loading on initial load, not during pagination
+  const isInitialLoading = isLoading && documents.length === 0;
+
+  if (isInitialLoading) {
     return (
       <div className={css.pageWrapper}>
         <div className={css.loading}>Loading canvases...</div>
@@ -41,18 +53,36 @@ export const HomePage = React.memo(function HomePage() {
     <div className={css.pageWrapper}>
       <div className={css.pageHeader}>
         <h1>Canvas Demo</h1>
-        <Button onClick={showCreateDialog}>
-          Create New Canvas
-        </Button>
+        <Button onClick={showCreateDialog}>Create New Canvas</Button>
       </div>
-      <div>
-        <div>
-          <h2>Canvases ({documents.length} items)</h2>
-          <div>
-            <DocumentList documents={documents} error={error} />
+      <div className={css.contentSection}>
+        <div className={css.listHeader}>
+          <h2>Canvases</h2>
+          <div className={css.pagination}>
+            <ButtonGroup>
+              <Button
+                disabled={!hasPreviousPage}
+                icon="chevron-left"
+                onClick={goToPreviousPage}
+                variant="outlined"
+              />
+              <Button disabled variant="outlined">
+                Page {currentPage}
+              </Button>
+              <Button
+                disabled={!hasNextPage}
+                icon="chevron-right"
+                onClick={goToNextPage}
+                variant="outlined"
+              />
+            </ButtonGroup>
           </div>
-          <CreateFileDialog isOpen={createDialogIsOpen} setIsOpen={setCreateDialogIsOpen} />
         </div>
+        <DocumentList documents={documents} error={error} />
+        <CreateFileDialog
+          isOpen={createDialogIsOpen}
+          setIsOpen={setCreateDialogIsOpen}
+        />
       </div>
     </div>
   );

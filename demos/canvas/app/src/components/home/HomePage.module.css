@@ -157,6 +157,28 @@
   font-weight: 500;
 }
 
+.createdTime {
+  font-size: 0.8rem;
+  color: #888;
+  white-space: nowrap;
+}
+
+.listHeaderRow {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.5rem 1rem;
+  border-bottom: 1px solid #e0e0e0;
+  margin-bottom: 0.5rem;
+}
+
+.columnHeader {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
 .createProjectForm {
   margin-top: 20px;
   margin-bottom: 40px;
@@ -239,4 +261,33 @@
 .submitButton:disabled {
   background: #ccc;
   cursor: not-allowed;
+}
+
+.contentSection {
+  padding: 1.5rem 2rem;
+}
+
+.listHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.listHeader h2 {
+  margin: 0;
+  font-size: 1.25rem;
+  color: #222;
+}
+
+.pagination {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.listControls {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
 }

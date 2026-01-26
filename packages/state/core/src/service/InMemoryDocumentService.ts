@@ -30,7 +30,7 @@ import type {
 import { createDocumentServiceConfig } from "../DocumentServiceModule.js";
 import type { CreateDocumentMetadata } from "../types/CreateDocumentMetadata.js";
 import { createDocRef } from "../types/DocumentRefImpl.js";
-import type { DocumentService } from "../types/DocumentService.js";
+import type { DocumentService, SearchDocumentsResult } from "../types/DocumentService.js";
 import { DocumentLoadStatus } from "../types/DocumentService.js";
 import type { InternalYjsDoc } from "./BaseYjsDocumentService.js";
 import { BaseYjsDocumentService } from "./BaseYjsDocumentService.js";
@@ -108,11 +108,12 @@ class InMemoryDocumentService extends BaseYjsDocumentService {
     schema: T,
     options?: {
       documentName?: string;
-      limit?: number;
+      pageSize?: number;
+      pageToken?: string;
     },
-  ): Promise<ReadonlyArray<DocumentMetadata & { readonly id: DocumentId }>> => {
+  ): Promise<SearchDocumentsResult> => {
     const results: Array<DocumentMetadata & { readonly id: DocumentId }> = [];
-    const { documentName, limit } = options ?? {};
+    const { documentName, pageSize } = options ?? {};
 
     for (const [docId, internalDoc] of this.documents.entries()) {
       if (internalDoc.metadata?.documentTypeName === documentTypeName) {
@@ -124,13 +125,14 @@ class InMemoryDocumentService extends BaseYjsDocumentService {
           id: docId as DocumentId,
         });
 
-        if (limit && results.length >= limit) {
+        if (pageSize && results.length >= pageSize) {
           break;
         }
       }
     }
 
-    return Promise.resolve(results);
+    // In-memory service doesn't support pagination
+    return Promise.resolve({ data: results, nextPageToken: undefined });
   };
 
   // Lifecycle method implementations

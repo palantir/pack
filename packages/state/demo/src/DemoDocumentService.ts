@@ -34,7 +34,11 @@ import {
   getMetadata,
   hasMetadata,
 } from "@palantir/pack.document-schema.model-types";
-import type { CreateDocumentMetadata, InternalYjsDoc } from "@palantir/pack.state.core";
+import type {
+  CreateDocumentMetadata,
+  InternalYjsDoc,
+  SearchDocumentsResult,
+} from "@palantir/pack.state.core";
 import {
   BaseYjsDocumentService,
   createDocRef,
@@ -204,9 +208,10 @@ export class DemoDocumentService extends BaseYjsDocumentService<DemoInternalDoc>
     schema: T,
     options?: {
       documentName?: string;
-      limit?: number;
+      pageSize?: number;
+      pageToken?: string;
     },
-  ): Promise<ReadonlyArray<DocumentMetadata & { readonly id: DocumentId }>> => {
+  ): Promise<SearchDocumentsResult> => {
     await this.metadataStore.whenReady();
     return this.metadataStore.searchDocuments(documentTypeName, options);
   };

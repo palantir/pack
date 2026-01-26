@@ -46,6 +46,7 @@ import type {
   CreateDocumentMetadata,
   DocumentService,
   InternalYjsDoc,
+  SearchDocumentsResult,
 } from "@palantir/pack.state.core";
 import {
   BaseYjsDocumentService,
@@ -100,7 +101,10 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
   ) {
     super(
       app,
-      app.config.logger.child({}, { level: "debug", msgPrefix: "FoundryDocumentService" }),
+      app.config.logger.child(
+        {},
+        { level: "debug", msgPrefix: "FoundryDocumentService" },
+      ),
     );
   }
 
@@ -115,14 +119,14 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
   }
 
   get hasMetadataSubscriptions(): boolean {
-    return Array.from(this.documents.values()).some(doc =>
-      this.hasSubscriptions(doc) && doc.metadataSubscribers.size > 0
+    return Array.from(this.documents.values()).some(
+      doc => this.hasSubscriptions(doc) && doc.metadataSubscribers.size > 0,
     );
   }
 
   get hasStateSubscriptions(): boolean {
-    return Array.from(this.documents.values()).some(doc =>
-      this.hasSubscriptions(doc) && doc.docStateSubscribers.size > 0
+    return Array.from(this.documents.values()).some(
+      doc => this.hasSubscriptions(doc) && doc.docStateSubscribers.size > 0,
     );
   }
 
@@ -139,9 +143,13 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
       ontologyRid: ontologyRid,
       security: getWireSecurity(security),
     };
-    const createResponse = await Documents.create(this.app.config.osdkClient, request, {
-      preview: this.config.usePreviewApi ?? DEFAULT_USE_PREVIEW_API,
-    });
+    const createResponse = await Documents.create(
+      this.app.config.osdkClient,
+      request,
+      {
+        preview: this.config.usePreviewApi ?? DEFAULT_USE_PREVIEW_API,
+      },
+    );
 
     const documentId = createResponse.id as DocumentId;
     const docRef = this.createDocRef(documentId, schema);
@@ -153,26 +161,43 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
     schema: T,
     options?: {
       documentName?: string;
-      limit?: number;
+      pageSize?: number;
+      pageToken?: string;
     },
-  ): Promise<ReadonlyArray<DocumentMetadata & { readonly id: DocumentId }>> => {
+  ): Promise<SearchDocumentsResult> => {
     const request: SearchDocumentsRequest = {
       documentTypeName,
-      limit: options?.limit,
-      searchQuery: options?.documentName ? { documentName: options.documentName } : undefined,
+      searchQuery: options != null
+        ? {
+          documentName: options.documentName,
+          pageSize: options.pageSize,
+          pageToken: options.pageToken,
+        }
+        : undefined,
     };
 
-    const searchResponse = await Documents.search(this.app.config.osdkClient, request, {
-      preview: this.config.usePreviewApi ?? DEFAULT_USE_PREVIEW_API,
-    });
+    const searchResponse = await Documents.search(
+      this.app.config.osdkClient,
+      request,
+      {
+        preview: this.config.usePreviewApi ?? DEFAULT_USE_PREVIEW_API,
+      },
+    );
 
-    return searchResponse.map(doc => ({
-      documentTypeName: doc.documentTypeName,
-      id: doc.id as DocumentId,
-      name: doc.name,
-      ontologyRid: "unknown",
-      security: { discretionary: { owners: [] }, mandatory: {} },
-    }));
+    return {
+      data: searchResponse.data.map(doc => ({
+        createdBy: doc.createdBy,
+        createdTime: doc.createdTime,
+        documentTypeName: doc.documentTypeName,
+        id: doc.id as DocumentId,
+        name: doc.name,
+        ontologyRid: "unknown",
+        security: { discretionary: { owners: [] }, mandatory: {} },
+        updatedBy: doc.updatedBy,
+        updatedTime: doc.updatedTime,
+      })),
+      nextPageToken: searchResponse.nextPageToken,
+    };
   };
 
   protected onMetadataSubscriptionOpened(
@@ -207,7 +232,9 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
         });
       })
       .catch((e: unknown) => {
-        const error = new Error("Failed to load document metadata", { cause: e });
+        const error = new Error("Failed to load document metadata", {
+          cause: e,
+        });
         this.updateMetadataStatus(internalDoc, docRef, {
           error,
           load: DocumentLoadStatus.ERROR,
@@ -235,8 +262,7 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
   protected onMetadataSubscriptionClosed(
     _internalDoc: FoundryInternalDoc,
     _docRef: DocumentRef,
-  ): void {
-  }
+  ): void {}
 
   protected onDataSubscriptionClosed(
     internalDoc: FoundryInternalDoc,
@@ -257,21 +283,20 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
       unsubscribed = true;
     };
 
-    this.eventService.subscribeToActivityUpdates(
-      docRef.id,
-      foundryEvent => {
+    this.eventService
+      .subscribeToActivityUpdates(docRef.id, foundryEvent => {
         if (!unsubscribed) {
           const localEvent = getActivityEvent(docRef.schema, foundryEvent);
           if (localEvent != null) {
             callback(docRef, localEvent);
           }
         }
-      },
-    ).catch((e: unknown) => {
-      this.logger.error("Failed to subscribe to activity updates", e, {
-        docId: docRef.id,
+      })
+      .catch((e: unknown) => {
+        this.logger.error("Failed to subscribe to activity updates", e, {
+          docId: docRef.id,
+        });
       });
-    });
 
     return unsubscribeFn;
   }
@@ -286,20 +311,22 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
       unsubscribed = true;
     };
 
-    this.eventService.subscribeToPresenceUpdates(
-      docRef.id,
-      foundryUpdate => {
-        if (!unsubscribed) {
-          const localEvent = getPresenceEvent(docRef.schema, foundryUpdate);
-          callback(docRef, localEvent);
-        }
-      },
-      options,
-    ).catch((e: unknown) => {
-      this.logger.error("Failed to subscribe to presence updates", e, {
-        docId: docRef.id,
+    this.eventService
+      .subscribeToPresenceUpdates(
+        docRef.id,
+        foundryUpdate => {
+          if (!unsubscribed) {
+            const localEvent = getPresenceEvent(docRef.schema, foundryUpdate);
+            callback(docRef, localEvent);
+          }
+        },
+        options,
+      )
+      .catch((e: unknown) => {
+        this.logger.error("Failed to subscribe to presence updates", e, {
+          docId: docRef.id,
+        });
       });
-    });
 
     return unsubscribeFn;
   }
@@ -311,21 +338,20 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
   ): void {
     const eventType = getMetadata(model).name;
 
-    void this.eventService.publishCustomPresence(
-      docRef.id,
-      eventType,
-      eventData,
-    ).catch((e: unknown) => {
-      this.logger.error("Failed to publish custom presence", e, {
-        docId: docRef.id,
+    void this.eventService
+      .publishCustomPresence(docRef.id, eventType, eventData)
+      .catch((e: unknown) => {
+        this.logger.error("Failed to publish custom presence", e, {
+          docId: docRef.id,
+        });
       });
-    });
   }
 }
 
-function getWireSecurity(
-  { discretionary, mandatory }: DocumentSecurity = EMPTY_DOCUMENT_SECURITY,
-): WireDocumentSecurity {
+function getWireSecurity({
+  discretionary,
+  mandatory,
+}: DocumentSecurity = EMPTY_DOCUMENT_SECURITY): WireDocumentSecurity {
   const { editors = [], owners = [], viewers = [] } = discretionary;
 
   return {
