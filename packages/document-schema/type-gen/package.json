@@ -8,7 +8,6 @@
     "url": "https://github.com/palantir/pack.git"
   },
   "bin": {
-    "type-gen-bun": "./bin/cli.ts",
     "type-gen": "./bin/cli-node.js"
   },
   "exports": {
@@ -33,7 +32,6 @@
     "@osdk/foundry.pack": "catalog:",
     "@palantir/pack.document-schema.model-types": "workspace:~",
     "@palantir/pack.schema": "workspace:*",
-    "bun": "catalog:",
     "commander": "catalog:",
     "conjure-client": "catalog:",
     "consola": "catalog:",
