@@ -1,5 +1,37 @@
 # @palantir/pack.app
 
+## 0.2.0
+
+### Minor Changes
+
+- bfac932: require doc type name in env var and refactor demo app to use doc search
+
+### Patch Changes
+
+- 9f45b8e: Improve document creation API to separate create request from raw API types
+- 571578c: Add Booleans to pack.schema
+- 87f1e63: Support for demo mode (offline) document services
+- e6e40f7: Improve demo mode services and add offline demo oauth implementation
+- 7ee55de: Bump dependencies
+- 4a44875: Remove bun-specific scripts and dependency
+- Updated dependencies [319660b]
+- Updated dependencies [9f45b8e]
+- Updated dependencies [887cab4]
+- Updated dependencies [571578c]
+- Updated dependencies [87f1e63]
+- Updated dependencies [e6e40f7]
+- Updated dependencies [15f7f90]
+- Updated dependencies [7ee55de]
+- Updated dependencies [83e4a85]
+- Updated dependencies [4a44875]
+- Updated dependencies [8057223]
+  - @palantir/pack.state.demo@0.1.0
+  - @palantir/pack.state.foundry@0.2.0
+  - @palantir/pack.state.core@0.3.0
+  - @palantir/pack.core@0.2.1
+  - @palantir/pack.auth.foundry@0.1.1
+  - @palantir/pack.auth@0.1.1
+
 ## 0.1.2
 
 ### Patch Changes

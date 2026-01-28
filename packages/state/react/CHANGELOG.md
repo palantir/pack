@@ -1,5 +1,33 @@
 # @palantir/pack.state.react
 
+## 0.3.0
+
+### Minor Changes
+
+- 74eb5b7: Change useRecord loading state to use status field. Consumers should use status field to determine whether a record is loading, loaded or deleted. Removed isLoading to better discriminate records that have been deleted and have no data.
+- 15f7f90: fix search api to match required types and add search pagination
+
+### Patch Changes
+
+- 571578c: Add Booleans to pack.schema
+- 87f1e63: Support for demo mode (offline) document services
+- 7ee55de: Bump dependencies
+- 4a44875: Remove bun-specific scripts and dependency
+- Updated dependencies [9f45b8e]
+- Updated dependencies [571578c]
+- Updated dependencies [862daf6]
+- Updated dependencies [87f1e63]
+- Updated dependencies [e6e40f7]
+- Updated dependencies [15f7f90]
+- Updated dependencies [7ee55de]
+- Updated dependencies [4a44875]
+- Updated dependencies [8057223]
+- Updated dependencies [19b8f5b]
+  - @palantir/pack.document-schema.model-types@0.3.0
+  - @palantir/pack.state.core@0.3.0
+  - @palantir/pack.core@0.2.1
+  - @palantir/pack.auth@0.1.1
+
 ## 0.2.2
 
 ### Patch Changes

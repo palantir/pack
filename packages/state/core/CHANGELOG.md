@@ -1,5 +1,31 @@
 # @palantir/pack.state.core
 
+## 0.3.0
+
+### Minor Changes
+
+- 15f7f90: fix search api to match required types and add search pagination
+
+### Patch Changes
+
+- 9f45b8e: Improve document creation API to separate create request from raw API types
+- 571578c: Add Booleans to pack.schema
+- 87f1e63: Support for demo mode (offline) document services
+- e6e40f7: Improve demo mode services and add offline demo oauth implementation
+- 7ee55de: Bump dependencies
+- 4a44875: Remove bun-specific scripts and dependency
+- Updated dependencies [9f45b8e]
+- Updated dependencies [571578c]
+- Updated dependencies [862daf6]
+- Updated dependencies [e6e40f7]
+- Updated dependencies [15f7f90]
+- Updated dependencies [7ee55de]
+- Updated dependencies [4a44875]
+- Updated dependencies [8057223]
+- Updated dependencies [19b8f5b]
+  - @palantir/pack.document-schema.model-types@0.3.0
+  - @palantir/pack.core@0.2.1
+
 ## 0.2.2
 
 ### Patch Changes

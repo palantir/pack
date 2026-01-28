@@ -1,5 +1,15 @@
 # @palantir/pack.core
 
+## 0.2.1
+
+### Patch Changes
+
+- 9f45b8e: Improve document creation API to separate create request from raw API types
+- 571578c: Add Booleans to pack.schema
+- e6e40f7: Improve demo mode services and add offline demo oauth implementation
+- 7ee55de: Bump dependencies
+- 4a44875: Remove bun-specific scripts and dependency
+
 ## 0.2.0
 
 ### Minor Changes
