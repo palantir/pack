@@ -1,5 +1,33 @@
 # @palantir/pack.state.foundry-event
 
+## 0.2.0
+
+### Minor Changes
+
+- 83e4a85: Replace local presence types with @osdk/foundry.pack types. Update presence events to use new type format.
+
+### Patch Changes
+
+- b02d9b7: Lazy load cometd dep and declare side-effects
+- 571578c: Add Booleans to pack.schema
+- fcf8655: Fix AckExtension side-effect not referencing the proper cometD module
+- 7ee55de: Bump dependencies
+- 4a44875: Remove bun-specific scripts and dependency
+- Updated dependencies [9f45b8e]
+- Updated dependencies [571578c]
+- Updated dependencies [862daf6]
+- Updated dependencies [87f1e63]
+- Updated dependencies [e6e40f7]
+- Updated dependencies [15f7f90]
+- Updated dependencies [7ee55de]
+- Updated dependencies [4a44875]
+- Updated dependencies [8057223]
+- Updated dependencies [19b8f5b]
+  - @palantir/pack.document-schema.model-types@0.3.0
+  - @palantir/pack.state.core@0.3.0
+  - @palantir/pack.core@0.2.1
+  - @palantir/pack.auth@0.1.1
+
 ## 0.1.2
 
 ### Patch Changes

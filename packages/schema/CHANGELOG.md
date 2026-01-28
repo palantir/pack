@@ -1,5 +1,17 @@
 # @palantir/pack.schema
 
+## 0.3.0
+
+### Minor Changes
+
+- 862daf6: Schema union types can define custom discriminant
+
+### Patch Changes
+
+- 571578c: Add Booleans to pack.schema
+- 7ee55de: Bump dependencies
+- 4a44875: Remove bun-specific scripts and dependency
+
 ## 0.2.0
 
 ### Minor Changes

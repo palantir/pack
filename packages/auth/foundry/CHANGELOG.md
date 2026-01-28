@@ -1,5 +1,21 @@
 # @palantir/pack.auth.foundry
 
+## 0.1.1
+
+### Patch Changes
+
+- 571578c: Add Booleans to pack.schema
+- 7ee55de: Bump dependencies
+- 4a44875: Remove bun-specific scripts and dependency
+- Updated dependencies [9f45b8e]
+- Updated dependencies [571578c]
+- Updated dependencies [87f1e63]
+- Updated dependencies [e6e40f7]
+- Updated dependencies [7ee55de]
+- Updated dependencies [4a44875]
+  - @palantir/pack.core@0.2.1
+  - @palantir/pack.auth@0.1.1
+
 ## 0.1.0
 
 ### Minor Changes

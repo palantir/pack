@@ -1,5 +1,26 @@
 # @palantir/pack.sdkgen.pack-template
 
+## 0.1.2
+
+### Patch Changes
+
+- 571578c: Add Booleans to pack.schema
+- 6098bed: Fix template package.json ordering
+- 7ee55de: Bump dependencies
+- 4a44875: Remove bun-specific scripts and dependency
+- 6098bed: pack template determines the version of @palantir/pack.document-schema.model-types from the type-gen dependency after generation
+- Updated dependencies [9f45b8e]
+- Updated dependencies [571578c]
+- Updated dependencies [862daf6]
+- Updated dependencies [15f7f90]
+- Updated dependencies [7ee55de]
+- Updated dependencies [4a44875]
+- Updated dependencies [8057223]
+- Updated dependencies [19b8f5b]
+- Updated dependencies [94f73a4]
+  - @palantir/pack.document-schema.model-types@0.3.0
+  - @palantir/pack.document-schema.type-gen@0.2.0
+
 ## 0.1.1
 
 ### Patch Changes
