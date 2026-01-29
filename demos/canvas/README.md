@@ -72,7 +72,7 @@ The `.env.local` file takes precedence and is gitignored.
 
 Create `demos/canvas/app/.env.local`:
 
-```bash
+```properties
 # Disable demo mode to use real Foundry
 VITE_DEMO_MODE=false
 
