@@ -122,9 +122,6 @@ Set your organization's classification labels:
 ```typescript
 // Example: Single classification
 const DEFAULT_CLASSIFICATION: readonly string[] = ["MU"];
-
-// Example: Multiple classifications
-const DEFAULT_CLASSIFICATION: readonly string[] = ["MU", "INTERNAL"];
 ```
 
 The classification must be a valid marking from your Foundry instance.
