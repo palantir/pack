@@ -108,7 +108,6 @@ In Foundry, navigate to **Control Panel > Third-party applications** and create 
    - `api:use-ontologies-write`
    - `api:use-pack-read`
    - `api:use-pack-write`
-   <!-- - `api:use-map-read` -->
 
 Copy the **Client ID** to your `.env.local` file.
 
