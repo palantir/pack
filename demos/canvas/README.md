@@ -106,8 +106,8 @@ In Foundry, navigate to **Control Panel > Third-party applications** and create 
    - `api:use-mediasets-write`
    - `api:use-ontologies-read`
    - `api:use-ontologies-write`
-   - `api:use-pack-read`
-   - `api:use-pack-write`
+   - `api:use-pack-read` (check your environment for availability)
+   - `api:use-pack-write` (check your environment for availability)
 
 Copy the **Client ID** to your `.env.local` file.
 
