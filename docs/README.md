@@ -132,18 +132,6 @@ This means you can build and test your app without Foundry access—use the demo
 
 ---
 
-## Schema & SDK Generation
-
-Your document schema defines three things in one YAML file:
-
-- **Document state**: The shape of your app-specific data
-- **Activity events**: Actions to track in history
-- **Presence events**: Ephemeral broadcasts (cursors, selections)
-
-Regenerate the SDK whenever you modify the schema. Commit the generated code to your repo.
-
----
-
 ## Building Your App: The Typical Workflow
 
 Here's the typical sequence when building a PACK application:
