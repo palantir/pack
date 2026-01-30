@@ -1,5 +1,14 @@
 # @palantir/pack.sdkgen.pack-template
 
+## 0.1.3
+
+### Patch Changes
+
+- 5120719: Update dependency ranges
+- Updated dependencies [5120719]
+  - @palantir/pack.document-schema.model-types@0.3.1
+  - @palantir/pack.document-schema.type-gen@0.2.1
+
 ## 0.1.2
 
 ### Patch Changes

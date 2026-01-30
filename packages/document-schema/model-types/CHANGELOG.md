@@ -1,5 +1,13 @@
 # @palantir/pack.document-schema.model-types
 
+## 0.3.1
+
+### Patch Changes
+
+- 5120719: Update dependency ranges
+- Updated dependencies [5120719]
+  - @palantir/pack.core@0.2.2
+
 ## 0.3.0
 
 ### Minor Changes

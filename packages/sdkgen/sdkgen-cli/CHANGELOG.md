@@ -1,5 +1,11 @@
 # @palantir/pack.sdkgen
 
+## 0.2.2
+
+### Patch Changes
+
+- 5120719: Update dependency ranges
+
 ## 0.2.1
 
 ### Patch Changes

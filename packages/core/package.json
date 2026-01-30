@@ -1,6 +1,6 @@
 {
   "name": "@palantir/pack.core",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "PACK Core functionality and utilities",
   "license": "Apache-2.0",
   "repository": {

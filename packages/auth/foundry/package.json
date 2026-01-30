@@ -1,6 +1,6 @@
 {
   "name": "@palantir/pack.auth.foundry",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Foundry-specific authentication implementations for PACK applications",
   "license": "Apache-2.0",
   "repository": {
