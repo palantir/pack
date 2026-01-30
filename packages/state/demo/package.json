@@ -1,6 +1,5 @@
 {
   "name": "@palantir/pack.state.demo",
-  "private": true,
   "version": "0.1.0",
   "license": "Apache-2.0",
   "repository": {
@@ -64,6 +63,9 @@
     "typescript": "catalog:",
     "vitest-mock-extended": "catalog:",
     "zod": "catalog:"
+  },
+  "publishConfig": {
+    "access": "public"
   },
   "main": "./build/cjs/index.js",
   "module": "./build/esm/index.js",

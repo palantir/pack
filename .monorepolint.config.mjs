@@ -489,7 +489,7 @@ const packages = {
   "@palantir/pack.document-schema.model-types": {},
   "@palantir/pack.schema": {},
   "@palantir/pack.state.core": {},
-  "@palantir/pack.state.demo": { isDemo: true },
+  "@palantir/pack.state.demo": {},
   "@palantir/pack.state.foundry": {},
   "@palantir/pack.state.foundry-event": {},
   "@palantir/pack.state.react": {},
