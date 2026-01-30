@@ -146,7 +146,7 @@ Run `sdkgen` to produce type-safe TypeScript from your schema. See the [sdkgen R
 
 ### 3. Deploy Schema to Foundry
 
-<!-- TODO: Make more clear in type-gen README -->
+<!-- TODO: Make more clear in type-gen README and possibly include template script in future -->
 
 Generate IR from your YAML schema, then upload to Foundry using [pack.document-schema.type-gen](../packages/document-schema/type-gen/README.md):
 
