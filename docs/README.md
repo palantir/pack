@@ -9,7 +9,6 @@ This guide covers the concepts and patterns you need to understand PACK as a who
 - [What Goes Where: Ontology vs. Document](#what-goes-where-ontology-vs-document)
 - [Architecture Overview](#architecture-overview)
 - [Which Packages Do I Need?](#which-packages-do-i-need)
-- [Wiring It Together](#wiring-it-together)
 - [Schema & SDK Generation](#schema--sdk-generation)
 - [Building Your App: The Typical Workflow](#building-your-app-the-typical-workflow)
 - [Troubleshooting](#troubleshooting)
@@ -141,16 +140,6 @@ This means you can build and test your app without Foundry access—use the demo
 
 ---
 
-## Wiring It Together
-
-PACK client initialization: auth → OSDK client → PACK app. See the [pack.app README](../packages/app/README.md) for setup examples.
-
-For React apps, wrap your app with `<PackProvider>` and use hooks like `useDocument`. See [pack.state.react](../packages/state/react/README.md).
-
-For environment variables and OAuth setup, see the [Canvas demo README](../demos/canvas/README.md).
-
----
-
 ## Schema & SDK Generation
 
 Your document schema defines three things in one YAML file:
@@ -158,29 +147,6 @@ Your document schema defines three things in one YAML file:
 - **Document state**: The shape of your app-specific data
 - **Activity events**: Actions to track in history
 - **Presence events**: Ephemeral broadcasts (cursors, selections)
-
-The workflow:
-
-1. **Define schema** in YAML — see [Canvas demo schema](../demos/canvas/sdk/schema/) for a real example
-2. **Generate SDK** — see [sdkgen README](../packages/sdkgen/sdkgen-cli/README.md) for usage
-3. **Import types** in your app
-
-<!-- TODO: Make deployment step more clear? -->
-
-4. **Deploy schema to Foundry** — first generate IR from your YAML, then upload to Foundry. Uses [pack.document-schema.type-gen](../packages/document-schema/type-gen/README.md):
-   ```
-   # Generate IR from YAML schema
-   pnpm exec type-gen steps ir \
-     --input <schema.yaml> \
-     --output <schema-ir.json>
-
-   # Deploy IR to Foundry
-   pnpm exec type-gen ir deploy \
-     --ir <schema-ir.json> \
-     --base-url <foundry-url> \
-     --auth <token> \
-     --parent-folder <folder-rid>
-   ```
 
 Regenerate the SDK whenever you modify the schema. Commit the generated code to your repo.
 
@@ -192,17 +158,15 @@ Here's the typical sequence when building a PACK application:
 
 ### 1. Define Your Document Type
 
-Create your schema YAML defining:
-
-- Document state types
-- Activity event types
-- Presence event types
+Create your schema YAML defining document state, activity events, and presence events. See the [Canvas demo schema](../demos/canvas/sdk/schema/) for a real example.
 
 ### 2. Generate Your SDK
 
-Run `sdkgen` to produce type-safe TypeScript from your schema. Commit the generated SDK to your repo.
+Run `sdkgen` to produce type-safe TypeScript from your schema. See the [sdkgen README](../packages/sdkgen/sdkgen-cli/README.md) for usage. Commit the generated SDK to your repo.
 
 ### 3. Deploy Schema to Foundry
+
+<!-- TODO: Make more clear in type-gen README -->
 
 Generate IR from your YAML schema, then upload to Foundry using [pack.document-schema.type-gen](../packages/document-schema/type-gen/README.md):
 
@@ -224,31 +188,11 @@ This creates the document type in Foundry so your app can create and open docume
 
 ### 4. Wire Up Your App
 
-Initialize PACK with your auth and state services. In React, wrap your app with `<PackProvider>`.
+Initialize PACK: auth → OSDK client → PACK app. See [pack.app README](../packages/app/README.md) for setup examples.
 
-### 5. Build Document Features
+For React apps, wrap your app with `<PackProvider>` and use hooks like `useDocument`. See [pack.state.react](../packages/state/react/README.md).
 
-Use the state service to create, read, and update documents. Your generated types ensure correctness.
-
-### 6. Add Activity Tracking
-
-Log activity events when users take actions. Display them in an activity panel alongside ontology edit history.
-
-### 7. Add Presence Features
-
-Dispatch presence events (cursors, selections) over the presence channel. Render other users' presence in your UI.
-
-### 8. Iterate
-
-As your app evolves, update the schema and regenerate the SDK. The type system catches breaking changes.
-
----
-
-## Next Steps
-
-- **New to PACK?** Run the Canvas demo: `pnpm demo:canvas`
-- **Building an app?** Start with the [Canvas demo source](../demos/canvas/) as a reference
-- **Package details?** See each package's README for API specifics
+For environment variables and OAuth setup, see the [Canvas demo](../demos/canvas/README.md).
 
 ---
 
