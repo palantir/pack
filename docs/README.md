@@ -66,15 +66,7 @@ You define what events matter for your app (e.g., "shape added", "filter changed
 
 ### Presence
 
-Real-time, ephemeral state that exists only in the moment. Cursor positions, who's currently viewing, what's selected. This data changes constantly and has no value after the fact, so it's broadcast over WebSocket rather than persisted.
-
-The key distinction:
-
-|              | Persisted                        | Ephemeral                    |
-| ------------ | -------------------------------- | ---------------------------- |
-| **What**     | Document state, activity history | Cursors, viewers, selections |
-| **Where**    | Foundry backend                  | WebSocket channel            |
-| **Lifetime** | Permanent                        | Gone when you disconnect     |
+Real-time, ephemeral state that exists only in the moment. Cursor positions, who's currently viewing, what's selected. This data changes constantly and so is not persisted in the backend.
 
 ---
 
