@@ -1,5 +1,11 @@
 # @palantir/pack.schema
 
+## 0.3.1
+
+### Patch Changes
+
+- 5120719: Update dependency ranges
+
 ## 0.3.0
 
 ### Minor Changes

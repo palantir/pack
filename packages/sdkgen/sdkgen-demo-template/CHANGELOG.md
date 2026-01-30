@@ -1,5 +1,11 @@
 # @palantir/pack.sdkgen.demo-template
 
+## 0.1.2
+
+### Patch Changes
+
+- 5120719: Update dependency ranges
+
 ## 0.1.1
 
 ### Patch Changes

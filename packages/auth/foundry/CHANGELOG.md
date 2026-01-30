@@ -1,5 +1,14 @@
 # @palantir/pack.auth.foundry
 
+## 0.1.2
+
+### Patch Changes
+
+- 5120719: Update dependency ranges
+- Updated dependencies [5120719]
+  - @palantir/pack.auth@0.1.2
+  - @palantir/pack.core@0.2.2
+
 ## 0.1.1
 
 ### Patch Changes
