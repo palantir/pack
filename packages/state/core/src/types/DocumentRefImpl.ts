@@ -26,6 +26,7 @@ import type {
   Model,
   ModelData,
   PresenceEvent,
+  PresencePublishOptions,
   PresenceSubscriptionOptions,
   RecordCollectionRef,
   Unsubscribe,
@@ -143,8 +144,9 @@ class DocumentRefImpl<T extends DocumentSchema> implements DocumentRef<T> {
   updateCustomPresence<M extends Model = Model>(
     model: M,
     eventData: ModelData<M>,
+    options?: PresencePublishOptions,
   ): void {
-    this.#stateModule.updateCustomPresence(this, model, eventData);
+    this.#stateModule.updateCustomPresence(this, model, eventData, options);
   }
 
   withTransaction(

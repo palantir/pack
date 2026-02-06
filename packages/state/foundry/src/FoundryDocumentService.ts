@@ -39,6 +39,7 @@ import type {
   Model,
   ModelData,
   PresenceEvent,
+  PresencePublishOptions,
   PresenceSubscriptionOptions,
 } from "@palantir/pack.document-schema.model-types";
 import { getMetadata } from "@palantir/pack.document-schema.model-types";
@@ -335,11 +336,12 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
     docRef: DocumentRef,
     model: M,
     eventData: ModelData<M>,
+    options?: PresencePublishOptions,
   ): void {
     const eventType = getMetadata(model).name;
 
     void this.eventService
-      .publishCustomPresence(docRef.id, eventType, eventData)
+      .publishCustomPresence(docRef.id, eventType, eventData, options)
       .catch((e: unknown) => {
         this.logger.error("Failed to publish custom presence", e, {
           docId: docRef.id,

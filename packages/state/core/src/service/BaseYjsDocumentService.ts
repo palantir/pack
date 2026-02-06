@@ -30,6 +30,7 @@ import {
   type Model,
   type ModelData,
   type PresenceEvent,
+  type PresencePublishOptions,
   type RecordCollectionRef,
   type RecordId,
   type RecordRef,
@@ -571,6 +572,7 @@ export abstract class BaseYjsDocumentService<TDoc extends InternalYjsDoc = Inter
     docRef: DocumentRef,
     model: M,
     eventData: ModelData<M>,
+    options?: PresencePublishOptions,
   ): void;
 
   readonly onStateChange = <T extends DocumentSchema>(

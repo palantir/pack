@@ -25,6 +25,7 @@ import type {
   Model,
   ModelData,
   PresenceEvent,
+  PresencePublishOptions,
   PresenceSubscriptionOptions,
 } from "@palantir/pack.document-schema.model-types";
 import { createDocumentServiceConfig } from "../DocumentServiceModule.js";
@@ -211,6 +212,7 @@ class InMemoryDocumentService extends BaseYjsDocumentService {
     _docRef: DocumentRef,
     _model: M,
     _eventData: ModelData<M>,
+    _options?: PresencePublishOptions,
   ): void {
   }
 }
