@@ -26,6 +26,7 @@ import type {
   Model,
   ModelData,
   PresenceEvent,
+  PresencePublishOptions,
   PresenceSubscriptionOptions,
   RecordCollectionRef,
   RecordId,
@@ -236,6 +237,7 @@ export interface DocumentService {
     docRef: DocumentRef,
     model: M,
     eventData: ModelData<M>,
+    options?: PresencePublishOptions,
   ) => void;
 
   readonly onRecordChanged: <M extends Model>(

@@ -27,6 +27,7 @@ import type {
   Model,
   ModelData,
   PresenceEvent,
+  PresencePublishOptions,
   UserId,
 } from "@palantir/pack.document-schema.model-types";
 import {
@@ -377,6 +378,7 @@ export class DemoDocumentService extends BaseYjsDocumentService<DemoInternalDoc>
     docRef: DocumentRef,
     model: M,
     eventData: ModelData<M>,
+    _options?: PresencePublishOptions,
   ): void {
     const { internalDoc } = this.getCreateInternalDoc(docRef);
 

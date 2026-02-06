@@ -48,10 +48,14 @@ export interface PresenceSubscriptionOptions {
   readonly ignoreSelfUpdates?: boolean;
 }
 
-// TODO: presence api should have an eventType so we don't need extra wrapper here.
-interface PresencePublishMessageData {
-  readonly eventType: string; // model name
-  readonly eventData: unknown; // model data
+export interface PresencePublishOptions {
+  /**
+   * If true (default), event is broadcast only and not persisted.
+   * If false, event is persisted and replayed to new clients.
+   *
+   * @default true
+   */
+  readonly isEphemeral?: boolean;
 }
 
 const UPDATE_ORIGIN_REMOTE = "remote" as const;
@@ -104,6 +108,7 @@ export interface FoundryEventService {
     documentId: DocumentId,
     eventType: string,
     eventData: unknown,
+    options?: PresencePublishOptions,
   ): Promise<void>;
 
   startDocumentSync(
@@ -343,14 +348,12 @@ class FoundryEventServiceImpl implements FoundryEventService {
     documentId: DocumentId,
     eventType: string,
     eventData: unknown,
+    options?: PresencePublishOptions,
   ): Promise<void> {
+    const { isEphemeral = true } = options ?? {};
     const session = this.getOrCreateSession(documentId);
     const channelId = getDocumentPresencePublishChannelId(documentId);
 
-    const messageData: PresencePublishMessageData = {
-      eventData,
-      eventType,
-    };
     // TODO: maybe the session should hold userId
     // Though would need better reconnection handling to ensure userId doesn't change.
     const userId = getAuthModule(this.app).getCurrentUser(true)?.userId;
@@ -358,13 +361,20 @@ class FoundryEventServiceImpl implements FoundryEventService {
       throw new Error("Could not get current userId");
     }
 
-    return this.eventService.publish(channelId, {
+    const payload = {
       clientId: session.clientId,
-      eventData: messageData,
       // FIXME: why do we have to send this, we are authenticated
+      eventData,
+      eventType,
+      isEphemeral,
       userId,
       type: "custom",
-    }).catch((error: unknown) => {
+    };
+    // TODO: Cast needed because eventType/isEphemeral fields exist in backend API but SDK types not yet updated
+    return this.eventService.publish(
+      channelId,
+      payload as Parameters<typeof this.eventService.publish>[1],
+    ).catch((error: unknown) => {
       this.logger.error("Failed to publish custom presence", error, {
         docId: documentId,
       });
