@@ -14,22 +14,39 @@
  * limitations under the License.
  */
 
-import { Button, Callout, Dialog, DialogBody, DialogFooter, InputGroup } from "@blueprintjs/core";
+import {
+  Button,
+  Callout,
+  Dialog,
+  DialogBody,
+  DialogFooter,
+  FormGroup,
+  InputGroup,
+  Radio,
+  RadioGroup,
+} from "@blueprintjs/core";
 import { DocumentModel } from "@demo/canvas.sdk";
-import type { DocumentSecurity } from "@palantir/pack.document-schema.model-types";
+import { FileSystemType } from "@palantir/pack.state.core";
 import React, { useCallback, useState } from "react";
 import { useNavigate } from "react-router";
 import { app, DOCUMENT_TYPE_NAME } from "../../app.js";
 
 // TODO: Set your organization's classification (e.g. ["MU"])
-const DEFAULT_CLASSIFICATION: readonly string[] = [];
+const DEFAULT_CLASSIFICATION: readonly string[] = ["MU"];
+// const DEFAULT_CLASSIFICATION: readonly string[] = ["MU"];
 
-const DEFAULT_DOCUMENT_SECURITY: DocumentSecurity = Object.freeze({
+const DEFAULT_DOCUMENT_SECURITY = {
   discretionary: {},
+  // discretionary: {
+  //   owners: [{
+  //     groupId: "d14d488c-5274-4cad-9c07-9d15172d62a9",
+  //     type: "groupId" as const,
+  //   }],
+  // },
   mandatory: {
     classification: DEFAULT_CLASSIFICATION,
   },
-});
+};
 
 interface CreateFileDialogProps {
   isOpen: boolean;
@@ -39,6 +56,8 @@ export function CreateFileDialog({ isOpen, setIsOpen }: CreateFileDialogProps) {
   const [creatingCanvas, setCreatingCanvas] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [name, setName] = useState("");
+  const [fileSystemType, setFileSystemType] = useState<FileSystemType>(FileSystemType.ARTIFACTS);
+  const [parentFolderRid, setParentFolderRid] = useState("");
 
   const navigate = useNavigate();
 
@@ -55,6 +74,11 @@ export function CreateFileDialog({ isOpen, setIsOpen }: CreateFileDialogProps) {
       return;
     }
 
+    if (fileSystemType === FileSystemType.COMPASS && !parentFolderRid.trim()) {
+      setError("Parent folder RID is required for Compass filesystem.");
+      return;
+    }
+
     setCreatingCanvas(true);
 
     try {
@@ -62,6 +86,9 @@ export function CreateFileDialog({ isOpen, setIsOpen }: CreateFileDialogProps) {
         name,
         documentTypeName: DOCUMENT_TYPE_NAME,
         security: DEFAULT_DOCUMENT_SECURITY,
+        parentFolderRid: fileSystemType === FileSystemType.COMPASS
+          ? parentFolderRid.trim()
+          : undefined,
       }, DocumentModel);
       navigate(`/canvas/${response.id}`);
     } catch (e) {
@@ -69,7 +96,7 @@ export function CreateFileDialog({ isOpen, setIsOpen }: CreateFileDialogProps) {
     } finally {
       setCreatingCanvas(false);
     }
-  }, [name, navigate]);
+  }, [fileSystemType, name, navigate, parentFolderRid]);
 
   return (
     <Dialog isOpen={isOpen} onClose={closeCreateDialog} title="Create new file">
@@ -79,15 +106,45 @@ export function CreateFileDialog({ isOpen, setIsOpen }: CreateFileDialogProps) {
             {error}
           </Callout>
         )}
-        <div style={{ marginBottom: "15px" }}>
-          <div style={{ marginBottom: "5px" }}>Canvas name</div>
+        <FormGroup label="Canvas name" labelFor="canvas-name">
           <InputGroup
+            id="canvas-name"
             value={name}
             onValueChange={setName}
             autoFocus={true}
             placeholder="Enter name..."
           />
-        </div>
+        </FormGroup>
+        <FormGroup label="Storage type" labelFor="storage-type">
+          <RadioGroup
+            onChange={e => setFileSystemType(e.currentTarget.value as FileSystemType)}
+            selectedValue={fileSystemType}
+          >
+            <Radio label="Artifacts (default)" value={FileSystemType.ARTIFACTS} />
+            <Radio label="Compass" value={FileSystemType.COMPASS} />
+          </RadioGroup>
+        </FormGroup>
+        {fileSystemType === FileSystemType.COMPASS && (
+          <>
+            <Callout intent="primary" style={{ marginBottom: "15px" }}>
+              Compass manages discretionary security (owners, editors, viewers) through folder
+              permissions. Leave discretionary security empty when creating Compass-backed
+              documents.
+            </Callout>
+            <FormGroup
+              label="Parent folder RID"
+              labelFor="parent-folder-rid"
+              helperText="The Compass folder RID where the document will be created (e.g., ri.compass.main.folder.xxx)"
+            >
+              <InputGroup
+                id="parent-folder-rid"
+                value={parentFolderRid}
+                onValueChange={setParentFolderRid}
+                placeholder="ri.compass.main.folder.xxx"
+              />
+            </FormGroup>
+          </>
+        )}
       </DialogBody>
       <DialogFooter
         actions={

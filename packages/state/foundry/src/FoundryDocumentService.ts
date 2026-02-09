@@ -135,15 +135,23 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
     metadata: CreateDocumentMetadata,
     schema: T,
   ): Promise<DocumentRef<T>> => {
-    const { documentTypeName, name, security } = metadata;
+    const { documentTypeName, name, parentFolderRid, security } = metadata;
     const ontologyRid = await getOntologyRid(this.app);
 
-    const request: CreateDocumentRequest = {
+    // TODO: parentFolderRid requires updated OSDK types
+    const request: CreateDocumentRequest & {
+      parentFolderRid?: string;
+    } = {
       documentTypeName: documentTypeName,
       name: name,
       ontologyRid: ontologyRid,
       security: getWireSecurity(security),
     };
+
+    if (parentFolderRid != null) {
+      request.parentFolderRid = parentFolderRid;
+    }
+
     const createResponse = await Documents.create(
       this.app.config.osdkClient,
       request,

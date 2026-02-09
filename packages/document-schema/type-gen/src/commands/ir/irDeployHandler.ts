@@ -23,11 +23,14 @@ import { readFileSync } from "fs";
 import { resolve } from "path";
 import type { IRealTimeDocumentSchema } from "../../lib/pack-docschema-api/pack-docschema-ir/index.js";
 
+type FileSystemType = "ARTIFACTS" | "COMPASS";
+
 interface DeployOptions {
   readonly ir: string;
   readonly baseUrl: string;
   readonly auth: string;
   readonly parentFolder: string;
+  readonly fileSystemType: FileSystemType;
 }
 
 export async function irDeployHandler(options: DeployOptions): Promise<void> {
@@ -46,10 +49,15 @@ export async function irDeployHandler(options: DeployOptions): Promise<void> {
       () => Promise.resolve(options.auth),
     );
 
-    const request: CreateDocumentTypeRequest = {
+    // TODO: fileSystemType requires updated OSDK types
+    const request: CreateDocumentTypeRequest & { fileSystemType?: string } = {
       name: ir.name,
       parentFolderRid: options.parentFolder,
     };
+
+    if (options.fileSystemType != null) {
+      request.fileSystemType = options.fileSystemType;
+    }
 
     // PACK BE does not yet support storing schemas...
     consola.warn("Creating document type without schema information", request);
