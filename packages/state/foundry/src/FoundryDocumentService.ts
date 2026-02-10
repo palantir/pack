@@ -169,9 +169,7 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
     const request: SearchDocumentsRequest = {
       documentTypeName,
       requestBody: {
-        query: options?.documentName != null
-          ? { documentName: options.documentName }
-          : undefined,
+        query: options?.documentName != null ? { documentName: options.documentName } : undefined,
         pageSize: options?.pageSize,
         pageToken: options?.pageToken,
       },
