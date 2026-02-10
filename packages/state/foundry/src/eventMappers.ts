@@ -201,10 +201,7 @@ export function getPresenceEvent(
     }
 
     case "customPresenceEvent": {
-      // TODO fix cast after sdk types updated
-      const { userId, eventData, eventType } = foundryUpdate as typeof foundryUpdate & {
-        eventType?: string;
-      };
+      const { userId, eventData, eventType } = foundryUpdate;
       const presenceEventData = getPresenceEventData(documentSchema, eventType, eventData);
       return {
         eventData: presenceEventData,

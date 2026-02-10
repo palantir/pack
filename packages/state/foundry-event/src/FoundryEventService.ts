@@ -361,7 +361,7 @@ class FoundryEventServiceImpl implements FoundryEventService {
       throw new Error("Could not get current userId");
     }
 
-    const payload = {
+    return this.eventService.publish(channelId, {
       clientId: session.clientId,
       // FIXME: why do we have to send this, we are authenticated
       eventData,
@@ -369,12 +369,7 @@ class FoundryEventServiceImpl implements FoundryEventService {
       isEphemeral,
       userId,
       type: "custom",
-    };
-    // TODO: Cast needed because eventType/isEphemeral fields exist in backend API but SDK types not yet updated
-    return this.eventService.publish(
-      channelId,
-      payload as Parameters<typeof this.eventService.publish>[1],
-    ).catch((error: unknown) => {
+    }).catch((error: unknown) => {
       this.logger.error("Failed to publish custom presence", error, {
         docId: documentId,
       });
