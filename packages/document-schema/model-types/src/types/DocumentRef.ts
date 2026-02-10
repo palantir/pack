@@ -43,7 +43,7 @@ export interface PresenceSubscriptionOptions {
 export interface PresencePublishOptions {
   /**
    * If true (default), event is broadcast only and not persisted.
-   * If false, event is persisted and replayed to new clients.
+   * If false, event is persisted and replayed to new clients on catchup.
    *
    * @default true
    */
