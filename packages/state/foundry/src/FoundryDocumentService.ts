@@ -168,13 +168,13 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
   ): Promise<SearchDocumentsResult> => {
     const request: SearchDocumentsRequest = {
       documentTypeName,
-      searchQuery: options != null
-        ? {
-          documentName: options.documentName,
-          pageSize: options.pageSize,
-          pageToken: options.pageToken,
-        }
-        : undefined,
+      requestBody: {
+        query: options?.documentName != null
+          ? { documentName: options.documentName }
+          : undefined,
+        pageSize: options?.pageSize,
+        pageToken: options?.pageToken,
+      },
     };
 
     const searchResponse = await Documents.search(
