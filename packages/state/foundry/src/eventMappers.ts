@@ -226,17 +226,9 @@ export function getPresenceEvent(
 
 function getPresenceEventData(
   docSchema: DocumentSchema,
-  eventType: string | undefined,
+  eventType: string,
   eventData: unknown,
 ): PresenceEventData {
-  if (typeof eventType !== "string") {
-    return {
-      rawData: eventData,
-      rawType: "unknown",
-      type: PresenceEventDataType.UNKNOWN,
-    };
-  }
-
   const model = docSchema[eventType];
   if (model == null) {
     return {
