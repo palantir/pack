@@ -29,7 +29,7 @@ import React, { useCallback, useState } from "react";
 import { useNavigate } from "react-router";
 import { app, DOCUMENT_TYPE_NAME, FILE_SYSTEM_TYPE, PARENT_FOLDER_RID } from "../../app.js";
 
-const isCompassFilesystem = FILE_SYSTEM_TYPE === FileSystemType.COMPASS;
+const isCompassFileSystem = FILE_SYSTEM_TYPE === FileSystemType.COMPASS;
 
 // TODO: Set your organization's classification (e.g. ["MU"])
 const DEFAULT_CLASSIFICATION: readonly string[] = ["MU"];
@@ -72,7 +72,7 @@ export function CreateFileDialog({ isOpen, setIsOpen }: CreateFileDialogProps) {
       return;
     }
 
-    if (isCompassFilesystem && !PARENT_FOLDER_RID) {
+    if (isCompassFileSystem && !PARENT_FOLDER_RID) {
       setError(
         "Parent folder RID is required for Compass filesystem. Set VITE_PACK_PARENT_FOLDER_RID in your .env file.",
       );
@@ -86,7 +86,7 @@ export function CreateFileDialog({ isOpen, setIsOpen }: CreateFileDialogProps) {
         name,
         documentTypeName: DOCUMENT_TYPE_NAME,
         security: DEFAULT_DOCUMENT_SECURITY,
-        parentFolderRid: isCompassFilesystem ? PARENT_FOLDER_RID! : undefined,
+        parentFolderRid: isCompassFileSystem ? PARENT_FOLDER_RID! : undefined,
       }, DocumentModel);
       navigate(`/canvas/${response.id}`);
     } catch (e) {
@@ -113,7 +113,7 @@ export function CreateFileDialog({ isOpen, setIsOpen }: CreateFileDialogProps) {
             placeholder="Enter name..."
           />
         </FormGroup>
-        {isCompassFilesystem && (
+        {isCompassFileSystem && (
           <Callout intent="danger" style={{ marginBottom: "15px" }}>
             Compass manages discretionary security (owners, editors, viewers) through folder
             permissions. Leave discretionary security empty when creating Compass-backed documents.
