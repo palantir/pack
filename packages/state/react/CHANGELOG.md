@@ -1,5 +1,13 @@
 # @palantir/pack.state.react
 
+## 0.3.2
+
+### Patch Changes
+
+- Updated dependencies [bb1ba4e]
+  - @palantir/pack.document-schema.model-types@0.4.0
+  - @palantir/pack.state.core@0.4.0
+
 ## 0.3.1
 
 ### Patch Changes
