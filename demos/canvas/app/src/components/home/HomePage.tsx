@@ -16,6 +16,7 @@
 
 import { Button, ButtonGroup } from "@blueprintjs/core";
 import React, { useCallback } from "react";
+import { FILE_SYSTEM_TYPE } from "../../app.js";
 import { useCanvasDocuments } from "../../hooks/useCanvasDocuments.js";
 import { CreateFileDialog } from "./CreateCanvasDialog.js";
 import { DocumentList } from "./DocumentList.js";
@@ -57,7 +58,7 @@ export const HomePage = React.memo(function HomePage() {
       </div>
       <div className={css.contentSection}>
         <div className={css.listHeader}>
-          <h2>Canvases</h2>
+          <h2>Canvases ({FILE_SYSTEM_TYPE})</h2>
           <div className={css.pagination}>
             <ButtonGroup>
               <Button

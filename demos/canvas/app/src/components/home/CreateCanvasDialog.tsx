@@ -34,12 +34,12 @@ const isCompassFileSystem = FILE_SYSTEM_TYPE === FileSystemType.COMPASS;
 // TODO: Set your organization's classification (e.g. ["MU"])
 const DEFAULT_CLASSIFICATION: readonly string[] = [];
 
-const DEFAULT_DOCUMENT_SECURITY = {
+const DEFAULT_DOCUMENT_SECURITY = Object.freeze({
   discretionary: {},
   mandatory: {
     classification: DEFAULT_CLASSIFICATION,
   },
-};
+});
 
 interface CreateFileDialogProps {
   isOpen: boolean;
@@ -90,7 +90,11 @@ export function CreateFileDialog({ isOpen, setIsOpen }: CreateFileDialogProps) {
   }, [name, navigate]);
 
   return (
-    <Dialog isOpen={isOpen} onClose={closeCreateDialog} title="Create new file">
+    <Dialog
+      isOpen={isOpen}
+      onClose={closeCreateDialog}
+      title={`Create new file (${FILE_SYSTEM_TYPE})`}
+    >
       <DialogBody>
         {error && (
           <Callout intent="danger" style={{ marginBottom: "15px" }}>
@@ -107,7 +111,7 @@ export function CreateFileDialog({ isOpen, setIsOpen }: CreateFileDialogProps) {
           />
         </FormGroup>
         {isCompassFileSystem && (
-          <Callout intent="danger" style={{ marginBottom: "15px" }}>
+          <Callout intent="warning" style={{ marginBottom: "15px" }}>
             Compass manages discretionary security (owners, editors, viewers) through folder
             permissions. Leave discretionary security empty when creating Compass-backed documents.
           </Callout>
