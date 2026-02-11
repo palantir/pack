@@ -30,6 +30,7 @@ const ALLOW_DEV_TOKEN = true;
 const SCOPES = [
   "api:use-admin-read",
   "api:use-admin-write",
+  // remove filesystem scopes once added in api-gateway
   "api:use-filesystem-read",
   "api:use-filesystem-write",
   "api:use-mediasets-read",
