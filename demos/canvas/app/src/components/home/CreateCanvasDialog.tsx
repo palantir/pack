@@ -22,14 +22,14 @@ import {
   DialogFooter,
   FormGroup,
   InputGroup,
-  Radio,
-  RadioGroup,
 } from "@blueprintjs/core";
 import { DocumentModel } from "@demo/canvas.sdk";
 import { FileSystemType } from "@palantir/pack.state.core";
 import React, { useCallback, useState } from "react";
 import { useNavigate } from "react-router";
-import { app, DOCUMENT_TYPE_NAME } from "../../app.js";
+import { app, DOCUMENT_TYPE_NAME, FILE_SYSTEM_TYPE, PARENT_FOLDER_RID } from "../../app.js";
+
+const isCompassFilesystem = FILE_SYSTEM_TYPE === FileSystemType.COMPASS;
 
 // TODO: Set your organization's classification (e.g. ["MU"])
 const DEFAULT_CLASSIFICATION: readonly string[] = ["MU"];
@@ -56,8 +56,6 @@ export function CreateFileDialog({ isOpen, setIsOpen }: CreateFileDialogProps) {
   const [creatingCanvas, setCreatingCanvas] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [name, setName] = useState("");
-  const [fileSystemType, setFileSystemType] = useState<FileSystemType>(FileSystemType.ARTIFACTS);
-  const [parentFolderRid, setParentFolderRid] = useState("");
 
   const navigate = useNavigate();
 
@@ -74,8 +72,10 @@ export function CreateFileDialog({ isOpen, setIsOpen }: CreateFileDialogProps) {
       return;
     }
 
-    if (fileSystemType === FileSystemType.COMPASS && !parentFolderRid.trim()) {
-      setError("Parent folder RID is required for Compass filesystem.");
+    if (isCompassFilesystem && !PARENT_FOLDER_RID) {
+      setError(
+        "Parent folder RID is required for Compass filesystem. Set VITE_PACK_PARENT_FOLDER_RID in your .env file.",
+      );
       return;
     }
 
@@ -86,9 +86,7 @@ export function CreateFileDialog({ isOpen, setIsOpen }: CreateFileDialogProps) {
         name,
         documentTypeName: DOCUMENT_TYPE_NAME,
         security: DEFAULT_DOCUMENT_SECURITY,
-        parentFolderRid: fileSystemType === FileSystemType.COMPASS
-          ? parentFolderRid.trim()
-          : undefined,
+        parentFolderRid: isCompassFilesystem ? PARENT_FOLDER_RID! : undefined,
       }, DocumentModel);
       navigate(`/canvas/${response.id}`);
     } catch (e) {
@@ -96,7 +94,7 @@ export function CreateFileDialog({ isOpen, setIsOpen }: CreateFileDialogProps) {
     } finally {
       setCreatingCanvas(false);
     }
-  }, [fileSystemType, name, navigate, parentFolderRid]);
+  }, [name, navigate]);
 
   return (
     <Dialog isOpen={isOpen} onClose={closeCreateDialog} title="Create new file">
@@ -115,35 +113,11 @@ export function CreateFileDialog({ isOpen, setIsOpen }: CreateFileDialogProps) {
             placeholder="Enter name..."
           />
         </FormGroup>
-        <FormGroup label="Storage type" labelFor="storage-type">
-          <RadioGroup
-            onChange={e => setFileSystemType(e.currentTarget.value as FileSystemType)}
-            selectedValue={fileSystemType}
-          >
-            <Radio label="Artifacts (default)" value={FileSystemType.ARTIFACTS} />
-            <Radio label="Compass" value={FileSystemType.COMPASS} />
-          </RadioGroup>
-        </FormGroup>
-        {fileSystemType === FileSystemType.COMPASS && (
-          <>
-            <Callout intent="primary" style={{ marginBottom: "15px" }}>
-              Compass manages discretionary security (owners, editors, viewers) through folder
-              permissions. Leave discretionary security empty when creating Compass-backed
-              documents.
-            </Callout>
-            <FormGroup
-              label="Parent folder RID"
-              labelFor="parent-folder-rid"
-              helperText="The Compass folder RID where the document will be created (e.g., ri.compass.main.folder.xxx)"
-            >
-              <InputGroup
-                id="parent-folder-rid"
-                value={parentFolderRid}
-                onValueChange={setParentFolderRid}
-                placeholder="ri.compass.main.folder.xxx"
-              />
-            </FormGroup>
-          </>
+        {isCompassFilesystem && (
+          <Callout intent="danger" style={{ marginBottom: "15px" }}>
+            Compass manages discretionary security (owners, editors, viewers) through folder
+            permissions. Leave discretionary security empty when creating Compass-backed documents.
+          </Callout>
         )}
       </DialogBody>
       <DialogFooter

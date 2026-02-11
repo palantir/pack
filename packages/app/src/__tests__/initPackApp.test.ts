@@ -41,6 +41,7 @@ const TEST_REDIRECT_URL = "http://localhost:3000/auth/callback";
 const TEST_ONTOLOGY_RID = "ri.ontology.main.ontology.test-ontology";
 const TEST_CLIENT_SECRET = "test-client-secret";
 const TEST_DOCUMENT_TYPE_NAME = "test-document-type";
+const TEST_FILE_SYSTEM_TYPE = "ARTIFACTS";
 
 const TEST_APP_CONFIG = Object.freeze({
   appId: "test-app",
@@ -62,7 +63,9 @@ describe("initPackApp", () => {
       clientId: "page-env-client-id",
       demoMode: null,
       documentTypeName: TEST_DOCUMENT_TYPE_NAME,
+      fileSystemType: TEST_FILE_SYSTEM_TYPE,
       ontologyRid: TEST_ONTOLOGY_RID,
+      parentFolderRid: null,
       redirectUrl: "http://localhost:3000/page-env-callback",
     });
   });
@@ -210,7 +213,9 @@ describe("initPackApp", () => {
         clientId: null,
         demoMode: null,
         documentTypeName: TEST_DOCUMENT_TYPE_NAME,
+        fileSystemType: TEST_FILE_SYSTEM_TYPE,
         ontologyRid: TEST_ONTOLOGY_RID,
+        parentFolderRid: null,
         redirectUrl: "http://localhost:3000/page-env-callback",
       });
 
@@ -260,7 +265,9 @@ describe("initPackApp", () => {
         clientId: "page-env-client-id",
         demoMode: null,
         documentTypeName: TEST_DOCUMENT_TYPE_NAME,
+        fileSystemType: TEST_FILE_SYSTEM_TYPE,
         ontologyRid: null,
+        parentFolderRid: null,
         redirectUrl: "http://localhost:3000/page-env-callback",
       });
 
@@ -284,7 +291,9 @@ describe("initPackApp", () => {
         clientId: "page-env-client-id",
         demoMode: null,
         documentTypeName: TEST_DOCUMENT_TYPE_NAME,
+        fileSystemType: TEST_FILE_SYSTEM_TYPE,
         ontologyRid: "",
+        parentFolderRid: null,
         redirectUrl: "http://localhost:3000/page-env-callback",
       });
 
