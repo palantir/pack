@@ -32,17 +32,10 @@ import { app, DOCUMENT_TYPE_NAME, FILE_SYSTEM_TYPE, PARENT_FOLDER_RID } from "..
 const isCompassFileSystem = FILE_SYSTEM_TYPE === FileSystemType.COMPASS;
 
 // TODO: Set your organization's classification (e.g. ["MU"])
-const DEFAULT_CLASSIFICATION: readonly string[] = ["MU"];
-// const DEFAULT_CLASSIFICATION: readonly string[] = ["MU"];
+const DEFAULT_CLASSIFICATION: readonly string[] = [];
 
 const DEFAULT_DOCUMENT_SECURITY = {
   discretionary: {},
-  // discretionary: {
-  //   owners: [{
-  //     groupId: "d14d488c-5274-4cad-9c07-9d15172d62a9",
-  //     type: "groupId" as const,
-  //   }],
-  // },
   mandatory: {
     classification: DEFAULT_CLASSIFICATION,
   },
