@@ -27,6 +27,7 @@ import type {
   Model,
   ModelData,
   PresenceEvent,
+  PresencePublishOptions,
   PresenceSubscriptionOptions,
   RecordCollectionRef,
   RecordId,
@@ -110,6 +111,7 @@ export interface StateModule {
     docRef: DocumentRef,
     model: M,
     eventData: ModelData<M>,
+    options?: PresencePublishOptions,
   ) => void;
 
   readonly getRecordSnapshot: <R extends Model>(
@@ -258,8 +260,9 @@ export class StateModuleImpl implements StateModule {
     docRef: DocumentRef,
     model: M,
     eventData: ModelData<M>,
+    options?: PresencePublishOptions,
   ): void {
-    this.documentService.updateCustomPresence(docRef, model, eventData);
+    this.documentService.updateCustomPresence(docRef, model, eventData, options);
   }
 
   async getRecordSnapshot<R extends Model>(

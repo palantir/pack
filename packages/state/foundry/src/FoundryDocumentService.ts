@@ -39,6 +39,7 @@ import type {
   Model,
   ModelData,
   PresenceEvent,
+  PresencePublishOptions,
   PresenceSubscriptionOptions,
 } from "@palantir/pack.document-schema.model-types";
 import { getMetadata } from "@palantir/pack.document-schema.model-types";
@@ -167,13 +168,11 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
   ): Promise<SearchDocumentsResult> => {
     const request: SearchDocumentsRequest = {
       documentTypeName,
-      searchQuery: options != null
-        ? {
-          documentName: options.documentName,
-          pageSize: options.pageSize,
-          pageToken: options.pageToken,
-        }
-        : undefined,
+      requestBody: {
+        query: options?.documentName != null ? { documentName: options.documentName } : undefined,
+        pageSize: options?.pageSize,
+        pageToken: options?.pageToken,
+      },
     };
 
     const searchResponse = await Documents.search(
@@ -335,11 +334,12 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
     docRef: DocumentRef,
     model: M,
     eventData: ModelData<M>,
+    options?: PresencePublishOptions,
   ): void {
     const eventType = getMetadata(model).name;
 
     void this.eventService
-      .publishCustomPresence(docRef.id, eventType, eventData)
+      .publishCustomPresence(docRef.id, eventType, eventData, options)
       .catch((e: unknown) => {
         this.logger.error("Failed to publish custom presence", e, {
           docId: docRef.id,

@@ -201,8 +201,8 @@ export function getPresenceEvent(
     }
 
     case "customPresenceEvent": {
-      const { userId, eventData } = foundryUpdate;
-      const presenceEventData = getPresenceEventData(documentSchema, eventData);
+      const { userId, eventData, eventType } = foundryUpdate;
+      const presenceEventData = getPresenceEventData(documentSchema, eventType, eventData);
       return {
         eventData: presenceEventData,
         userId: userId as UserId,
@@ -226,38 +226,20 @@ export function getPresenceEvent(
 
 function getPresenceEventData(
   docSchema: DocumentSchema,
+  eventType: string,
   eventData: unknown,
 ): PresenceEventData {
-  if (typeof eventData !== "object" || eventData == null) {
-    return {
-      rawData: eventData,
-      rawType: "unknown",
-      type: PresenceEventDataType.UNKNOWN,
-    };
-  }
-
-  const typedEventData = eventData as Record<string, unknown>;
-  const { eventType, eventData: data } = typedEventData;
-
-  if (typeof eventType !== "string") {
-    return {
-      rawData: eventData,
-      rawType: "unknown",
-      type: PresenceEventDataType.UNKNOWN,
-    };
-  }
-
   const model = docSchema[eventType];
   if (model == null) {
     return {
-      rawData: data,
+      rawData: eventData,
       rawType: eventType,
       type: PresenceEventDataType.UNKNOWN,
     };
   }
 
   return {
-    eventData: data,
+    eventData,
     model,
     type: PresenceEventDataType.CUSTOM_EVENT,
   };

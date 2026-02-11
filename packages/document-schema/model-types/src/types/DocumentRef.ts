@@ -37,6 +37,19 @@ export interface PresenceSubscriptionOptions {
   readonly ignoreSelfUpdates?: boolean;
 }
 
+/**
+ * Options for publishing custom presence events.
+ */
+export interface PresencePublishOptions {
+  /**
+   * If true (default), event is broadcast only and not persisted.
+   * If false, event is persisted and replayed to new clients on catchup.
+   *
+   * @default true
+   */
+  readonly isEphemeral?: boolean;
+}
+
 export const DocumentRefBrand: unique symbol = Symbol("pack:DocumentRef");
 
 /**
@@ -210,10 +223,12 @@ export interface DocumentRef<D extends DocumentSchema = DocumentSchema> {
    *
    * @param model The model type to update presence for.
    * @param eventData The new presence data for the model.
+   * @param options Options for presence publishing.
    */
   updateCustomPresence<M extends Model = Model>(
     model: M,
     eventData: ModelData<M>,
+    options?: PresencePublishOptions,
   ): void;
 
   /**
