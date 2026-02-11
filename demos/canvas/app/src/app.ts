@@ -30,6 +30,8 @@ const ALLOW_DEV_TOKEN = true;
 const SCOPES = [
   "api:use-admin-read",
   "api:use-admin-write",
+  "api:use-filesystem-read",
+  "api:use-filesystem-write",
   "api:use-mediasets-read",
   "api:use-mediasets-write",
   "api:use-ontologies-read",
