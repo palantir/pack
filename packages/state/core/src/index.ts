@@ -21,6 +21,7 @@ export {
   type InternalYjsDoc,
 } from "./service/BaseYjsDocumentService.js";
 export { createInMemoryDocumentServiceConfig } from "./service/InMemoryDocumentService.js";
+export { FileSystemType } from "./types/CreateDocumentMetadata.js";
 export type { CreateDocumentMetadata } from "./types/CreateDocumentMetadata.js";
 export { createDocRef, invalidDocRef, isValidDocRef } from "./types/DocumentRefImpl.js";
 export { DocumentLiveStatus, DocumentLoadStatus } from "./types/DocumentService.js";

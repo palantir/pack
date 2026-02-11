@@ -30,6 +30,10 @@ const ALLOW_DEV_TOKEN = true;
 const SCOPES = [
   "api:use-admin-read",
   "api:use-admin-write",
+  // remove filesystem scopes once filesystem perms are
+  // supported in pack-read and pack-write
+  "api:use-filesystem-read",
+  "api:use-filesystem-write",
   "api:use-mediasets-read",
   "api:use-mediasets-write",
   "api:use-ontologies-read",
@@ -47,6 +51,8 @@ const ONTOLOGY_RID = pageEnv.ontologyRid;
 const REDIRECT_URL = pageEnv.redirectUrl ?? `${FOUNDRY_URL}/auth/callback`;
 
 export const DOCUMENT_TYPE_NAME = pageEnv.documentTypeName;
+export const FILE_SYSTEM_TYPE = pageEnv.fileSystemType;
+export const PARENT_FOLDER_RID = pageEnv.parentFolderRid;
 
 function createAuthClient(): PublicOauthClient | (() => Promise<string>) {
   const DEV_TOKEN: string | undefined = import.meta.env.VITE_DEV_FOUNDRY_TOKEN;
@@ -57,15 +63,21 @@ function createAuthClient(): PublicOauthClient | (() => Promise<string>) {
   }
 
   if (isDemoEnv()) {
-    return createDemoPublicOauthClient(CLIENT_ID, FOUNDRY_URL, REDIRECT_URL, { autoSignIn: true });
+    return createDemoPublicOauthClient(CLIENT_ID, FOUNDRY_URL, REDIRECT_URL, {
+      autoSignIn: true,
+    });
   }
 
-  return createPublicOauthClient(CLIENT_ID, FOUNDRY_URL, REDIRECT_URL, { scopes: SCOPES });
+  return createPublicOauthClient(CLIENT_ID, FOUNDRY_URL, REDIRECT_URL, {
+    scopes: SCOPES,
+  });
 }
 
 const authClient = createAuthClient();
 
-const osdkClient = createClient(FOUNDRY_URL, ONTOLOGY_RID, authClient, { logger });
+const osdkClient = createClient(FOUNDRY_URL, ONTOLOGY_RID, authClient, {
+  logger,
+});
 
 export const app = initPackApp(osdkClient, {
   app: pageEnv.appId != null
@@ -77,4 +89,6 @@ export const app = initPackApp(osdkClient, {
   demoMode: isDemoEnv(),
   logLevel: "info",
   ontologyRid: ONTOLOGY_RID,
-}).withState().build();
+})
+  .withState()
+  .build();

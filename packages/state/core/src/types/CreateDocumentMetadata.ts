@@ -20,4 +20,11 @@ export interface CreateDocumentMetadata {
   readonly name: string;
   readonly documentTypeName: string;
   readonly security?: DocumentSecurity;
+  readonly parentFolderRid?: string;
 }
+
+export const FileSystemType = {
+  ARTIFACTS: "ARTIFACTS",
+  COMPASS: "COMPASS",
+} as const;
+export type FileSystemType = typeof FileSystemType[keyof typeof FileSystemType];

@@ -21,7 +21,9 @@ export interface PageEnv {
   readonly clientId: string | null;
   readonly demoMode: boolean | null;
   readonly documentTypeName: string | null;
+  readonly fileSystemType: string | null;
   readonly ontologyRid: string | null;
+  readonly parentFolderRid: string | null;
   readonly redirectUrl: string | null;
 }
 
@@ -32,7 +34,9 @@ export interface RequiredPageEnv {
   readonly clientId: string;
   readonly demoMode: boolean | null;
   readonly documentTypeName: string;
+  readonly fileSystemType: string | null;
   readonly ontologyRid: string;
+  readonly parentFolderRid: string | null;
   readonly redirectUrl: string | null;
 }
 
@@ -41,7 +45,9 @@ export function getPageEnv(): PageEnv {
   const appVersion = getMetaTagContent("pack-appVersion");
   const demoModeStr = getMetaTagContent("pack-demoMode");
   const documentTypeName = getMetaTagContent("pack-documentTypeName");
+  const fileSystemType = getMetaTagContent("pack-fileSystemType");
   const foundryUrl = getMetaTagContent("osdk-foundryUrl");
+  const parentFolderRid = getMetaTagContent("pack-parentFolderRid");
   const clientId = getMetaTagContent("osdk-clientId");
   const ontologyRid = getMetaTagContent("osdk-ontologyRid");
   const redirectUrl = getMetaTagContent("osdk-redirectUrl");
@@ -55,7 +61,9 @@ export function getPageEnv(): PageEnv {
     clientId,
     demoMode,
     documentTypeName,
+    fileSystemType,
     ontologyRid,
+    parentFolderRid,
     redirectUrl,
   };
 }
@@ -83,7 +91,9 @@ export function getPageEnvOrThrow(): RequiredPageEnv {
     clientId: env.clientId!,
     demoMode: env.demoMode,
     documentTypeName: env.documentTypeName!,
+    fileSystemType: env.fileSystemType,
     ontologyRid: env.ontologyRid!,
+    parentFolderRid: env.parentFolderRid,
     redirectUrl: env.redirectUrl,
   };
 }

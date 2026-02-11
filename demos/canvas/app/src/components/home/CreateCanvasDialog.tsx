@@ -14,17 +14,27 @@
  * limitations under the License.
  */
 
-import { Button, Callout, Dialog, DialogBody, DialogFooter, InputGroup } from "@blueprintjs/core";
+import {
+  Button,
+  Callout,
+  Dialog,
+  DialogBody,
+  DialogFooter,
+  FormGroup,
+  InputGroup,
+} from "@blueprintjs/core";
 import { DocumentModel } from "@demo/canvas.sdk";
-import type { DocumentSecurity } from "@palantir/pack.document-schema.model-types";
+import { FileSystemType } from "@palantir/pack.state.core";
 import React, { useCallback, useState } from "react";
 import { useNavigate } from "react-router";
-import { app, DOCUMENT_TYPE_NAME } from "../../app.js";
+import { app, DOCUMENT_TYPE_NAME, FILE_SYSTEM_TYPE, PARENT_FOLDER_RID } from "../../app.js";
+
+const isCompassFileSystem = FILE_SYSTEM_TYPE === FileSystemType.COMPASS;
 
 // TODO: Set your organization's classification (e.g. ["MU"])
 const DEFAULT_CLASSIFICATION: readonly string[] = [];
 
-const DEFAULT_DOCUMENT_SECURITY: DocumentSecurity = Object.freeze({
+const DEFAULT_DOCUMENT_SECURITY = Object.freeze({
   discretionary: {},
   mandatory: {
     classification: DEFAULT_CLASSIFICATION,
@@ -55,6 +65,13 @@ export function CreateFileDialog({ isOpen, setIsOpen }: CreateFileDialogProps) {
       return;
     }
 
+    if (isCompassFileSystem && !PARENT_FOLDER_RID) {
+      setError(
+        "Parent folder RID is required for Compass filesystem. Set VITE_PACK_PARENT_FOLDER_RID in your .env file.",
+      );
+      return;
+    }
+
     setCreatingCanvas(true);
 
     try {
@@ -62,6 +79,7 @@ export function CreateFileDialog({ isOpen, setIsOpen }: CreateFileDialogProps) {
         name,
         documentTypeName: DOCUMENT_TYPE_NAME,
         security: DEFAULT_DOCUMENT_SECURITY,
+        parentFolderRid: isCompassFileSystem ? PARENT_FOLDER_RID! : undefined,
       }, DocumentModel);
       navigate(`/canvas/${response.id}`);
     } catch (e) {
@@ -72,22 +90,32 @@ export function CreateFileDialog({ isOpen, setIsOpen }: CreateFileDialogProps) {
   }, [name, navigate]);
 
   return (
-    <Dialog isOpen={isOpen} onClose={closeCreateDialog} title="Create new file">
+    <Dialog
+      isOpen={isOpen}
+      onClose={closeCreateDialog}
+      title={`Create new file (${FILE_SYSTEM_TYPE})`}
+    >
       <DialogBody>
         {error && (
           <Callout intent="danger" style={{ marginBottom: "15px" }}>
             {error}
           </Callout>
         )}
-        <div style={{ marginBottom: "15px" }}>
-          <div style={{ marginBottom: "5px" }}>Canvas name</div>
+        <FormGroup label="Canvas name" labelFor="canvas-name">
           <InputGroup
+            id="canvas-name"
             value={name}
             onValueChange={setName}
             autoFocus={true}
             placeholder="Enter name..."
           />
-        </div>
+        </FormGroup>
+        {isCompassFileSystem && (
+          <Callout intent="warning" style={{ marginBottom: "15px" }}>
+            Compass manages discretionary security (owners, editors, viewers) through folder
+            permissions. Leave discretionary security empty when creating Compass-backed documents.
+          </Callout>
+        )}
       </DialogBody>
       <DialogFooter
         actions={
