@@ -49,8 +49,7 @@ export async function irDeployHandler(options: DeployOptions): Promise<void> {
       () => Promise.resolve(options.auth),
     );
 
-    // TODO: fileSystemType requires updated OSDK types
-    const request: CreateDocumentTypeRequest & { fileSystemType?: string } = {
+    const request: CreateDocumentTypeRequest = {
       name: ir.name,
       parentFolderRid: options.parentFolder,
     };
