@@ -37,7 +37,12 @@ export type {
   DocumentSecurityMandatory,
 } from "./types/DocumentMetadata.js";
 export { DocumentRefBrand } from "./types/DocumentRef.js";
-export type { DocumentId, DocumentRef, PresencePublishOptions, PresenceSubscriptionOptions } from "./types/DocumentRef.js";
+export type {
+  DocumentId,
+  DocumentRef,
+  PresencePublishOptions,
+  PresenceSubscriptionOptions,
+} from "./types/DocumentRef.js";
 export type {
   DocumentSchema,
   DocumentSchemaMetadata,
