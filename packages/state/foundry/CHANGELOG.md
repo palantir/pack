@@ -1,5 +1,18 @@
 # @palantir/pack.state.foundry
 
+## 0.3.0
+
+### Minor Changes
+
+- bb1ba4e: update ephemeral events and custom presence event types and search request query
+
+### Patch Changes
+
+- Updated dependencies [bb1ba4e]
+  - @palantir/pack.document-schema.model-types@0.4.0
+  - @palantir/pack.state.foundry-event@0.3.0
+  - @palantir/pack.state.core@0.4.0
+
 ## 0.2.1
 
 ### Patch Changes
