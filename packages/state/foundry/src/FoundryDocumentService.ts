@@ -225,8 +225,8 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
         const metadata: DocumentMetadata = {
           documentTypeName: document.documentTypeName,
           name: document.name,
-          ontologyRid: "unknown",
-          security: { discretionary: { owners: [] }, mandatory: {} },
+          ontologyRid: document.ontologyRid,
+          security: document.security,
         };
 
         internalDoc.metadata = metadata;
