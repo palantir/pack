@@ -1,5 +1,12 @@
 # @palantir/pack.document-schema.type-gen
 
+## 0.3.0
+
+### Minor Changes
+
+- ceb06a9: make filesystem type required option for doc type deploy
+- 8109bd7: add compass filesystem option for document type and doc creation
+
 ## 0.2.2
 
 ### Patch Changes

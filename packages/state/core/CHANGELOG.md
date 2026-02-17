@@ -1,5 +1,13 @@
 # @palantir/pack.state.core
 
+## 0.5.0
+
+### Minor Changes
+
+- 72c058b: remove hardcoded metadata response values
+- ceb06a9: make filesystem type required option for doc type deploy
+- 8109bd7: add compass filesystem option for document type and doc creation
+
 ## 0.4.0
 
 ### Minor Changes

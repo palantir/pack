@@ -1,5 +1,19 @@
 # @palantir/pack.state.react
 
+## 0.4.0
+
+### Minor Changes
+
+- 72c058b: remove hardcoded metadata response values
+- ceb06a9: make filesystem type required option for doc type deploy
+
+### Patch Changes
+
+- Updated dependencies [72c058b]
+- Updated dependencies [ceb06a9]
+- Updated dependencies [8109bd7]
+  - @palantir/pack.state.core@0.5.0
+
 ## 0.3.2
 
 ### Patch Changes
