@@ -1,5 +1,20 @@
 # @palantir/pack.app
 
+## 0.3.0
+
+### Minor Changes
+
+- 8109bd7: add compass filesystem option for document type and doc creation
+
+### Patch Changes
+
+- Updated dependencies [72c058b]
+- Updated dependencies [ceb06a9]
+- Updated dependencies [8109bd7]
+  - @palantir/pack.state.foundry@0.4.0
+  - @palantir/pack.state.core@0.5.0
+  - @palantir/pack.state.demo@0.3.0
+
 ## 0.2.2
 
 ### Patch Changes
