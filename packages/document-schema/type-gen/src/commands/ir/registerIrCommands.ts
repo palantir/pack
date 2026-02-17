@@ -59,10 +59,9 @@ export function registerIrCommands(program: Command): void {
     .requiredOption("-b, --base-url <url>", "Base URL for Foundry API")
     .requiredOption("-a, --auth <token>", "Authentication token for Foundry API")
     .requiredOption("-p, --parent-folder <rid>", "Parent folder RID for the document type")
-    .option(
+    .requiredOption(
       "-f, --file-system-type <type>",
       "File system type for the document type (ARTIFACTS or COMPASS)",
-      "ARTIFACTS",
     )
     .action(irDeployHandler);
 }
