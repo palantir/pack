@@ -235,7 +235,7 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
       updatedTime: document.updatedTime,
     };
 
-    this.updateMetadata(docRef.id as DocumentId, metadata);
+    this.updateMetadata(docRef.id, metadata);
 
     return metadata;
   };
