@@ -43,7 +43,7 @@ export class MetadataStore {
     return this.readyPromise;
   }
 
-  addDocument(id: DocumentId, metadata: DocumentMetadata): void {
+  setDocument(id: DocumentId, metadata: DocumentMetadata): void {
     this.metadataMap.set(id, metadata);
   }
 
