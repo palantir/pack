@@ -24,12 +24,18 @@
 }
 
 .documentName {
+  border-radius: 4px;
+  cursor: pointer;
   font-size: 16px;
   font-weight: 600;
   overflow: hidden;
-  padding-right: 8px;
+  padding: 4px 8px;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.documentName:hover {
+  background-color: #f0f0f0;
 }
 
 .toolGroup {
