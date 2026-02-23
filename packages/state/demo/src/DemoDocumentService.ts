@@ -230,8 +230,7 @@ export class DemoDocumentService extends BaseYjsDocumentService<DemoInternalDoc>
 
     const metadata: DocumentMetadata = {
       ...existing,
-      ...(update.name != null ? { name: update.name } : {}),
-      ...(update.description != null ? { description: update.description } : {}),
+      ...update,
     };
 
     this.metadataStore.setDocument(docRef.id, metadata);

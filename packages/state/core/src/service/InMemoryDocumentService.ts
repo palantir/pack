@@ -144,18 +144,17 @@ class InMemoryDocumentService extends BaseYjsDocumentService {
     docRef: DocumentRef,
     update: UpdateDocumentMetadata,
   ): Promise<DocumentMetadata> => {
-    const internalDoc = this.documents.get(docRef.id as DocumentId);
+    const internalDoc = this.documents.get(docRef.id);
     if (internalDoc?.metadata == null) {
       return Promise.reject(new Error(`Document not found: ${docRef.id}`));
     }
 
     const metadata: DocumentMetadata = {
       ...internalDoc.metadata,
-      ...(update.name != null ? { name: update.name } : {}),
-      ...(update.description != null ? { description: update.description } : {}),
+      ...update,
     };
 
-    this.updateMetadata(docRef.id as DocumentId, metadata);
+    this.updateMetadata(docRef.id, metadata);
 
     return Promise.resolve(metadata);
   };
