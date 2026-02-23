@@ -48,6 +48,7 @@ import type {
   DocumentService,
   InternalYjsDoc,
   SearchDocumentsResult,
+  UpdateDocumentMetadata,
 } from "@palantir/pack.state.core";
 import {
   BaseYjsDocumentService,
@@ -204,6 +205,40 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
     };
   };
 
+  readonly updateDocument = async (
+    docRef: DocumentRef,
+    update: UpdateDocumentMetadata,
+  ): Promise<DocumentMetadata> => {
+    const document = await Documents.update(
+      this.app.config.osdkClient,
+      docRef.id,
+      {
+        requestBody: {
+          name: update.name,
+          description: update.description,
+        },
+      },
+      {
+        preview: this.config.usePreviewApi ?? DEFAULT_USE_PREVIEW_API,
+      },
+    );
+
+    const metadata: DocumentMetadata = {
+      createdBy: document.createdBy,
+      createdTime: document.createdTime,
+      documentTypeName: document.documentTypeName,
+      name: document.name,
+      ontologyRid: document.ontologyRid,
+      security: document.security,
+      updatedBy: document.updatedBy,
+      updatedTime: document.updatedTime,
+    };
+
+    this.updateMetadata(docRef.id as DocumentId, metadata);
+
+    return metadata;
+  };
+
   protected onMetadataSubscriptionOpened(
     internalDoc: FoundryInternalDoc,
     docRef: DocumentRef,
@@ -223,6 +258,7 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
     })
       .then(document => {
         const metadata: DocumentMetadata = {
+          description: document.description,
           documentTypeName: document.documentTypeName,
           name: document.name,
           ontologyRid: document.ontologyRid,

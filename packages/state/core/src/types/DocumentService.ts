@@ -103,6 +103,15 @@ export interface SearchDocumentsResult {
 }
 
 /**
+ * Fields that can be updated on a document's metadata.
+ */
+export interface UpdateDocumentMetadata {
+  readonly name?: string;
+  readonly description?: string;
+  // TODO: readonly security?: DocumentSecurity;
+}
+
+/**
  * Base interface for specific document service implementations.
  * The DocumentService is responsible for persisting document state,
  * metadata, and providing methods to subscribe and interact with documents.
@@ -127,6 +136,11 @@ export interface DocumentService {
       pageToken?: string;
     },
   ) => Promise<SearchDocumentsResult>;
+
+  readonly updateDocument: (
+    docRef: DocumentRef,
+    metadata: UpdateDocumentMetadata,
+  ) => Promise<DocumentMetadata>;
 
   readonly createDocRef: <const T extends DocumentSchema>(
     id: DocumentId,
