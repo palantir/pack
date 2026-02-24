@@ -224,15 +224,11 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
     );
 
     const metadata: DocumentMetadata = {
-      createdBy: document.createdBy,
-      createdTime: document.createdTime,
       description: document.description,
       documentTypeName: document.documentTypeName,
       name: document.name,
       ontologyRid: document.ontologyRid,
       security: document.security,
-      updatedBy: document.updatedBy,
-      updatedTime: document.updatedTime,
     };
 
     this.updateMetadata(docRef.id, metadata);
