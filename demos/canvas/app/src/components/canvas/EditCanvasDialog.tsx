@@ -41,9 +41,24 @@ export function EditCanvasDialog({ docRef, isOpen, metadata, setIsOpen }: EditCa
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const openSnapshotRef = useRef<DocumentMetadata | undefined>(undefined);
+
+  const hasRemoteChange = isOpen
+    && !saving
+    && openSnapshotRef.current != null
+    && (metadata?.name !== openSnapshotRef.current.name
+      || metadata?.description !== openSnapshotRef.current.description);
+
+  const refreshFromRemote = useCallback(() => {
+    openSnapshotRef.current = metadata;
+    setName(metadata?.name ?? "");
+    setDescription(metadata?.description ?? "");
+  }, [metadata]);
+
   const wasOpen = useRef(false);
   useEffect(() => {
     if (isOpen && !wasOpen.current) {
+      openSnapshotRef.current = metadata;
       setName(metadata?.name ?? "");
       setDescription(metadata?.description ?? "");
       setError(null);
@@ -66,14 +81,16 @@ export function EditCanvasDialog({ docRef, isOpen, metadata, setIsOpen }: EditCa
         setError("Name is required");
         return;
       }
+      const snapshot = openSnapshotRef.current;
       const update: { name?: string; description?: string } = {};
-      if (trimmedName !== (metadata?.name ?? "")) {
+      if (trimmedName !== (snapshot?.name ?? "")) {
         update.name = trimmedName;
       }
-      if (description !== (metadata?.description ?? "")) {
+      if (description !== (snapshot?.description ?? "")) {
         update.description = description;
       }
       await app.state.updateDocument(docRef, update);
+      openSnapshotRef.current = undefined;
       setIsOpen(false);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to update canvas");
@@ -89,6 +106,19 @@ export function EditCanvasDialog({ docRef, isOpen, metadata, setIsOpen }: EditCa
       title="Edit canvas"
     >
       <DialogBody>
+        {hasRemoteChange && (
+          <Callout intent="warning" style={{ marginBottom: "15px" }}>
+            This document was updated by another user. You are editing stale data.
+            <Button
+              variant="minimal"
+              size="small"
+              intent="warning"
+              text="Refresh"
+              onClick={refreshFromRemote}
+              style={{ marginLeft: "8px" }}
+            />
+          </Callout>
+        )}
         {error && (
           <Callout intent="danger" style={{ marginBottom: "15px" }}>
             {error}

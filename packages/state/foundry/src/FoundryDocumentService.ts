@@ -42,7 +42,7 @@ import type {
   PresencePublishOptions,
   PresenceSubscriptionOptions,
 } from "@palantir/pack.document-schema.model-types";
-import { getMetadata } from "@palantir/pack.document-schema.model-types";
+import { ActivityEventDataType, getMetadata } from "@palantir/pack.document-schema.model-types";
 import type {
   CreateDocumentMetadata,
   DocumentService,
@@ -329,6 +329,7 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
         if (!unsubscribed) {
           const localEvent = getActivityEvent(docRef.schema, foundryEvent);
           if (localEvent != null) {
+            this.applyMetadataFromActivityEvent(docRef, localEvent);
             callback(docRef, localEvent);
           }
         }
@@ -340,6 +341,33 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
       });
 
     return unsubscribeFn;
+  }
+
+  private applyMetadataFromActivityEvent(
+    docRef: DocumentRef,
+    event: ActivityEvent,
+  ): void {
+    const internalDoc = this.documents.get(docRef.id);
+    if (internalDoc?.metadata == null) {
+      return;
+    }
+
+    switch (event.eventData.type) {
+      case ActivityEventDataType.DOCUMENT_RENAME:
+        this.updateMetadata(docRef.id, {
+          ...internalDoc.metadata,
+          name: event.eventData.newName,
+        });
+        break;
+      case ActivityEventDataType.DOCUMENT_DESCRIPTION_UPDATE:
+        this.updateMetadata(docRef.id, {
+          ...internalDoc.metadata,
+          description: event.eventData.newDescription,
+        });
+        break;
+      default:
+        break;
+    }
   }
 
   onPresence<T extends DocumentSchema>(
