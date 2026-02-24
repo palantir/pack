@@ -25,7 +25,7 @@ import {
   TextArea,
 } from "@blueprintjs/core";
 import type { DocumentMetadata, DocumentRef } from "@palantir/pack.document-schema.model-types";
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { app } from "../../app.js";
 
 interface EditCanvasDialogProps {
@@ -41,12 +41,14 @@ export function EditCanvasDialog({ docRef, isOpen, metadata, setIsOpen }: EditCa
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const wasOpen = useRef(false);
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && !wasOpen.current) {
       setName(metadata?.name ?? "");
       setDescription(metadata?.description ?? "");
       setError(null);
     }
+    wasOpen.current = isOpen;
   }, [isOpen, metadata]);
 
   const close = useCallback(() => {
@@ -64,7 +66,14 @@ export function EditCanvasDialog({ docRef, isOpen, metadata, setIsOpen }: EditCa
         setError("Name is required");
         return;
       }
-      await app.state.updateDocument(docRef, { name: trimmedName, description });
+      const update: { name?: string; description?: string } = {};
+      if (trimmedName !== (metadata?.name ?? "")) {
+        update.name = trimmedName;
+      }
+      if (description !== (metadata?.description ?? "")) {
+        update.description = description;
+      }
+      await app.state.updateDocument(docRef, update);
       setIsOpen(false);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to update canvas");

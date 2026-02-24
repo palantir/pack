@@ -214,8 +214,8 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
       docRef.id,
       {
         requestBody: {
-          name: update.name,
-          description: update.description,
+          ...(update.name != null ? { name: update.name } : {}),
+          ...(update.description != null ? { description: update.description } : {}),
         },
       },
       {
