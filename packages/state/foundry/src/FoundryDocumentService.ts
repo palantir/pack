@@ -329,7 +329,7 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
         if (!unsubscribed) {
           const localEvent = getActivityEvent(docRef.schema, foundryEvent);
           if (localEvent != null) {
-            this.applyMetadataFromActivityEvent(docRef, localEvent);
+            this.updateMetadataFromActivityEvent(docRef, localEvent);
             callback(docRef, localEvent);
           }
         }
@@ -343,31 +343,38 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
     return unsubscribeFn;
   }
 
-  private applyMetadataFromActivityEvent(
+  private updateMetadataFromActivityEvent(
     docRef: DocumentRef,
     event: ActivityEvent,
   ): void {
-    const internalDoc = this.documents.get(docRef.id);
-    if (internalDoc?.metadata == null) {
-      return;
+    if (
+      event.eventData.type === ActivityEventDataType.DOCUMENT_RENAME
+      || event.eventData.type === ActivityEventDataType.DOCUMENT_DESCRIPTION_UPDATE
+    ) {
+      this.refetchMetadata(docRef);
     }
+  }
 
-    switch (event.eventData.type) {
-      case ActivityEventDataType.DOCUMENT_RENAME:
-        this.updateMetadata(docRef.id, {
-          ...internalDoc.metadata,
-          name: event.eventData.newName,
+  private refetchMetadata(docRef: DocumentRef): void {
+    Documents.get(this.app.config.osdkClient, docRef.id, {
+      preview: this.config.usePreviewApi ?? DEFAULT_USE_PREVIEW_API,
+    })
+      .then(document => {
+        const metadata: DocumentMetadata = {
+          description: document.description,
+          documentTypeName: document.documentTypeName,
+          name: document.name,
+          ontologyRid: document.ontologyRid,
+          security: document.security,
+        };
+
+        this.updateMetadata(docRef.id, metadata);
+      })
+      .catch((e: unknown) => {
+        this.logger.error("Failed to refetch document metadata", e, {
+          docId: docRef.id,
         });
-        break;
-      case ActivityEventDataType.DOCUMENT_DESCRIPTION_UPDATE:
-        this.updateMetadata(docRef.id, {
-          ...internalDoc.metadata,
-          description: event.eventData.newDescription,
-        });
-        break;
-      default:
-        break;
-    }
+      });
   }
 
   onPresence<T extends DocumentSchema>(
