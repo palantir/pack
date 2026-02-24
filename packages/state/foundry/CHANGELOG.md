@@ -1,5 +1,17 @@
 # @palantir/pack.state.foundry
 
+## 0.5.0
+
+### Minor Changes
+
+- 5fa10ca: Convert wire security types for foundry backed documents
+
+### Patch Changes
+
+- Updated dependencies [5c7e2a2]
+  - @palantir/pack.state.core@0.6.0
+  - @palantir/pack.state.foundry-event@0.5.0
+
 ## 0.4.0
 
 ### Minor Changes

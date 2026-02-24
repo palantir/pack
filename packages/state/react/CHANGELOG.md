@@ -1,5 +1,16 @@
 # @palantir/pack.state.react
 
+## 0.5.0
+
+### Minor Changes
+
+- 5c7e2a2: add build and test step to release pr
+
+### Patch Changes
+
+- Updated dependencies [5c7e2a2]
+  - @palantir/pack.state.core@0.6.0
+
 ## 0.4.0
 
 ### Minor Changes

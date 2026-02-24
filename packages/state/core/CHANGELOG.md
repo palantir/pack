@@ -1,5 +1,11 @@
 # @palantir/pack.state.core
 
+## 0.6.0
+
+### Minor Changes
+
+- 5c7e2a2: add build and test step to release pr
+
 ## 0.5.0
 
 ### Minor Changes
