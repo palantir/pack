@@ -195,8 +195,8 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
         documentTypeName: doc.documentTypeName,
         id: doc.id as DocumentId,
         name: doc.name,
-        ontologyRid: "unknown",
-        security: { discretionary: { owners: [] }, mandatory: {} },
+        ontologyRid: doc.ontologyRid,
+        security: getLocalSecurity(doc.security),
         updatedBy: doc.updatedBy,
         updatedTime: doc.updatedTime,
       })),
@@ -226,7 +226,7 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
           documentTypeName: document.documentTypeName,
           name: document.name,
           ontologyRid: document.ontologyRid,
-          security: document.security,
+          security: getLocalSecurity(document.security),
         };
 
         internalDoc.metadata = metadata;
@@ -384,5 +384,34 @@ function getWirePrincipal(
       return { type: "userId", userId: principal.userId };
     default:
       assertNever(principal);
+  }
+}
+
+function getLocalSecurity(wireSecurity: WireDocumentSecurity): DocumentSecurity {
+  return {
+    discretionary: {
+      editors: wireSecurity.discretionary.editors.map(getLocalPrincipal),
+      owners: wireSecurity.discretionary.owners.map(getLocalPrincipal),
+      viewers: wireSecurity.discretionary.viewers.map(getLocalPrincipal),
+    },
+    mandatory: {
+      classification: [...wireSecurity.mandatory.classification],
+      markings: [...wireSecurity.mandatory.markings],
+    },
+  };
+}
+
+function getLocalPrincipal(
+  wirePrincipal: WireDiscretionaryPrincipal,
+): DiscretionaryPrincipal {
+  switch (wirePrincipal.type) {
+    case "all":
+      return { type: "all" };
+    case "groupId":
+      return { type: "groupId", groupId: wirePrincipal.groupId };
+    case "userId":
+      return { type: "userId", userId: wirePrincipal.userId };
+    default:
+      assertNever(wirePrincipal);
   }
 }

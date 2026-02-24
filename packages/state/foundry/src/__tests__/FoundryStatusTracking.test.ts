@@ -82,7 +82,23 @@ const mockDocument: Document = {
   id: "test-doc",
   name: "Test Document",
   documentTypeName: "TestType",
-} as Document;
+  ontologyRid: "ri.ontology..test-rid",
+  createdBy: "user-1",
+  createdTime: "2025-01-01T00:00:00Z",
+  updatedBy: "user-1",
+  updatedTime: "2025-01-01T00:00:00Z",
+  security: {
+    mandatory: {
+      classification: [],
+      markings: [],
+    },
+    discretionary: {
+      owners: [],
+      editors: [],
+      viewers: [],
+    },
+  },
+};
 
 describe("Foundry Document Status Tracking", () => {
   let mockEventService: MockProxy<FoundryEventService>;
