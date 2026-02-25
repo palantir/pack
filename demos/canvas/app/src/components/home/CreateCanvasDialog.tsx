@@ -72,11 +72,17 @@ export function CreateFileDialog({ isOpen, setIsOpen }: CreateFileDialogProps) {
       return;
     }
 
+    const trimmedName = name.trim();
+    if (trimmedName.length === 0) {
+      setError("Name is required");
+      return;
+    }
+
     setCreatingCanvas(true);
 
     try {
       const response = await app.state.createDocument({
-        name,
+        name: trimmedName,
         documentTypeName: DOCUMENT_TYPE_NAME,
         security: DEFAULT_DOCUMENT_SECURITY,
         parentFolderRid: isCompassFileSystem ? PARENT_FOLDER_RID! : undefined,
@@ -129,7 +135,7 @@ export function CreateFileDialog({ isOpen, setIsOpen }: CreateFileDialogProps) {
               text="Create"
               intent="primary"
               onClick={createNew}
-              disabled={creatingCanvas}
+              disabled={creatingCanvas || name.trim().length === 0}
               loading={creatingCanvas}
             />
           </React.Fragment>

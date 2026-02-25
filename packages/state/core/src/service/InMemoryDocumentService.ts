@@ -31,7 +31,11 @@ import type {
 import { createDocumentServiceConfig } from "../DocumentServiceModule.js";
 import type { CreateDocumentMetadata } from "../types/CreateDocumentMetadata.js";
 import { createDocRef } from "../types/DocumentRefImpl.js";
-import type { DocumentService, SearchDocumentsResult } from "../types/DocumentService.js";
+import type {
+  DocumentService,
+  SearchDocumentsResult,
+  UpdateDocumentMetadata,
+} from "../types/DocumentService.js";
 import { DocumentLoadStatus } from "../types/DocumentService.js";
 import type { InternalYjsDoc } from "./BaseYjsDocumentService.js";
 import { BaseYjsDocumentService } from "./BaseYjsDocumentService.js";
@@ -134,6 +138,25 @@ class InMemoryDocumentService extends BaseYjsDocumentService {
 
     // In-memory service doesn't support pagination
     return Promise.resolve({ data: results, nextPageToken: undefined });
+  };
+
+  readonly updateDocument = (
+    docRef: DocumentRef,
+    update: UpdateDocumentMetadata,
+  ): Promise<DocumentMetadata> => {
+    const internalDoc = this.documents.get(docRef.id);
+    if (internalDoc?.metadata == null) {
+      return Promise.reject(new Error(`Document not found: ${docRef.id}`));
+    }
+
+    const metadata: DocumentMetadata = {
+      ...internalDoc.metadata,
+      ...update,
+    };
+
+    this.updateMetadata(docRef.id, metadata);
+
+    return Promise.resolve(metadata);
   };
 
   // Lifecycle method implementations

@@ -39,6 +39,7 @@ import type {
   CreateDocumentMetadata,
   InternalYjsDoc,
   SearchDocumentsResult,
+  UpdateDocumentMetadata,
 } from "@palantir/pack.state.core";
 import {
   BaseYjsDocumentService,
@@ -196,7 +197,7 @@ export class DemoDocumentService extends BaseYjsDocumentService<DemoInternalDoc>
       security, // TODO: may want to add in auth.getUserId() as owner here
     };
 
-    this.metadataStore.addDocument(id, metadata);
+    this.metadataStore.setDocument(id, metadata);
 
     const yDoc = this.initializeYDoc(schema);
     this.getCreateInternalDoc(docRef, metadata, yDoc);
@@ -215,6 +216,27 @@ export class DemoDocumentService extends BaseYjsDocumentService<DemoInternalDoc>
   ): Promise<SearchDocumentsResult> => {
     await this.metadataStore.whenReady();
     return this.metadataStore.searchDocuments(documentTypeName, options);
+  };
+
+  readonly updateDocument = async (
+    docRef: DocumentRef,
+    update: UpdateDocumentMetadata,
+  ): Promise<DocumentMetadata> => {
+    await this.metadataStore.whenReady();
+    const existing = this.metadataStore.getDocument(docRef.id);
+    if (existing == null) {
+      throw new Error(`Document not found: ${docRef.id}`);
+    }
+
+    const metadata: DocumentMetadata = {
+      ...existing,
+      ...update,
+    };
+
+    this.metadataStore.setDocument(docRef.id, metadata);
+    this.updateMetadata(docRef.id, metadata);
+
+    return metadata;
   };
 
   protected onMetadataSubscriptionOpened(

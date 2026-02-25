@@ -42,12 +42,13 @@ import type {
   PresencePublishOptions,
   PresenceSubscriptionOptions,
 } from "@palantir/pack.document-schema.model-types";
-import { getMetadata } from "@palantir/pack.document-schema.model-types";
+import { ActivityEventDataType, getMetadata } from "@palantir/pack.document-schema.model-types";
 import type {
   CreateDocumentMetadata,
   DocumentService,
   InternalYjsDoc,
   SearchDocumentsResult,
+  UpdateDocumentMetadata,
 } from "@palantir/pack.state.core";
 import {
   BaseYjsDocumentService,
@@ -204,6 +205,37 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
     };
   };
 
+  readonly updateDocument = async (
+    docRef: DocumentRef,
+    update: UpdateDocumentMetadata,
+  ): Promise<DocumentMetadata> => {
+    const document = await Documents.update(
+      this.app.config.osdkClient,
+      docRef.id,
+      {
+        requestBody: {
+          ...(update.name != null ? { name: update.name } : {}),
+          ...(update.description != null ? { description: update.description } : {}),
+        },
+      },
+      {
+        preview: this.config.usePreviewApi ?? DEFAULT_USE_PREVIEW_API,
+      },
+    );
+
+    const metadata: DocumentMetadata = {
+      description: document.description,
+      documentTypeName: document.documentTypeName,
+      name: document.name,
+      ontologyRid: document.ontologyRid,
+      security: document.security,
+    };
+
+    this.updateMetadata(docRef.id, metadata);
+
+    return metadata;
+  };
+
   protected onMetadataSubscriptionOpened(
     internalDoc: FoundryInternalDoc,
     docRef: DocumentRef,
@@ -223,6 +255,7 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
     })
       .then(document => {
         const metadata: DocumentMetadata = {
+          description: document.description,
           documentTypeName: document.documentTypeName,
           name: document.name,
           ontologyRid: document.ontologyRid,
@@ -292,6 +325,7 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
         if (!unsubscribed) {
           const localEvent = getActivityEvent(docRef.schema, foundryEvent);
           if (localEvent != null) {
+            this.updateMetadataFromActivityEvent(docRef, localEvent);
             callback(docRef, localEvent);
           }
         }
@@ -303,6 +337,40 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
       });
 
     return unsubscribeFn;
+  }
+
+  private updateMetadataFromActivityEvent(
+    docRef: DocumentRef,
+    event: ActivityEvent,
+  ): void {
+    if (
+      event.eventData.type === ActivityEventDataType.DOCUMENT_RENAME
+      || event.eventData.type === ActivityEventDataType.DOCUMENT_DESCRIPTION_UPDATE
+    ) {
+      this.refetchMetadata(docRef);
+    }
+  }
+
+  private refetchMetadata(docRef: DocumentRef): void {
+    Documents.get(this.app.config.osdkClient, docRef.id, {
+      preview: this.config.usePreviewApi ?? DEFAULT_USE_PREVIEW_API,
+    })
+      .then(document => {
+        const metadata: DocumentMetadata = {
+          description: document.description,
+          documentTypeName: document.documentTypeName,
+          name: document.name,
+          ontologyRid: document.ontologyRid,
+          security: document.security,
+        };
+
+        this.updateMetadata(docRef.id, metadata);
+      })
+      .catch((e: unknown) => {
+        this.logger.error("Failed to refetch document metadata", e, {
+          docId: docRef.id,
+        });
+      });
   }
 
   onPresence<T extends DocumentSchema>(

@@ -51,6 +51,7 @@ import type {
   RecordCollectionChangeCallback,
   RecordDeleteCallback,
   SearchDocumentsResult,
+  UpdateDocumentMetadata,
 } from "../types/DocumentService.js";
 import { DocumentLiveStatus, DocumentLoadStatus } from "../types/DocumentService.js";
 import { createRecordCollectionRef } from "../types/RecordCollectionRefImpl.js";
@@ -147,6 +148,11 @@ export abstract class BaseYjsDocumentService<TDoc extends InternalYjsDoc = Inter
       pageToken?: string;
     },
   ) => Promise<SearchDocumentsResult>;
+
+  abstract readonly updateDocument: (
+    docRef: DocumentRef,
+    metadata: UpdateDocumentMetadata,
+  ) => Promise<DocumentMetadata>;
 
   readonly createDocRef = <const T extends DocumentSchema>(
     id: DocumentId,

@@ -17,11 +17,12 @@
 import type { DocumentRef } from "@palantir/pack.document-schema.model-types";
 import { useDocMetadata } from "@palantir/pack.state.react";
 import type { ChangeEvent } from "react";
-import { memo } from "react";
+import { memo, useState } from "react";
 import type { ToolMode } from "../../hooks/useCanvasInteraction.js";
 import { AVAILABLE_COLORS } from "../../utils/getDefaultColor.js";
 import { ActivityPanel } from "./ActivityPanel.js";
 import styles from "./CanvasToolbar.module.css";
+import { EditCanvasDialog } from "./EditCanvasDialog.js";
 
 export interface CanvasToolbarProps {
   readonly canDelete: boolean;
@@ -43,6 +44,7 @@ export const CanvasToolbar = memo(function CanvasToolbar({
   onToolChange,
 }: CanvasToolbarProps) {
   const { metadata } = useDocMetadata(docRef);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
   const handleColorChange = (e: ChangeEvent<HTMLSelectElement>) => {
     onColorChange(e.target.value);
@@ -50,7 +52,15 @@ export const CanvasToolbar = memo(function CanvasToolbar({
 
   return (
     <div className={styles.toolbar}>
-      <div className={styles.documentName}>{metadata?.name ?? "Untitled"}</div>
+      <div className={styles.documentName} onClick={() => setIsEditDialogOpen(true)}>
+        {metadata?.name ?? "Untitled"}
+      </div>
+      <EditCanvasDialog
+        docRef={docRef}
+        isOpen={isEditDialogOpen}
+        metadata={metadata}
+        setIsOpen={setIsEditDialogOpen}
+      />
 
       <div className={styles.toolGroup}>
         <button
