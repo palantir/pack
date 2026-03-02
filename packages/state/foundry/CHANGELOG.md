@@ -1,5 +1,20 @@
 # @palantir/pack.state.foundry
 
+## 0.6.0
+
+### Minor Changes
+
+- 09e51b1: add update metadata api and demo canvas metadata
+- 63409f4: add security field to metadata to enable editing
+
+### Patch Changes
+
+- Updated dependencies [09e51b1]
+- Updated dependencies [63409f4]
+  - @palantir/pack.document-schema.model-types@0.5.0
+  - @palantir/pack.state.core@0.7.0
+  - @palantir/pack.state.foundry-event@0.6.0
+
 ## 0.5.0
 
 ### Minor Changes

@@ -1,5 +1,11 @@
 # @palantir/pack.document-schema.model-types
 
+## 0.5.0
+
+### Minor Changes
+
+- 09e51b1: add update metadata api and demo canvas metadata
+
 ## 0.4.0
 
 ### Minor Changes
