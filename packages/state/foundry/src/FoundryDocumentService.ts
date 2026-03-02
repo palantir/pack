@@ -216,6 +216,7 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
         requestBody: {
           ...(update.name != null ? { name: update.name } : {}),
           ...(update.description != null ? { description: update.description } : {}),
+          ...(update.security != null ? { security: getWireSecurity(update.security) } : {}),
         },
       },
       {
@@ -228,7 +229,7 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
       documentTypeName: document.documentTypeName,
       name: document.name,
       ontologyRid: document.ontologyRid,
-      security: document.security,
+      security: getLocalSecurity(document.security),
     };
 
     this.updateMetadata(docRef.id, metadata);
@@ -361,7 +362,7 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
           documentTypeName: document.documentTypeName,
           name: document.name,
           ontologyRid: document.ontologyRid,
-          security: document.security,
+          security: getLocalSecurity(document.security),
         };
 
         this.updateMetadata(docRef.id, metadata);

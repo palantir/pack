@@ -21,6 +21,7 @@ import type {
   DocumentMetadata,
   DocumentRef,
   DocumentSchema,
+  DocumentSecurity,
   DocumentState,
   EditDescription,
   Model,
@@ -108,7 +109,7 @@ export interface SearchDocumentsResult {
 export interface UpdateDocumentMetadata {
   readonly name?: string;
   readonly description?: string;
-  // TODO: readonly security?: DocumentSecurity;
+  readonly security?: DocumentSecurity;
 }
 
 /**
