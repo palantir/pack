@@ -247,6 +247,7 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
         preview: this.config.usePreviewApi ?? DEFAULT_USE_PREVIEW_API,
       },
     );
+    this.documents.delete(docRef.id);
   };
 
   protected onMetadataSubscriptionOpened(
@@ -267,6 +268,9 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
       preview: this.config.usePreviewApi ?? DEFAULT_USE_PREVIEW_API,
     })
       .then(document => {
+        if (!this.documents.has(docRef.id)) {
+          return;
+        }
         const metadata: DocumentMetadata = {
           description: document.description,
           documentTypeName: document.documentTypeName,
@@ -282,6 +286,9 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
         });
       })
       .catch((e: unknown) => {
+        if (!this.documents.has(docRef.id)) {
+          return;
+        }
         const error = new Error("Failed to load document metadata", {
           cause: e,
         });
@@ -365,10 +372,16 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
   }
 
   private refetchMetadata(docRef: DocumentRef): void {
+    if (!this.documents.has(docRef.id)) {
+      return;
+    }
     Documents.get(this.app.config.osdkClient, docRef.id, {
       preview: this.config.usePreviewApi ?? DEFAULT_USE_PREVIEW_API,
     })
       .then(document => {
+        if (!this.documents.has(docRef.id)) {
+          return;
+        }
         const metadata: DocumentMetadata = {
           description: document.description,
           documentTypeName: document.documentTypeName,
@@ -380,6 +393,9 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
         this.updateMetadata(docRef.id, metadata);
       })
       .catch((e: unknown) => {
+        if (!this.documents.has(docRef.id)) {
+          return;
+        }
         this.logger.error("Failed to refetch document metadata", e, {
           docId: docRef.id,
         });
