@@ -340,14 +340,17 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
     return unsubscribeFn;
   }
 
+  private static readonly METADATA_ACTIVITY_EVENT_TYPES: ReadonlySet<string> = new Set([
+    ActivityEventDataType.DOCUMENT_RENAME,
+    ActivityEventDataType.DOCUMENT_DESCRIPTION_UPDATE,
+    ActivityEventDataType.DOCUMENT_SECURITY_UPDATE,
+  ]);
+
   private updateMetadataFromActivityEvent(
     docRef: DocumentRef,
     event: ActivityEvent,
   ): void {
-    if (
-      event.eventData.type === ActivityEventDataType.DOCUMENT_RENAME
-      || event.eventData.type === ActivityEventDataType.DOCUMENT_DESCRIPTION_UPDATE
-    ) {
+    if (FoundryDocumentService.METADATA_ACTIVITY_EVENT_TYPES.has(event.eventData.type)) {
       this.refetchMetadata(docRef);
     }
   }
