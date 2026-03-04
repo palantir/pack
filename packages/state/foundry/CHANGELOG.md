@@ -1,5 +1,11 @@
 # @palantir/pack.state.foundry
 
+## 0.7.0
+
+### Minor Changes
+
+- d0bdb16: add security activity event
+
 ## 0.6.0
 
 ### Minor Changes
