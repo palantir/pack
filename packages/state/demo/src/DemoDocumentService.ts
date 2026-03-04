@@ -239,6 +239,18 @@ export class DemoDocumentService extends BaseYjsDocumentService<DemoInternalDoc>
     return metadata;
   };
 
+  readonly deleteDocument = async (
+    docRef: DocumentRef,
+  ): Promise<void> => {
+    await this.metadataStore.whenReady();
+    const existing = this.metadataStore.getDocument(docRef.id);
+    if (existing == null) {
+      throw new Error(`Document not found: ${docRef.id}`);
+    }
+    this.metadataStore.deleteDocument(docRef.id);
+    this.documents.delete(docRef.id);
+  };
+
   protected onMetadataSubscriptionOpened(
     internalDoc: DemoInternalDoc,
     docRef: DocumentRef,

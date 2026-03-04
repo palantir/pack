@@ -159,6 +159,17 @@ class InMemoryDocumentService extends BaseYjsDocumentService {
     return Promise.resolve(metadata);
   };
 
+  readonly deleteDocument = (
+    docRef: DocumentRef,
+  ): Promise<void> => {
+    const internalDoc = this.documents.get(docRef.id);
+    if (internalDoc == null) {
+      return Promise.reject(new Error(`Document not found: ${docRef.id}`));
+    }
+    this.documents.delete(docRef.id);
+    return Promise.resolve();
+  };
+
   // Lifecycle method implementations
   protected onMetadataSubscriptionOpened(
     internalDoc: InternalYjsDoc,

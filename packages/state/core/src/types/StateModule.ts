@@ -88,6 +88,10 @@ export interface StateModule {
     metadata: UpdateDocumentMetadata,
   ) => Promise<DocumentMetadata>;
 
+  readonly deleteDocument: (
+    docRef: DocumentRef,
+  ) => Promise<void>;
+
   readonly getDocumentSnapshot: <T extends DocumentSchema>(
     docRef: DocumentRef<T>,
   ) => Promise<DocumentState<T>>;
@@ -232,6 +236,12 @@ export class StateModuleImpl implements StateModule {
     metadata: UpdateDocumentMetadata,
   ): Promise<DocumentMetadata> {
     return this.documentService.updateDocument(docRef, metadata);
+  }
+
+  async deleteDocument(
+    docRef: DocumentRef,
+  ): Promise<void> {
+    return this.documentService.deleteDocument(docRef);
   }
 
   async getDocumentSnapshot<T extends DocumentSchema>(

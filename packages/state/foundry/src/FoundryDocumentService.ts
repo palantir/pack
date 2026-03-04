@@ -237,6 +237,18 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
     return metadata;
   };
 
+  readonly deleteDocument = async (
+    docRef: DocumentRef,
+  ): Promise<void> => {
+    await Documents.deleteDocument(
+      this.app.config.osdkClient,
+      docRef.id,
+      {
+        preview: this.config.usePreviewApi ?? DEFAULT_USE_PREVIEW_API,
+      },
+    );
+  };
+
   protected onMetadataSubscriptionOpened(
     internalDoc: FoundryInternalDoc,
     docRef: DocumentRef,

@@ -154,6 +154,10 @@ export abstract class BaseYjsDocumentService<TDoc extends InternalYjsDoc = Inter
     metadata: UpdateDocumentMetadata,
   ) => Promise<DocumentMetadata>;
 
+  abstract readonly deleteDocument: (
+    docRef: DocumentRef,
+  ) => Promise<void>;
+
   readonly createDocRef = <const T extends DocumentSchema>(
     id: DocumentId,
     schema: T,
