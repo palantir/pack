@@ -17,8 +17,10 @@
 import { Button, ButtonGroup } from "@blueprintjs/core";
 import React, { useCallback } from "react";
 import { FILE_SYSTEM_TYPE } from "../../app.js";
+import type { CanvasDocument } from "../../hooks/useCanvasDocuments.js";
 import { useCanvasDocuments } from "../../hooks/useCanvasDocuments.js";
 import { CreateFileDialog } from "./CreateCanvasDialog.js";
+import { DeleteCanvasDialog } from "./DeleteCanvasDialog.js";
 import { DocumentList } from "./DocumentList.js";
 import css from "./HomePage.module.css";
 
@@ -32,8 +34,10 @@ export const HomePage = React.memo(function HomePage() {
     hasNextPage,
     hasPreviousPage,
     isLoading,
+    removeDocument,
   } = useCanvasDocuments();
   const [createDialogIsOpen, setCreateDialogIsOpen] = React.useState(false);
+  const [deleteTarget, setDeleteTarget] = React.useState<CanvasDocument | undefined>(undefined);
 
   const showCreateDialog = useCallback(() => {
     setCreateDialogIsOpen(true);
@@ -79,10 +83,15 @@ export const HomePage = React.memo(function HomePage() {
             </ButtonGroup>
           </div>
         </div>
-        <DocumentList documents={documents} error={error} />
+        <DocumentList documents={documents} error={error} onDeleteDocument={setDeleteTarget} />
         <CreateFileDialog
           isOpen={createDialogIsOpen}
           setIsOpen={setCreateDialogIsOpen}
+        />
+        <DeleteCanvasDialog
+          document={deleteTarget}
+          setDocument={setDeleteTarget}
+          removeDocument={removeDocument}
         />
       </div>
     </div>

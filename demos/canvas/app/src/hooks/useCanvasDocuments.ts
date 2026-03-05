@@ -15,13 +15,15 @@
  */
 
 import { DocumentModel } from "@demo/canvas.sdk";
+import type { DocumentId } from "@palantir/pack.document-schema.model-types";
 import { useSearchDocuments } from "@palantir/pack.state.react";
+import { useCallback } from "react";
 import { DOCUMENT_TYPE_NAME } from "../app.js";
 import { usePackApp } from "./usePackApp.js";
 
 export interface CanvasDocument {
   readonly createdTime?: string;
-  readonly id: string;
+  readonly id: DocumentId;
   readonly name: string;
 }
 
@@ -35,6 +37,7 @@ export interface UseCanvasDocumentsResult {
   readonly goToPreviousPage: () => void;
   readonly goToFirstPage: () => void;
   readonly currentPage: number;
+  readonly removeDocument: (id: DocumentId) => void;
 }
 
 const PAGE_SIZE = 10;
@@ -51,10 +54,15 @@ export function useCanvasDocuments(): UseCanvasDocumentsResult {
     goToPreviousPage,
     goToFirstPage,
     currentPage,
+    removeResult,
   } = useSearchDocuments(app, DOCUMENT_TYPE_NAME, DocumentModel, undefined, PAGE_SIZE);
 
   const documents = results?.map(r => ({ createdTime: r.createdTime, id: r.id, name: r.name }))
     ?? [];
+
+  const removeDocument = useCallback((id: DocumentId) => {
+    removeResult(id);
+  }, [removeResult]);
 
   return {
     currentPage,
@@ -66,5 +74,6 @@ export function useCanvasDocuments(): UseCanvasDocumentsResult {
     hasNextPage,
     hasPreviousPage,
     isLoading,
+    removeDocument,
   };
 }
