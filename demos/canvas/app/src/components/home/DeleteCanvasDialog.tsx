@@ -16,12 +16,9 @@
 
 import { Button, Callout, Dialog, DialogBody, DialogFooter } from "@blueprintjs/core";
 import { DocumentModel } from "@demo/canvas.sdk";
-import { FileSystemType } from "@palantir/pack.state.core";
 import React, { useCallback, useState } from "react";
-import { app, FILE_SYSTEM_TYPE } from "../../app.js";
+import { app } from "../../app.js";
 import type { CanvasDocument } from "../../hooks/useCanvasDocuments.js";
-
-const isCompassFileSystem = FILE_SYSTEM_TYPE === FileSystemType.COMPASS;
 
 interface DeleteCanvasDialogProps {
   readonly document: CanvasDocument | undefined;
@@ -58,13 +55,11 @@ export function DeleteCanvasDialog(
     }
   }, [document, removeDocument, setDocument]);
 
-  const actionLabel = isCompassFileSystem ? "Trash" : "Archive";
-
   return (
     <Dialog
       isOpen={document != null}
       onClose={closeDialog}
-      title={`${actionLabel} canvas`}
+      title="Archive canvas"
     >
       <DialogBody>
         {error && (
@@ -73,19 +68,11 @@ export function DeleteCanvasDialog(
           </Callout>
         )}
         <p>
-          Are you sure you want to {actionLabel.toLowerCase()} <strong>{document?.name}</strong>?
+          Are you sure you want to archive <strong>{document?.name}</strong>?
         </p>
-        {isCompassFileSystem
-          ? (
-            <Callout intent="warning">
-              This will move the document to the trash. It may be recoverable from the trash folder.
-            </Callout>
-          )
-          : (
-            <Callout intent="warning">
-              This will archive the document. It will no longer appear in search results.
-            </Callout>
-          )}
+        <Callout intent="warning">
+          This will archive the document. It will no longer appear in search results.
+        </Callout>
       </DialogBody>
       <DialogFooter
         actions={
@@ -96,7 +83,7 @@ export function DeleteCanvasDialog(
               disabled={deleting}
             />
             <Button
-              text={actionLabel}
+              text="Archive"
               intent="danger"
               onClick={confirmDelete}
               disabled={deleting}
