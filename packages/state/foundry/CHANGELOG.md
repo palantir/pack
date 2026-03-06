@@ -1,5 +1,17 @@
 # @palantir/pack.state.foundry
 
+## 0.8.0
+
+### Minor Changes
+
+- 8117bbe: add soft deletion api
+
+### Patch Changes
+
+- Updated dependencies [8117bbe]
+  - @palantir/pack.state.core@0.8.0
+  - @palantir/pack.state.foundry-event@0.7.0
+
 ## 0.7.0
 
 ### Minor Changes
