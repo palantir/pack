@@ -146,7 +146,8 @@ export interface DocumentService {
   /**
    * Deletes a document. For Compass-backed documents this moves the document to the trash;
    * for Artifacts-backed documents this archives it. In both cases the document will no longer
-   * appear in search results or be loadable, but the operation can be reversed by the owner.
+   * appear in search results or be loadable, but the operation can be reversed by the owner (
+   * api not yet supported).
    */
   readonly deleteDocument: (
     docRef: DocumentRef,
