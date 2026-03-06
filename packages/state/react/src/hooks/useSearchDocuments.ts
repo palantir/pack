@@ -35,6 +35,7 @@ interface UseSearchDocumentsResult {
   readonly goToPreviousPage: () => void;
   readonly goToFirstPage: () => void;
   readonly currentPage: number;
+  readonly removeResult: (id: DocumentId) => void;
 }
 
 export function useSearchDocuments<T extends DocumentSchema>(
@@ -128,6 +129,10 @@ export function useSearchDocuments<T extends DocumentSchema>(
     void search(documentName, pageSize, undefined);
   }, [search, documentName, pageSize]);
 
+  const removeResult = useCallback((id: DocumentId) => {
+    setResults(prev => prev?.filter(r => r.id !== id));
+  }, []);
+
   const hasNextPage = nextPageToken != null;
 
   return {
@@ -139,6 +144,7 @@ export function useSearchDocuments<T extends DocumentSchema>(
     hasNextPage,
     hasPreviousPage: currentPage > 1,
     isLoading,
+    removeResult,
     results,
   };
 }

@@ -51,6 +51,10 @@ export class MetadataStore {
     return this.metadataMap.get(id);
   }
 
+  deleteDocument(id: DocumentId): void {
+    this.metadataMap.delete(id);
+  }
+
   searchDocuments(
     typeName: string,
     options?: { documentName?: string; pageSize?: number; pageToken?: string },

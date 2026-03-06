@@ -14,20 +14,20 @@
  * limitations under the License.
  */
 
-import React from "react";
-import { useNavigate } from "react-router";
+import { Button } from "@blueprintjs/core";
+import React, { useCallback } from "react";
+import { Link } from "react-router";
 import type { CanvasDocument } from "../../hooks/useCanvasDocuments.js";
 import css from "./HomePage.module.css";
 
 interface DocumentListProps {
   readonly documents: readonly CanvasDocument[];
   readonly error: Error | undefined;
+  readonly onDeleteDocument: (doc: CanvasDocument) => void;
 }
 
 export const DocumentList = React.memo(
-  function DocumentList({ documents, error }: DocumentListProps) {
-    const navigate = useNavigate();
-
+  function DocumentList({ documents, error, onDeleteDocument }: DocumentListProps) {
     if (error != null) {
       return (
         <div className={css.emptyList}>
@@ -47,17 +47,49 @@ export const DocumentList = React.memo(
     return (
       <div className={css.listItems}>
         {documents.map(doc => (
-          <div key={doc.id} className={css.listItem}>
-            <button
-              className={css.canvasLink}
-              onClick={() => navigate(`/canvas/${doc.id}`)}
-              type="button"
-            >
-              {doc.name}
-            </button>
-          </div>
+          <DocumentListItem
+            key={doc.id}
+            document={doc}
+            onDelete={onDeleteDocument}
+          />
         ))}
       </div>
     );
   },
 );
+
+interface DocumentListItemProps {
+  readonly document: CanvasDocument;
+  readonly onDelete: (doc: CanvasDocument) => void;
+}
+
+const DocumentListItem = React.memo(function DocumentListItem({
+  document,
+  onDelete,
+}: DocumentListItemProps) {
+  const handleDelete = useCallback(
+    (e: React.MouseEvent) => {
+      e.stopPropagation();
+      onDelete(document);
+    },
+    [document, onDelete],
+  );
+
+  return (
+    <div className={css.listItem}>
+      <Link
+        className={css.canvasLink}
+        to={`/canvas/${document.id}`}
+      >
+        {document.name}
+      </Link>
+      <Button
+        icon="trash"
+        variant="minimal"
+        intent="danger"
+        onClick={handleDelete}
+        aria-label={`Delete ${document.name}`}
+      />
+    </div>
+  );
+});
