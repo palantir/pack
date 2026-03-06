@@ -1,5 +1,12 @@
 # @palantir/pack.state.foundry-event
 
+## 0.7.0
+
+### Patch Changes
+
+- Updated dependencies [8117bbe]
+  - @palantir/pack.state.core@0.8.0
+
 ## 0.6.0
 
 ### Patch Changes

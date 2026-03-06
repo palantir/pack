@@ -1,5 +1,11 @@
 # @palantir/pack.state.core
 
+## 0.8.0
+
+### Minor Changes
+
+- 8117bbe: add soft deletion api
+
 ## 0.7.0
 
 ### Minor Changes

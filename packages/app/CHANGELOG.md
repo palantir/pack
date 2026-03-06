@@ -1,5 +1,14 @@
 # @palantir/pack.app
 
+## 0.7.0
+
+### Patch Changes
+
+- Updated dependencies [8117bbe]
+  - @palantir/pack.state.foundry@0.8.0
+  - @palantir/pack.state.core@0.8.0
+  - @palantir/pack.state.demo@0.6.0
+
 ## 0.6.0
 
 ### Patch Changes
