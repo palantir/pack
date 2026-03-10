@@ -31,6 +31,7 @@ import {
 } from "@palantir/pack.core";
 import type {
   ActivityEvent,
+  ActivityEventId,
   DocumentId,
   DocumentMetadata,
   DocumentRef,
@@ -93,6 +94,8 @@ export function internalCreateFoundryDocumentService(
 
 interface FoundryInternalDoc extends InternalYjsDoc {
   syncSession?: SyncSession;
+  metadataSubscribedAt?: number;
+  lastProcessedMetadataEventId?: ActivityEventId;
 }
 
 export class FoundryDocumentService extends BaseYjsDocumentService<FoundryInternalDoc> {
@@ -260,6 +263,8 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
       );
     }
 
+    internalDoc.metadataSubscribedAt = Date.now();
+
     this.updateMetadataStatus(internalDoc, docRef, {
       load: DocumentLoadStatus.LOADING,
     });
@@ -317,9 +322,12 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
   }
 
   protected onMetadataSubscriptionClosed(
-    _internalDoc: FoundryInternalDoc,
+    internalDoc: FoundryInternalDoc,
     _docRef: DocumentRef,
-  ): void {}
+  ): void {
+    internalDoc.metadataSubscribedAt = undefined;
+    internalDoc.lastProcessedMetadataEventId = undefined;
+  }
 
   protected onDataSubscriptionClosed(
     internalDoc: FoundryInternalDoc,
@@ -371,9 +379,26 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
     docRef: DocumentRef,
     event: ActivityEvent,
   ): void {
-    if (FoundryDocumentService.METADATA_ACTIVITY_EVENT_TYPES.has(event.eventData.type)) {
-      this.refetchMetadata(docRef);
+    if (!FoundryDocumentService.METADATA_ACTIVITY_EVENT_TYPES.has(event.eventData.type)) {
+      return;
     }
+
+    const internalDoc = this.documents.get(docRef.id);
+
+    if (
+      internalDoc == null
+      || internalDoc.metadataSubscribedAt == null
+      || event.createdInstant <= internalDoc.metadataSubscribedAt
+    ) {
+      return;
+    }
+
+    if (internalDoc.lastProcessedMetadataEventId === event.eventId) {
+      return;
+    }
+    internalDoc.lastProcessedMetadataEventId = event.eventId;
+
+    this.refetchMetadata(docRef);
   }
 
   private refetchMetadata(docRef: DocumentRef): void {
