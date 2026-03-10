@@ -119,7 +119,7 @@ export function SecurityDialog({ docRef, isOpen, metadata, setIsOpen }: Security
     <Dialog
       isOpen={isOpen}
       onClose={handleClose}
-      title="Document security"
+      title="Edit security"
     >
       <DialogBody>
         {error && (
