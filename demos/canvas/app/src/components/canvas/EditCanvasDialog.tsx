@@ -124,7 +124,7 @@ export function EditCanvasDialog({ docRef, isOpen, metadata, setIsOpen }: EditCa
             {error}
           </Callout>
         )}
-        <FormGroup label="Name" labelFor="edit-canvas-name">
+        <FormGroup label={<strong>Name</strong>} labelFor="edit-canvas-name">
           <InputGroup
             id="edit-canvas-name"
             value={name}
@@ -133,7 +133,7 @@ export function EditCanvasDialog({ docRef, isOpen, metadata, setIsOpen }: EditCa
             placeholder="Enter name..."
           />
         </FormGroup>
-        <FormGroup label="Description" labelFor="edit-canvas-description">
+        <FormGroup label={<strong>Description</strong>} labelFor="edit-canvas-description">
           <TextArea
             id="edit-canvas-description"
             value={description}

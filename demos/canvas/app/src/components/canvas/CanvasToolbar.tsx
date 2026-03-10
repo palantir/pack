@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+import { Button } from "@blueprintjs/core";
 import type { DocumentRef } from "@palantir/pack.document-schema.model-types";
 import { useDocMetadata } from "@palantir/pack.state.react";
 import type { ChangeEvent } from "react";
@@ -23,6 +24,7 @@ import { AVAILABLE_COLORS } from "../../utils/getDefaultColor.js";
 import { ActivityPanel } from "./ActivityPanel.js";
 import styles from "./CanvasToolbar.module.css";
 import { EditCanvasDialog } from "./EditCanvasDialog.js";
+import { SecurityDialog } from "./SecurityDialog.js";
 
 export interface CanvasToolbarProps {
   readonly canDelete: boolean;
@@ -45,6 +47,7 @@ export const CanvasToolbar = memo(function CanvasToolbar({
 }: CanvasToolbarProps) {
   const { metadata } = useDocMetadata(docRef);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isSecurityDialogOpen, setIsSecurityDialogOpen] = useState(false);
 
   const handleColorChange = (e: ChangeEvent<HTMLSelectElement>) => {
     onColorChange(e.target.value);
@@ -55,11 +58,23 @@ export const CanvasToolbar = memo(function CanvasToolbar({
       <div className={styles.documentName} onClick={() => setIsEditDialogOpen(true)}>
         {metadata?.name ?? "Untitled"}
       </div>
+      <Button
+        icon="shield"
+        variant="minimal"
+        size="small"
+        onClick={() => setIsSecurityDialogOpen(true)}
+      />
       <EditCanvasDialog
         docRef={docRef}
         isOpen={isEditDialogOpen}
         metadata={metadata}
         setIsOpen={setIsEditDialogOpen}
+      />
+      <SecurityDialog
+        docRef={docRef}
+        isOpen={isSecurityDialogOpen}
+        metadata={metadata}
+        setIsOpen={setIsSecurityDialogOpen}
       />
 
       <div className={styles.toolGroup}>
