@@ -23,10 +23,13 @@ export type ActivityEventId = Flavored<"pack:EventId">;
 
 export const ActivityEventDataType = {
   CUSTOM_EVENT: "customEvent",
+  DOCUMENT_ALL_PRINCIPAL_DISCRETIONARY_SECURITY_UPDATE:
+    "documentAllPrincipalDiscretionarySecurityUpdate",
   DOCUMENT_CREATE: "documentCreate",
   DOCUMENT_DESCRIPTION_UPDATE: "documentDescriptionUpdate",
   DOCUMENT_RENAME: "documentRename",
   DOCUMENT_SECURITY_UPDATE: "documentSecurityUpdate",
+  DOCUMENT_USER_DISCRETIONARY_SECURITY_UPDATE: "documentUserDiscretionarySecurityUpdate",
   UNKNOWN: "unknown",
 } as const;
 
@@ -98,6 +101,27 @@ export interface ActivityEventDataDocumentSecurityUpdate {
 }
 
 /**
+ * Activity event emitted when a document's all-principal discretionary security is updated.
+ */
+export interface ActivityEventDataDocumentAllPrincipalDiscretionarySecurityUpdate {
+  readonly type: typeof ActivityEventDataType.DOCUMENT_ALL_PRINCIPAL_DISCRETIONARY_SECURITY_UPDATE;
+  readonly newAllPrincipalPermissionLevel: string;
+  /**
+   * True if this is the initial discretionary security setting,
+   * false if updating an existing one.
+   */
+  readonly isInitial: boolean;
+}
+
+/**
+ * Activity event emitted when a document's user-level discretionary security is updated.
+ * This is a marker event; discretionary security change details will be included in a future release.
+ */
+export interface ActivityEventDataDocumentUserDiscretionarySecurityUpdate {
+  readonly type: typeof ActivityEventDataType.DOCUMENT_USER_DISCRETIONARY_SECURITY_UPDATE;
+}
+
+/**
  * Fallback for unrecognized activity event types.
  *
  * This allows some flexibility with new event types added to the platform.
@@ -113,10 +137,12 @@ export interface ActivityEventDataUnknown {
 
 export type ActivityEventData =
   | ActivityEventDataCustom
+  | ActivityEventDataDocumentAllPrincipalDiscretionarySecurityUpdate
   | ActivityEventDataDocumentCreate
   | ActivityEventDataDocumentDescriptionUpdate
   | ActivityEventDataDocumentRename
   | ActivityEventDataDocumentSecurityUpdate
+  | ActivityEventDataDocumentUserDiscretionarySecurityUpdate
   | ActivityEventDataUnknown;
 
 /**

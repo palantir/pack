@@ -23,10 +23,12 @@ import { invalidUserRef } from "@palantir/pack.auth";
 import type {
   ActivityEvent,
   ActivityEventData,
+  ActivityEventDataDocumentAllPrincipalDiscretionarySecurityUpdate,
   ActivityEventDataDocumentCreate,
   ActivityEventDataDocumentDescriptionUpdate,
   ActivityEventDataDocumentRename,
   ActivityEventDataDocumentSecurityUpdate,
+  ActivityEventDataDocumentUserDiscretionarySecurityUpdate,
   DocumentSchema,
   Model,
   ModelData,
@@ -64,14 +66,15 @@ export function getActivityEvent(
 
 /**
  * Platform event type names as sent by backpack.
- * Note: Only DOCUMENT_CREATE is currently emitted by the backend.
- * Remaining types are included for future use.
  */
 const PlatformEventType = {
+  DOCUMENT_ALL_PRINCIPAL_DISCRETIONARY_SECURITY_UPDATE:
+    "DocumentAllPrincipalDiscretionarySecurityUpdateEvent",
   DOCUMENT_CREATE: "DocumentCreateEvent",
   DOCUMENT_DESCRIPTION_UPDATE: "DocumentDescriptionUpdateEvent",
   DOCUMENT_RENAME: "DocumentRenameEvent",
   DOCUMENT_SECURITY_UPDATE: "DocumentMandatorySecurityUpdateEvent",
+  DOCUMENT_USER_DISCRETIONARY_SECURITY_UPDATE: "DocumentUserDiscretionarySecurityUpdateEvent",
 } as const;
 
 interface WireDocumentCreateEvent {
@@ -95,6 +98,11 @@ interface WireDocumentDescriptionUpdateEvent {
 interface WireDocumentSecurityUpdateEvent {
   readonly newClassification?: readonly string[];
   readonly newMarkings?: readonly string[];
+}
+
+interface WireDocumentAllPrincipalDiscretionarySecurityUpdateEvent {
+  readonly newAllPrincipalPermissionLevel?: string;
+  readonly isInitial?: boolean;
 }
 
 function getActivityEventData(
@@ -164,6 +172,7 @@ function getPlatformActivityEventData(
       } satisfies ActivityEventDataDocumentDescriptionUpdate;
     }
 
+    // Classification and markings updates
     case PlatformEventType.DOCUMENT_SECURITY_UPDATE: {
       const wireData = data as WireDocumentSecurityUpdateEvent;
       return {
@@ -171,6 +180,22 @@ function getPlatformActivityEventData(
         newMarkings: wireData.newMarkings ?? [],
         type: ActivityEventDataType.DOCUMENT_SECURITY_UPDATE,
       } satisfies ActivityEventDataDocumentSecurityUpdate;
+    }
+
+    case PlatformEventType.DOCUMENT_ALL_PRINCIPAL_DISCRETIONARY_SECURITY_UPDATE: {
+      const wireData = data as WireDocumentAllPrincipalDiscretionarySecurityUpdateEvent;
+      return {
+        isInitial: wireData.isInitial ?? false,
+        newAllPrincipalPermissionLevel: wireData.newAllPrincipalPermissionLevel ?? "",
+        type: ActivityEventDataType.DOCUMENT_ALL_PRINCIPAL_DISCRETIONARY_SECURITY_UPDATE,
+      } satisfies ActivityEventDataDocumentAllPrincipalDiscretionarySecurityUpdate;
+    }
+
+    case PlatformEventType.DOCUMENT_USER_DISCRETIONARY_SECURITY_UPDATE: {
+      // TODO: wire data for user discretionary security updates
+      return {
+        type: ActivityEventDataType.DOCUMENT_USER_DISCRETIONARY_SECURITY_UPDATE,
+      } satisfies ActivityEventDataDocumentUserDiscretionarySecurityUpdate;
     }
 
     default:
