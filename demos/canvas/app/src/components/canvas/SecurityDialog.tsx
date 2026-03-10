@@ -148,28 +148,28 @@ export function SecurityDialog({ docRef, isOpen, metadata, setIsOpen }: Security
           </FormGroup>
         </FormGroup>
         <FormGroup label={<strong>Discretionary</strong>}>
-          <FormGroup label="Owners (UUID)" labelFor="security-owners">
+          <FormGroup label="Owners" labelFor="security-owners">
             <InputGroup
               id="security-owners"
               value={owners}
               onValueChange={setOwners}
-              placeholder="user1, user2, ..."
+              placeholder="user1-uuid, user2-uuid, ..."
             />
           </FormGroup>
-          <FormGroup label="Editors (UUID)" labelFor="security-editors">
+          <FormGroup label="Editors" labelFor="security-editors">
             <InputGroup
               id="security-editors"
               value={editors}
               onValueChange={setEditors}
-              placeholder="user1, user2, ..."
+              placeholder="user1-uuid, user2-uuid, ..."
             />
           </FormGroup>
-          <FormGroup label="Viewers (UUID)" labelFor="security-viewers">
+          <FormGroup label="Viewers" labelFor="security-viewers">
             <InputGroup
               id="security-viewers"
               value={viewers}
               onValueChange={setViewers}
-              placeholder="user1, user2, ..."
+              placeholder="user1-uuid, user2-uuid, ..."
             />
           </FormGroup>
         </FormGroup>
