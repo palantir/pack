@@ -29,7 +29,7 @@ export const ActivityEventDataType = {
   DOCUMENT_CREATE: "documentCreate",
   DOCUMENT_DESCRIPTION_UPDATE: "documentDescriptionUpdate",
   DOCUMENT_RENAME: "documentRename",
-  DOCUMENT_SECURITY_UPDATE: "documentSecurityUpdate",
+  DOCUMENT_MANDATORY_SECURITY_UPDATE: "documentMandatorySecurityUpdate",
   DOCUMENT_DISCRETIONARY_SECURITY_UPDATE: "documentDiscretionarySecurityUpdate",
   UNKNOWN: "unknown",
 } as const;
@@ -97,7 +97,7 @@ export interface ActivityEventDataDocumentDescriptionUpdate {
  */
 export interface ActivityEventDataDocumentDiscretionarySecurityUpdate {
   readonly type: typeof ActivityEventDataType.DOCUMENT_DISCRETIONARY_SECURITY_UPDATE;
-  readonly principalType: string;
+  readonly principalType: "ALL_PRINCIPAL" | "USER";
   readonly previousDiscretionarySecurity?: DocumentSecurityDiscretionary;
   readonly newDiscretionarySecurity: DocumentSecurityDiscretionary;
 }
@@ -105,8 +105,8 @@ export interface ActivityEventDataDocumentDiscretionarySecurityUpdate {
 /**
  * Activity event emitted when a document's mandatory security is updated.
  */
-export interface ActivityEventDataDocumentSecurityUpdate {
-  readonly type: typeof ActivityEventDataType.DOCUMENT_SECURITY_UPDATE;
+export interface ActivityEventDataDocumentMandatorySecurityUpdate {
+  readonly type: typeof ActivityEventDataType.DOCUMENT_MANDATORY_SECURITY_UPDATE;
   readonly newClassification: readonly string[];
   readonly newMarkings: readonly string[];
 }
@@ -130,7 +130,7 @@ export type ActivityEventData =
   | ActivityEventDataDocumentCreate
   | ActivityEventDataDocumentDescriptionUpdate
   | ActivityEventDataDocumentRename
-  | ActivityEventDataDocumentSecurityUpdate
+  | ActivityEventDataDocumentMandatorySecurityUpdate
   | ActivityEventDataDocumentDiscretionarySecurityUpdate
   | ActivityEventDataUnknown;
 
