@@ -1,5 +1,11 @@
 # @palantir/pack.document-schema.model-types
 
+## 0.6.0
+
+### Minor Changes
+
+- 2b912f2: add discretionary security activity event
+
 ## 0.5.0
 
 ### Minor Changes

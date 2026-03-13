@@ -1,5 +1,18 @@
 # @palantir/pack.state.foundry
 
+## 0.9.0
+
+### Minor Changes
+
+- 2b912f2: add discretionary security activity event
+
+### Patch Changes
+
+- Updated dependencies [2b912f2]
+  - @palantir/pack.document-schema.model-types@0.6.0
+  - @palantir/pack.state.core@0.9.0
+  - @palantir/pack.state.foundry-event@0.8.0
+
 ## 0.8.0
 
 ### Minor Changes

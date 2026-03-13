@@ -1,5 +1,13 @@
 # @palantir/pack.state.demo
 
+## 0.7.0
+
+### Patch Changes
+
+- Updated dependencies [2b912f2]
+  - @palantir/pack.document-schema.model-types@0.6.0
+  - @palantir/pack.state.core@0.9.0
+
 ## 0.6.0
 
 ### Minor Changes
