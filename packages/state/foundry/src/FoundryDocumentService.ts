@@ -362,7 +362,8 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
   private static readonly METADATA_ACTIVITY_EVENT_TYPES: ReadonlySet<string> = new Set([
     ActivityEventDataType.DOCUMENT_RENAME,
     ActivityEventDataType.DOCUMENT_DESCRIPTION_UPDATE,
-    ActivityEventDataType.DOCUMENT_SECURITY_UPDATE,
+    ActivityEventDataType.DOCUMENT_MANDATORY_SECURITY_UPDATE,
+    ActivityEventDataType.DOCUMENT_DISCRETIONARY_SECURITY_UPDATE,
   ]);
 
   private updateMetadataFromActivityEvent(

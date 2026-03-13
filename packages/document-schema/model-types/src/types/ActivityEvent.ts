@@ -15,7 +15,10 @@
  */
 
 import type { Flavored } from "@palantir/pack.core";
-import type { DocumentSecurityMandatory } from "./DocumentMetadata.js";
+import type {
+  DocumentSecurityDiscretionary,
+  DocumentSecurityMandatory,
+} from "./DocumentMetadata.js";
 import type { Model, ModelData } from "./Model.js";
 import type { UserId } from "./UserRef.js";
 
@@ -26,7 +29,8 @@ export const ActivityEventDataType = {
   DOCUMENT_CREATE: "documentCreate",
   DOCUMENT_DESCRIPTION_UPDATE: "documentDescriptionUpdate",
   DOCUMENT_RENAME: "documentRename",
-  DOCUMENT_SECURITY_UPDATE: "documentSecurityUpdate",
+  DOCUMENT_MANDATORY_SECURITY_UPDATE: "documentMandatorySecurityUpdate",
+  DOCUMENT_DISCRETIONARY_SECURITY_UPDATE: "documentDiscretionarySecurityUpdate",
   UNKNOWN: "unknown",
 } as const;
 
@@ -89,10 +93,20 @@ export interface ActivityEventDataDocumentDescriptionUpdate {
 }
 
 /**
+ * Activity event emitted when a document's discretionary security is updated.
+ */
+export interface ActivityEventDataDocumentDiscretionarySecurityUpdate {
+  readonly type: typeof ActivityEventDataType.DOCUMENT_DISCRETIONARY_SECURITY_UPDATE;
+  readonly principalType: "ALL_PRINCIPAL" | "USER";
+  readonly previousDiscretionarySecurity?: DocumentSecurityDiscretionary;
+  readonly newDiscretionarySecurity: DocumentSecurityDiscretionary;
+}
+
+/**
  * Activity event emitted when a document's mandatory security is updated.
  */
-export interface ActivityEventDataDocumentSecurityUpdate {
-  readonly type: typeof ActivityEventDataType.DOCUMENT_SECURITY_UPDATE;
+export interface ActivityEventDataDocumentMandatorySecurityUpdate {
+  readonly type: typeof ActivityEventDataType.DOCUMENT_MANDATORY_SECURITY_UPDATE;
   readonly newClassification: readonly string[];
   readonly newMarkings: readonly string[];
 }
@@ -116,7 +130,8 @@ export type ActivityEventData =
   | ActivityEventDataDocumentCreate
   | ActivityEventDataDocumentDescriptionUpdate
   | ActivityEventDataDocumentRename
-  | ActivityEventDataDocumentSecurityUpdate
+  | ActivityEventDataDocumentMandatorySecurityUpdate
+  | ActivityEventDataDocumentDiscretionarySecurityUpdate
   | ActivityEventDataUnknown;
 
 /**

@@ -25,9 +25,11 @@ import type {
   ActivityEventData,
   ActivityEventDataDocumentCreate,
   ActivityEventDataDocumentDescriptionUpdate,
+  ActivityEventDataDocumentDiscretionarySecurityUpdate,
+  ActivityEventDataDocumentMandatorySecurityUpdate,
   ActivityEventDataDocumentRename,
-  ActivityEventDataDocumentSecurityUpdate,
   DocumentSchema,
+  DocumentSecurityDiscretionary,
   Model,
   ModelData,
   PresenceEvent,
@@ -71,7 +73,8 @@ const PlatformEventType = {
   DOCUMENT_CREATE: "DocumentCreateEvent",
   DOCUMENT_DESCRIPTION_UPDATE: "DocumentDescriptionUpdateEvent",
   DOCUMENT_RENAME: "DocumentRenameEvent",
-  DOCUMENT_SECURITY_UPDATE: "DocumentMandatorySecurityUpdateEvent",
+  DOCUMENT_MANDATORY_SECURITY_UPDATE: "DocumentMandatorySecurityUpdateEvent",
+  DOCUMENT_DISCRETIONARY_SECURITY_UPDATE: "DocumentDiscretionarySecurityUpdateEvent",
 } as const;
 
 interface WireDocumentCreateEvent {
@@ -92,9 +95,15 @@ interface WireDocumentDescriptionUpdateEvent {
   readonly isInitial?: boolean;
 }
 
-interface WireDocumentSecurityUpdateEvent {
+interface WireDocumentMandatorySecurityUpdateEvent {
   readonly newClassification?: readonly string[];
   readonly newMarkings?: readonly string[];
+}
+
+interface WireDocumentDiscretionarySecurityUpdateEvent {
+  readonly principalType: "ALL_PRINCIPAL" | "USER";
+  readonly previousDiscretionarySecurity?: DocumentSecurityDiscretionary;
+  readonly newDiscretionarySecurity: DocumentSecurityDiscretionary;
 }
 
 function getActivityEventData(
@@ -164,13 +173,23 @@ function getPlatformActivityEventData(
       } satisfies ActivityEventDataDocumentDescriptionUpdate;
     }
 
-    case PlatformEventType.DOCUMENT_SECURITY_UPDATE: {
-      const wireData = data as WireDocumentSecurityUpdateEvent;
+    case PlatformEventType.DOCUMENT_MANDATORY_SECURITY_UPDATE: {
+      const wireData = data as WireDocumentMandatorySecurityUpdateEvent;
       return {
         newClassification: wireData.newClassification ?? [],
         newMarkings: wireData.newMarkings ?? [],
-        type: ActivityEventDataType.DOCUMENT_SECURITY_UPDATE,
-      } satisfies ActivityEventDataDocumentSecurityUpdate;
+        type: ActivityEventDataType.DOCUMENT_MANDATORY_SECURITY_UPDATE,
+      } satisfies ActivityEventDataDocumentMandatorySecurityUpdate;
+    }
+
+    case PlatformEventType.DOCUMENT_DISCRETIONARY_SECURITY_UPDATE: {
+      const wireData = data as WireDocumentDiscretionarySecurityUpdateEvent;
+      return {
+        principalType: wireData.principalType ?? "",
+        previousDiscretionarySecurity: wireData.previousDiscretionarySecurity,
+        newDiscretionarySecurity: wireData.newDiscretionarySecurity ?? [],
+        type: ActivityEventDataType.DOCUMENT_DISCRETIONARY_SECURITY_UPDATE,
+      } satisfies ActivityEventDataDocumentDiscretionarySecurityUpdate;
     }
 
     default:
