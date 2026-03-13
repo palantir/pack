@@ -363,6 +363,7 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
     ActivityEventDataType.DOCUMENT_RENAME,
     ActivityEventDataType.DOCUMENT_DESCRIPTION_UPDATE,
     ActivityEventDataType.DOCUMENT_SECURITY_UPDATE,
+    ActivityEventDataType.DOCUMENT_DISCRETIONARY_SECURITY_UPDATE,
   ]);
 
   private updateMetadataFromActivityEvent(

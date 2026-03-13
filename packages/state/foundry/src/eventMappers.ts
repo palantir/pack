@@ -25,9 +25,11 @@ import type {
   ActivityEventData,
   ActivityEventDataDocumentCreate,
   ActivityEventDataDocumentDescriptionUpdate,
+  ActivityEventDataDocumentDiscretionarySecurityUpdate,
   ActivityEventDataDocumentRename,
   ActivityEventDataDocumentSecurityUpdate,
   DocumentSchema,
+  DocumentSecurityDiscretionary,
   Model,
   ModelData,
   PresenceEvent,
@@ -72,6 +74,7 @@ const PlatformEventType = {
   DOCUMENT_DESCRIPTION_UPDATE: "DocumentDescriptionUpdateEvent",
   DOCUMENT_RENAME: "DocumentRenameEvent",
   DOCUMENT_SECURITY_UPDATE: "DocumentMandatorySecurityUpdateEvent",
+  DOCUMENT_DISCRETIONARY_SECURITY_UPDATE: "DocumentDiscretionarySecurityUpdateEvent",
 } as const;
 
 interface WireDocumentCreateEvent {
@@ -95,6 +98,12 @@ interface WireDocumentDescriptionUpdateEvent {
 interface WireDocumentSecurityUpdateEvent {
   readonly newClassification?: readonly string[];
   readonly newMarkings?: readonly string[];
+}
+
+interface WireDocumentDiscretionarySecurityUpdateEvent {
+  readonly principalType: string;
+  readonly previousDiscretionarySecurity?: DocumentSecurityDiscretionary;
+  readonly newDiscretionarySecurity: DocumentSecurityDiscretionary;
 }
 
 function getActivityEventData(
@@ -171,6 +180,16 @@ function getPlatformActivityEventData(
         newMarkings: wireData.newMarkings ?? [],
         type: ActivityEventDataType.DOCUMENT_SECURITY_UPDATE,
       } satisfies ActivityEventDataDocumentSecurityUpdate;
+    }
+
+    case PlatformEventType.DOCUMENT_DISCRETIONARY_SECURITY_UPDATE: {
+      const wireData = data as WireDocumentDiscretionarySecurityUpdateEvent;
+      return {
+        principalType: wireData.principalType,
+        previousDiscretionarySecurity: wireData.previousDiscretionarySecurity,
+        newDiscretionarySecurity: wireData.newDiscretionarySecurity,
+        type: ActivityEventDataType.DOCUMENT_DISCRETIONARY_SECURITY_UPDATE,
+      } satisfies ActivityEventDataDocumentDiscretionarySecurityUpdate;
     }
 
     default:

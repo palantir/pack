@@ -21,6 +21,7 @@ export type {
   ActivityEventDataCustom,
   ActivityEventDataDocumentCreate,
   ActivityEventDataDocumentDescriptionUpdate,
+  ActivityEventDataDocumentDiscretionarySecurityUpdate,
   ActivityEventDataDocumentRename,
   ActivityEventDataDocumentSecurityUpdate,
   ActivityEventDataUnknown,

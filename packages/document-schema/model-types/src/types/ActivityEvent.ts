@@ -15,7 +15,10 @@
  */
 
 import type { Flavored } from "@palantir/pack.core";
-import type { DocumentSecurityMandatory } from "./DocumentMetadata.js";
+import type {
+  DocumentSecurityDiscretionary,
+  DocumentSecurityMandatory,
+} from "./DocumentMetadata.js";
 import type { Model, ModelData } from "./Model.js";
 import type { UserId } from "./UserRef.js";
 
@@ -27,6 +30,7 @@ export const ActivityEventDataType = {
   DOCUMENT_DESCRIPTION_UPDATE: "documentDescriptionUpdate",
   DOCUMENT_RENAME: "documentRename",
   DOCUMENT_SECURITY_UPDATE: "documentSecurityUpdate",
+  DOCUMENT_DISCRETIONARY_SECURITY_UPDATE: "documentDiscretionarySecurityUpdate",
   UNKNOWN: "unknown",
 } as const;
 
@@ -89,6 +93,16 @@ export interface ActivityEventDataDocumentDescriptionUpdate {
 }
 
 /**
+ * Activity event emitted when a document's discretionary security is updated.
+ */
+export interface ActivityEventDataDocumentDiscretionarySecurityUpdate {
+  readonly type: typeof ActivityEventDataType.DOCUMENT_DISCRETIONARY_SECURITY_UPDATE;
+  readonly principalType: string;
+  readonly previousDiscretionarySecurity?: DocumentSecurityDiscretionary;
+  readonly newDiscretionarySecurity: DocumentSecurityDiscretionary;
+}
+
+/**
  * Activity event emitted when a document's mandatory security is updated.
  */
 export interface ActivityEventDataDocumentSecurityUpdate {
@@ -117,6 +131,7 @@ export type ActivityEventData =
   | ActivityEventDataDocumentDescriptionUpdate
   | ActivityEventDataDocumentRename
   | ActivityEventDataDocumentSecurityUpdate
+  | ActivityEventDataDocumentDiscretionarySecurityUpdate
   | ActivityEventDataUnknown;
 
 /**
