@@ -95,7 +95,7 @@ interface WireDocumentDescriptionUpdateEvent {
   readonly isInitial?: boolean;
 }
 
-interface WireDocumentSecurityUpdateEvent {
+interface WireDocumentMandatorySecurityUpdateEvent {
   readonly newClassification?: readonly string[];
   readonly newMarkings?: readonly string[];
 }
@@ -174,7 +174,7 @@ function getPlatformActivityEventData(
     }
 
     case PlatformEventType.DOCUMENT_MANDATORY_SECURITY_UPDATE: {
-      const wireData = data as WireDocumentSecurityUpdateEvent;
+      const wireData = data as WireDocumentMandatorySecurityUpdateEvent;
       return {
         newClassification: wireData.newClassification ?? [],
         newMarkings: wireData.newMarkings ?? [],
@@ -185,9 +185,9 @@ function getPlatformActivityEventData(
     case PlatformEventType.DOCUMENT_DISCRETIONARY_SECURITY_UPDATE: {
       const wireData = data as WireDocumentDiscretionarySecurityUpdateEvent;
       return {
-        principalType: wireData.principalType,
+        principalType: wireData.principalType ?? "",
         previousDiscretionarySecurity: wireData.previousDiscretionarySecurity,
-        newDiscretionarySecurity: wireData.newDiscretionarySecurity,
+        newDiscretionarySecurity: wireData.newDiscretionarySecurity ?? [],
         type: ActivityEventDataType.DOCUMENT_DISCRETIONARY_SECURITY_UPDATE,
       } satisfies ActivityEventDataDocumentDiscretionarySecurityUpdate;
     }
