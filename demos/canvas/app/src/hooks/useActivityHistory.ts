@@ -34,7 +34,8 @@ function getActivityMessage(event: ActivityEvent): string | undefined {
       return `Renamed document from "${event.eventData.previousName}" to "${event.eventData.newName}"`;
     case ActivityEventDataType.DOCUMENT_DESCRIPTION_UPDATE:
       return event.eventData.isInitial ? undefined : "Updated document description";
-    case ActivityEventDataType.DOCUMENT_SECURITY_UPDATE:
+    case ActivityEventDataType.DOCUMENT_MANDATORY_SECURITY_UPDATE:
+    case ActivityEventDataType.DOCUMENT_DISCRETIONARY_SECURITY_UPDATE:
       return "Updated document security settings";
     case ActivityEventDataType.CUSTOM_EVENT:
       if (event.eventData.model === ActivityEventModel) {
