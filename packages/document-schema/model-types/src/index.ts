@@ -33,6 +33,7 @@ export type {
   DiscretionaryPrincipal_GroupId,
   DiscretionaryPrincipal_UserId,
   DocumentMetadata,
+  DocumentOperation,
   DocumentSecurity,
   DocumentSecurityDiscretionary,
   DocumentSecurityMandatory,

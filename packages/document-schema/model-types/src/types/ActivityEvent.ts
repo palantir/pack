@@ -121,7 +121,6 @@ export interface ActivityEventDataDocumentMandatorySecurityUpdate {
  */
 export interface ActivityEventDataUnknown {
   readonly type: typeof ActivityEventDataType.UNKNOWN;
-  readonly rawType: string;
   readonly rawData: unknown;
 }
 

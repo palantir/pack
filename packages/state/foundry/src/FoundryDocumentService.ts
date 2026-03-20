@@ -196,6 +196,7 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
         documentTypeName: doc.documentTypeName,
         id: doc.id as DocumentId,
         name: doc.name,
+        operations: doc.operations,
         ontologyRid: doc.ontologyRid,
         security: getLocalSecurity(doc.security),
         updatedBy: doc.updatedBy,
@@ -228,6 +229,7 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
       description: document.description,
       documentTypeName: document.documentTypeName,
       name: document.name,
+      operations: document.operations,
       ontologyRid: document.ontologyRid,
       security: getLocalSecurity(document.security),
     };
@@ -275,6 +277,7 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
           description: document.description,
           documentTypeName: document.documentTypeName,
           name: document.name,
+          operations: document.operations,
           ontologyRid: document.ontologyRid,
           security: getLocalSecurity(document.security),
         };
@@ -390,6 +393,7 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
           description: document.description,
           documentTypeName: document.documentTypeName,
           name: document.name,
+          operations: document.operations,
           ontologyRid: document.ontologyRid,
           security: getLocalSecurity(document.security),
         };
