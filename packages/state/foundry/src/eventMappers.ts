@@ -114,6 +114,7 @@ function getActivityEventData(
       if (model == null) {
         return {
           rawData: data,
+          rawType: eventType,
           type: ActivityEventDataType.UNKNOWN,
         };
       }
@@ -129,6 +130,7 @@ function getActivityEventData(
     default:
       return {
         rawData: eventData,
+        rawType: (eventData as { type?: string }).type ?? "unknown",
         type: ActivityEventDataType.UNKNOWN,
       };
   }
