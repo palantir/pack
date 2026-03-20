@@ -87,6 +87,7 @@ const mockDocument: Document = {
   createdTime: "2025-01-01T00:00:00Z",
   updatedBy: "user-1",
   updatedTime: "2025-01-01T00:00:00Z",
+  operations: ["VIEW", "EDIT", "OWN", "DELETE"],
   security: {
     mandatory: {
       classification: [],

@@ -82,6 +82,7 @@ const WIRE_DOCUMENT_WITH_SECURITY: Document = {
   createdTime: "2025-01-01T00:00:00Z",
   updatedBy: "user-2",
   updatedTime: "2025-01-02T00:00:00Z",
+  operations: ["VIEW", "EDIT", "OWN", "DELETE"],
   security: {
     mandatory: {
       classification: ["SECRET"],
