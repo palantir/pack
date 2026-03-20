@@ -62,8 +62,9 @@ export function useActivityToast(
         return;
       }
 
-      const eventData = event.eventData.eventData as ActivityEvent;
-      switch (eventData.eventType) {
+      const customEvent = event.eventData;
+      const eventData = event.eventData.data as ActivityEvent;
+      switch (customEvent.eventType) {
         case "shapeAdd":
           toaster.show({
             intent: "primary",

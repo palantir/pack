@@ -140,7 +140,8 @@ export class DemoDocumentService extends BaseYjsDocumentService<DemoInternalDoc>
           createdBy: this.clientId as UserId,
           createdInstant: Date.now(),
           eventData: {
-            eventData: origin.data,
+            data: origin.data,
+            eventType: modelName,
             model: origin.model,
             type: ActivityEventDataType.CUSTOM_EVENT,
           },

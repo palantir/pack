@@ -121,7 +121,8 @@ function getActivityEventData(
 
       // TODO: validate data against model schema
       return {
-        eventData: data as ModelData<Model>,
+        data: data as ModelData<Model>,
+        eventType,
         model,
         type: ActivityEventDataType.CUSTOM_EVENT,
       };
