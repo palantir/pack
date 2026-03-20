@@ -127,12 +127,14 @@ function getActivityEventData(
       };
     }
 
-    default:
+    default: {
+      const unknownEventData = eventData as Record<string, unknown>;
       return {
         rawData: eventData,
-        rawType: (eventData as { type?: string }).type ?? "unknown",
+        rawType: typeof unknownEventData.type === "string" ? unknownEventData.type : "unknown",
         type: ActivityEventDataType.UNKNOWN,
       };
+    }
   }
 }
 
