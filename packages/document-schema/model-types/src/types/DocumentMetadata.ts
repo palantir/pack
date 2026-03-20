@@ -47,12 +47,15 @@ export interface DocumentSecurity {
   readonly mandatory: DocumentSecurityMandatory;
 }
 
+export type DocumentOperation = "VIEW" | "EDIT" | "OWN" | "DELETE";
+
 export interface DocumentMetadata {
   readonly createdBy?: string;
   readonly createdTime?: string;
   readonly description?: string;
   readonly documentTypeName: string;
   readonly name: string;
+  readonly operations?: readonly DocumentOperation[];
   readonly ontologyRid: string;
   readonly security: DocumentSecurity;
   readonly updatedBy?: string;

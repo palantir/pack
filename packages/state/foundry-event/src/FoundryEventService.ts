@@ -468,6 +468,16 @@ class FoundryEventServiceImpl implements FoundryEventService {
         });
 
         break;
+      case "deletion":
+        this.logger.info("Document was deleted", {
+          docId: session.documentId,
+          deletionMethod: message.deletionMethod,
+        });
+        onStatusChange({
+          error: new Error(`Document was deleted [${message.deletionMethod}]`),
+          load: DocumentLoadStatus.ERROR,
+        });
+        break;
       default:
         message satisfies never;
         const { type } = message as { type: string };
@@ -510,11 +520,14 @@ function isEditDescription(obj: unknown): obj is EditDescription {
 }
 
 function createDocumentEditDescription(editDescription: EditDescription): DocumentEditDescription {
+  const eventType = getMetadata(editDescription.model).name;
   return {
     eventData: {
       data: editDescription.data,
+      eventType,
       version: 1,
     },
-    eventType: getMetadata(editDescription.model).name,
+    // TODO: remove duplicate after updating platform sdk
+    eventType,
   };
 }

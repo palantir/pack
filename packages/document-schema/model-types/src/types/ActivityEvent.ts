@@ -58,7 +58,8 @@ export const ActivityEventDataType = {
 export interface ActivityEventDataCustom<M extends Model = Model> {
   readonly type: typeof ActivityEventDataType.CUSTOM_EVENT;
   readonly model: M;
-  readonly eventData: ModelData<M>;
+  readonly eventType: string;
+  readonly data: ModelData<M>;
 }
 
 /**

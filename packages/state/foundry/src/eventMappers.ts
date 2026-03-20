@@ -29,7 +29,6 @@ import type {
   ActivityEventDataDocumentMandatorySecurityUpdate,
   ActivityEventDataDocumentRename,
   DocumentSchema,
-  DocumentSecurityDiscretionary,
   Model,
   ModelData,
   PresenceEvent,
@@ -64,136 +63,79 @@ export function getActivityEvent(
   };
 }
 
-/**
- * Platform event type names as sent by backpack.
- * Note: Only DOCUMENT_CREATE is currently emitted by the backend.
- * Remaining types are included for future use.
- */
-const PlatformEventType = {
-  DOCUMENT_CREATE: "DocumentCreateEvent",
-  DOCUMENT_DESCRIPTION_UPDATE: "DocumentDescriptionUpdateEvent",
-  DOCUMENT_RENAME: "DocumentRenameEvent",
-  DOCUMENT_MANDATORY_SECURITY_UPDATE: "DocumentMandatorySecurityUpdateEvent",
-  DOCUMENT_DISCRETIONARY_SECURITY_UPDATE: "DocumentDiscretionarySecurityUpdateEvent",
-} as const;
-
-interface WireDocumentCreateEvent {
-  readonly name?: string;
-  readonly initialMandatorySecurity?: {
-    readonly classification?: readonly string[];
-    readonly markings?: readonly string[];
-  };
-}
-
-interface WireDocumentRenameEvent {
-  readonly previousName?: string;
-  readonly newName?: string;
-}
-
-interface WireDocumentDescriptionUpdateEvent {
-  readonly newDescription?: string;
-  readonly isInitial?: boolean;
-}
-
-interface WireDocumentMandatorySecurityUpdateEvent {
-  readonly newClassification?: readonly string[];
-  readonly newMarkings?: readonly string[];
-}
-
-interface WireDocumentDiscretionarySecurityUpdateEvent {
-  readonly principalType: "ALL_PRINCIPAL" | "USER";
-  readonly previousDiscretionarySecurity?: DocumentSecurityDiscretionary;
-  readonly newDiscretionarySecurity: DocumentSecurityDiscretionary;
-}
-
 function getActivityEventData(
   docSchema: DocumentSchema,
-  { eventData, eventType }: FoundryActivityEvent,
+  { eventData }: FoundryActivityEvent,
 ): ActivityEventData {
-  const platformEventData = getPlatformActivityEventData(
-    eventType,
-    eventData.data,
-  );
-  if (platformEventData != null) {
-    return platformEventData;
-  }
-
-  // Handle custom application-defined activity events
-  // TODO: validate model is valid for activity events
-  const model = docSchema[eventType];
-  if (model == null) {
-    return {
-      rawData: eventData.data,
-      rawType: eventType,
-      type: ActivityEventDataType.UNKNOWN,
-    };
-  }
-
-  // TODO: validate data against model schema
-
-  return {
-    eventData: eventData.data as ModelData<Model>,
-    model,
-    type: ActivityEventDataType.CUSTOM_EVENT,
-  };
-}
-
-function getPlatformActivityEventData(
-  eventType: string,
-  data: unknown,
-): ActivityEventData | undefined {
-  switch (eventType) {
-    case PlatformEventType.DOCUMENT_CREATE: {
-      const wireData = data as WireDocumentCreateEvent;
+  switch (eventData.type) {
+    case "documentCreate":
       return {
         initialMandatorySecurity: {
-          classification: wireData.initialMandatorySecurity?.classification,
-          markings: wireData.initialMandatorySecurity?.markings,
+          classification: eventData.initialMandatorySecurity?.classification,
+          markings: eventData.initialMandatorySecurity?.markings,
         },
-        name: wireData.name ?? "",
+        name: eventData.name ?? "",
         type: ActivityEventDataType.DOCUMENT_CREATE,
       } satisfies ActivityEventDataDocumentCreate;
-    }
 
-    case PlatformEventType.DOCUMENT_RENAME: {
-      const wireData = data as WireDocumentRenameEvent;
+    case "documentRename":
       return {
-        newName: wireData.newName ?? "",
-        previousName: wireData.previousName ?? "",
+        newName: eventData.newName ?? "",
+        previousName: eventData.previousName ?? "",
         type: ActivityEventDataType.DOCUMENT_RENAME,
       } satisfies ActivityEventDataDocumentRename;
-    }
 
-    case PlatformEventType.DOCUMENT_DESCRIPTION_UPDATE: {
-      const wireData = data as WireDocumentDescriptionUpdateEvent;
+    case "documentDescriptionUpdate":
       return {
-        isInitial: wireData.isInitial ?? false,
-        newDescription: wireData.newDescription ?? "",
+        isInitial: eventData.isInitial ?? false,
+        newDescription: eventData.newDescription ?? "",
         type: ActivityEventDataType.DOCUMENT_DESCRIPTION_UPDATE,
       } satisfies ActivityEventDataDocumentDescriptionUpdate;
-    }
 
-    case PlatformEventType.DOCUMENT_MANDATORY_SECURITY_UPDATE: {
-      const wireData = data as WireDocumentMandatorySecurityUpdateEvent;
+    case "documentMandatorySecurityUpdate":
       return {
-        newClassification: wireData.newClassification ?? [],
-        newMarkings: wireData.newMarkings ?? [],
+        newClassification: eventData.newClassification ?? [],
+        newMarkings: eventData.newMarkings ?? [],
         type: ActivityEventDataType.DOCUMENT_MANDATORY_SECURITY_UPDATE,
       } satisfies ActivityEventDataDocumentMandatorySecurityUpdate;
-    }
 
-    case PlatformEventType.DOCUMENT_DISCRETIONARY_SECURITY_UPDATE: {
-      const wireData = data as WireDocumentDiscretionarySecurityUpdateEvent;
+    case "documentDiscretionarySecurityUpdate":
       return {
-        principalType: wireData.principalType ?? "",
-        previousDiscretionarySecurity: wireData.previousDiscretionarySecurity,
-        newDiscretionarySecurity: wireData.newDiscretionarySecurity ?? [],
+        principalType: eventData.principalType ?? "",
+        previousDiscretionarySecurity: eventData.previousDiscretionarySecurity,
+        newDiscretionarySecurity: eventData.newDiscretionarySecurity ?? [],
         type: ActivityEventDataType.DOCUMENT_DISCRETIONARY_SECURITY_UPDATE,
       } satisfies ActivityEventDataDocumentDiscretionarySecurityUpdate;
+
+    case "documentCustomEvent": {
+      const { eventType, data } = eventData;
+      // TODO: validate model is valid for activity events
+      const model = docSchema[eventType];
+      if (model == null) {
+        return {
+          rawData: data,
+          rawType: eventType,
+          type: ActivityEventDataType.UNKNOWN,
+        };
+      }
+
+      // TODO: validate data against model schema
+      return {
+        data: data as ModelData<Model>,
+        eventType,
+        model,
+        type: ActivityEventDataType.CUSTOM_EVENT,
+      };
     }
 
-    default:
-      return undefined;
+    default: {
+      const unknownEventData = eventData as Record<string, unknown>;
+      return {
+        rawData: eventData,
+        rawType: typeof unknownEventData.type === "string" ? unknownEventData.type : "unknown",
+        type: ActivityEventDataType.UNKNOWN,
+      };
+    }
   }
 }
 

@@ -30,7 +30,7 @@ const STALE_CLIENT_TIMEOUT_MS = 15000;
 
 type SerializableActivityEvent = Omit<ActivityEvent, "eventData"> & {
   readonly eventData:
-    | { readonly type: "customEvent"; readonly eventData: unknown; readonly modelName: string }
+    | { readonly type: "customEvent"; readonly data: unknown; readonly eventType: string }
     | ActivityEvent["eventData"];
 };
 
@@ -102,8 +102,8 @@ export class PresenceManager {
       ...event,
       eventData: event.eventData.type === "customEvent"
         ? {
-          eventData: event.eventData.eventData,
-          modelName: getMetadata(event.eventData.model).name,
+          data: event.eventData.data,
+          eventType: event.eventData.eventType,
           type: "customEvent",
         }
         : event.eventData,
@@ -212,10 +212,10 @@ export class PresenceManager {
 
     if (
       event.eventData.type === "customEvent"
-      && "modelName" in event.eventData
+      && "eventType" in event.eventData
       && this.schema != null
     ) {
-      const modelName = event.eventData.modelName;
+      const { eventType } = event.eventData;
       let model: Model | undefined;
 
       for (const key of Object.keys(this.schema)) {
@@ -226,7 +226,7 @@ export class PresenceManager {
           && hasMetadata(candidate)
         ) {
           const metadata = getMetadata(candidate);
-          if ("name" in metadata && metadata.name === modelName) {
+          if ("name" in metadata && metadata.name === eventType) {
             model = candidate as Model;
             break;
           }
@@ -237,7 +237,8 @@ export class PresenceManager {
         reconstructedEvent = {
           ...event,
           eventData: {
-            eventData: event.eventData.eventData,
+            data: event.eventData.data,
+            eventType,
             model,
             type: "customEvent",
           },

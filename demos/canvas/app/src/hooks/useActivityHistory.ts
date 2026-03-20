@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-import type { ActivityEvent as CustomActivityEvent } from "@demo/canvas.sdk";
 import { ActivityEventModel } from "@demo/canvas.sdk";
 import type { ActivityEvent, DocumentRef } from "@palantir/pack.document-schema.model-types";
 import { ActivityEventDataType } from "@palantir/pack.document-schema.model-types";
@@ -39,7 +38,7 @@ function getActivityMessage(event: ActivityEvent): string | undefined {
       return "Updated document security settings";
     case ActivityEventDataType.CUSTOM_EVENT:
       if (event.eventData.model === ActivityEventModel) {
-        const customEvent = event.eventData.eventData as CustomActivityEvent;
+        const customEvent = event.eventData;
         switch (customEvent.eventType) {
           case "shapeAdd":
             return "User added a shape";
