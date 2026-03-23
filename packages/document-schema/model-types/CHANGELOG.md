@@ -1,5 +1,11 @@
 # @palantir/pack.document-schema.model-types
 
+## 0.7.0
+
+### Minor Changes
+
+- 2ccb561: Update activity event types and add document operations to metadata
+
 ## 0.6.0
 
 ### Minor Changes
