@@ -26,6 +26,7 @@ import { app } from "../../app.js";
 import { useActivityToast } from "../../hooks/useActivityToast.js";
 import { useBroadcastPresence } from "../../hooks/useBroadcastPresence.js";
 import { useCanvasInteraction } from "../../hooks/useCanvasInteraction.js";
+import { useMetadataStatusToast } from "../../hooks/useMetadataStatusToast.js";
 import { useRemotePresence } from "../../hooks/useRemotePresence.js";
 import { CanvasContent } from "./CanvasContent.js";
 import styles from "./CanvasPage.module.css";
@@ -64,6 +65,7 @@ export const CanvasPage = () => {
   const { remoteUsersByUserId, userIdsBySelectedNodeId } = useRemotePresence(docRef);
   const interaction = useCanvasInteraction(docRef, broadcastSelection);
   useActivityToast(docRef, toaster);
+  useMetadataStatusToast(docRef, toaster);
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {

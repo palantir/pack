@@ -405,6 +405,14 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
         this.logger.error("Failed to refetch document metadata", e, {
           docId: docRef.id,
         });
+
+        const internalDoc = this.documents.get(docRef.id);
+        if (internalDoc != null) {
+          this.updateMetadataStatus(internalDoc, docRef, {
+            error: e,
+            load: DocumentLoadStatus.ERROR,
+          });
+        }
       });
   }
 
