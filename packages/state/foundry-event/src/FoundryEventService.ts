@@ -18,6 +18,7 @@ import type { Logger } from "@osdk/api";
 import type {
   ActivityCollaborativeUpdate,
   DocumentEditDescription,
+  DocumentMetadataUpdate,
   DocumentPublishMessage,
   DocumentUpdateMessage,
   DocumentUpdateSubscriptionRequest,
@@ -80,6 +81,11 @@ const getDocumentPresenceChannelId = (
 ): TypedReceiveChannelId<PresenceCollaborativeUpdate> =>
   `/document/${documentId}/presence` as TypedReceiveChannelId<PresenceCollaborativeUpdate>;
 
+const getDocumentMetadataUpdatesChannelId = (
+  documentId: DocumentId,
+): TypedReceiveChannelId<DocumentMetadataUpdate> =>
+  `/document/${documentId}/metadata/updates` as TypedReceiveChannelId<DocumentMetadataUpdate>;
+
 const getDocumentPresencePublishChannelId = (
   documentId: DocumentId,
 ): TypedPublishChannelId<PresencePublishMessage> =>
@@ -95,6 +101,7 @@ interface SyncSessionInternal extends SyncSession {
   documentSubscriptionId?: SubscriptionId;
   lastRevisionId?: number;
   localYDocUpdateHandler?: (update: Uint8Array, origin: unknown) => void;
+  metadataSubscriptionId?: SubscriptionId;
   presenceSubscriptionId?: SubscriptionId;
   yDoc?: y.Doc;
 }
@@ -122,6 +129,11 @@ export interface FoundryEventService {
   subscribeToActivityUpdates(
     documentId: DocumentId,
     callback: (event: ActivityCollaborativeUpdate) => void,
+  ): Promise<SubscriptionId>;
+
+  subscribeToMetadataUpdates(
+    documentId: DocumentId,
+    callback: (event: DocumentMetadataUpdate) => void,
   ): Promise<SubscriptionId>;
 
   subscribeToPresenceUpdates(
@@ -292,6 +304,34 @@ class FoundryEventServiceImpl implements FoundryEventService {
     });
   }
 
+  subscribeToMetadataUpdates(
+    documentId: DocumentId,
+    callback: (event: DocumentMetadataUpdate) => void,
+  ): Promise<SubscriptionId> {
+    const session = this.getOrCreateSession(documentId);
+
+    const channelId = getDocumentMetadataUpdatesChannelId(documentId);
+
+    return this.eventService.subscribe(
+      channelId,
+      (event: DocumentMetadataUpdate) => {
+        this.logger.debug("Received metadata update event", {
+          docId: documentId,
+          event,
+        });
+        callback(event);
+      },
+    ).then(subscriptionId => {
+      session.metadataSubscriptionId = subscriptionId;
+      return subscriptionId;
+    }).catch((e: unknown) => {
+      this.logger.error("Failed to subscribe to metadata updates", e, {
+        docId: documentId,
+      });
+      throw new Error("Failed to subscribe to metadata updates", { cause: e });
+    });
+  }
+
   subscribeToPresenceUpdates(
     documentId: DocumentId,
     callback: (update: PresenceCollaborativeUpdate) => void,
@@ -396,6 +436,10 @@ class FoundryEventServiceImpl implements FoundryEventService {
 
     if (internalSession.activitySubscriptionId) {
       this.eventService.unsubscribe(internalSession.activitySubscriptionId);
+    }
+
+    if (internalSession.metadataSubscriptionId) {
+      this.eventService.unsubscribe(internalSession.metadataSubscriptionId);
     }
 
     if (internalSession.presenceSubscriptionId) {
