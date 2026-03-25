@@ -129,6 +129,7 @@ describe("Foundry Document Status Tracking", () => {
     });
 
     mockEventService.stopDocumentSync.mockImplementation(() => {});
+    mockEventService.subscribeToMetadataUpdates.mockResolvedValue("mock-sub-id" as any);
 
     service = internalCreateFoundryDocumentService(mockApp, {}, mockEventService);
   });
