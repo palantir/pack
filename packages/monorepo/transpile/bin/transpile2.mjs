@@ -143,12 +143,15 @@ async function transpileWithTsup(format, target) {
   const [
     { build },
     { default: babel },
-    PACKAGE_VERSION,
+    packageJson,
   ] = await Promise.all([
     import("tsup"),
     import("esbuild-plugin-babel"),
-    readFile("package.json", "utf-8").then(f => JSON.parse(f).version),
+    readFile("package.json", "utf-8").then(f => JSON.parse(f)),
   ]);
+
+  const PACKAGE_VERSION = packageJson.version;
+  const perPackageNoExternal = packageJson.bundleNoExternal ?? [];
 
   await build({
     entry: [
@@ -161,13 +164,16 @@ async function transpileWithTsup(format, target) {
     config: false,
 
     // these packages are not CJS compatible so we need to bundle them up when we do tsup with cjs
-    noExternal: format === "cjs"
-      ? [
-        "delay",
-        "oauth4webapi",
-        "p-defer",
-      ]
-      : [],
+    noExternal: [
+      ...(format === "cjs"
+        ? [
+          "delay",
+          "oauth4webapi",
+          "p-defer",
+        ]
+        : []),
+      ...perPackageNoExternal,
+    ],
     format: [format],
     outExtension: ({ format }) => {
       return {

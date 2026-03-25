@@ -1082,9 +1082,6 @@ importers:
       '@palantir/pack.state.core':
         specifier: workspace:*
         version: link:../core
-      cometd:
-        specifier: 'catalog:'
-        version: 7.0.19
       js-base64:
         specifier: ^3.7.8
         version: 3.7.8
@@ -1098,6 +1095,9 @@ importers:
       '@types/node':
         specifier: 'catalog:'
         version: 20.19.19
+      cometd:
+        specifier: 'catalog:'
+        version: 7.0.19
       rimraf:
         specifier: 'catalog:'
         version: 6.1.2

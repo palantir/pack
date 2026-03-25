@@ -46,13 +46,13 @@
     "@palantir/pack.core": "workspace:*",
     "@palantir/pack.document-schema.model-types": "workspace:*",
     "@palantir/pack.state.core": "workspace:*",
-    "cometd": "catalog:",
     "js-base64": "^3.7.8",
     "yjs": "catalog:"
   },
   "devDependencies": {
     "@palantir/pack.monorepo.tsconfig": "workspace:~",
     "@types/node": "catalog:",
+    "cometd": "catalog:",
     "rimraf": "catalog:",
     "tslib": "catalog:",
     "typescript": "catalog:",
@@ -67,6 +67,9 @@
   "main": "./build/cjs/index.js",
   "module": "./build/esm/index.js",
   "types": "./build/cjs/index.d.ts",
+  "bundleNoExternal": [
+    "cometd"
+  ],
   "sideEffects": [
     "./build/*/cometd/lazyLoadCometD.js",
     "./src/cometd/lazyLoadCometD.ts"

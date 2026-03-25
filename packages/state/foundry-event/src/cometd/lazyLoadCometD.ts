@@ -18,15 +18,12 @@ import type * as cometd from "cometd";
 
 export async function lazyLoadCometD(): Promise<typeof cometd> {
   const cometdModule = await import("cometd");
-  // cometd module does declare the extensions, however they are added to the module as side-effects
-  // by importing the submodule extension files. So for any we use we'll need to import them explicitly.
-  // Note that this file should be included in package.json "sideEffects" to avoid tree-shaking.
 
-  // TODO: switch back to dynamic import with side-effect loading when supported by new cometD version. Requires
-  // backend version upgrade first.
-  // AckExtension.js modifies the cometd module as a side-effect to add AckExtension.
-  // We need to capture the returned constructor because with ESM bundlers, the module reference
-  // may not reflect the mutation.
+  // cometd's AckExtension.js adds the AckExtension constructor to the cometd module via side-effect
+  // mutation. Even though cometd is bundled into this package (via bundleNoExternal in package.json),
+  // esbuild's code-split chunks bind ESM named exports at evaluation time, so the mutation from
+  // AckExtension.js is not reflected in the cometd chunk's namespace. We must explicitly import
+  // the constructor and compose it into the returned module object.
   // @ts-expect-error TS2307: No type declarations for cometd/AckExtension.js, but its default export is the AckExtension constructor
   const { default: AckExtension } = await import("cometd/AckExtension.js");
 
