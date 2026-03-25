@@ -42,7 +42,7 @@ import type {
   PresencePublishOptions,
   PresenceSubscriptionOptions,
 } from "@palantir/pack.document-schema.model-types";
-import { ActivityEventDataType, getMetadata } from "@palantir/pack.document-schema.model-types";
+import { getMetadata } from "@palantir/pack.document-schema.model-types";
 import type {
   CreateDocumentMetadata,
   DocumentService,
@@ -92,6 +92,7 @@ export function internalCreateFoundryDocumentService(
 }
 
 interface FoundryInternalDoc extends InternalYjsDoc {
+  metadataUpdateUnsubscribed?: boolean;
   syncSession?: SyncSession;
 }
 
@@ -287,6 +288,18 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
         this.updateMetadataStatus(internalDoc, docRef, {
           load: DocumentLoadStatus.LOADED,
         });
+
+        this.eventService
+          .subscribeToMetadataUpdates(docRef.id, _event => {
+            if (!internalDoc.metadataUpdateUnsubscribed) {
+              this.refetchMetadata(docRef);
+            }
+          })
+          .catch((e: unknown) => {
+            this.logger.error("Failed to subscribe to metadata updates", e, {
+              docId: docRef.id,
+            });
+          });
       })
       .catch((e: unknown) => {
         if (!this.documents.has(docRef.id)) {
@@ -320,9 +333,11 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
   }
 
   protected onMetadataSubscriptionClosed(
-    _internalDoc: FoundryInternalDoc,
+    internalDoc: FoundryInternalDoc,
     _docRef: DocumentRef,
-  ): void {}
+  ): void {
+    internalDoc.metadataUpdateUnsubscribed = true;
+  }
 
   protected onDataSubscriptionClosed(
     internalDoc: FoundryInternalDoc,
@@ -348,7 +363,6 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
         if (!unsubscribed) {
           const localEvent = getActivityEvent(docRef.schema, foundryEvent);
           if (localEvent != null) {
-            this.updateMetadataFromActivityEvent(docRef, localEvent);
             callback(docRef, localEvent);
           }
         }
@@ -360,22 +374,6 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
       });
 
     return unsubscribeFn;
-  }
-
-  private static readonly METADATA_ACTIVITY_EVENT_TYPES: ReadonlySet<string> = new Set([
-    ActivityEventDataType.DOCUMENT_RENAME,
-    ActivityEventDataType.DOCUMENT_DESCRIPTION_UPDATE,
-    ActivityEventDataType.DOCUMENT_MANDATORY_SECURITY_UPDATE,
-    ActivityEventDataType.DOCUMENT_DISCRETIONARY_SECURITY_UPDATE,
-  ]);
-
-  private updateMetadataFromActivityEvent(
-    docRef: DocumentRef,
-    event: ActivityEvent,
-  ): void {
-    if (FoundryDocumentService.METADATA_ACTIVITY_EVENT_TYPES.has(event.eventData.type)) {
-      this.refetchMetadata(docRef);
-    }
   }
 
   private refetchMetadata(docRef: DocumentRef): void {
