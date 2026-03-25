@@ -20,3 +20,4 @@ export type {
   PresenceSubscriptionOptions,
   SyncSession,
 } from "./FoundryEventService.js";
+export type { SubscriptionId } from "./types/EventService.js";

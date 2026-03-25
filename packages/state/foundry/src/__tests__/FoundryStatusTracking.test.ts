@@ -20,7 +20,11 @@ import type { PackAppInternal } from "@palantir/pack.core";
 import type { DocumentId, DocumentSchema } from "@palantir/pack.document-schema.model-types";
 import { Metadata } from "@palantir/pack.document-schema.model-types";
 import { createDocRef, DocumentLoadStatus, type DocumentStatus } from "@palantir/pack.state.core";
-import type { FoundryEventService, SyncSession } from "@palantir/pack.state.foundry-event";
+import type {
+  FoundryEventService,
+  SubscriptionId,
+  SyncSession,
+} from "@palantir/pack.state.foundry-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { MockProxy } from "vitest-mock-extended";
 import { mock } from "vitest-mock-extended";
@@ -129,7 +133,7 @@ describe("Foundry Document Status Tracking", () => {
     });
 
     mockEventService.stopDocumentSync.mockImplementation(() => {});
-    mockEventService.subscribeToMetadataUpdates.mockResolvedValue("mock-sub-id" as any);
+    mockEventService.subscribeToMetadataUpdates.mockResolvedValue("mock-sub-id" as SubscriptionId);
 
     service = internalCreateFoundryDocumentService(mockApp, {}, mockEventService);
   });
