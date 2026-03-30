@@ -1,5 +1,11 @@
 # @palantir/pack.state.react
 
+## 0.11.0
+
+### Minor Changes
+
+- cd09e6f: Add metadata update channel
+
 ## 0.10.0
 
 ### Patch Changes

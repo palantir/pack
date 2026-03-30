@@ -1,5 +1,11 @@
 # @palantir/pack.state.foundry-event
 
+## 0.10.0
+
+### Minor Changes
+
+- cd09e6f: Add metadata update channel
+
 ## 0.9.0
 
 ### Minor Changes
