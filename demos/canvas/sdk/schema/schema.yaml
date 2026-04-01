@@ -1,27 +1,28 @@
-- add-records:
+- version: 0
+  add-records:
     ActivityShapeAddEvent:
-      fields:
-        nodeId: string
       docs: An event representing the addition of a shape node.
-    ActivityShapeDeleteEvent:
       fields:
         nodeId: string
+    ActivityShapeDeleteEvent:
       docs: An event representing the deletion of a shape node.
+      fields:
+        nodeId: string
     ActivityShapeUpdateEvent:
+      docs: An event representing the update of a shape node.
       fields:
         nodeId: string
         oldShape: NodeShape
         newShape: NodeShape
-      docs: An event representing the update of a shape node.
     PresenceCursorEvent:
+      docs: Cursor position for remote user.
       fields:
         x: double
         'y': double
-      docs: Cursor position for remote user.
     PresenceSelectionEvent:
+      docs: Selected nodes for remote user.
       fields:
         selectedNodeIds: array<string>
-      docs: Selected nodes for remote user.
     ShapeBox:
       fields:
         bottom: double
@@ -29,7 +30,6 @@
         right: double
         top: double
         color: optional<string>
-      docs: A box.
     ShapeCircle:
       fields:
         bottom: double
@@ -37,8 +37,7 @@
         right: double
         top: double
         color: optional<string>
-      docs: A circle.
-- add-union:
+  add-union:
     ActivityEvent:
       variants:
         shapeAdd: ActivityShapeAddEvent
@@ -55,3 +54,18 @@
         cursor: PresenceCursorEvent
         selection: PresenceSelectionEvent
       discriminant: eventType
+- version: 1
+  schema-updates:
+    - name: addOpacity
+      stage: finalize
+      modify-records:
+        ShapeBox:
+          add-fields:
+            opacity:
+              type: optional<double>
+              default: 1
+        ShapeCircle:
+          add-fields:
+            opacity:
+              type: optional<double>
+              default: 1

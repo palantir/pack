@@ -15,12 +15,15 @@
  */
 
 import type * as P from "@palantir/pack.schema";
+import { SchemaVersionMetadata } from "@palantir/pack.schema";
 import { z } from "zod";
 
 // Re-export types from document-schema-api
 export type * as P from "@palantir/pack.schema";
 export type SchemaDef = P.RecordDef | P.UnionDef;
 export type ReturnedSchema = Record<string, SchemaDef>;
+
+export { SchemaVersionMetadata };
 
 // Create a deep validation schema for P.Type
 const typeSchema: z.ZodType<P.Type> = z.lazy(() =>
@@ -90,11 +93,35 @@ export function validateSchemaModule(schemaModule: unknown): Record<string, unkn
 }
 
 /**
- * Validates and extracts a schema from a module export
+ * Validates and extracts a schema from a module export.
+ * Handles both plain ReturnedSchema and VersionedSchema (from nextSchema().build()).
  */
 export function extractValidSchema(schemaModule: unknown): ReturnedSchema {
   const validatedModule = validateSchemaModule(schemaModule);
-  return validatedModule.default as ReturnedSchema;
+  const defaultExport = validatedModule.default;
+
+  // Check if it's a VersionedSchema (has schema property with version metadata)
+  if (defaultExport != null && typeof defaultExport === "object" && "schema" in defaultExport) {
+    const versioned = defaultExport as { schema: unknown };
+    if (typeof versioned.schema === "object" && versioned.schema != null) {
+      // Validate the inner schema
+      return returnedSchemaSchema.parse(versioned.schema);
+    }
+  }
+
+  return defaultExport as ReturnedSchema;
+}
+
+/**
+ * Extracts the full module default export, which may be a VersionedSchema or plain ReturnedSchema.
+ * Used when the caller needs access to version metadata.
+ */
+export function extractSchemaModuleDefault(schemaModule: unknown): unknown {
+  const validatedModule = schemaModule as Record<string, unknown>;
+  if (validatedModule?.default == null) {
+    throw new Error("Schema module must have a default export");
+  }
+  return validatedModule.default;
 }
 
 /**

@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+import type { VersionedSchema } from "@palantir/pack.schema";
+import { getSchemaVersionMetadata } from "@palantir/pack.schema";
 import { consola } from "consola";
 import fs from "fs-extra";
 import path from "path";
@@ -21,8 +23,12 @@ import { pathToFileURL } from "url";
 import {
   convertSchemaToSteps,
   convertStepsToYamlString,
+  convertVersionedSchemaToSteps,
 } from "../../utils/schema/convertSchemaToSteps.js";
-import { extractValidSchema } from "../../utils/schema/validateSchemaModule.js";
+import {
+  extractSchemaModuleDefault,
+  extractValidSchema,
+} from "../../utils/schema/validateSchemaModule.js";
 
 interface SchemaToYamlOptions {
   input: string;
@@ -44,16 +50,24 @@ export async function schemaToYamlHandler(options: SchemaToYamlOptions): Promise
     const schemaUrl = pathToFileURL(inputPath).href;
     const schemaModule: unknown = await import(schemaUrl);
 
-    // Validate and extract the schema using Zod validation
-    const schema = extractValidSchema(schemaModule);
-
     consola.info("Converting schema to YAML...");
 
-    // Generate the migration steps
-    const steps = convertSchemaToSteps(schema);
+    // Check if the module exports a VersionedSchema or a plain ReturnedSchema
+    const moduleDefault = extractSchemaModuleDefault(schemaModule);
+    const versionMetadata = getSchemaVersionMetadata(moduleDefault);
 
-    // Convert steps to YAML string
-    const yamlContent = convertStepsToYamlString(steps);
+    let yamlContent: string;
+    if (versionMetadata != null) {
+      // Versioned schema — emit versioned migration steps
+      consola.info(`Detected versioned schema (version ${versionMetadata.version})`);
+      const steps = convertVersionedSchemaToSteps(moduleDefault as VersionedSchema);
+      yamlContent = convertStepsToYamlString(steps);
+    } else {
+      // Plain schema — existing behavior
+      const schema = extractValidSchema(schemaModule);
+      const steps = convertSchemaToSteps(schema);
+      yamlContent = convertStepsToYamlString(steps);
+    }
 
     const outputPath = path.resolve(output);
     await fs.ensureDir(path.dirname(outputPath));

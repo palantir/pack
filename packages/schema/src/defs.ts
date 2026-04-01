@@ -32,6 +32,17 @@ interface ModelDefBase {
 export type RecordFields = Record<string, Type>;
 export type UnionVariants = Record<string, Ref>;
 
+/**
+ * Runtime metadata for a field added via RecordBuilder.addField with migration options.
+ * Stored separately from the Type so the existing fields contract is untouched.
+ */
+export interface FieldMigrationMetadata {
+  readonly derivedFrom: readonly string[];
+  readonly forward: (oldFields: Record<string, unknown>) => unknown;
+  readonly reverse?: ((newValue: unknown) => Record<string, unknown>) | "runtime";
+  readonly default?: unknown;
+}
+
 export interface UnionDef<TVariants extends UnionVariants = UnionVariants> extends ModelDefBase {
   readonly type: typeof ModelDefType.UNION;
   readonly variants: TVariants;
@@ -41,6 +52,10 @@ export interface UnionDef<TVariants extends UnionVariants = UnionVariants> exten
 export interface RecordDef<TFields extends RecordFields = RecordFields> extends ModelDefBase {
   readonly type: typeof ModelDefType.RECORD;
   readonly fields: TFields;
+  /** Migration metadata per field, keyed by field name. Only present for fields with migration options. */
+  readonly fieldMigrations?: Readonly<Record<string, FieldMigrationMetadata>>;
+  /** Fields marked for removal via removeField(). */
+  readonly removedFields?: readonly string[];
 }
 
 export type ModelDef = RecordDef | UnionDef;

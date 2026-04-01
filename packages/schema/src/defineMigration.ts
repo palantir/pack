@@ -16,7 +16,13 @@
 
 import type { UnionVariantArg } from "./defineUnion.js";
 import { resolveUnionVariantArg } from "./defineUnion.js";
-import type { RecordDef, RecordFields, UnionDef, UnionVariants } from "./defs.js";
+import type {
+  FieldMigrationMetadata,
+  RecordDef,
+  RecordFields,
+  UnionDef,
+  UnionVariants,
+} from "./defs.js";
 import { ModelDefType } from "./defs.js";
 import type { Ref, Type } from "./primitives.js";
 import { isRecordDef, isUnionDef } from "./utils.js";
@@ -31,12 +37,72 @@ export type SchemaBuilder<T extends ReturnedSchema> = {
     : never;
 };
 
+/**
+ * Options for fields derived from existing fields (transform migrations).
+ * Used with RecordBuilder.addField() to declare that a new field replaces
+ * or is derived from one or more existing fields.
+ */
+export interface MigrationFieldOptions<TNew, TOldFields extends Record<string, Type>> {
+  /** Fields this new field is derived from. */
+  readonly derivedFrom: ReadonlyArray<keyof TOldFields & string>;
+
+  /**
+   * Forward transform: computes the new field value from the old field(s).
+   * Required inline — used by the read lens for old documents forever.
+   */
+  readonly forward: (oldFields: { readonly [K in keyof TOldFields]?: unknown }) => TNew;
+
+  /**
+   * Reverse transform: computes the old field value(s) from the new field.
+   * Optional. Set to 'runtime' to indicate it will be provided at document service init.
+   */
+  readonly reverse?:
+    | ((newValue: TNew) => Partial<Record<keyof TOldFields & string, unknown>>)
+    | "runtime";
+}
+
+/**
+ * Options for purely additive fields (no dependency on existing fields).
+ * Used with RecordBuilder.addField() to declare a default value.
+ */
+export interface AdditiveFieldOptions<TNew> {
+  /**
+   * Default value returned by the lens when the field is absent from the Y.Doc.
+   * If provided, the generated read type marks this field as required (non-optional),
+   * since the lens guarantees a value. The write type remains optional.
+   */
+  readonly default?: TNew;
+}
+
+/** Discriminator: options with derivedFrom are migration options. */
+export type FieldOptions<TNew, TOldFields extends Record<string, Type>> =
+  | MigrationFieldOptions<TNew, TOldFields>
+  | AdditiveFieldOptions<TNew>;
+
+/** Type guard to distinguish migration options from additive options. */
+function isMigrationFieldOptions(
+  options: FieldOptions<unknown, Record<string, Type>>,
+): options is MigrationFieldOptions<unknown, Record<string, Type>> {
+  return "derivedFrom" in options;
+}
+
 export interface RecordBuilder<T extends Record<string, Type>> {
   // TODO: builders should support arg types and resolveModels to refs
   addField<const K extends string, V extends Type>(
     name: K,
     type: V,
+    options?: FieldOptions<unknown, T>,
   ): RecordBuilder<T & { [k in K]: V }>;
+
+  /**
+   * Mark a field for removal. The field follows the same soak/adopt/finalize
+   * stage progression as addField, with removal-specific semantics:
+   * - soak: field becomes Optional<T> in read type (deprecation period, still writable)
+   * - adopt: field hidden from read type (no longer visible to app code)
+   * - finalize: field hidden from read and write types (orphaned in Y.Doc forever)
+   */
+  removeField<K extends keyof T & string>(name: K): RecordBuilder<Omit<T, K>>;
+
   build(): RecordDef<T>;
 }
 
@@ -85,31 +151,78 @@ class UnionBuilderImpl<S extends UnionVariants> implements UnionBuilder<S> {
 class RecordBuilderImpl<T extends RecordFields> implements RecordBuilder<T> {
   private readonly name: string;
   private readonly fields: T;
+  private readonly migrations: Record<string, FieldMigrationMetadata>;
+  private readonly removed: string[];
 
   constructor(initialRecordDef: RecordDef<T>) {
     this.name = initialRecordDef.name;
     this.fields = { ...initialRecordDef.fields };
+    this.migrations = { ...initialRecordDef.fieldMigrations };
+    this.removed = [...(initialRecordDef.removedFields ?? [])];
   }
 
   // TODO: resolve field value from arg instead
   addField<const K extends string, const V extends Type>(
     name: K,
     value: V,
+    options?: FieldOptions<unknown, T>,
   ): RecordBuilder<T & Record<K, V>> {
+    const newMigrations = { ...this.migrations };
+
+    if (options != null) {
+      const metadata: FieldMigrationMetadata = isMigrationFieldOptions(options)
+        ? {
+          derivedFrom: options.derivedFrom as readonly string[],
+          forward: options.forward as (oldFields: Record<string, unknown>) => unknown,
+          reverse: options.reverse as
+            | ((newValue: unknown) => Record<string, unknown>)
+            | "runtime"
+            | undefined,
+        }
+        : {
+          derivedFrom: [],
+          forward: () => undefined,
+          default: options.default,
+        };
+      newMigrations[name] = metadata;
+    }
+
     return new RecordBuilderImpl({
       type: ModelDefType.RECORD,
       name: this.name,
       fields: { ...this.fields, [name]: value },
+      fieldMigrations: newMigrations,
+      removedFields: this.removed,
       docs: "",
     });
   }
+
+  removeField<K extends keyof T & string>(name: K): RecordBuilder<Omit<T, K>> {
+    const { [name]: _, ...remainingFields } = this.fields;
+    return new RecordBuilderImpl({
+      type: ModelDefType.RECORD,
+      name: this.name,
+      fields: remainingFields as Omit<T, K> as RecordFields as any,
+      fieldMigrations: this.migrations,
+      removedFields: [...this.removed, name],
+      docs: "",
+    });
+  }
+
   build(): RecordDef<T> {
-    return {
+    const result: RecordDef<T> = {
       type: ModelDefType.RECORD,
       name: this.name,
       fields: this.fields,
       docs: "",
     };
+    if (Object.keys(this.migrations).length > 0) {
+      (result as any).fieldMigrations = this.migrations;
+    }
+    if (this.removed.length > 0) {
+      (result as any).removedFields = this.removed;
+    }
+    return result;
   }
 }
 

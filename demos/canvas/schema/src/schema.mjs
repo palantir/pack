@@ -118,4 +118,19 @@ const migration000 = S.defineMigration({}, () => {
   };
 });
 
-export default migration000;
+// --- Schema update: add opacity to shapes ---
+const addOpacity = S.defineSchemaUpdate("addOpacity", schema => ({
+  ShapeBox: schema.ShapeBox
+    .addField("opacity", S.Optional(S.Double), { default: 1.0 })
+    .build(),
+  ShapeCircle: schema.ShapeCircle
+    .addField("opacity", S.Optional(S.Double), { default: 1.0 })
+    .build(),
+}));
+
+// --- Schema v1: introduce opacity (additive, straight to finalize) ---
+const schemaV1 = S.nextSchema(migration000)
+  .addSchemaUpdate(addOpacity, "finalize")
+  .build();
+
+export default schemaV1;

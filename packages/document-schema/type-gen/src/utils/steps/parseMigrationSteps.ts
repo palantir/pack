@@ -24,6 +24,8 @@ type PrimitiveType = "string" | "double";
 interface ComplexFieldDefinition {
   type: string; // Can be primitive, generic pattern, or type reference
   docs?: string;
+  "derived-from"?: string[];
+  "default"?: unknown;
 }
 
 // RecordFieldDefinition represents the YAML field values
@@ -65,11 +67,12 @@ const typeReference: z.ZodType<string> = z.string().regex(/^[A-Z][a-zA-Z0-9]*$/,
 
 const basicType: z.ZodType<string> = z.union([primitiveType, genericTypePattern]);
 
-// Complex field definition object (for future extensibility)
+// Complex field definition object with migration metadata
 const complexFieldDefinition: z.ZodType<ComplexFieldDefinition> = z.object({
   type: basicType,
   docs: z.string().optional(),
-  // This can be extended with e.g. constraints like min/max value or length, in the future
+  "derived-from": z.array(z.string()).optional(),
+  "default": z.unknown().optional(),
 });
 
 // Union of all allowed field definition types - more specific than just z.string()

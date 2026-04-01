@@ -262,4 +262,137 @@ describe("defineMigration", () => {
     expect(v2Schema.ModifiedRecord.fields.field1).toEqual({ type: "string" });
     expect(v2Schema.ModifiedRecord.fields.field2).toEqual({ type: "double" });
   });
+
+  it("should store migration metadata for addField with MigrationFieldOptions", () => {
+    const v1Schema = {
+      Shape: defineRecord("Shape", {
+        docs: "A shape",
+        fields: {
+          color: P.Optional(P.String),
+        },
+      }),
+    };
+
+    const forwardFn = ({ color }: Record<string, unknown>) => color;
+
+    const v2Schema = defineMigration(v1Schema, schema => ({
+      ShapeV2: schema.Shape
+        .addField("fillColor", P.Optional(P.String), {
+          derivedFrom: ["color"],
+          forward: forwardFn,
+        })
+        .build(),
+    }));
+
+    expect(v2Schema.ShapeV2.fields.color).toEqual({ type: "optional", item: { type: "string" } });
+    expect(v2Schema.ShapeV2.fields.fillColor).toEqual({
+      type: "optional",
+      item: { type: "string" },
+    });
+    expect(v2Schema.ShapeV2.fieldMigrations).toBeDefined();
+    expect(v2Schema.ShapeV2.fieldMigrations!.fillColor).toEqual({
+      derivedFrom: ["color"],
+      forward: forwardFn,
+      reverse: undefined,
+    });
+
+    assertExactKeys<typeof v2Schema.ShapeV2.fields, "color" | "fillColor">();
+  });
+
+  it("should store additive metadata with default value", () => {
+    const v1Schema = {
+      Shape: defineRecord("Shape", {
+        docs: "A shape",
+        fields: {
+          left: P.Double,
+        },
+      }),
+    };
+
+    const v2Schema = defineMigration(v1Schema, schema => ({
+      ShapeV2: schema.Shape
+        .addField("opacity", P.Optional(P.Double), { default: 1.0 })
+        .build(),
+    }));
+
+    expect(v2Schema.ShapeV2.fieldMigrations).toBeDefined();
+    expect(v2Schema.ShapeV2.fieldMigrations!.opacity).toEqual({
+      derivedFrom: [],
+      forward: expect.any(Function),
+      default: 1.0,
+    });
+  });
+
+  it("should not include fieldMigrations when no options provided", () => {
+    const v1Schema = {
+      Shape: defineRecord("Shape", {
+        docs: "A shape",
+        fields: {
+          left: P.Double,
+        },
+      }),
+    };
+
+    const v2Schema = defineMigration(v1Schema, schema => ({
+      ShapeV2: schema.Shape
+        .addField("right", P.Double)
+        .build(),
+    }));
+
+    expect(v2Schema.ShapeV2.fieldMigrations).toBeUndefined();
+  });
+
+  it("should support removeField", () => {
+    const v1Schema = {
+      Shape: defineRecord("Shape", {
+        docs: "A shape",
+        fields: {
+          left: P.Double,
+          right: P.Double,
+          deprecated: P.String,
+        },
+      }),
+    };
+
+    const v2Schema = defineMigration(v1Schema, schema => ({
+      ShapeV2: schema.Shape
+        .removeField("deprecated")
+        .build(),
+    }));
+
+    expect(v2Schema.ShapeV2.fields).toEqual({
+      left: { type: "double" },
+      right: { type: "double" },
+    });
+    expect(v2Schema.ShapeV2.removedFields).toEqual(["deprecated"]);
+    expect("deprecated" in v2Schema.ShapeV2.fields).toBe(false);
+
+    assertExactKeys<typeof v2Schema.ShapeV2.fields, "left" | "right">();
+  });
+
+  it("should support addField with migration options and removeField together", () => {
+    const v1Schema = {
+      Shape: defineRecord("Shape", {
+        docs: "A shape",
+        fields: {
+          color: P.Optional(P.String),
+          oldField: P.String,
+        },
+      }),
+    };
+
+    const v2Schema = defineMigration(v1Schema, schema => ({
+      ShapeV2: schema.Shape
+        .addField("fillColor", P.Optional(P.String), {
+          derivedFrom: ["color"],
+          forward: ({ color }) => color,
+        })
+        .removeField("oldField")
+        .build(),
+    }));
+
+    assertExactKeys<typeof v2Schema.ShapeV2.fields, "color" | "fillColor">();
+    expect(v2Schema.ShapeV2.fieldMigrations?.fillColor).toBeDefined();
+    expect(v2Schema.ShapeV2.removedFields).toEqual(["oldField"]);
+  });
 });
