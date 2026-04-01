@@ -76,7 +76,20 @@ During `finalize`, only new fields are written. The behavior for old fields depe
 
 The SDK does **not** automatically invoke reverse transforms. If a forward transform exists (`color → { fillColor: color, strokeColor: color }`), the reverse is often lossy (which color do you pick from fill vs stroke?). Instead, the developer explicitly provides all linked field values when writing.
 
-### 1.6 Compatibility Constraints
+### 1.6 Schema Versioning
+
+Each call to `nextSchema()` produces a new schema version with a **linear integer version number** (1, 2, 3, ...). This is not semver — it is a strictly incrementing counter representing the schema chain length.
+
+```
+schemaV0 (baseline)  → version 1
+schemaV1 (soak)      → version 2
+schemaV2 (adopt)     → version 3
+schemaV3 (finalize)  → version 4
+```
+
+The version number is embedded in `DocumentModel[Metadata].version` by the codegen, derived from the schema chain. It is **not** stored per-field — the codegen can compute when each field was added, when it started soaking, etc. by walking the schema chain. The version number serves as a **wire identifier** that the backend uses for compatibility enforcement (see 1.8).
+
+### 1.7 Compatibility Constraints
 
 Compatibility constraints are **automatically derived** from the stage graph rather than manually declared. The rule is:
 
@@ -85,7 +98,34 @@ Compatibility constraints are **automatically derived** from the stage graph rat
 - **Soak** and **baseline** are always mutually compatible (soak dual-writes, baseline reads old fields).
 - **Additive-only** changes impose no compatibility constraints.
 
-Enforcement of these constraints is **out of scope** for this initial implementation. The codegen can derive and document the compatibility matrix, but runtime or build-time enforcement is future work.
+The codegen derives a **compatibility matrix** from the schema chain and publishes it as schema metadata. Enforcement is the backend's responsibility (see 1.8).
+
+### 1.8 Frontend/Backend Contract
+
+The frontend and backend have a clear division of responsibilities:
+
+**Frontend (this spec) is responsible for:**
+- Defining the schema, migrations, stages, and forward transforms
+- Generating types, write types, migration registries, and the read/write lens
+- Including the client's schema version on all wire messages (loads, subscriptions, document updates)
+- Applying the lens to read old data correctly and shaping write types to enforce dual-write
+
+**Backend (backpack) is responsible for:**
+- Persisting the document type schema and its version history
+- Tracking the current schema version of each document (bumped lazily on first write to a new field)
+- Computing and persisting read/write version ranges from the schema's compatibility matrix
+- Enforcing that a client's schema version is within the compatible range before allowing loads, subscriptions, and updates
+- Rejecting updates from clients whose schema version is outside the write-compatible range
+- Ensuring that record updates from older clients do not nullify fields they don't know about
+
+**Wire protocol changes:** The document service includes `clientSchemaVersion` (read from `DocumentModel[Metadata].version`) on:
+- Document load requests
+- Document subscription requests
+- Document update messages (`DocumentUpdate`)
+
+The backend uses this to check compatibility and reject incompatible operations. The frontend does not enforce version compatibility — it relies on the backend to block incompatible clients.
+
+**Per-field backwards compatibility modes** (e.g., COMPATIBLE / READONLY / INCOMPATIBLE as proposed by the backend team) are **deferred** for now. The stage model (soak/adopt/finalize) provides the compatibility semantics. If the stage model proves insufficient for expressing nuanced compatibility requirements, per-field modes can be added to the DSL as metadata that flows through to the backend.
 
 ---
 
@@ -507,7 +547,7 @@ export const ShapeBoxMigrations: MigrationRegistry<"ShapeBox"> = {
 
 ### 3.5 Model Metadata Updates
 
-The `DocumentModel` metadata is extended to include migration information:
+The `DocumentModel` metadata is extended to include migration information. The `version` field is a **linear integer** derived from the schema chain length (see section 1.6). The document service reads this to include on all wire messages.
 
 ```typescript
 // models.ts
@@ -516,7 +556,7 @@ export const DocumentModel = {
   ShapeBox: ShapeBoxModel,
   // ...
   [Metadata]: {
-    version: 2, // bumped to reflect migration
+    version: 2, // linear integer, derived from schema chain (schemaV0=1, schemaV1=2, ...)
     migrations: {
       ShapeBox: ShapeBoxMigrations,
       ShapeCircle: ShapeCircleMigrations,
@@ -524,6 +564,8 @@ export const DocumentModel = {
   },
 } as const satisfies DocumentSchema;
 ```
+
+The codegen also produces a **schema manifest** that the backend can consume to understand the full version history. This manifest is derived from the schema chain at generation time and includes, per version: which fields were added, their stages, default values, and the auto-derived compatibility matrix. Field-level `addedInVersion` is not stored as an annotation — it is computed by walking the schema chain.
 
 ### 3.6 Runtime Transform Interface
 
@@ -930,6 +972,25 @@ readonly updateRecord = <R extends Model>(
 };
 ```
 
+### 6.4 Client Schema Version on Wire
+
+The document service reads the schema version from `DocumentModel[Metadata].version` and includes it on all outgoing wire messages. This is the backend contract described in section 1.8.
+
+```typescript
+// BaseYjsDocumentService.ts
+
+protected getClientSchemaVersion(schema: DocumentSchema): number {
+  return getMetadata(schema).version;
+}
+```
+
+The schema version is included on:
+- **Document load requests** — so the backend can reject loads from incompatible clients.
+- **Document subscription requests** — so the backend can reject subscriptions and prevent incompatible clients from receiving updates.
+- **Document update messages** — so the backend can reject writes from clients whose version is outside the write-compatible range, and can lazily bump the document's version when a client first writes using a field from a newer schema.
+
+The exact wire format depends on the backend's `DocumentUpdate` type definition (owned by the backend team). The frontend provides the version; the backend decides how to use it.
+
 ---
 
 ## 7. React Hook Implications
@@ -1090,7 +1151,7 @@ const changeCountType = S.defineSchemaUpdate("changeCountType", (schema) => {
 
 ## 10. Future Work
 
-- **Constraint enforcement:** Build-time or runtime enforcement of the auto-derived compatibility matrix (e.g., CI checks that all apps consuming a shared document type are within compatible version ranges before allowing a release).
+- **Per-field backwards compatibility modes:** If the stage model (soak/adopt/finalize) proves insufficient for expressing nuanced compatibility requirements, add per-field modes (COMPATIBLE / READONLY / INCOMPATIBLE) to the DSL as metadata that flows through to the backend. This was proposed by the backend team and deferred pending experience with the stage model.
 - **Migration testing utilities:** A `createMigrationTestHarness` function that lets developers create records at historical schema versions and read them through the current lens, verifying forward transforms produce expected output.
 - **Migration linting:** A codegen pass that warns about potentially lossy migrations, missing reverse transforms for `sync` finalization, or migration chains that may have issues.
 - **Peering recommendations:** Standards for long-lived peering environments (additive-only, no online migrations). This is noted as out of scope — peering apps should follow separate guidelines.
@@ -1099,6 +1160,7 @@ const changeCountType = S.defineSchemaUpdate("changeCountType", (schema) => {
 - **Nested lens in demo:** Demonstrate recursive lens application on activity events containing record snapshots (e.g., `ActivityShapeUpdateEvent.oldShape`).
 - **Union migration in demo:** Demonstrate the union variant addition pattern (new union field, soak, adopt, finalize).
 - **Field removal in demo:** Demonstrate the `removeField` deprecation lifecycle.
+- **Rollback handling:** Schema reconciliation when a frontend rollback removes fields that were already published to the backend. The backend team has proposed using the frontend schema as source of truth with explicit confirmation of auto-deprecation.
 
 ---
 
@@ -1107,9 +1169,9 @@ const changeCountType = S.defineSchemaUpdate("changeCountType", (schema) => {
 | Package | Changes |
 |---------|---------|
 | `@palantir/pack.schema` | Extend `RecordBuilder.addField` signature with `MigrationFieldOptions` and `AdditiveFieldOptions`. Add `removeField`. Add `defineSchemaUpdate`, `nextSchema` builder with `addSchemaUpdate(update, stage)` and implicit carry-forward. |
-| `@palantir/pack.document-schema.type-gen` | Generate internal types, write types (with migration group pairing), migration registries (with `allFields` type map), `.passthrough()` on Zod, dual type layers. Generate `opacity: number` (non-optional) for fields with defaults. |
+| `@palantir/pack.document-schema.type-gen` | Generate internal types, write types (with migration group pairing), migration registries (with `allFields` type map), `.passthrough()` on Zod, dual type layers. Generate `opacity: number` (non-optional) for fields with defaults. Generate schema manifest (version history, per-version field additions/stages, compatibility matrix) for backend consumption. Derive `DocumentModel[Metadata].version` as linear integer from schema chain. |
 | `@palantir/pack.document-schema.model-types` | Add `MigrationRegistry`, `MigrationStepDef`, `FieldMigrationDef`, `FieldDef`, `FieldTypeDescriptor` types to `DocumentSchema` metadata. |
-| `@palantir/pack.state.core` | New `migration/` module with `MigrationLens` (`applyReadLens`, `applyWriteLens`, `applyLensToValue` for recursive application). Update `YjsSchemaMapper` to accept and apply migrations. Update `BaseYjsDocumentService` to extract and pass migrations. |
+| `@palantir/pack.state.core` | New `migration/` module with `MigrationLens` (`applyReadLens`, `applyWriteLens`, `applyLensToValue` for recursive application). Update `YjsSchemaMapper` to accept and apply migrations. Update `BaseYjsDocumentService` to extract migrations, pass them through, and include `clientSchemaVersion` on all wire messages (loads, subscriptions, updates). |
 | `@palantir/pack.state.react` | No direct changes (lens is transparent). Write types used by hooks change via generated SDK. |
 | `demos/canvas/schema` | Add `migration001` |
 | `demos/canvas/sdk` | Regenerated with migration artifacts |
@@ -1134,3 +1196,6 @@ const changeCountType = S.defineSchemaUpdate("changeCountType", (schema) => {
 | **Implicit carry-forward** | Schema updates not mentioned in a new version stay at their current stage. Only updates that are advancing need to be declared in `nextSchema`. |
 | **Dual-write** | Writing both old and new field values simultaneously during `soak` and `adopt` stages, ensuring clients at adjacent versions can both read the data they understand. |
 | **Field type descriptor** | Metadata in the migration registry describing a field's type (`primitive`, `modelRef`, `array`, `map`, `optional`). Enables the lens to recursively apply to nested record data. |
+| **Schema version** | A linear integer (1, 2, 3, ...) derived from the schema chain. Each `nextSchema()` call increments it. Embedded in `DocumentModel[Metadata].version` and included on all wire messages for backend enforcement. |
+| **Schema manifest** | A codegen artifact describing the full version history of a document type schema — per-version field additions, stages, defaults, and the auto-derived compatibility matrix. Consumed by the backend to compute read/write version ranges. |
+| **Client schema version** | The schema version embedded in the generated SDK, included on loads, subscriptions, and updates so the backend can enforce compatibility. |
