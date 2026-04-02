@@ -39,6 +39,9 @@ export interface PresenceSelectionEvent {
   readonly selectedNodeIds: readonly string[];
 }
 
+/**
+ * A box.
+ */
 export interface ShapeBox {
   readonly bottom: number;
   readonly left: number;
@@ -47,6 +50,9 @@ export interface ShapeBox {
   readonly color?: string;
 }
 
+/**
+ * A circle.
+ */
 export interface ShapeCircle {
   readonly bottom: number;
   readonly left: number;

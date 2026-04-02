@@ -115,13 +115,29 @@ export function extractValidSchema(schemaModule: unknown): ReturnedSchema {
 /**
  * Extracts the full module default export, which may be a VersionedSchema or plain ReturnedSchema.
  * Used when the caller needs access to version metadata.
+ *
+ * Validates that the module has a non-null default export. For VersionedSchema exports,
+ * the inner schema is validated; for plain exports, full Zod validation is applied.
  */
 export function extractSchemaModuleDefault(schemaModule: unknown): unknown {
-  const validatedModule = schemaModule as Record<string, unknown>;
-  if (validatedModule?.default == null) {
+  const mod = schemaModule as Record<string, unknown> | null | undefined;
+  if (mod?.default == null) {
     throw new Error("Schema module must have a default export");
   }
-  return validatedModule.default;
+  const defaultExport = mod.default;
+
+  // If it looks like a VersionedSchema, validate the inner .schema property
+  if (typeof defaultExport === "object" && defaultExport != null && "schema" in defaultExport) {
+    const inner = (defaultExport as { schema: unknown }).schema;
+    if (inner != null && typeof inner === "object") {
+      returnedSchemaSchema.parse(inner);
+      return defaultExport;
+    }
+  }
+
+  // Otherwise validate as a plain ReturnedSchema
+  returnedSchemaSchema.parse(defaultExport);
+  return defaultExport;
 }
 
 /**

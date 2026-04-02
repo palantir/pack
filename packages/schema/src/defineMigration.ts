@@ -44,7 +44,7 @@ export type SchemaBuilder<T extends ReturnedSchema> = {
  */
 export interface MigrationFieldOptions<TNew, TOldFields extends Record<string, Type>> {
   /** Fields this new field is derived from. */
-  readonly derivedFrom: ReadonlyArray<keyof TOldFields & string>;
+  readonly derivedFrom: ReadonlyArray<Extract<keyof TOldFields, string>>;
 
   /**
    * Forward transform: computes the new field value from the old field(s).
@@ -57,7 +57,7 @@ export interface MigrationFieldOptions<TNew, TOldFields extends Record<string, T
    * Optional. Set to 'runtime' to indicate it will be provided at document service init.
    */
   readonly reverse?:
-    | ((newValue: TNew) => Partial<Record<keyof TOldFields & string, unknown>>)
+    | ((newValue: TNew) => Partial<Record<Extract<keyof TOldFields, string>, unknown>>)
     | "runtime";
 }
 
@@ -101,7 +101,7 @@ export interface RecordBuilder<T extends Record<string, Type>> {
    * - adopt: field hidden from read type (no longer visible to app code)
    * - finalize: field hidden from read and write types (orphaned in Y.Doc forever)
    */
-  removeField<K extends keyof T & string>(name: K): RecordBuilder<Omit<T, K>>;
+  removeField<K extends Extract<keyof T, string>>(name: K): RecordBuilder<Omit<T, K>>;
 
   build(): RecordDef<T>;
 }
@@ -111,7 +111,7 @@ export interface UnionBuilder<S extends UnionVariants> {
   addVariant<const K extends string>(
     name: K,
     modelDefOrRef: UnionVariantArg,
-  ): UnionBuilder<S & { [k in K]: Ref }>;
+  ): UnionBuilder<Omit<S, K> & Record<K, Ref>>;
   build(): UnionDef<S>;
 }
 
@@ -127,7 +127,7 @@ class UnionBuilderImpl<S extends UnionVariants> implements UnionBuilder<S> {
   addVariant<const K extends string>(
     variantName: K,
     modelDefOrRef: UnionVariantArg,
-  ): UnionBuilder<S & Record<K, Ref>> {
+  ): UnionBuilder<Omit<S, K> & Record<K, Ref>> {
     const ref: Ref = resolveUnionVariantArg(modelDefOrRef);
     const newVariants = { ...this.variants, [variantName]: ref };
 
@@ -150,12 +150,14 @@ class UnionBuilderImpl<S extends UnionVariants> implements UnionBuilder<S> {
 
 class RecordBuilderImpl<T extends RecordFields> implements RecordBuilder<T> {
   private readonly name: string;
+  private readonly docs: string | undefined;
   private readonly fields: T;
   private readonly migrations: Record<string, FieldMigrationMetadata>;
   private readonly removed: string[];
 
   constructor(initialRecordDef: RecordDef<T>) {
     this.name = initialRecordDef.name;
+    this.docs = initialRecordDef.docs;
     this.fields = { ...initialRecordDef.fields };
     this.migrations = { ...initialRecordDef.fieldMigrations };
     this.removed = [...(initialRecordDef.removedFields ?? [])];
@@ -193,40 +195,38 @@ class RecordBuilderImpl<T extends RecordFields> implements RecordBuilder<T> {
       fields: { ...this.fields, [name]: value },
       fieldMigrations: newMigrations,
       removedFields: this.removed,
-      docs: "",
+      docs: this.docs,
     });
   }
 
-  removeField<K extends keyof T & string>(name: K): RecordBuilder<Omit<T, K>> {
+  removeField<K extends Extract<keyof T, string>>(name: K): RecordBuilder<Omit<T, K>> {
     const { [name]: _, ...remainingFields } = this.fields;
     return new RecordBuilderImpl({
       type: ModelDefType.RECORD,
       name: this.name,
-      fields: remainingFields as Omit<T, K> as RecordFields as any,
+      fields: remainingFields as Omit<T, K> & RecordFields,
       fieldMigrations: this.migrations,
       removedFields: [...this.removed, name],
-      docs: "",
+      docs: this.docs,
     });
   }
 
   build(): RecordDef<T> {
-    const result: RecordDef<T> = {
+    return {
       type: ModelDefType.RECORD,
       name: this.name,
       fields: this.fields,
-      docs: "",
+      docs: this.docs,
+      ...(Object.keys(this.migrations).length > 0 ? { fieldMigrations: this.migrations } : {}),
+      ...(this.removed.length > 0 ? { removedFields: this.removed } : {}),
     };
-    if (Object.keys(this.migrations).length > 0) {
-      (result as any).fieldMigrations = this.migrations;
-    }
-    if (this.removed.length > 0) {
-      (result as any).removedFields = this.removed;
-    }
-    return result;
   }
 }
 
-export function defineMigration<
+/**
+ * Internal implementation shared by the deprecated public API and nextSchema.
+ */
+export function applyMigration<
   const T extends ReturnedSchema,
   const S extends ReturnedSchema,
 >(
@@ -269,4 +269,18 @@ export function defineMigration<
     ...previous,
     ...migration(builders),
   };
+}
+
+/**
+ * @deprecated Use {@link initialSchema} to create the baseline schema and
+ * {@link nextSchema} to build subsequent versions with schema updates.
+ */
+export function defineMigration<
+  const T extends ReturnedSchema,
+  const S extends ReturnedSchema,
+>(
+  previous: Schema<T>,
+  migration: (schema: SchemaBuilder<T>) => S,
+): Schema<T & S> {
+  return applyMigration(previous, migration);
 }

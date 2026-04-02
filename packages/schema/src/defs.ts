@@ -41,6 +41,8 @@ export interface FieldMigrationMetadata {
   readonly forward: (oldFields: Record<string, unknown>) => unknown;
   readonly reverse?: ((newValue: unknown) => Record<string, unknown>) | "runtime";
   readonly default?: unknown;
+  /** The schema update name that introduced this field. Set by SchemaVersionBuilder. */
+  readonly updateName?: string;
 }
 
 export interface UnionDef<TVariants extends UnionVariants = UnionVariants> extends ModelDefBase {

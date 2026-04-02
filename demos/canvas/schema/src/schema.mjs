@@ -27,7 +27,7 @@ const SHAPE_COMMON = {
   color: S.Optional(S.String),
 };
 
-const migration000 = S.defineMigration({}, () => {
+const schemaV0 = S.initialSchema(() => {
   const ShapeCircle = S.defineRecord("ShapeCircle", {
     docs: "A circle.",
     fields: SHAPE_COMMON,
@@ -129,7 +129,7 @@ const addOpacity = S.defineSchemaUpdate("addOpacity", schema => ({
 }));
 
 // --- Schema v1: introduce opacity (additive, straight to finalize) ---
-const schemaV1 = S.nextSchema(migration000)
+const schemaV1 = S.nextSchema(schemaV0)
   .addSchemaUpdate(addOpacity, "finalize")
   .build();
 

@@ -92,7 +92,9 @@ function convertFieldWithMigration(
   fieldType: string,
   migration: FieldMigrationMetadata,
 ): RecordFieldDefinition {
-  const result: Record<string, unknown> = { type: fieldType };
+  const result: { type: string; "derived-from"?: string[]; "default"?: unknown } = {
+    type: fieldType,
+  };
 
   if (migration.derivedFrom.length > 0) {
     result["derived-from"] = [...migration.derivedFrom];
@@ -101,7 +103,7 @@ function convertFieldWithMigration(
     result["default"] = migration.default;
   }
 
-  return result as unknown as RecordFieldDefinition;
+  return result;
 }
 
 function convertUnionToYaml(unionDef: P.UnionDef): UnionDefinition {
@@ -157,11 +159,19 @@ export function convertSchemaToSteps(schema: P.ReturnedSchema): MigrationStep[] 
 
 // --- Versioned schema support ---
 
-export interface VersionedMigrationStep extends MigrationStep {
-  version?: number;
-  "schema-updates"?: SchemaUpdateYaml[];
+export interface BaselineStep {
+  version: 0;
+  "add-records"?: Record<string, { docs?: string; fields: Record<string, RecordFieldDefinition> }>;
+  "add-union"?: Record<string, UnionDefinition>;
+}
+
+export interface VersionStep {
+  version: number;
+  "schema-updates": SchemaUpdateYaml[];
   "removed-fields"?: Record<string, string[]>;
 }
+
+export type VersionedMigrationStep = BaselineStep | VersionStep;
 
 interface SchemaUpdateYaml {
   name: string;
@@ -202,9 +212,8 @@ export function convertVersionedSchemaToSteps(
 function buildBaselineStep(
   schema: P.ReturnedSchema,
   _metadata: VersionedSchemaMetadata,
-): VersionedMigrationStep {
+): BaselineStep {
   // Baseline includes all records/unions with their base fields (no migration-added fields)
-  // For now, emit the full schema as baseline — the version steps describe the deltas
   const records: Record<string, { docs?: string; fields: Record<string, RecordFieldDefinition> }> =
     {};
   const unions: Record<string, UnionDefinition> = {};
@@ -235,7 +244,7 @@ function buildBaselineStep(
     }
   }
 
-  const step: VersionedMigrationStep = { version: 0 };
+  const step: BaselineStep = { version: 0 };
   if (Object.keys(records).length > 0) {
     step["add-records"] = records;
   }
@@ -248,7 +257,7 @@ function buildBaselineStep(
 function buildVersionStep(
   schema: P.ReturnedSchema,
   versionMeta: VersionedSchemaMetadata,
-): VersionedMigrationStep | undefined {
+): VersionStep | undefined {
   const schemaUpdates: SchemaUpdateYaml[] = [];
 
   for (const update of versionMeta.updates) {
@@ -280,10 +289,11 @@ function buildSchemaUpdateYaml(
     if (def.type !== "record") continue;
     const recordDef = def as P.RecordDef;
 
-    // Find migration-added fields
+    // Find migration-added fields belonging to this specific update
     if (recordDef.fieldMigrations) {
       const addFields: Record<string, RecordFieldDefinition> = {};
       for (const [fieldName, migration] of Object.entries(recordDef.fieldMigrations)) {
+        if (migration.updateName !== update.name) continue;
         const fieldDef = recordDef.fields[fieldName];
         if (fieldDef == null) continue;
         const fieldType = convertFieldType(fieldDef);

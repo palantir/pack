@@ -15,11 +15,11 @@
  */
 
 import { describe, expect, it } from "vitest";
-import { defineMigration } from "../defineMigration.js";
 import { defineRecord } from "../defineRecord.js";
 import {
   defineSchemaUpdate,
   getSchemaVersionMetadata,
+  initialSchema,
   nextSchema,
   SchemaVersionMetadata,
 } from "../defineSchemaUpdate.js";
@@ -38,7 +38,7 @@ describe("defineSchemaUpdate", () => {
 });
 
 describe("nextSchema", () => {
-  const baseSchema = defineMigration({}, () => ({
+  const baseSchema = initialSchema(() => ({
     Shape: defineRecord("Shape", {
       docs: "A shape",
       fields: {
@@ -68,50 +68,82 @@ describe("nextSchema", () => {
       .build(),
   }));
 
-  it("should build a versioned schema with version 1", () => {
-    const v1 = nextSchema(baseSchema)
+  it("should build a versioned schema from initialSchema", () => {
+    // baseSchema is version 1 (from initialSchema), nextSchema bumps to 2
+    const v2 = nextSchema(baseSchema)
       .addSchemaUpdate(addColorSplit, "soak")
       .addSchemaUpdate(addOpacity, "finalize")
       .build();
 
-    expect(v1[SchemaVersionMetadata].version).toBe(1);
-    expect(v1.schema.Shape).toBeDefined();
-    expect(v1.schema.Shape.fields.left).toEqual({ type: "double" });
-    expect(v1.schema.Shape.fields.fillColor).toEqual({
+    expect(v2[SchemaVersionMetadata].version).toBe(2);
+    expect(v2.schema.Shape).toBeDefined();
+    expect(v2.schema.Shape.fields.left).toEqual({ type: "double" });
+    expect(v2.schema.Shape.fields.fillColor).toEqual({
       type: "optional",
       item: { type: "string" },
     });
-    expect(v1.schema.Shape.fields.opacity).toEqual({ type: "optional", item: { type: "double" } });
+    expect(v2.schema.Shape.fields.opacity).toEqual({ type: "optional", item: { type: "double" } });
   });
 
-  it("should track schema update entries with stages", () => {
-    const v1 = nextSchema(baseSchema)
+  it("should tag fieldMigrations with the correct updateName", () => {
+    const v2 = nextSchema(baseSchema)
       .addSchemaUpdate(addColorSplit, "soak")
       .addSchemaUpdate(addOpacity, "finalize")
       .build();
 
-    const meta = v1[SchemaVersionMetadata];
-    expect(meta.updates).toHaveLength(2);
-    expect(meta.updates[0]).toEqual(
+    const migrations = v2.schema.Shape.fieldMigrations!;
+    // Fields from addColorSplit should be tagged with "addColorSplit"
+    expect(migrations.fillColor.updateName).toBe("addColorSplit");
+    expect(migrations.strokeColor.updateName).toBe("addColorSplit");
+    // Field from addOpacity should be tagged with "addOpacity"
+    expect(migrations.opacity.updateName).toBe("addOpacity");
+  });
+
+  it("should mark additive updates correctly when mixed with transform updates", () => {
+    const v2 = nextSchema(baseSchema)
+      .addSchemaUpdate(addColorSplit, "soak")
+      .addSchemaUpdate(addOpacity, "finalize")
+      .build();
+
+    const meta = v2[SchemaVersionMetadata];
+    // addColorSplit has derivedFrom fields → not additive
+    expect(meta.updates.find(u => u.name === "addColorSplit")!.additive).toBe(false);
+    // addOpacity only has a default → additive
+    expect(meta.updates.find(u => u.name === "addOpacity")!.additive).toBe(true);
+  });
+
+  it("should track schema update entries with stages", () => {
+    const v2 = nextSchema(baseSchema)
+      .addSchemaUpdate(addColorSplit, "soak")
+      .addSchemaUpdate(addOpacity, "finalize")
+      .build();
+
+    const meta = v2[SchemaVersionMetadata];
+    // 3 updates: "initial" carried forward + addColorSplit + addOpacity
+    expect(meta.updates).toHaveLength(3);
+    expect(meta.updates.find(u => u.name === "initial")).toEqual(
+      expect.objectContaining({ name: "initial", stage: "finalize" }),
+    );
+    expect(meta.updates.find(u => u.name === "addColorSplit")).toEqual(
       expect.objectContaining({ name: "addColorSplit", stage: "soak" }),
     );
-    expect(meta.updates[1]).toEqual(
+    expect(meta.updates.find(u => u.name === "addOpacity")).toEqual(
       expect.objectContaining({ name: "addOpacity", stage: "finalize" }),
     );
   });
 
   it("should advance stages across versions", () => {
-    const v1 = nextSchema(baseSchema)
+    const v2 = nextSchema(baseSchema)
       .addSchemaUpdate(addColorSplit, "soak")
       .addSchemaUpdate(addOpacity, "finalize")
       .build();
 
-    const v2 = nextSchema(v1)
+    const v3 = nextSchema(v2)
       .addSchemaUpdate(addColorSplit, "adopt")
       .build();
 
-    const meta = v2[SchemaVersionMetadata];
-    expect(meta.version).toBe(2);
+    const meta = v3[SchemaVersionMetadata];
+    expect(meta.version).toBe(3);
 
     // addOpacity carried forward at finalize, addColorSplit advanced to adopt
     const opacityEntry = meta.updates.find(u => u.name === "addOpacity");
@@ -138,22 +170,24 @@ describe("nextSchema", () => {
   });
 
   it("should maintain version history", () => {
-    const v1 = nextSchema(baseSchema)
+    // baseSchema is v1, each nextSchema adds 1
+    const v2 = nextSchema(baseSchema)
       .addSchemaUpdate(addColorSplit, "soak")
       .build();
 
-    const v2 = nextSchema(v1)
+    const v3 = nextSchema(v2)
       .addSchemaUpdate(addColorSplit, "adopt")
       .build();
 
-    const v3 = nextSchema(v2)
+    const v4 = nextSchema(v3)
       .addSchemaUpdate(addColorSplit, "finalize")
       .build();
 
-    expect(v3[SchemaVersionMetadata].version).toBe(3);
-    expect(v3[SchemaVersionMetadata].history).toHaveLength(2);
-    expect(v3[SchemaVersionMetadata].history[0]!.version).toBe(1);
-    expect(v3[SchemaVersionMetadata].history[1]!.version).toBe(2);
+    expect(v4[SchemaVersionMetadata].version).toBe(4);
+    expect(v4[SchemaVersionMetadata].history).toHaveLength(3);
+    expect(v4[SchemaVersionMetadata].history[0]!.version).toBe(1);
+    expect(v4[SchemaVersionMetadata].history[1]!.version).toBe(2);
+    expect(v4[SchemaVersionMetadata].history[2]!.version).toBe(3);
   });
 
   it("should error on stage regression", () => {
@@ -184,22 +218,20 @@ describe("nextSchema", () => {
     }).toThrow(/already declared in this schema version/);
   });
 
-  it("should work with a plain schema (no previous versioned metadata)", () => {
-    const v1 = nextSchema(baseSchema)
-      .addSchemaUpdate(addOpacity, "finalize")
-      .build();
-
-    expect(v1[SchemaVersionMetadata].version).toBe(1);
-    expect(v1[SchemaVersionMetadata].history).toHaveLength(0);
+  it("should have version 1 from initialSchema", () => {
+    expect(baseSchema[SchemaVersionMetadata].version).toBe(1);
+    expect(baseSchema[SchemaVersionMetadata].history).toHaveLength(0);
+    expect(baseSchema[SchemaVersionMetadata].updates).toHaveLength(1);
+    expect(baseSchema[SchemaVersionMetadata].updates[0]!.name).toBe("initial");
   });
 
   it("should support getSchemaVersionMetadata helper", () => {
-    const v1 = nextSchema(baseSchema)
+    const v2 = nextSchema(baseSchema)
       .addSchemaUpdate(addOpacity, "finalize")
       .build();
 
-    expect(getSchemaVersionMetadata(v1)).toBe(v1[SchemaVersionMetadata]);
-    expect(getSchemaVersionMetadata(baseSchema)).toBeUndefined();
+    expect(getSchemaVersionMetadata(v2)).toBe(v2[SchemaVersionMetadata]);
+    expect(getSchemaVersionMetadata(baseSchema)).toBeDefined();
     expect(getSchemaVersionMetadata(null)).toBeUndefined();
   });
 

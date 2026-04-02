@@ -15,8 +15,8 @@
  */
 
 import type { ReturnedSchema, Schema, SchemaBuilder } from "./defineMigration.js";
-import { defineMigration } from "./defineMigration.js";
-import type { RecordDef } from "./defs.js";
+import { applyMigration } from "./defineMigration.js";
+import type { FieldMigrationMetadata, RecordDef } from "./defs.js";
 
 // --- Stage types ---
 
@@ -53,9 +53,14 @@ export interface VersionedSchema<T extends ReturnedSchema = ReturnedSchema> {
 
 // --- SchemaUpdate definition ---
 
+/** Migration function that accepts any schema builder shape. */
+type SchemaMigrationFn<S extends ReturnedSchema = ReturnedSchema> = (
+  schema: SchemaBuilder<ReturnedSchema>,
+) => S;
+
 export interface SchemaUpdate<S extends ReturnedSchema = ReturnedSchema> {
   readonly name: string;
-  readonly migration: (schema: SchemaBuilder<any>) => S;
+  readonly migration: SchemaMigrationFn<S>;
 }
 
 /**
@@ -67,7 +72,7 @@ export interface SchemaUpdate<S extends ReturnedSchema = ReturnedSchema> {
  */
 export function defineSchemaUpdate<const S extends ReturnedSchema>(
   name: string,
-  migration: (schema: SchemaBuilder<any>) => S,
+  migration: SchemaMigrationFn<S>,
 ): SchemaUpdate<S> {
   return { name, migration };
 }
@@ -77,7 +82,7 @@ export function defineSchemaUpdate<const S extends ReturnedSchema>(
 interface AppliedUpdate {
   readonly name: string;
   readonly stage: MigrationStage;
-  readonly migration: (schema: SchemaBuilder<any>) => ReturnedSchema;
+  readonly migration: SchemaMigrationFn;
 }
 
 export interface SchemaVersionBuilder<T extends ReturnedSchema> {
@@ -129,15 +134,24 @@ class SchemaVersionBuilderImpl<T extends ReturnedSchema> implements SchemaVersio
     return new SchemaVersionBuilderImpl(
       this.previous,
       this.previousMetadata,
-      [...this.appliedUpdates, { name: update.name, stage, migration: update.migration as any }],
+      [...this.appliedUpdates, {
+        name: update.name,
+        stage,
+        migration: update.migration as SchemaMigrationFn,
+      }],
     ) as unknown as SchemaVersionBuilder<T & S>;
   }
 
   build(): VersionedSchema<T> {
-    // Apply all updates via defineMigration
+    // Apply all updates via applyMigration, tagging new fields with the update name
     let schema: ReturnedSchema = this.previous;
     for (const update of this.appliedUpdates) {
-      schema = defineMigration(schema as any, update.migration) as any;
+      const prevFieldMigrationKeys = collectFieldMigrationKeys(schema);
+      schema = applyMigration(
+        schema as Schema<ReturnedSchema>,
+        update.migration,
+      );
+      stampUpdateName(schema, prevFieldMigrationKeys, update.name);
     }
 
     // Build carried-forward entries: previous updates not mentioned in this version
@@ -202,17 +216,14 @@ function isVersionedSchema(value: unknown): value is VersionedSchema {
     && SchemaVersionMetadata in value;
 }
 
-/** Check if an update is purely additive (no derivedFrom on any field). */
+/** Check if an update is purely additive (no derivedFrom on any field belonging to this update). */
 function isAdditiveUpdate(schema: ReturnedSchema, update: AppliedUpdate): boolean {
-  // Apply the migration to see what it produces, then check for fieldMigrations
-  // We check the schema directly — any RecordDef with fieldMigrations that have
-  // non-empty derivedFrom means it's a transform migration
   for (const def of Object.values(schema)) {
     if (def.type === "record") {
       const recordDef = def as RecordDef;
       if (recordDef.fieldMigrations) {
         for (const meta of Object.values(recordDef.fieldMigrations)) {
-          if (meta.derivedFrom.length > 0) {
+          if (meta.updateName === update.name && meta.derivedFrom.length > 0) {
             return false;
           }
         }
@@ -220,6 +231,36 @@ function isAdditiveUpdate(schema: ReturnedSchema, update: AppliedUpdate): boolea
     }
   }
   return true;
+}
+
+/** Collect all existing fieldMigration keys as "recordName.fieldName" for diffing. */
+function collectFieldMigrationKeys(schema: ReturnedSchema): Set<string> {
+  const keys = new Set<string>();
+  for (const def of Object.values(schema)) {
+    if (def.type === "record" && (def as RecordDef).fieldMigrations) {
+      for (const fieldName of Object.keys((def as RecordDef).fieldMigrations!)) {
+        keys.add(`${def.name}.${fieldName}`);
+      }
+    }
+  }
+  return keys;
+}
+
+/** Stamp updateName on any fieldMigrations entries not present in prevKeys. */
+function stampUpdateName(schema: ReturnedSchema, prevKeys: Set<string>, updateName: string): void {
+  for (const def of Object.values(schema)) {
+    if (def.type === "record" && (def as RecordDef).fieldMigrations) {
+      const recordDef = def as RecordDef;
+      for (const [fieldName, meta] of Object.entries(recordDef.fieldMigrations!)) {
+        if (!prevKeys.has(`${recordDef.name}.${fieldName}`) && meta.updateName == null) {
+          (recordDef.fieldMigrations as Record<string, FieldMigrationMetadata>)[fieldName] = {
+            ...meta,
+            updateName,
+          };
+        }
+      }
+    }
+  }
 }
 
 /**
@@ -230,4 +271,25 @@ export function getSchemaVersionMetadata(schema: unknown): VersionedSchemaMetada
     return schema[SchemaVersionMetadata];
   }
   return undefined;
+}
+
+/**
+ * Create the initial schema version. This is the entry point for defining
+ * a document type schema. The provided function returns the initial set of
+ * record and union definitions.
+ *
+ * @example
+ * const schemaV0 = S.initialSchema(() => ({
+ *   Person: S.defineRecord("Person", { fields: { name: S.String } }),
+ * }));
+ */
+export function initialSchema<const S extends ReturnedSchema>(
+  fn: () => S,
+): VersionedSchema<S> {
+  // Wrap the plain function as a schema update that ignores the (empty) builder
+  const update = defineSchemaUpdate<S>("initial", () => fn());
+  const emptySchema = {} as Schema<Record<string, never>>;
+  return nextSchema(emptySchema)
+    .addSchemaUpdate(update, "finalize")
+    .build() as VersionedSchema<S>;
 }
