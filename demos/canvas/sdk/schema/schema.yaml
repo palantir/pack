@@ -71,3 +71,28 @@
             opacity:
               type: optional<double>
               default: 1
+- version: 3
+  schema-updates:
+    - name: addColorSplit
+      stage: soak
+      modify-records:
+        ShapeBox:
+          add-fields:
+            fillColor:
+              type: optional<string>
+              derived-from:
+                - color
+            strokeColor:
+              type: optional<string>
+              derived-from:
+                - color
+        ShapeCircle:
+          add-fields:
+            fillColor:
+              type: optional<string>
+              derived-from:
+                - color
+            strokeColor:
+              type: optional<string>
+              derived-from:
+                - color

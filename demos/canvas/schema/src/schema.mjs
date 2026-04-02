@@ -118,7 +118,11 @@ const schemaV0 = S.initialSchema(() => {
   };
 });
 
-// --- Schema update: add opacity to shapes ---
+// ============================================================================
+// Schema updates (stage-agnostic change definitions)
+// ============================================================================
+
+// Additive: add opacity to shapes (default 1.0 = fully opaque)
 const addOpacity = S.defineSchemaUpdate("addOpacity", schema => ({
   ShapeBox: schema.ShapeBox
     .addField("opacity", S.Optional(S.Double), { default: 1.0 })
@@ -128,9 +132,59 @@ const addOpacity = S.defineSchemaUpdate("addOpacity", schema => ({
     .build(),
 }));
 
-// --- Schema v1: introduce opacity (additive, straight to finalize) ---
-const schemaV1 = S.nextSchema(schemaV0)
+// Transform: split color into separate fillColor + strokeColor
+const addColorSplit = S.defineSchemaUpdate("addColorSplit", schema => ({
+  ShapeBox: schema.ShapeBox
+    .addField("fillColor", S.Optional(S.String), {
+      derivedFrom: ["color"],
+      forward: ({ color }) => color,
+    })
+    .addField("strokeColor", S.Optional(S.String), {
+      derivedFrom: ["color"],
+      forward: ({ color }) => color,
+    })
+    .build(),
+  ShapeCircle: schema.ShapeCircle
+    .addField("fillColor", S.Optional(S.String), {
+      derivedFrom: ["color"],
+      forward: ({ color }) => color,
+    })
+    .addField("strokeColor", S.Optional(S.String), {
+      derivedFrom: ["color"],
+      forward: ({ color }) => color,
+    })
+    .build(),
+}));
+
+// ============================================================================
+// Schema versions
+// ============================================================================
+
+// v2: add opacity (additive, straight to finalize)
+const schemaV2 = S.nextSchema(schemaV0)
   .addSchemaUpdate(addOpacity, "finalize")
   .build();
 
-export default schemaV1;
+// v3: introduce color split (soak stage — read old, write both)
+// Clients at v2 and v3 can collaborate: v2 reads color, v3 dual-writes color + fillColor/strokeColor.
+const schemaV3 = S.nextSchema(schemaV2)
+  .addSchemaUpdate(addColorSplit, "soak")
+  .build();
+
+// --- Uncomment the following versions to advance the color split migration ---
+
+// // v4: advance color split to adopt (read new, write both)
+// // Clients at v3 and v4 can collaborate: v3 reads old + dual-writes, v4 reads new + dual-writes.
+// // Clients at v2 (pre-soak) are NO LONGER compatible with v4.
+// const schemaV4 = S.nextSchema(schemaV3)
+//   .addSchemaUpdate(addColorSplit, "adopt")
+//   .build();
+
+// // v5: finalize color split (read new, write new only)
+// // Old `color` field is orphaned in the Y.Doc.
+// // Clients at v3 (soak) are NO LONGER compatible with v5.
+// const schemaV5 = S.nextSchema(schemaV4)
+//   .addSchemaUpdate(addColorSplit, "finalize")
+//   .build();
+
+export default schemaV3;

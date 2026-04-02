@@ -197,13 +197,16 @@ export function convertVersionedSchemaToSteps(
   const baselineStep = buildBaselineStep(schema, metadata);
   const steps: VersionedMigrationStep[] = [baselineStep];
 
-  // Build version steps from metadata history + current
+  // Build version steps from metadata history + current.
+  // Only emit updates that are new or advancing in each version (not carried-forward).
   const allVersions = [...metadata.history, metadata];
+  let previousUpdates: ReadonlyArray<{ name: string; stage: string }> = [];
   for (const versionMeta of allVersions) {
-    const versionStep = buildVersionStep(schema, versionMeta);
+    const versionStep = buildVersionStep(schema, versionMeta, previousUpdates);
     if (versionStep != null) {
       steps.push(versionStep);
     }
+    previousUpdates = versionMeta.updates;
   }
 
   return steps;
@@ -257,10 +260,16 @@ function buildBaselineStep(
 function buildVersionStep(
   schema: P.ReturnedSchema,
   versionMeta: VersionedSchemaMetadata,
+  previousUpdates: ReadonlyArray<{ name: string; stage: string }>,
 ): VersionStep | undefined {
   const schemaUpdates: SchemaUpdateYaml[] = [];
 
+  // Only emit updates that are new or have advanced stage since the previous version
+  const prevByName = new Map(previousUpdates.map(u => [u.name, u.stage]));
   for (const update of versionMeta.updates) {
+    const prevStage = prevByName.get(update.name);
+    if (prevStage === update.stage) continue; // carried forward unchanged, skip
+
     const updateYaml = buildSchemaUpdateYaml(schema, update);
     if (updateYaml != null) {
       schemaUpdates.push(updateYaml);
