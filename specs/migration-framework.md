@@ -35,9 +35,9 @@ Each SDK version declares a **stage** for its migration group. All migrations de
 | 1 | `baseline` | Old fields | Old fields | Old fields only |
 | 2 | `soak` | Old fields | Both old and new | Old fields only (new fields hidden) |
 | 3 | `adopt` | New fields | Both old and new | New fields only (old fields hidden) |
-| 4 | `finalize` | New fields | New fields only* | New fields only |
+| 4 | `finalize` | New fields | New fields only | New fields only |
 
-*\*Finalization behavior for old fields is configurable per migration: `orphan` (leave as-is), `delete` (remove from Y.Doc on write), or `sync` (keep old field updated via reverse transform).*
+Old fields are always left as-is (orphaned) in the Y.Doc when a migration is finalized. The backend can handle garbage collection of orphaned fields if needed in the future.
 
 For purely additive changes (new independent field, no dependency on existing fields), stages 2-4 collapse: the field is simply optional starting from the version that adds it.
 
@@ -51,7 +51,7 @@ The read lens does not detect or track a "record version number." Instead, it op
 
 This approach is simpler and more robust than version numbering because:
 - It is agnostic to *why* a field is present or absent. A `fillColor` field might exist because a soak-stage client dual-wrote, a finalize-stage client wrote it, or the record was freshly created at the latest schema. The lens doesn't care.
-- It handles `onFinalize` modes (`orphan`, `delete`, `sync`) uniformly. Whether `color` is still present alongside `fillColor` or has been deleted, the lens produces the same output.
+- It handles finalization uniformly. Old fields may remain in the Y.Doc alongside new fields, and the lens produces the same output regardless.
 - It avoids introducing a CRDT metadata field (e.g., `__v`) that could conflict under concurrent writes from clients at different versions.
 
 ### 1.4 Lens Model
@@ -72,7 +72,7 @@ This is important for CRDT consistency. If the lens wrote derived fields back to
 
 During the `soak` and `adopt` stages, writes to migration-linked fields must include **both** old and new field values. The SDK enforces this at the TypeScript type level: if a developer's partial update includes any field involved in an active migration, all linked fields become required in the update type.
 
-During `finalize`, only new fields are written. The behavior for old fields depends on the migration's `onFinalize` setting.
+During `finalize`, only new fields are written. Old fields are always left as-is (orphaned) in the Y.Doc.
 
 The SDK does **not** automatically invoke reverse transforms. If a forward transform exists (`color → { fillColor: color, strokeColor: color }`), the reverse is often lossy (which color do you pick from fill vs stroke?). Instead, the developer explicitly provides all linked field values when writing.
 
@@ -149,18 +149,9 @@ interface MigrationFieldOptions<TNew, TOld extends Record<string, unknown>> {
 
   /**
    * Reverse transform: computes the old field value(s) from the new field.
-   * Optional — only needed if the migration's onFinalize is 'sync'.
-   * Can be 'runtime' to indicate it will be provided at document service init.
+   * Optional — can be 'runtime' to indicate it will be provided at document service init.
    */
   reverse?: ((newValue: TNew) => Partial<TOld>) | 'runtime';
-
-  /**
-   * Behavior when the migration is finalized:
-   * - 'orphan': leave old fields as-is in the Y.Doc (default)
-   * - 'delete': remove old fields from Y.Doc on next write
-   * - 'sync': keep old fields updated via reverse transform on every write
-   */
-  onFinalize?: 'orphan' | 'delete' | 'sync';
 }
 
 interface AdditiveFieldOptions<TNew> {
@@ -254,12 +245,10 @@ const addColorSplit = S.defineSchemaUpdate("addColorSplit", (schema) => {
     .addField("fillColor", S.Optional(S.String), {
       derivedFrom: ["color"],
       forward: ({ color }) => color,
-      onFinalize: "delete",
     })
     .addField("strokeColor", S.Optional(S.String), {
       derivedFrom: ["color"],
       forward: ({ color }) => color,
-      onFinalize: "delete",
     })
     .build();
 
@@ -267,12 +256,10 @@ const addColorSplit = S.defineSchemaUpdate("addColorSplit", (schema) => {
     .addField("fillColor", S.Optional(S.String), {
       derivedFrom: ["color"],
       forward: ({ color }) => color,
-      onFinalize: "delete",
     })
     .addField("strokeColor", S.Optional(S.String), {
       derivedFrom: ["color"],
       forward: ({ color }) => color,
-      onFinalize: "delete",
     })
     .build();
 
@@ -442,7 +429,7 @@ interface ShapeBoxUpdateWithColorMigration {
 
 The `updateRecord` call is typed to accept `ShapeBoxUpdate` instead of `Partial<ShapeBox>` when migrations are active.
 
-During `finalize` stage with `onFinalize: 'delete'`:
+During `finalize` stage, only new fields are in the write type. Old fields are left as-is (orphaned) in the Y.Doc:
 
 ```typescript
 export type ShapeBoxUpdate = {
@@ -453,7 +440,7 @@ export type ShapeBoxUpdate = {
   readonly fillColor?: string;
   readonly strokeColor?: string;
   readonly opacity?: number;
-  // color is not in the type at all
+  // color is not in the write type — old field is orphaned in Y.Doc
 };
 ```
 
@@ -520,12 +507,10 @@ export const ShapeBoxMigrations: MigrationRegistry<"ShapeBox"> = {
         fillColor: {
           derivedFrom: ["color"],
           forward: ({ color }) => color,
-          onFinalize: "delete",
         },
         strokeColor: {
           derivedFrom: ["color"],
           forward: ({ color }) => color,
-          onFinalize: "delete",
         },
       },
     },
@@ -536,7 +521,6 @@ export const ShapeBoxMigrations: MigrationRegistry<"ShapeBox"> = {
         opacity: {
           derivedFrom: [],
           forward: () => undefined,
-          onFinalize: "orphan",
           default: 1.0,
         },
       },
@@ -607,7 +591,6 @@ type FieldTypeDescriptor =
 interface FieldMigrationDef {
   derivedFrom: string[];
   forward: (oldFields: Record<string, unknown>) => unknown;
-  onFinalize: 'orphan' | 'delete' | 'sync';
   reverse?: (newValue: unknown) => Record<string, unknown>;
   /** Default value for additive fields (no derivation). */
   default?: unknown;
@@ -737,26 +720,12 @@ function applyWriteLens(
 ): Record<string, unknown> {
   let output = { ...updateData };
 
-  for (const step of registry.steps) {
-    if (step.stage === 'finalize') {
-      // Handle onFinalize behaviors for this step's fields
-      for (const [fieldName, def] of Object.entries(step.fields)) {
-        if (def.derivedFrom.length === 0) continue;
-        for (const src of def.derivedFrom) {
-          if (def.onFinalize === 'delete') {
-            // Mark old field for deletion (YjsSchemaMapper interprets undefined as delete)
-            output[src] = undefined;
-          }
-          // 'orphan': do nothing — old field left as-is
-          // 'sync': apply reverse transform (if registered) to keep old field updated
-        }
-      }
-    }
-
-    // In soak/adopt stages, the TypeScript types already enforce
-    // that migration-linked fields come in complete groups.
-    // The write lens just passes them through.
-  }
+  // In soak/adopt stages, the TypeScript types already enforce
+  // that migration-linked fields come in complete groups.
+  // The write lens just passes them through.
+  //
+  // In finalize stage, only new fields are written.
+  // Old fields are always left as-is (orphaned) in the Y.Doc.
 
   return output;
 }
@@ -865,13 +834,7 @@ The existing `yMapToState` function already returns all fields from the Y.Map. N
 
 ### 5.3 populateYMapFromState Changes
 
-The `populateYMapFromState` function currently skips `undefined` values. For `onFinalize: 'delete'`, we need to explicitly delete keys:
-
-```typescript
-// In updateYMapFromPartialState, the existing logic already handles this:
-// if (value === undefined) { yMap.delete(key); return; }
-// No change needed — the write lens sets fields to undefined for deletion.
-```
+No changes needed. Old fields are always left as-is (orphaned) in the Y.Doc when a migration is finalized. The `populateYMapFromState` function continues to skip `undefined` values as before.
 
 ---
 
@@ -1033,7 +996,7 @@ The `updateRecord` function exposed by hooks uses the generated write type (`Sha
 | ShapeCircle | `strokeColor` | Split from `color` | `({ color }) => color` |
 | ShapeCircle | `opacity` | Additive (default: 1.0) | N/A |
 
-**Finalization:** `onFinalize: 'delete'` for `fillColor` and `strokeColor` (old `color` field is deleted when finalized).
+**Finalization:** Old `color` field is left as-is (orphaned) in the Y.Doc when the migration is finalized.
 
 ### 8.2 Demo at Each Stage
 
@@ -1052,7 +1015,7 @@ The `updateRecord` function exposed by hooks uses the generated write type (`Sha
 **Stage: `finalize` (final release)**
 - App code reads only `fillColor`, `strokeColor`, `opacity`.
 - Lens still derives from `color` for old documents.
-- Writes only set `fillColor`/`strokeColor`. `color` is deleted from the Y.Map on write.
+- Writes only set `fillColor`/`strokeColor`. `color` remains in the Y.Doc (orphaned).
 
 ### 8.3 Demo File Changes
 
@@ -1111,11 +1074,11 @@ This means activity events containing record snapshots (e.g., `ActivityShapeUpda
 | `adopt` | Hidden | Hidden | Field invisible to app code. Remains in Y.Doc. |
 | `finalize` | Hidden | Hidden | Permanently orphaned in Y.Doc. |
 
-The field is **never deleted from the Y.Doc** because no write triggers its removal (unlike transform migrations with `onFinalize: 'delete'`, where a write to the new field can simultaneously delete the old one).
+The field is **never deleted from the Y.Doc** — it is permanently orphaned, consistent with the general finalization behavior where old fields are always left as-is.
 
 ### 9.5 Type Changes
 
-**Decision:** Type changes on existing fields (e.g., `count: string → count: number`) are modeled as "add new typed field + derive from old + finalize with delete." This is a natural consequence of the existing design and requires no DSL changes.
+**Decision:** Type changes on existing fields (e.g., `count: string → count: number`) are modeled as "add new typed field + derive from old + finalize." The old field is orphaned in the Y.Doc. This is a natural consequence of the existing design and requires no DSL changes.
 
 **Pattern:**
 ```javascript
@@ -1124,7 +1087,6 @@ const changeCountType = S.defineSchemaUpdate("changeCountType", (schema) => {
     .addField("countV2", S.Double, {
       derivedFrom: ["count"],
       forward: ({ count }) => parseInt(count),
-      onFinalize: "delete",
     })
     .build()
   };
@@ -1153,7 +1115,7 @@ const changeCountType = S.defineSchemaUpdate("changeCountType", (schema) => {
 
 - **Per-field backwards compatibility modes:** If the stage model (soak/adopt/finalize) proves insufficient for expressing nuanced compatibility requirements, add per-field modes (COMPATIBLE / READONLY / INCOMPATIBLE) to the DSL as metadata that flows through to the backend. This was proposed by the backend team and deferred pending experience with the stage model.
 - **Migration testing utilities:** A `createMigrationTestHarness` function that lets developers create records at historical schema versions and read them through the current lens, verifying forward transforms produce expected output.
-- **Migration linting:** A codegen pass that warns about potentially lossy migrations, missing reverse transforms for `sync` finalization, or migration chains that may have issues.
+- **Migration linting:** A codegen pass that warns about potentially lossy migrations or migration chains that may have issues.
 - **Peering recommendations:** Standards for long-lived peering environments (additive-only, no online migrations). This is noted as out of scope — peering apps should follow separate guidelines.
 - **Selective lens application:** Performance optimization where the lens skips records whose fields already match the current schema (all expected fields present, no derivation needed).
 - **Debug tooling:** A dev-mode inspector that shows the raw Y.Doc data alongside the lens-applied view and which transforms were applied.
@@ -1187,7 +1149,7 @@ const changeCountType = S.defineSchemaUpdate("changeCountType", (schema) => {
 | **Schema update** | A stage-agnostic, reusable definition of a schema change (e.g., adding fillColor/strokeColor). Defined once via `defineSchemaUpdate`, composed into schema versions at specific stages. |
 | **Soak stage** | Migration stage where new fields exist in the Y.Doc but are not exposed to application code. Clients read old fields and dual-write old + new. |
 | **Adopt stage** | Migration stage where application code reads from new fields. Clients still dual-write for backward compatibility. |
-| **Finalize stage** | Migration stage where only new fields are read and written. Old fields are orphaned, deleted, or kept in sync per configuration. |
+| **Finalize stage** | Migration stage where only new fields are read and written. Old fields are always left as-is (orphaned) in the Y.Doc. |
 | **Additive migration** | A migration that adds a new field with no dependency on existing fields. Can skip directly to `finalize`. May include a `default` value, making the field required in the read type. |
 | **Transform migration** | A migration where a new field's value is derived from one or more existing fields via a forward transform function. Must progress through `soak → adopt → finalize`. |
 | **Field removal** | A migration that deprecates and hides an existing field. Follows `soak → adopt → finalize` with removal-specific semantics. The field is orphaned in the Y.Doc forever. |
