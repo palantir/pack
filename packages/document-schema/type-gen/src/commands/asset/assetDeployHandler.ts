@@ -41,6 +41,7 @@ export async function assetDeployHandler(options: AssetDeployOptions): Promise<v
       ontologyRid: options.ontologyRid,
       storage: asset.documentStorageType,
       fileSystemType: asset.fileSystemType,
+      version: asset.schemaVersion,
     };
 
     consola.info("Creating first-party document type", request);
