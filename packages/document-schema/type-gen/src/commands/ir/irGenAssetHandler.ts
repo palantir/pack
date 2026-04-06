@@ -41,7 +41,6 @@ interface DocumentTypeAsset {
 /**
  * Generates a document type asset JSON file from an IR schema.
  *
- * @remarks
  * This command is intended for internal platform applications where the document
  * type asset must exist on disk so the platform can discover it and register the
  * document type automatically at deploy time. Most users should use `ir deploy`
