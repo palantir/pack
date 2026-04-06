@@ -39,10 +39,7 @@ export async function assetDeployHandler(options: AssetDeployOptions): Promise<v
     const request = {
       name: asset.documentTypeName,
       ontologyRid: options.ontologyRid,
-      storage: {
-        type: "yjs",
-        yjs: { schema: asset.documentStorageType.yjs },
-      },
+      storage: asset.documentStorageType,
       fileSystemType: asset.fileSystemType,
     };
 

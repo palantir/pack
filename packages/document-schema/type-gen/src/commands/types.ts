@@ -18,11 +18,15 @@ import type { IRealTimeDocumentSchema } from "../lib/pack-docschema-api/pack-doc
 
 export type FileSystemType = "ARTIFACTS" | "COMPASS";
 
+export interface YjsSchema {
+  readonly schema: Omit<IRealTimeDocumentSchema, "name" | "description" | "version">;
+}
+
 export interface DocumentTypeAsset {
   readonly documentTypeName: string;
   readonly documentStorageType: {
     readonly type: "yjs";
-    readonly yjs: Omit<IRealTimeDocumentSchema, "name" | "description" | "version">;
+    readonly yjs: YjsSchema;
   };
   readonly fileSystemType: FileSystemType;
   readonly schemaVersion: number;
