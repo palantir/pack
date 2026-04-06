@@ -16,6 +16,7 @@
 
 import type { Command } from "commander";
 import { irDeployHandler } from "./irDeployHandler.js";
+import { irGenAssetHandler } from "./irGenAssetHandler.js";
 import { irGenModelsHandler } from "./irGenModelsHandler.js";
 import { irGenZodHandler } from "./irGenZodHandler.js";
 
@@ -64,4 +65,18 @@ export function registerIrCommands(program: Command): void {
       "File system type for the document type (ARTIFACTS or COMPASS)",
     )
     .action(irDeployHandler);
+
+  irCmd
+    .command("asset")
+    .description(
+      "Generate document type asset JSON from IR schema (advanced — most users should use 'ir deploy' instead)",
+    )
+    .requiredOption("-i, --ir <file>", "Path to IR JSON file")
+    .requiredOption("-o, --output <file>", "Output file path for asset JSON")
+    .option(
+      "-f, --file-system-type <type>",
+      "File system type (ARTIFACTS or COMPASS)",
+      "ARTIFACTS",
+    )
+    .action(irGenAssetHandler);
 }
