@@ -69,7 +69,7 @@ export function irGenAssetHandler(options: IrGenAssetOptions): void {
       documentTypeName,
       documentStorageType: {
         type: "yjs",
-        yjs: { schema: irSchema },
+        yjs: irSchema,
       },
       fileSystemType,
       schemaVersion,
