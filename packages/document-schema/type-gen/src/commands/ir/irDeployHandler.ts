@@ -22,8 +22,7 @@ import { consola } from "consola";
 import { readFileSync } from "fs";
 import { resolve } from "path";
 import type { IRealTimeDocumentSchema } from "../../lib/pack-docschema-api/pack-docschema-ir/index.js";
-
-type FileSystemType = "ARTIFACTS" | "COMPASS";
+import type { FileSystemType } from "../types.js";
 
 interface DeployOptions {
   readonly ir: string;
