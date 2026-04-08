@@ -67,10 +67,7 @@ export function irGenAssetHandler(options: IrGenAssetOptions): void {
 
     const asset: DocumentTypeAsset = {
       documentTypeName,
-      documentStorageType: {
-        type: "yjs",
-        yjs: { schema: irSchema },
-      },
+      schema: irSchema,
       fileSystemType,
       schemaVersion,
     };
