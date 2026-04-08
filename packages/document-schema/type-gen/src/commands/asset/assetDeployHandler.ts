@@ -14,17 +14,30 @@
  * limitations under the License.
  */
 
+import { createPlatformClient } from "@osdk/client";
+import type {
+  CreateFirstPartyDocumentTypeRequest,
+  DocumentTypeSchema,
+  FileSystemType,
+} from "@osdk/foundry.pack";
+import { DocumentTypes } from "@osdk/foundry.pack";
 import { CommanderError } from "commander";
 import { consola } from "consola";
 import { readFileSync } from "fs";
 import { resolve } from "path";
-import type { DocumentTypeAsset } from "../types.js";
 
 interface AssetDeployOptions {
   readonly input: string;
   readonly baseUrl: string;
   readonly auth: string;
   readonly ontologyRid: string;
+}
+
+interface AssetFile {
+  readonly documentTypeName: string;
+  readonly schema: DocumentTypeSchema;
+  readonly fileSystemType: FileSystemType;
+  readonly schemaVersion: number;
 }
 
 export async function assetDeployHandler(options: AssetDeployOptions): Promise<void> {
@@ -34,36 +47,27 @@ export async function assetDeployHandler(options: AssetDeployOptions): Promise<v
     consola.info(`Reading asset file from: ${assetPath}`);
 
     const assetContent = readFileSync(assetPath, "utf8");
-    const asset = JSON.parse(assetContent) as DocumentTypeAsset;
+    const asset = JSON.parse(assetContent) as AssetFile;
 
-    const request = {
-      name: asset.documentTypeName,
-      ontologyRid: options.ontologyRid,
-      storage: asset.documentStorageType,
-      fileSystemType: asset.fileSystemType,
-      version: asset.schemaVersion,
+    const osdkClient = createPlatformClient(
+      options.baseUrl,
+      () => Promise.resolve(options.auth),
+    );
+
+    const request: CreateFirstPartyDocumentTypeRequest = {
+      requestBody: {
+        name: asset.documentTypeName,
+        ontologyRid: options.ontologyRid,
+        schema: asset.schema,
+        fileSystemType: asset.fileSystemType,
+        version: asset.schemaVersion,
+      },
     };
 
     consola.info("Creating first-party document type", request);
 
-    // TODO: Update with actual api
-    const url = `${options.baseUrl}/api/pack/create-first-party-document-type`;
+    const result = await DocumentTypes.createFirstParty(osdkClient, request, { preview: true });
 
-    const response = await fetch(url, {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${options.auth}`,
-      },
-      body: JSON.stringify(request),
-    });
-
-    if (!response.ok) {
-      const body = await response.text();
-      throw new Error(`HTTP ${response.status}: ${body}`);
-    }
-
-    const result = await response.json();
     consola.success("Successfully created first-party document type", result);
   } catch (error) {
     consola.error("❌ Error during first-party deploy:", error);
