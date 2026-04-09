@@ -108,20 +108,22 @@ describe("Foundry Security Conversion", () => {
 
     vi.mocked(Documents.get).mockResolvedValue(WIRE_DOCUMENT_WITH_SECURITY);
 
-    mockEventService.startDocumentSync.mockImplementation((documentId, _yDoc, onStatusChange) => {
-      const session: SyncSession = {
-        clientId: `test-client-${++sessionCounter}`,
-        documentId,
-      };
+    mockEventService.startDocumentSync.mockImplementation(
+      (documentId, _yDoc, _clientVersion, onStatusChange) => {
+        const session: SyncSession = {
+          clientId: `test-client-${++sessionCounter}`,
+          documentId,
+        };
 
-      void Promise.resolve().then(() => {
-        onStatusChange({
-          load: DocumentLoadStatus.LOADED,
+        void Promise.resolve().then(() => {
+          onStatusChange({
+            load: DocumentLoadStatus.LOADED,
+          });
         });
-      });
 
-      return session;
-    });
+        return session;
+      },
+    );
 
     mockEventService.stopDocumentSync.mockImplementation(() => {});
 

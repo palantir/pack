@@ -326,6 +326,7 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
     internalDoc.syncSession = this.eventService.startDocumentSync(
       docRef.id,
       internalDoc.yDoc,
+      getMetadata(docRef.schema).version,
       status => {
         this.updateDataStatus(internalDoc, docRef, status);
       },
@@ -359,7 +360,7 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
     };
 
     this.eventService
-      .subscribeToActivityUpdates(docRef.id, foundryEvent => {
+      .subscribeToActivityUpdates(docRef.id, getMetadata(docRef.schema).version, foundryEvent => {
         if (!unsubscribed) {
           const localEvent = getActivityEvent(docRef.schema, foundryEvent);
           if (localEvent != null) {
@@ -421,6 +422,7 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
     this.eventService
       .subscribeToPresenceUpdates(
         docRef.id,
+        getMetadata(docRef.schema).version,
         foundryUpdate => {
           if (!unsubscribed) {
             const localEvent = getPresenceEvent(docRef.schema, foundryUpdate);
@@ -447,7 +449,13 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
     const eventType = getMetadata(model).name;
 
     void this.eventService
-      .publishCustomPresence(docRef.id, eventType, eventData, options)
+      .publishCustomPresence(
+        docRef.id,
+        eventType,
+        eventData,
+        getMetadata(docRef.schema).version,
+        options,
+      )
       .catch((e: unknown) => {
         this.logger.error("Failed to publish custom presence", e, {
           docId: docRef.id,
