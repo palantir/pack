@@ -27,6 +27,7 @@ import {
   type DocumentState,
   type EditDescription,
   getMetadata,
+  type MigrationRegistryMap,
   type Model,
   type ModelData,
   type PresenceEvent,
@@ -107,6 +108,8 @@ export interface InternalYjsDoc {
   readonly statusSubscribers: Set<DocumentStatusChangeCallback>;
 
   readonly yjsCollectionHandlers: Map<string, () => void>;
+
+  readonly migrations?: MigrationRegistryMap;
 }
 
 export interface BaseYjsDocumentServiceOptions {
@@ -265,6 +268,7 @@ export abstract class BaseYjsDocumentService<TDoc extends InternalYjsDoc = Inter
     metadata: DocumentMetadata | undefined,
   ): InternalYjsDoc => {
     const schema = ref.schema;
+    const schemaMeta = getMetadata(schema);
     return {
       ref: new WeakRef(ref),
       metadata,
@@ -291,6 +295,7 @@ export abstract class BaseYjsDocumentService<TDoc extends InternalYjsDoc = Inter
       yDoc: this.initializeYDoc(schema),
       yDocUpdateHandler: undefined,
       yjsCollectionHandlers: new Map(),
+      migrations: schemaMeta.migrations,
     };
   };
 
@@ -464,6 +469,7 @@ export abstract class BaseYjsDocumentService<TDoc extends InternalYjsDoc = Inter
       internalDoc.yDoc,
       getMetadata(recordRef.model).name,
       recordRef.id,
+      internalDoc.migrations,
     ) as ModelData<M>;
   }
 
@@ -485,6 +491,7 @@ export abstract class BaseYjsDocumentService<TDoc extends InternalYjsDoc = Inter
       getMetadata(recordRef.model).name,
       recordRef.id,
       state,
+      internalDoc.migrations,
     );
 
     // Call hook method for subclass-specific handling
@@ -508,6 +515,7 @@ export abstract class BaseYjsDocumentService<TDoc extends InternalYjsDoc = Inter
       getMetadata(recordRef.model).name,
       recordRef.id,
       partialState,
+      internalDoc.migrations,
     );
 
     if (!wasUpdated) {

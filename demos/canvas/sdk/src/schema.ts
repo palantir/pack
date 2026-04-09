@@ -32,7 +32,9 @@ export const ShapeBoxSchema = z.object({
   left: z.number(),
   right: z.number(),
   top: z.number(),
-  color: z.string().optional()
+  fillColor: z.string().optional(),
+  strokeColor: z.string().optional(),
+  opacity: z.number().optional()
 }) satisfies ZodType<ShapeBox>;
 
 export const ShapeCircleSchema = z.object({
@@ -40,7 +42,9 @@ export const ShapeCircleSchema = z.object({
   left: z.number(),
   right: z.number(),
   top: z.number(),
-  color: z.string().optional()
+  fillColor: z.string().optional(),
+  strokeColor: z.string().optional(),
+  opacity: z.number().optional()
 }) satisfies ZodType<ShapeCircle>;
 
 export const ActivityEventShapeAddSchema = ActivityShapeAddEventSchema.extend({

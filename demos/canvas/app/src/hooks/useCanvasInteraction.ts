@@ -49,6 +49,7 @@ export interface UseCanvasInteractionResult {
 export function useCanvasInteraction(
   doc: DocumentRef<DocumentModel>,
   broadcastSelection: (nodeIds: readonly string[]) => void,
+  schemaVersion: number,
 ): UseCanvasInteractionResult {
   const { addShape, shapeRefs } = useCanvasShapes(doc);
   const shapeIndex = useShapeIndex(doc);
@@ -99,18 +100,23 @@ export function useCanvasInteraction(
 
         await doc.withTransaction(
           () => {
-            return selectedShapeRef.update({ color });
+            if (schemaVersion >= 2) {
+              return selectedShapeRef.update({ fillColor: color, strokeColor: color });
+            }
+            return selectedShapeRef.update({ color } as any);
           },
           ActivityEvents.describeEdit(ActivityEventModel, {
             eventType: "shapeUpdate",
-            newShape: { ...oldShape, color },
+            newShape: schemaVersion >= 2
+              ? { ...oldShape, fillColor: color, strokeColor: color }
+              : { ...oldShape, color } as any,
             nodeId: selectedShapeRef.id,
             oldShape,
           }),
         );
       }
     },
-    [doc, selectedShapeRef],
+    [doc, schemaVersion, selectedShapeRef],
   );
 
   const setTool = useCallback((tool: ToolMode) => {
@@ -176,11 +182,15 @@ export function useCanvasInteraction(
         });
 
         const shapeType = currentTool === "addBox" ? "box" : "circle";
-        const newShape: NodeShape = {
-          ...bounds,
-          color: currentColor,
-          shapeType,
-        };
+        const newShape: NodeShape = schemaVersion >= 2
+          ? {
+            ...bounds,
+            fillColor: currentColor,
+            strokeColor: currentColor,
+            opacity: 1.0,
+            shapeType,
+          }
+          : { ...bounds, color: currentColor, shapeType } as any;
 
         addShape(newShape).then(recordRef => {
           selectShapeWithBroadcast(recordRef);
@@ -190,7 +200,14 @@ export function useCanvasInteraction(
         setCurrentTool("select");
       }
     },
-    [addShape, currentColor, currentTool, selectShapeWithBroadcast, shapeDragHandlers],
+    [
+      addShape,
+      currentColor,
+      currentTool,
+      schemaVersion,
+      selectShapeWithBroadcast,
+      shapeDragHandlers,
+    ],
   );
 
   return {

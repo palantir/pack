@@ -18,7 +18,7 @@ import type { Toaster } from "@blueprintjs/core";
 import { OverlayToaster, Position } from "@blueprintjs/core";
 import { DocumentModel } from "@demo/canvas.sdk";
 import { isValidDocRef } from "@palantir/pack.state.core";
-import { useDocRef } from "@palantir/pack.state.react";
+import { useDocRef, useDocumentSchemaVersion } from "@palantir/pack.state.react";
 import type { KeyboardEvent, MouseEvent } from "react";
 import { useCallback, useEffect, useState } from "react";
 import { useParams } from "react-router";
@@ -60,9 +60,10 @@ export const CanvasPage = () => {
     return <div>Canvas ID is required</div>;
   }
 
+  const schemaVersion = useDocumentSchemaVersion(docRef);
   const { broadcastCursor, broadcastSelection } = useBroadcastPresence(docRef);
   const { remoteUsersByUserId, userIdsBySelectedNodeId } = useRemotePresence(docRef);
-  const interaction = useCanvasInteraction(docRef, broadcastSelection);
+  const interaction = useCanvasInteraction(docRef, broadcastSelection, schemaVersion);
   useActivityToast(docRef, toaster);
 
   const handleKeyDown = useCallback(
@@ -96,6 +97,7 @@ export const CanvasPage = () => {
         onColorChange={interaction.setColor}
         onDelete={interaction.deleteSelected}
         onToolChange={interaction.setTool}
+        schemaVersion={schemaVersion}
       />
       <CanvasContent
         canvasProps={{
@@ -103,6 +105,7 @@ export const CanvasPage = () => {
           onMouseMove: handleCanvasMouseMove,
         }}
         remoteUsersByUserId={remoteUsersByUserId}
+        schemaVersion={schemaVersion}
         selectedShapeId={interaction.selectedShapeId}
         shapeRefs={interaction.shapeRefs}
         userIdsBySelectedNodeId={userIdsBySelectedNodeId}

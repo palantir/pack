@@ -39,16 +39,19 @@ export interface CanvasContentProps {
     onMouseUp: (e: MouseEvent<SVGSVGElement>) => void;
   };
   readonly remoteUsersByUserId: ReadonlyMap<UserId, UserPresence>;
+  readonly schemaVersion: number;
   readonly selectedShapeId: string | undefined;
   readonly shapeRefs: readonly RecordRef<typeof NodeShapeModel>[];
   readonly userIdsBySelectedNodeId: ReadonlyMap<string, ReadonlySet<UserId>>;
 }
 
 const ShapeRenderer = memo(function ShapeRenderer({
+  schemaVersion,
   selectedShapeId,
   shapeRef,
   userIdsBySelectedNodeId,
 }: {
+  schemaVersion: number;
   selectedShapeId: string | undefined;
   shapeRef: RecordRef<typeof NodeShapeModel>;
   userIdsBySelectedNodeId: ReadonlyMap<string, ReadonlySet<UserId>>;
@@ -61,6 +64,7 @@ const ShapeRenderer = memo(function ShapeRenderer({
 
   return (
     <ConnectedShapeRenderer
+      schemaVersion={schemaVersion}
       selectedShapeId={selectedShapeId}
       shapeRef={shapeRef}
       userIdsBySelectedNodeId={userIdsBySelectedNodeId}
@@ -70,19 +74,35 @@ const ShapeRenderer = memo(function ShapeRenderer({
 });
 
 const ConnectedShapeRenderer = memo(function ShapeRenderer({
+  schemaVersion,
   selectedShapeId,
   shapeRef,
   userIdsBySelectedNodeId,
   shape,
 }: {
+  schemaVersion: number;
   selectedShapeId: string | undefined;
   shapeRef: RecordRef<typeof NodeShapeModel>;
   userIdsBySelectedNodeId: ReadonlyMap<string, ReadonlySet<UserId>>;
   shape: NodeShape;
 }) {
   const isSelected = shapeRef.id === selectedShapeId;
-  const color = shape.color ?? DEFAULT_SHAPE_COLOR;
-  const fillColor = `${color}4D`;
+
+  // Version-branching: v2 uses fillColor/strokeColor/opacity, v1 uses color
+  let strokeColor: string;
+  let svgFill: string;
+  let opacity: number;
+  if (schemaVersion >= 2) {
+    const fill = shape.fillColor ?? DEFAULT_SHAPE_COLOR;
+    strokeColor = shape.strokeColor ?? DEFAULT_SHAPE_COLOR;
+    opacity = shape.opacity ?? 1.0;
+    svgFill = `${fill}4D`;
+  } else {
+    const color = (shape as any).color ?? DEFAULT_SHAPE_COLOR;
+    strokeColor = color;
+    opacity = 1.0;
+    svgFill = `${color}4D`;
+  }
 
   const remoteSelectingUserIds = useMemo(
     () => userIdsBySelectedNodeId.get(shapeRef.id) ?? new Set<UserId>(),
@@ -96,11 +116,11 @@ const ConnectedShapeRenderer = memo(function ShapeRenderer({
 
   if (shape.shapeType === "box") {
     return (
-      <g key={shapeRef.id}>
+      <g key={shapeRef.id} opacity={opacity}>
         <rect
-          fill={fillColor}
+          fill={svgFill}
           height={shape.bottom - shape.top}
-          stroke={color}
+          stroke={strokeColor}
           strokeWidth={2}
           width={shape.right - shape.left}
           x={shape.left}
@@ -150,14 +170,14 @@ const ConnectedShapeRenderer = memo(function ShapeRenderer({
   const ry = height / 2;
 
   return (
-    <g key={shapeRef.id}>
+    <g key={shapeRef.id} opacity={opacity}>
       <ellipse
         cx={centerX}
         cy={centerY}
-        fill={fillColor}
+        fill={svgFill}
         rx={rx}
         ry={ry}
-        stroke={color}
+        stroke={strokeColor}
         strokeWidth={2}
       />
       {isSelected && (
@@ -202,6 +222,7 @@ const ConnectedShapeRenderer = memo(function ShapeRenderer({
 export const CanvasContent = memo(function CanvasContent({
   canvasProps,
   remoteUsersByUserId,
+  schemaVersion,
   selectedShapeId,
   shapeRefs,
   userIdsBySelectedNodeId,
@@ -211,6 +232,7 @@ export const CanvasContent = memo(function CanvasContent({
       {shapeRefs.map(shapeRef => (
         <ShapeRenderer
           key={shapeRef.id}
+          schemaVersion={schemaVersion}
           selectedShapeId={selectedShapeId}
           shapeRef={shapeRef}
           userIdsBySelectedNodeId={userIdsBySelectedNodeId}

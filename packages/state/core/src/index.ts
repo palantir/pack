@@ -15,6 +15,7 @@
  */
 
 export { createDocumentServiceConfig, getDocumentService } from "./DocumentServiceModule.js";
+export { applyLensToValue, applyReadLens } from "./migration/index.js";
 export {
   BaseYjsDocumentService,
   type BaseYjsDocumentServiceOptions,

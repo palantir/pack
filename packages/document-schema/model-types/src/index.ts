@@ -50,6 +50,14 @@ export type {
   DocumentSchemaMetadata,
   DocumentState,
 } from "./types/DocumentSchema.js";
+export type {
+  FieldDef,
+  FieldMigrationDef,
+  FieldTypeDescriptor,
+  MigrationRegistry,
+  MigrationRegistryMap,
+  MigrationStepDef,
+} from "./types/Migration.js";
 export { MediaRefBrand } from "./types/MediaRef.js";
 export type { MediaId, MediaRef } from "./types/MediaRef.js";
 export { getMetadata, hasMetadata, Metadata } from "./types/Metadata.js";

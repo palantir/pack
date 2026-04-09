@@ -39,26 +39,24 @@ export interface PresenceSelectionEvent {
   readonly selectedNodeIds: readonly string[];
 }
 
-/**
- * A box.
- */
 export interface ShapeBox {
   readonly bottom: number;
   readonly left: number;
   readonly right: number;
   readonly top: number;
-  readonly color?: string;
+  readonly fillColor?: string;
+  readonly strokeColor?: string;
+  readonly opacity?: number;
 }
 
-/**
- * A circle.
- */
 export interface ShapeCircle {
   readonly bottom: number;
   readonly left: number;
   readonly right: number;
   readonly top: number;
-  readonly color?: string;
+  readonly fillColor?: string;
+  readonly strokeColor?: string;
+  readonly opacity?: number;
 }
 
 export interface ActivityEventShapeAdd extends ActivityShapeAddEvent {

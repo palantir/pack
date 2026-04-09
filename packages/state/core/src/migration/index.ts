@@ -14,10 +14,4 @@
  * limitations under the License.
  */
 
-export * from "./defineMigration.js";
-export * from "./defineRecord.js";
-export * from "./defineSchemaUpdate.js";
-export * from "./defineUnion.js";
-export * from "./defs.js";
-export * from "./primitives.js";
-export * from "./utils.js";
+export { applyLensToValue, applyReadLens } from "./MigrationLens.js";

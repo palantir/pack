@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+import type { MigrationRegistryMap } from "./Migration.js";
 import type { WithMetadata } from "./Metadata.js";
 import type { Model, ModelData } from "./Model.js";
 
@@ -33,4 +34,6 @@ export type DocumentState<S extends DocumentSchema> = {
 
 export interface DocumentSchemaMetadata {
   readonly version: number;
+  readonly minSupportedVersion?: number;
+  readonly migrations?: MigrationRegistryMap;
 }

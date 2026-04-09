@@ -32,6 +32,7 @@ export interface CanvasToolbarProps {
   onColorChange: (color: string) => void;
   onDelete: () => void;
   onToolChange: (tool: ToolMode) => void;
+  readonly schemaVersion: number;
 }
 
 export const CanvasToolbar = memo(function CanvasToolbar({
@@ -42,6 +43,7 @@ export const CanvasToolbar = memo(function CanvasToolbar({
   onColorChange,
   onDelete,
   onToolChange,
+  schemaVersion,
 }: CanvasToolbarProps) {
   const { metadata } = useDocMetadata(docRef);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -88,7 +90,7 @@ export const CanvasToolbar = memo(function CanvasToolbar({
 
       <div className={styles.toolGroup}>
         <label className={styles.label}>
-          Color:
+          {schemaVersion >= 2 ? "Fill/Stroke:" : "Color:"}
           <select className={styles.select} onChange={handleColorChange} value={currentColor}>
             {AVAILABLE_COLORS.map(color => (
               <option key={color} value={color}>

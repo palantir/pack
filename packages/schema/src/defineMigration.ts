@@ -21,6 +21,8 @@ import { ModelDefType } from "./defs.js";
 import type { Ref, Type } from "./primitives.js";
 import { isRecordDef, isUnionDef } from "./utils.js";
 
+export const __fieldMigrationMeta: unique symbol = Symbol.for("__fieldMigrationMeta") as any;
+
 export type ReturnedSchema = Record<string, RecordDef | UnionDef>;
 
 export type Schema<T extends ReturnedSchema> = T;
@@ -31,12 +33,23 @@ export type SchemaBuilder<T extends ReturnedSchema> = {
     : never;
 };
 
+export interface MigrationFieldOptions<TNew, TOld extends Record<string, unknown>> {
+  derivedFrom: (keyof TOld)[];
+  forward: (oldFields: TOld) => TNew;
+}
+
+export interface AdditiveFieldOptions<TNew> {
+  default?: TNew;
+}
+
 export interface RecordBuilder<T extends Record<string, Type>> {
   // TODO: builders should support arg types and resolveModels to refs
   addField<const K extends string, V extends Type>(
     name: K,
     type: V,
+    options?: MigrationFieldOptions<any, any> | AdditiveFieldOptions<any>,
   ): RecordBuilder<T & { [k in K]: V }>;
+  removeField<K extends keyof T>(name: K): RecordBuilder<Omit<T, K>>;
   build(): RecordDef<T>;
 }
 
@@ -85,31 +98,72 @@ class UnionBuilderImpl<S extends UnionVariants> implements UnionBuilder<S> {
 class RecordBuilderImpl<T extends RecordFields> implements RecordBuilder<T> {
   private readonly name: string;
   private readonly fields: T;
+  /** @internal Migration options stored as side-channel metadata for codegen. */
+  readonly _migrationOptions: Map<string, MigrationFieldOptions<any, any> | AdditiveFieldOptions<any>>;
 
-  constructor(initialRecordDef: RecordDef<T>) {
+  constructor(
+    initialRecordDef: RecordDef<T>,
+    migrationOptions?: Map<string, MigrationFieldOptions<any, any> | AdditiveFieldOptions<any>>,
+  ) {
     this.name = initialRecordDef.name;
     this.fields = { ...initialRecordDef.fields };
+    const existingMeta = (initialRecordDef as unknown as Record<symbol, unknown>)[__fieldMigrationMeta];
+    this._migrationOptions = new Map([
+      ...(existingMeta instanceof Map ? existingMeta as Map<string, MigrationFieldOptions<any, any> | AdditiveFieldOptions<any>> : []),
+      ...(migrationOptions ?? []),
+    ]);
   }
 
   // TODO: resolve field value from arg instead
   addField<const K extends string, const V extends Type>(
     name: K,
     value: V,
+    options?: MigrationFieldOptions<any, any> | AdditiveFieldOptions<any>,
   ): RecordBuilder<T & Record<K, V>> {
-    return new RecordBuilderImpl({
-      type: ModelDefType.RECORD,
-      name: this.name,
-      fields: { ...this.fields, [name]: value },
-      docs: "",
-    });
+    const newOptions = new Map(this._migrationOptions);
+    if (options != null) {
+      newOptions.set(name, options);
+    }
+    const builder = new RecordBuilderImpl(
+      {
+        type: ModelDefType.RECORD,
+        name: this.name,
+        fields: { ...this.fields, [name]: value },
+        docs: "",
+      },
+      newOptions,
+    );
+    return builder;
   }
+
+  removeField<K extends keyof T>(name: K): RecordBuilder<Omit<T, K>> {
+    const { [name]: _, ...rest } = this.fields;
+    return new RecordBuilderImpl(
+      {
+        type: ModelDefType.RECORD,
+        name: this.name,
+        fields: rest as Omit<T, K> & RecordFields,
+        docs: "",
+      },
+      new Map(this._migrationOptions),
+    );
+  }
+
   build(): RecordDef<T> {
-    return {
+    const result: RecordDef<T> = {
       type: ModelDefType.RECORD,
       name: this.name,
       fields: this.fields,
       docs: "",
     };
+    if (this._migrationOptions.size > 0) {
+      Object.defineProperty(result, __fieldMigrationMeta, {
+        value: new Map(this._migrationOptions),
+        enumerable: false,
+        writable: false,
+      });
+    }
+    return result;
   }
 }
 
