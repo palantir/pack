@@ -1,5 +1,18 @@
 # @palantir/pack.app
 
+## 0.11.0
+
+### Minor Changes
+
+- 646de2f: Bundle cometd directly into pack.state.foundry-event to avoid issues with different loaders needing to understand its module packaging
+
+### Patch Changes
+
+- Updated dependencies [646de2f]
+- Updated dependencies [45f9caf]
+- Updated dependencies [2a2b839]
+  - @palantir/pack.state.foundry@0.12.0
+
 ## 0.10.0
 
 ### Patch Changes
