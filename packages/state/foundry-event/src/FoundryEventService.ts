@@ -17,8 +17,10 @@
 import type { Logger } from "@osdk/api";
 import type {
   ActivityCollaborativeUpdate,
+  DocumentActivitySubscriptionRequest,
   DocumentEditDescription,
   DocumentMetadataUpdate,
+  DocumentPresenceSubscriptionRequest,
   DocumentPublishMessage,
   DocumentUpdateMessage,
   DocumentUpdateSubscriptionRequest,
@@ -115,12 +117,14 @@ export interface FoundryEventService {
     documentId: DocumentId,
     eventType: string,
     eventData: unknown,
+    clientVersion: number,
     options?: PresencePublishOptions,
   ): Promise<void>;
 
   startDocumentSync(
     documentId: DocumentId,
     yDoc: y.Doc,
+    clientVersion: number,
     onStatusChange: (status: Partial<DocumentSyncStatus>) => void,
   ): SyncSession;
 
@@ -128,6 +132,7 @@ export interface FoundryEventService {
 
   subscribeToActivityUpdates(
     documentId: DocumentId,
+    clientVersion: number,
     callback: (event: ActivityCollaborativeUpdate) => void,
   ): Promise<SubscriptionId>;
 
@@ -138,6 +143,7 @@ export interface FoundryEventService {
 
   subscribeToPresenceUpdates(
     documentId: DocumentId,
+    clientVersion: number,
     callback: (update: PresenceCollaborativeUpdate) => void,
     options?: PresenceSubscriptionOptions,
   ): Promise<SubscriptionId>;
@@ -183,6 +189,7 @@ class FoundryEventServiceImpl implements FoundryEventService {
   startDocumentSync(
     documentId: DocumentId,
     yDoc: y.Doc,
+    clientVersion: number,
     onStatusChange: (status: Partial<DocumentSyncStatus>) => void,
   ): SyncSession {
     const session = this.getOrCreateSession(documentId, yDoc);
@@ -214,6 +221,7 @@ class FoundryEventServiceImpl implements FoundryEventService {
         publishChannelId,
         {
           clientId: session.clientId,
+          clientVersion,
           description,
           editId,
           yjsUpdate: {
@@ -246,6 +254,7 @@ class FoundryEventServiceImpl implements FoundryEventService {
       },
       () => ({
         clientId: session.clientId,
+        clientVersion,
         lastRevisionId: session.lastRevisionId?.toString(),
       } satisfies DocumentUpdateSubscriptionRequest),
     ).then(subscriptionId => {
@@ -278,6 +287,7 @@ class FoundryEventServiceImpl implements FoundryEventService {
 
   subscribeToActivityUpdates(
     documentId: DocumentId,
+    clientVersion: number,
     callback: (event: ActivityCollaborativeUpdate) => void,
   ): Promise<SubscriptionId> {
     const session = this.getOrCreateSession(documentId);
@@ -293,6 +303,10 @@ class FoundryEventServiceImpl implements FoundryEventService {
         });
         callback(event);
       },
+      () => ({
+        clientId: session.clientId,
+        clientVersion,
+      } satisfies DocumentActivitySubscriptionRequest),
     ).then(subscriptionId => {
       session.activitySubscriptionId = subscriptionId;
       return subscriptionId;
@@ -334,6 +348,7 @@ class FoundryEventServiceImpl implements FoundryEventService {
 
   subscribeToPresenceUpdates(
     documentId: DocumentId,
+    clientVersion: number,
     callback: (update: PresenceCollaborativeUpdate) => void,
     options: PresenceSubscriptionOptions = {},
   ): Promise<SubscriptionId> {
@@ -373,6 +388,10 @@ class FoundryEventServiceImpl implements FoundryEventService {
         });
         callback(update);
       },
+      () => ({
+        clientId: session.clientId,
+        clientVersion,
+      } satisfies DocumentPresenceSubscriptionRequest),
     ).then(subscriptionId => {
       session.presenceSubscriptionId = subscriptionId;
       return subscriptionId;
@@ -388,6 +407,7 @@ class FoundryEventServiceImpl implements FoundryEventService {
     documentId: DocumentId,
     eventType: string,
     eventData: unknown,
+    clientVersion: number,
     options?: PresencePublishOptions,
   ): Promise<void> {
     const { isEphemeral = true } = options ?? {};
@@ -403,6 +423,7 @@ class FoundryEventServiceImpl implements FoundryEventService {
 
     return this.eventService.publish(channelId, {
       clientId: session.clientId,
+      clientVersion,
       // FIXME: why do we have to send this, we are authenticated
       eventData,
       eventType,
