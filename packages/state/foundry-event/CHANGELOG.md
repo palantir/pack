@@ -1,5 +1,13 @@
 # @palantir/pack.state.foundry-event
 
+## 0.11.0
+
+### Minor Changes
+
+- 646de2f: Bundle cometd directly into pack.state.foundry-event to avoid issues with different loaders needing to understand its module packaging
+- 45f9caf: add client version to subscriptions
+- 2a2b839: fix cometd dev mode resolution
+
 ## 0.10.0
 
 ### Minor Changes

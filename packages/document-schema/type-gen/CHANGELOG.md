@@ -1,5 +1,12 @@
 # @palantir/pack.document-schema.type-gen
 
+## 0.7.0
+
+### Minor Changes
+
+- 2a2b839: fix cometd dev mode resolution
+- 008fb6c: Generate asset from ir cli command
+
 ## 0.6.0
 
 ### Patch Changes
