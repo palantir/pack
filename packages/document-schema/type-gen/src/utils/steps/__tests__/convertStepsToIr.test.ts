@@ -59,7 +59,7 @@ describe("convertStepsToIr", () => {
     const nameField = personRecord.fields.find(f => f.key === "name");
     expect(nameField).toBeDefined();
     expect(nameField?.isOptional).toBeUndefined();
-    expect(nameField?.value).toEqual({
+    expect(nameField?.fieldType).toEqual({
       type: "value",
       value: {
         type: "string",
@@ -70,7 +70,7 @@ describe("convertStepsToIr", () => {
     // Check age field
     const ageField = personRecord.fields.find(f => f.key === "age");
     expect(ageField).toBeDefined();
-    expect(ageField?.value).toEqual({
+    expect(ageField?.fieldType).toEqual({
       type: "value",
       value: {
         type: "double",
@@ -82,7 +82,7 @@ describe("convertStepsToIr", () => {
     const emailField = personRecord.fields.find(f => f.key === "email");
     expect(emailField).toBeDefined();
     expect(emailField?.isOptional).toBe(true);
-    expect(emailField?.value).toEqual({
+    expect(emailField?.fieldType).toEqual({
       type: "value",
       value: {
         type: "string",
@@ -115,7 +115,7 @@ describe("convertStepsToIr", () => {
 
     // Check tags array field
     const tagsField = containerRecord.fields.find(f => f.key === "tags");
-    expect(tagsField?.value).toEqual({
+    expect(tagsField?.fieldType).toEqual({
       type: "array",
       array: {
         allowNullValue: false,
@@ -128,7 +128,7 @@ describe("convertStepsToIr", () => {
 
     // Check numbers list field (treated as array)
     const numbersField = containerRecord.fields.find(f => f.key === "numbers");
-    expect(numbersField?.value).toEqual({
+    expect(numbersField?.fieldType).toEqual({
       type: "array",
       array: {
         allowNullValue: false,
@@ -168,7 +168,7 @@ describe("convertStepsToIr", () => {
     const personRecord = personModel.record;
 
     const addressField = personRecord.fields.find(f => f.key === "address");
-    expect(addressField?.value).toEqual(
+    expect(addressField?.fieldType).toEqual(
       {
         type: "value",
         value: {
@@ -216,7 +216,7 @@ describe("convertStepsToIr", () => {
     // Check inherited fields from fragment
     const xField = objectNode.fields.find(f => f.key === "x");
     expect(xField).toBeDefined();
-    expect(xField?.value).toEqual({
+    expect(xField?.fieldType).toEqual({
       type: "value",
       value: {
         type: "double",
@@ -275,7 +275,7 @@ describe("convertStepsToIr", () => {
     const graphRecord = graphModel.record;
 
     const nodesField = graphRecord.fields.find(f => f.key === "nodes");
-    expect(nodesField?.value).toEqual({
+    expect(nodesField?.fieldType).toEqual({
       type: "array",
       array: {
         allowNullValue: false,

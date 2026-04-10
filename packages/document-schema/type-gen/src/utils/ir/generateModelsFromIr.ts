@@ -168,8 +168,8 @@ export const ${modelName}Model: ${modelName}Model = {
 
     const externalRefFields: Array<[string, string]> = [];
     for (const field of model.record.fields) {
-      if (field.value.type === "value") {
-        const valueType = field.value.value.type;
+      if (field.fieldType.type === "value") {
+        const valueType = field.fieldType.value.type;
         if (valueType === "docRef") {
           externalRefFields.push([field.key, "docRef"]);
         } else if (valueType === "mediaRef") {

@@ -18,6 +18,7 @@ export * from "./fieldDef.js";
 export * from "./fieldTypeCollection.js";
 export * from "./fieldTypeMap.js";
 export * from "./fieldTypeUnion.js";
+export * from "./fieldValueBoolean.js";
 export * from "./fieldValueDatetime.js";
 export * from "./fieldValueDocumentRef.js";
 export * from "./fieldValueDouble.js";
