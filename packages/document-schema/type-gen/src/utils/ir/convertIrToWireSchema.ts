@@ -14,7 +14,15 @@
  * limitations under the License.
  */
 
-import type { DocumentTypeSchema } from "@osdk/foundry.pack";
+import type {
+  DocumentTypeSchema,
+  FieldDef,
+  FieldTypeUnion,
+  FieldValueType,
+  FieldValueUnion,
+  ModelDef,
+  SchemaMetadata,
+} from "@osdk/foundry.pack";
 import type {
   IFieldDef,
   IFieldTypeUnion,
@@ -38,7 +46,7 @@ import type {
  * the IR and wire format.
  */
 export function convertIrToWireSchema(ir: IRealTimeDocumentSchema): DocumentTypeSchema {
-  const wireModels: Record<string, unknown> = {};
+  const wireModels: DocumentTypeSchema["models"] = {};
 
   for (const [key, model] of Object.entries(ir.models)) {
     wireModels[key] = convertModelDef(model);
@@ -46,19 +54,19 @@ export function convertIrToWireSchema(ir: IRealTimeDocumentSchema): DocumentType
 
   return {
     primaryModelKeys: [...ir.primaryModelKeys],
-    models: wireModels as DocumentTypeSchema["models"],
+    models: wireModels,
   };
 }
 
-function convertModelDef(model: IModelDef): unknown {
+function convertModelDef(model: IModelDef): ModelDef {
   switch (model.type) {
     case "record":
       return {
         type: "record",
         key: model.record.key,
         name: model.record.name,
-        description: model.record.description,
-        fields: model.record.fields.map(convertFieldDef),
+        description: orUndefined(model.record.description),
+        fields: [...model.record.fields.map(convertFieldDef)],
         metadata: convertSchemaMeta(model.record.metadata),
       };
     case "union":
@@ -67,25 +75,25 @@ function convertModelDef(model: IModelDef): unknown {
         key: model.union.key,
         discriminant: model.union.discriminant,
         name: model.union.name,
-        description: model.union.description,
+        description: orUndefined(model.union.description),
         variants: { ...model.union.variants },
         metadata: convertSchemaMeta(model.union.metadata),
       };
   }
 }
 
-function convertFieldDef(field: IFieldDef): unknown {
+function convertFieldDef(field: IFieldDef): FieldDef {
   return {
     key: field.key,
     name: field.name,
-    description: field.description,
-    isOptional: field.isOptional,
+    description: orUndefined(field.description),
+    isOptional: orUndefined(field.isOptional),
     fieldType: convertFieldTypeUnion(field.fieldType),
     metadata: convertSchemaMeta(field.metadata),
   };
 }
 
-function convertFieldTypeUnion(fieldType: IFieldTypeUnion): unknown {
+function convertFieldTypeUnion(fieldType: IFieldTypeUnion): FieldTypeUnion {
   switch (fieldType.type) {
     case "array":
       return {
@@ -114,54 +122,77 @@ function convertFieldTypeUnion(fieldType: IFieldTypeUnion): unknown {
   }
 }
 
-/**
- * Wraps a field value union in the FieldValueType wrapper expected by the wire format.
- * Wire format: `{ valueType: { type: "string", ... } }`
- */
-function convertFieldValueType(value: IFieldValueUnion): unknown {
+function convertFieldValueType(value: IFieldValueUnion): FieldValueType {
   return {
     valueType: convertFieldValueUnion(value),
   };
 }
 
-/**
- * Converts a conjure-tagged field value union to a flat discriminated union.
- * IR: `{ type: "string", string: { defaultValue: "abc" } }`
- * Wire: `{ type: "string", defaultValue: "abc" }`
- */
-function convertFieldValueUnion(value: IFieldValueUnion): unknown {
+function convertFieldValueUnion(value: IFieldValueUnion): FieldValueUnion {
   switch (value.type) {
     case "boolean":
-      return { type: "boolean", ...value.boolean };
+      return { type: "boolean", defaultValue: orUndefined(value.boolean.defaultValue) };
     case "datetime":
-      return { type: "datetime", ...value.datetime };
+      return { type: "datetime", value: value.datetime.value };
     case "docRef":
-      return { type: "docRef", ...value.docRef };
+      return { type: "docRef", documentTypeRids: [...value.docRef.documentTypeRids] };
     case "double":
-      return { type: "double", ...value.double };
+      return {
+        type: "double",
+        defaultValue: nanToNumber(orUndefined(value.double.defaultValue)),
+        minValue: nanToNumber(orUndefined(value.double.minValue)),
+        maxValue: nanToNumber(orUndefined(value.double.maxValue)),
+      };
     case "integer":
-      return { type: "integer", ...value.integer };
+      return {
+        type: "integer",
+        defaultValue: orUndefined(value.integer.defaultValue),
+        minValue: orUndefined(value.integer.minValue),
+        maxValue: orUndefined(value.integer.maxValue),
+      };
     case "mediaRef":
-      return { type: "mediaRef", ...value.mediaRef };
+      return { type: "mediaRef", value: value.mediaRef.value };
     case "modelRef":
-      return { type: "modelRef", ...value.modelRef };
+      return { type: "modelRef", modelTypes: [...value.modelRef.modelTypes] };
     case "object":
-      return { type: "object", ...value.object };
+      return {
+        type: "object",
+        interfaceTypeRids: [...value.object.interfaceTypeRids],
+        objectTypeRids: [...value.object.objectTypeRids],
+      };
     case "string":
-      return { type: "string", ...value.string };
+      return {
+        type: "string",
+        defaultValue: orUndefined(value.string.defaultValue),
+        minLength: orUndefined(value.string.minLength),
+        maxLength: orUndefined(value.string.maxLength),
+      };
     case "text":
-      return { type: "text", ...value.text };
+      return {
+        type: "text",
+        defaultValue: orUndefined(value.text.defaultValue),
+        minLength: orUndefined(value.text.minLength),
+        maxLength: orUndefined(value.text.maxLength),
+      };
     case "unmanagedJson":
-      return { type: "unmanagedJson", ...value.unmanagedJson };
+      return { type: "unmanagedJson" };
     case "userRef":
-      return { type: "userRef", ...value.userRef };
+      return { type: "userRef" };
   }
 }
 
-function convertSchemaMeta(meta: ISchemaMeta): unknown {
+function convertSchemaMeta(meta: ISchemaMeta): SchemaMetadata {
   return {
     addedInVersion: meta.addedInVersion,
-    deprecatedFromVersion: meta.deprecatedFromVersion,
-    deprecatedMessage: meta.deprecatedMessage,
+    deprecatedFromVersion: orUndefined(meta.deprecatedFromVersion),
+    deprecatedMessage: orUndefined(meta.deprecatedMessage),
   };
+}
+
+function orUndefined<T>(value: T | null | undefined): T | undefined {
+  return value ?? undefined;
+}
+
+function nanToNumber(value: number | "NaN" | undefined): number | undefined {
+  return value === "NaN" ? NaN : value;
 }
