@@ -15,11 +15,7 @@
  */
 
 import { createPlatformClient, PalantirApiError } from "@osdk/client";
-import type {
-  CreateFirstPartyDocumentTypeRequest,
-  DocumentTypeSchema,
-  FileSystemType,
-} from "@osdk/foundry.pack";
+import type { CreateFirstPartyDocumentTypeRequest } from "@osdk/foundry.pack";
 import { DocumentTypes } from "@osdk/foundry.pack";
 import { CommanderError } from "commander";
 import { consola } from "consola";
@@ -32,13 +28,6 @@ interface AssetDeployOptions {
   readonly baseUrl: string;
   readonly auth: string;
   readonly ontologyRid: string;
-}
-
-interface AssetFile {
-  readonly documentTypeName: string;
-  readonly schema: DocumentTypeSchema;
-  readonly fileSystemType: FileSystemType;
-  readonly schemaVersion: number;
 }
 
 export async function assetDeployHandler(options: AssetDeployOptions): Promise<void> {
