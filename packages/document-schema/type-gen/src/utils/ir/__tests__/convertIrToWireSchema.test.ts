@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+import type { FieldValueType, RecordDef, UnionDef } from "@osdk/foundry.pack";
 import { describe, expect, it } from "vitest";
 import type {
   IModelDef,
@@ -61,14 +62,16 @@ describe("convertIrToWireSchema", () => {
     expect(wire.models).toBeDefined();
 
     // Model is flattened (no .record wrapper)
-    const personModel = wire.models["Person"] as any;
-    expect(personModel.type).toBe("record");
-    expect(personModel.key).toBe("Person");
-    expect(personModel.name).toBe("Person");
-    expect(personModel.record).toBeUndefined(); // no conjure nesting
+    const personModel = wire.models["Person"];
+    expect(personModel).toBeDefined();
+    expect(personModel!.type).toBe("record");
+    const person = personModel as { type: "record" } & RecordDef;
+    expect(person.key).toBe("Person");
+    expect(person.name).toBe("Person");
+    expect("record" in person).toBe(false); // no conjure nesting
 
     // Field uses wire field names
-    const nameField = personModel.fields[0];
+    const nameField = person.fields[0]!;
     expect(nameField.key).toBe("name");
     expect(nameField.fieldType).toBeDefined();
     expect(nameField.metadata).toEqual({ addedInVersion: 1 });
@@ -94,13 +97,15 @@ describe("convertIrToWireSchema", () => {
     };
 
     const wire = convertIrToWireSchema(ir);
-    const shapeModel = wire.models["Shape"] as any;
+    const shapeModel = wire.models["Shape"];
+    expect(shapeModel).toBeDefined();
+    expect(shapeModel!.type).toBe("union");
+    const shape = shapeModel as { type: "union" } & UnionDef;
 
-    expect(shapeModel.type).toBe("union");
-    expect(shapeModel.key).toBe("Shape");
-    expect(shapeModel.discriminant).toBe("shapeType");
-    expect(shapeModel.variants).toEqual({ circle: "Circle", square: "Square" });
-    expect(shapeModel.union).toBeUndefined(); // no conjure nesting
+    expect(shape.key).toBe("Shape");
+    expect(shape.discriminant).toBe("shapeType");
+    expect(shape.variants).toEqual({ circle: "Circle", square: "Square" });
+    expect("union" in shape).toBe(false); // no conjure nesting
   });
 
   it("should convert value field type with FieldValueType wrapper", () => {
@@ -130,7 +135,10 @@ describe("convertIrToWireSchema", () => {
     };
 
     const wire = convertIrToWireSchema(ir);
-    const field = (wire.models["R"] as any).fields[0];
+    expect(wire.models["R"]).toBeDefined();
+    expect(wire.models["R"]!.type).toBe("record");
+    const recordModel = wire.models["R"] as { type: "record" } & RecordDef;
+    const field = recordModel.fields[0]!;
 
     // Wire format wraps in { valueType: { type: "string", defaultValue: "abc" } }
     expect(field.fieldType).toEqual({
@@ -172,7 +180,10 @@ describe("convertIrToWireSchema", () => {
     };
 
     const wire = convertIrToWireSchema(ir);
-    const field = (wire.models["R"] as any).fields[0];
+    expect(wire.models["R"]).toBeDefined();
+    expect(wire.models["R"]!.type).toBe("record");
+    const recordModel = wire.models["R"] as { type: "record" } & RecordDef;
+    const field = recordModel.fields[0]!;
 
     expect(field.fieldType).toEqual({
       type: "array",
@@ -186,7 +197,11 @@ describe("convertIrToWireSchema", () => {
   });
 
   it("should flatten all field value union variants", () => {
-    const variants = [
+    const variants: Array<{
+      fn: (payload: never) => IFieldValueUnion;
+      type: string;
+      payload: Record<string, unknown>;
+    }> = [
       { fn: IFieldValueUnion.boolean, type: "boolean", payload: {} },
       { fn: IFieldValueUnion.datetime, type: "datetime", payload: {} },
       { fn: IFieldValueUnion.docRef, type: "docRef", payload: { documentTypeRids: ["rid1"] } },
@@ -203,7 +218,7 @@ describe("convertIrToWireSchema", () => {
       { fn: IFieldValueUnion.text, type: "text", payload: {} },
       { fn: IFieldValueUnion.unmanagedJson, type: "unmanagedJson", payload: {} },
       { fn: IFieldValueUnion.userRef, type: "userRef", payload: {} },
-    ] as const;
+    ];
 
     for (const { fn, type, payload } of variants) {
       const record: IRecordDef = {
@@ -215,7 +230,7 @@ describe("convertIrToWireSchema", () => {
             name: "f",
             fieldType: {
               type: "value",
-              value: (fn as any)(payload),
+              value: fn(payload as never),
             },
             metadata: { addedInVersion: 1 },
           },
@@ -232,15 +247,18 @@ describe("convertIrToWireSchema", () => {
       };
 
       const wire = convertIrToWireSchema(ir);
-      const fieldType = (wire.models["R"] as any).fields[0].fieldType;
-
-      // Value should be flat: { type: "string", maxLength: 255 } not { type: "string", string: { maxLength: 255 } }
-      const wireValue = fieldType.valueType;
+      expect(wire.models["R"]).toBeDefined();
+      expect(wire.models["R"]!.type).toBe("record");
+      const recordModel = wire.models["R"] as { type: "record" } & RecordDef;
+      const fieldType = recordModel.fields[0]!.fieldType;
+      expect(fieldType.type).toBe("value");
+      const wireValue = (fieldType as { type: "value" } & FieldValueType).valueType;
       expect(wireValue.type).toBe(type);
-      expect(wireValue[type]).toBeUndefined(); // no conjure nesting key
+      // no conjure nesting key
+      expect((wireValue as unknown as Record<string, unknown>)[type]).toBeUndefined();
       // Payload fields should be at top level
       for (const [key, val] of Object.entries(payload)) {
-        expect(wireValue[key]).toEqual(val);
+        expect((wireValue as unknown as Record<string, unknown>)[key]).toEqual(val);
       }
     }
   });
@@ -256,9 +274,9 @@ describe("convertIrToWireSchema", () => {
 
     const wire = convertIrToWireSchema(ir);
 
-    expect((wire as any).name).toBeUndefined();
-    expect((wire as any).description).toBeUndefined();
-    expect((wire as any).version).toBeUndefined();
+    expect("name" in wire).toBe(false);
+    expect("description" in wire).toBe(false);
+    expect("version" in wire).toBe(false);
     expect(wire.primaryModelKeys).toEqual([]);
     expect(wire.models).toEqual({});
   });
