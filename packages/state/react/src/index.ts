@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+export { createDocumentScope } from "./hooks/createDocumentScope.js";
+export type { CreateDocumentScopeResult } from "./hooks/createDocumentScope.js";
 export { useAuthState } from "./hooks/useAuthState.js";
 export { useAuthToken } from "./hooks/useAuthToken.js";
 export { useDocMetadata } from "./hooks/useDocMetadata.js";

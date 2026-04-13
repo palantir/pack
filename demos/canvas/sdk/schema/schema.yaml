@@ -28,16 +28,18 @@
         left: double
         right: double
         top: double
-        color: optional<string>
-      docs: A box.
+        fillColor: optional<string>
+        strokeColor: optional<string>
+        opacity: optional<double>
     ShapeCircle:
       fields:
         bottom: double
         left: double
         right: double
         top: double
-        color: optional<string>
-      docs: A circle.
+        fillColor: optional<string>
+        strokeColor: optional<string>
+        opacity: optional<double>
 - add-union:
     ActivityEvent:
       variants:

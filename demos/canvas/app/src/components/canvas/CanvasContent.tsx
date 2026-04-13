@@ -39,19 +39,16 @@ export interface CanvasContentProps {
     onMouseUp: (e: MouseEvent<SVGSVGElement>) => void;
   };
   readonly remoteUsersByUserId: ReadonlyMap<UserId, UserPresence>;
-  readonly schemaVersion: number;
   readonly selectedShapeId: string | undefined;
   readonly shapeRefs: readonly RecordRef<typeof NodeShapeModel>[];
   readonly userIdsBySelectedNodeId: ReadonlyMap<string, ReadonlySet<UserId>>;
 }
 
 const ShapeRenderer = memo(function ShapeRenderer({
-  schemaVersion,
   selectedShapeId,
   shapeRef,
   userIdsBySelectedNodeId,
 }: {
-  schemaVersion: number;
   selectedShapeId: string | undefined;
   shapeRef: RecordRef<typeof NodeShapeModel>;
   userIdsBySelectedNodeId: ReadonlyMap<string, ReadonlySet<UserId>>;
@@ -64,7 +61,6 @@ const ShapeRenderer = memo(function ShapeRenderer({
 
   return (
     <ConnectedShapeRenderer
-      schemaVersion={schemaVersion}
       selectedShapeId={selectedShapeId}
       shapeRef={shapeRef}
       userIdsBySelectedNodeId={userIdsBySelectedNodeId}
@@ -74,13 +70,11 @@ const ShapeRenderer = memo(function ShapeRenderer({
 });
 
 const ConnectedShapeRenderer = memo(function ShapeRenderer({
-  schemaVersion,
   selectedShapeId,
   shapeRef,
   userIdsBySelectedNodeId,
   shape,
 }: {
-  schemaVersion: number;
   selectedShapeId: string | undefined;
   shapeRef: RecordRef<typeof NodeShapeModel>;
   userIdsBySelectedNodeId: ReadonlyMap<string, ReadonlySet<UserId>>;
@@ -88,21 +82,12 @@ const ConnectedShapeRenderer = memo(function ShapeRenderer({
 }) {
   const isSelected = shapeRef.id === selectedShapeId;
 
-  // Version-branching: v2 uses fillColor/strokeColor/opacity, v1 uses color
-  let strokeColor: string;
-  let svgFill: string;
-  let opacity: number;
-  if (schemaVersion >= 2) {
-    const fill = shape.fillColor ?? DEFAULT_SHAPE_COLOR;
-    strokeColor = shape.strokeColor ?? DEFAULT_SHAPE_COLOR;
-    opacity = shape.opacity ?? 1.0;
-    svgFill = `${fill}4D`;
-  } else {
-    const color = (shape as any).color ?? DEFAULT_SHAPE_COLOR;
-    strokeColor = color;
-    opacity = 1.0;
-    svgFill = `${color}4D`;
-  }
+  // Lens guarantees fillColor/strokeColor/opacity are always present,
+  // even for old v1 records (derived from `color` by forward transforms).
+  const fill = shape.fillColor ?? DEFAULT_SHAPE_COLOR;
+  const strokeColor = shape.strokeColor ?? DEFAULT_SHAPE_COLOR;
+  const opacity = shape.opacity ?? 1.0;
+  const svgFill = `${fill}4D`;
 
   const remoteSelectingUserIds = useMemo(
     () => userIdsBySelectedNodeId.get(shapeRef.id) ?? new Set<UserId>(),
@@ -222,7 +207,6 @@ const ConnectedShapeRenderer = memo(function ShapeRenderer({
 export const CanvasContent = memo(function CanvasContent({
   canvasProps,
   remoteUsersByUserId,
-  schemaVersion,
   selectedShapeId,
   shapeRefs,
   userIdsBySelectedNodeId,
@@ -232,7 +216,6 @@ export const CanvasContent = memo(function CanvasContent({
       {shapeRefs.map(shapeRef => (
         <ShapeRenderer
           key={shapeRef.id}
-          schemaVersion={schemaVersion}
           selectedShapeId={selectedShapeId}
           shapeRef={shapeRef}
           userIdsBySelectedNodeId={userIdsBySelectedNodeId}

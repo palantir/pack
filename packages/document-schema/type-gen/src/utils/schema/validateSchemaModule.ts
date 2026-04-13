@@ -108,8 +108,10 @@ export function validateSchemaModule(schemaModule: unknown): Record<string, unkn
 export function extractValidSchema(schemaModule: unknown): ReturnedSchema {
   const mod = schemaModule as Record<string, unknown>;
   const cleanModule = { ...mod, default: stripSymbolKeys(mod?.default) };
-  const validatedModule = validateSchemaModule(cleanModule);
-  return validatedModule.default as ReturnedSchema;
+  validateSchemaModule(cleanModule);
+  // Return the original schema (not the stripped copy) to preserve symbol
+  // metadata (__schemaVersion, __previousSchema) needed for version chain walking.
+  return mod.default as ReturnedSchema;
 }
 
 /**

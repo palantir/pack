@@ -19,6 +19,7 @@ import { useDocMetadata } from "@palantir/pack.state.react";
 import type { ChangeEvent } from "react";
 import { memo, useState } from "react";
 import type { ToolMode } from "../../hooks/useCanvasInteraction.js";
+import { useDocumentScope } from "../../pack.js";
 import { AVAILABLE_COLORS } from "../../utils/getDefaultColor.js";
 import { ActivityPanel } from "./ActivityPanel.js";
 import styles from "./CanvasToolbar.module.css";
@@ -32,7 +33,6 @@ export interface CanvasToolbarProps {
   onColorChange: (color: string) => void;
   onDelete: () => void;
   onToolChange: (tool: ToolMode) => void;
-  readonly schemaVersion: number;
 }
 
 export const CanvasToolbar = memo(function CanvasToolbar({
@@ -43,9 +43,9 @@ export const CanvasToolbar = memo(function CanvasToolbar({
   onColorChange,
   onDelete,
   onToolChange,
-  schemaVersion,
 }: CanvasToolbarProps) {
   const { metadata } = useDocMetadata(docRef);
+  const { version } = useDocumentScope();
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
   const handleColorChange = (e: ChangeEvent<HTMLSelectElement>) => {
@@ -90,7 +90,7 @@ export const CanvasToolbar = memo(function CanvasToolbar({
 
       <div className={styles.toolGroup}>
         <label className={styles.label}>
-          {schemaVersion >= 2 ? "Fill/Stroke:" : "Color:"}
+          {version >= 2 ? "Fill/Stroke:" : "Color:"}
           <select className={styles.select} onChange={handleColorChange} value={currentColor}>
             {AVAILABLE_COLORS.map(color => (
               <option key={color} value={color}>

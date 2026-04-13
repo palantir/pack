@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import type { DocumentModel, NodeShape } from "@demo/canvas.sdk";
+import type { DocumentModel, NodeShape, NodeShape_v1 } from "@demo/canvas.sdk";
 import { ActivityEventModel, NodeShapeModel } from "@demo/canvas.sdk";
 import { generateId } from "@palantir/pack.core";
 import type { DocumentRef, RecordRef } from "@palantir/pack.document-schema.model-types";
@@ -24,7 +24,7 @@ import { useRecords } from "@palantir/pack.state.react";
 import { useCallback } from "react";
 
 export interface UseCanvasShapesResult {
-  readonly addShape: (shape: NodeShape) => Promise<RecordRef<typeof NodeShapeModel>>;
+  readonly addShape: (shape: NodeShape | NodeShape_v1) => Promise<RecordRef<typeof NodeShapeModel>>;
   readonly shapeRefs: readonly RecordRef<typeof NodeShapeModel>[];
 }
 
@@ -32,13 +32,16 @@ export function useCanvasShapes(docRef: DocumentRef<DocumentModel>): UseCanvasSh
   const shapeRefs = useRecords(docRef, NodeShapeModel);
 
   const addShape = useCallback(
-    async (shape: NodeShape): Promise<RecordRef<typeof NodeShapeModel>> => {
+    async (shape: NodeShape | NodeShape_v1): Promise<RecordRef<typeof NodeShapeModel>> => {
       const collection = docRef.getRecords(NodeShapeModel);
       const id = `shape-${generateId()}`;
 
       await docRef.withTransaction(
         () => {
-          return collection.set(id, shape);
+          // Cast needed: collection.set is typed to latest version (NodeShape),
+          // but we accept version-appropriate shapes via the DocumentScope pattern.
+          // The lens handles reading any version's data correctly.
+          return collection.set(id, shape as NodeShape);
         },
         ActivityEvents.describeEdit(ActivityEventModel, {
           eventType: "shapeAdd",

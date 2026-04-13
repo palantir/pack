@@ -3,70 +3,8 @@
 import type { DocumentSchema, RecordModel, UnionModel } from "@palantir/pack.document-schema.model-types";
 import { Metadata } from "@palantir/pack.document-schema.model-types";
 import type { ActivityEvent, ActivityEventShapeAdd, ActivityEventShapeDelete, ActivityEventShapeUpdate, ActivityShapeAddEvent, ActivityShapeDeleteEvent, ActivityShapeUpdateEvent, NodeShape, NodeShapeBox, NodeShapeCircle, PresenceCursorEvent, PresenceEvent, PresenceEventCursor, PresenceEventSelection, PresenceSelectionEvent, ShapeBox, ShapeCircle } from "./types.js";
-import { ActivityEventSchema, ActivityEventShapeAddSchema, ActivityEventShapeDeleteSchema, ActivityEventShapeUpdateSchema, ActivityShapeAddEventSchema, ActivityShapeDeleteEventSchema, ActivityShapeUpdateEventSchema, NodeShapeBoxSchema, NodeShapeCircleSchema, NodeShapeSchema, PresenceCursorEventSchema, PresenceEventCursorSchema, PresenceEventSchema, PresenceEventSelectionSchema, PresenceSelectionEventSchema, ShapeBoxSchema, ShapeCircleSchema } from "./schema.js";
-
-export interface ActivityShapeAddEventModel extends RecordModel<ActivityShapeAddEvent, typeof ActivityShapeAddEventSchema> {}
-export const ActivityShapeAddEventModel: ActivityShapeAddEventModel = {
-  __type: {} as ActivityShapeAddEvent,
-  zodSchema: ActivityShapeAddEventSchema,
-  [Metadata]: {
-    name: "ActivityShapeAddEvent",
-  },
-};
-
-export interface ActivityShapeDeleteEventModel extends RecordModel<ActivityShapeDeleteEvent, typeof ActivityShapeDeleteEventSchema> {}
-export const ActivityShapeDeleteEventModel: ActivityShapeDeleteEventModel = {
-  __type: {} as ActivityShapeDeleteEvent,
-  zodSchema: ActivityShapeDeleteEventSchema,
-  [Metadata]: {
-    name: "ActivityShapeDeleteEvent",
-  },
-};
-
-export interface ActivityShapeUpdateEventModel extends RecordModel<ActivityShapeUpdateEvent, typeof ActivityShapeUpdateEventSchema> {}
-export const ActivityShapeUpdateEventModel: ActivityShapeUpdateEventModel = {
-  __type: {} as ActivityShapeUpdateEvent,
-  zodSchema: ActivityShapeUpdateEventSchema,
-  [Metadata]: {
-    name: "ActivityShapeUpdateEvent",
-  },
-};
-
-export interface PresenceCursorEventModel extends RecordModel<PresenceCursorEvent, typeof PresenceCursorEventSchema> {}
-export const PresenceCursorEventModel: PresenceCursorEventModel = {
-  __type: {} as PresenceCursorEvent,
-  zodSchema: PresenceCursorEventSchema,
-  [Metadata]: {
-    name: "PresenceCursorEvent",
-  },
-};
-
-export interface PresenceSelectionEventModel extends RecordModel<PresenceSelectionEvent, typeof PresenceSelectionEventSchema> {}
-export const PresenceSelectionEventModel: PresenceSelectionEventModel = {
-  __type: {} as PresenceSelectionEvent,
-  zodSchema: PresenceSelectionEventSchema,
-  [Metadata]: {
-    name: "PresenceSelectionEvent",
-  },
-};
-
-export interface ShapeBoxModel extends RecordModel<ShapeBox, typeof ShapeBoxSchema> {}
-export const ShapeBoxModel: ShapeBoxModel = {
-  __type: {} as ShapeBox,
-  zodSchema: ShapeBoxSchema,
-  [Metadata]: {
-    name: "ShapeBox",
-  },
-};
-
-export interface ShapeCircleModel extends RecordModel<ShapeCircle, typeof ShapeCircleSchema> {}
-export const ShapeCircleModel: ShapeCircleModel = {
-  __type: {} as ShapeCircle,
-  zodSchema: ShapeCircleSchema,
-  [Metadata]: {
-    name: "ShapeCircle",
-  },
-};
+import { ActivityEventSchema, ActivityEventShapeAddSchema, ActivityEventShapeDeleteSchema, ActivityEventShapeUpdateSchema, ActivityShapeAddEventSchema, ActivityShapeDeleteEventSchema, ActivityShapeUpdateEventSchema, NodeShapeSchema, NodeShapeBoxSchema, NodeShapeCircleSchema, PresenceCursorEventSchema, PresenceEventSchema, PresenceEventCursorSchema, PresenceEventSelectionSchema, PresenceSelectionEventSchema, ShapeBoxSchema, ShapeCircleSchema } from "./schema.js";
+import { ActivityShapeAddEventMigrations, ActivityShapeDeleteEventMigrations, ActivityShapeUpdateEventMigrations, PresenceCursorEventMigrations, PresenceSelectionEventMigrations, ShapeBoxMigrations, ShapeCircleMigrations } from "./_internal/migrations.js";
 
 export interface ActivityEventModel extends UnionModel<ActivityEvent, typeof ActivityEventSchema> {}
 export const ActivityEventModel: ActivityEventModel = {
@@ -108,6 +46,33 @@ export const ActivityEventShapeUpdateModel: ActivityEventShapeUpdateModel = {
   },
 };
 
+export interface ActivityShapeAddEventModel extends RecordModel<ActivityShapeAddEvent, typeof ActivityShapeAddEventSchema> {}
+export const ActivityShapeAddEventModel: ActivityShapeAddEventModel = {
+  __type: {} as ActivityShapeAddEvent,
+  zodSchema: ActivityShapeAddEventSchema,
+  [Metadata]: {
+    name: "ActivityShapeAddEvent",
+  },
+};
+
+export interface ActivityShapeDeleteEventModel extends RecordModel<ActivityShapeDeleteEvent, typeof ActivityShapeDeleteEventSchema> {}
+export const ActivityShapeDeleteEventModel: ActivityShapeDeleteEventModel = {
+  __type: {} as ActivityShapeDeleteEvent,
+  zodSchema: ActivityShapeDeleteEventSchema,
+  [Metadata]: {
+    name: "ActivityShapeDeleteEvent",
+  },
+};
+
+export interface ActivityShapeUpdateEventModel extends RecordModel<ActivityShapeUpdateEvent, typeof ActivityShapeUpdateEventSchema> {}
+export const ActivityShapeUpdateEventModel: ActivityShapeUpdateEventModel = {
+  __type: {} as ActivityShapeUpdateEvent,
+  zodSchema: ActivityShapeUpdateEventSchema,
+  [Metadata]: {
+    name: "ActivityShapeUpdateEvent",
+  },
+};
+
 export interface NodeShapeModel extends UnionModel<NodeShape, typeof NodeShapeSchema> {}
 export const NodeShapeModel: NodeShapeModel = {
   __type: {} as NodeShape,
@@ -135,6 +100,15 @@ export const NodeShapeCircleModel: NodeShapeCircleModel = {
   [Metadata]: {
     discriminant: "shapeType",
     name: "NodeShapeCircle",
+  },
+};
+
+export interface PresenceCursorEventModel extends RecordModel<PresenceCursorEvent, typeof PresenceCursorEventSchema> {}
+export const PresenceCursorEventModel: PresenceCursorEventModel = {
+  __type: {} as PresenceCursorEvent,
+  zodSchema: PresenceCursorEventSchema,
+  [Metadata]: {
+    name: "PresenceCursorEvent",
   },
 };
 
@@ -168,27 +142,64 @@ export const PresenceEventSelectionModel: PresenceEventSelectionModel = {
   },
 };
 
+export interface PresenceSelectionEventModel extends RecordModel<PresenceSelectionEvent, typeof PresenceSelectionEventSchema> {}
+export const PresenceSelectionEventModel: PresenceSelectionEventModel = {
+  __type: {} as PresenceSelectionEvent,
+  zodSchema: PresenceSelectionEventSchema,
+  [Metadata]: {
+    name: "PresenceSelectionEvent",
+  },
+};
+
+export interface ShapeBoxModel extends RecordModel<ShapeBox, typeof ShapeBoxSchema> {}
+export const ShapeBoxModel: ShapeBoxModel = {
+  __type: {} as ShapeBox,
+  zodSchema: ShapeBoxSchema,
+  [Metadata]: {
+    name: "ShapeBox",
+  },
+};
+
+export interface ShapeCircleModel extends RecordModel<ShapeCircle, typeof ShapeCircleSchema> {}
+export const ShapeCircleModel: ShapeCircleModel = {
+  __type: {} as ShapeCircle,
+  zodSchema: ShapeCircleSchema,
+  [Metadata]: {
+    name: "ShapeCircle",
+  },
+};
+
 export const DocumentModel = {
-  ActivityShapeAddEvent: ActivityShapeAddEventModel,
-  ActivityShapeDeleteEvent: ActivityShapeDeleteEventModel,
-  ActivityShapeUpdateEvent: ActivityShapeUpdateEventModel,
-  PresenceCursorEvent: PresenceCursorEventModel,
-  PresenceSelectionEvent: PresenceSelectionEventModel,
-  ShapeBox: ShapeBoxModel,
-  ShapeCircle: ShapeCircleModel,
   ActivityEvent: ActivityEventModel,
   ActivityEventShapeAdd: ActivityEventShapeAddModel,
   ActivityEventShapeDelete: ActivityEventShapeDeleteModel,
   ActivityEventShapeUpdate: ActivityEventShapeUpdateModel,
+  ActivityShapeAddEvent: ActivityShapeAddEventModel,
+  ActivityShapeDeleteEvent: ActivityShapeDeleteEventModel,
+  ActivityShapeUpdateEvent: ActivityShapeUpdateEventModel,
   NodeShape: NodeShapeModel,
   NodeShapeBox: NodeShapeBoxModel,
   NodeShapeCircle: NodeShapeCircleModel,
+  PresenceCursorEvent: PresenceCursorEventModel,
   PresenceEvent: PresenceEventModel,
   PresenceEventCursor: PresenceEventCursorModel,
   PresenceEventSelection: PresenceEventSelectionModel,
+  PresenceSelectionEvent: PresenceSelectionEventModel,
+  ShapeBox: ShapeBoxModel,
+  ShapeCircle: ShapeCircleModel,
   [Metadata]: {
-    version: 1,
+    version: 2,
+    minSupportedVersion: 1,
+    migrations: {
+      ActivityShapeAddEvent: ActivityShapeAddEventMigrations,
+      ActivityShapeDeleteEvent: ActivityShapeDeleteEventMigrations,
+      ActivityShapeUpdateEvent: ActivityShapeUpdateEventMigrations,
+      PresenceCursorEvent: PresenceCursorEventMigrations,
+      PresenceSelectionEvent: PresenceSelectionEventMigrations,
+      ShapeBox: ShapeBoxMigrations,
+      ShapeCircle: ShapeCircleMigrations,
+    },
   },
 } as const satisfies DocumentSchema;
 
- export type DocumentModel = typeof DocumentModel;
+export type DocumentModel = typeof DocumentModel;

@@ -20,8 +20,10 @@ import path from "path";
 import { pathToFileURL } from "url";
 import { generateInternalFromSchema } from "../../utils/schema/generateInternalFromSchema.js";
 import { generateModelMetadataFromSchema } from "../../utils/schema/generateModelMetadataFromSchema.js";
+import { generateScopeFromSchema } from "../../utils/schema/generateScopeFromSchema.js";
 import { generateVersionedTypesFromSchema } from "../../utils/schema/generateVersionedTypesFromSchema.js";
 import { generateVersionedZodFromSchema } from "../../utils/schema/generateVersionedZodFromSchema.js";
+import { generateVersionsFromSchema } from "../../utils/schema/generateVersionsFromSchema.js";
 import { extractValidSchema } from "../../utils/schema/validateSchemaModule.js";
 
 interface SchemaGenTypesOptions {
@@ -123,4 +125,18 @@ export async function schemaGenTypesHandler(options: SchemaGenTypesOptions): Pro
     "utf8",
   );
   consola.success(`Generated schema manifest: ${manifestPath}`);
+
+  // Generate versions.ts
+  consola.info("Generating version types...");
+  const versionsContent = generateVersionsFromSchema(schema, minSupportedVersion);
+  const versionsPath = path.join(resolvedOutputDir, "versions.ts");
+  await fs.writeFile(versionsPath, versionsContent, "utf8");
+  consola.success(`Generated versions: ${versionsPath}`);
+
+  // Generate scope.ts
+  consola.info("Generating document scope types...");
+  const scopeContent = generateScopeFromSchema(schema, minSupportedVersion);
+  const scopePath = path.join(resolvedOutputDir, "scope.ts");
+  await fs.writeFile(scopePath, scopeContent, "utf8");
+  consola.success(`Generated scope: ${scopePath}`);
 }

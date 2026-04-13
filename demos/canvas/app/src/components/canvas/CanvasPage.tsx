@@ -18,7 +18,7 @@ import type { Toaster } from "@blueprintjs/core";
 import { OverlayToaster, Position } from "@blueprintjs/core";
 import { DocumentModel } from "@demo/canvas.sdk";
 import { isValidDocRef } from "@palantir/pack.state.core";
-import { useDocRef, useDocumentSchemaVersion } from "@palantir/pack.state.react";
+import { useDocRef } from "@palantir/pack.state.react";
 import type { KeyboardEvent, MouseEvent } from "react";
 import { useCallback, useEffect, useState } from "react";
 import { useParams } from "react-router";
@@ -27,6 +27,7 @@ import { useActivityToast } from "../../hooks/useActivityToast.js";
 import { useBroadcastPresence } from "../../hooks/useBroadcastPresence.js";
 import { useCanvasInteraction } from "../../hooks/useCanvasInteraction.js";
 import { useRemotePresence } from "../../hooks/useRemotePresence.js";
+import { DocumentScopeProvider } from "../../pack.js";
 import { CanvasContent } from "./CanvasContent.js";
 import styles from "./CanvasPage.module.css";
 import { CanvasToolbar } from "./CanvasToolbar.js";
@@ -60,10 +61,9 @@ export const CanvasPage = () => {
     return <div>Canvas ID is required</div>;
   }
 
-  const schemaVersion = useDocumentSchemaVersion(docRef);
   const { broadcastCursor, broadcastSelection } = useBroadcastPresence(docRef);
   const { remoteUsersByUserId, userIdsBySelectedNodeId } = useRemotePresence(docRef);
-  const interaction = useCanvasInteraction(docRef, broadcastSelection, schemaVersion);
+  const interaction = useCanvasInteraction(docRef, broadcastSelection);
   useActivityToast(docRef, toaster);
 
   const handleKeyDown = useCallback(
@@ -88,28 +88,28 @@ export const CanvasPage = () => {
   );
 
   return (
-    <div className={styles.container} onKeyDown={handleKeyDown} tabIndex={0}>
-      <CanvasToolbar
-        canDelete={interaction.selectedShapeId != null}
-        currentColor={interaction.currentColor}
-        currentTool={interaction.currentTool}
-        docRef={docRef}
-        onColorChange={interaction.setColor}
-        onDelete={interaction.deleteSelected}
-        onToolChange={interaction.setTool}
-        schemaVersion={schemaVersion}
-      />
-      <CanvasContent
-        canvasProps={{
-          ...interaction.canvasProps,
-          onMouseMove: handleCanvasMouseMove,
-        }}
-        remoteUsersByUserId={remoteUsersByUserId}
-        schemaVersion={schemaVersion}
-        selectedShapeId={interaction.selectedShapeId}
-        shapeRefs={interaction.shapeRefs}
-        userIdsBySelectedNodeId={userIdsBySelectedNodeId}
-      />
-    </div>
+    <DocumentScopeProvider docRef={docRef}>
+      <div className={styles.container} onKeyDown={handleKeyDown} tabIndex={0}>
+        <CanvasToolbar
+          canDelete={interaction.selectedShapeId != null}
+          currentColor={interaction.currentColor}
+          currentTool={interaction.currentTool}
+          docRef={docRef}
+          onColorChange={interaction.setColor}
+          onDelete={interaction.deleteSelected}
+          onToolChange={interaction.setTool}
+        />
+        <CanvasContent
+          canvasProps={{
+            ...interaction.canvasProps,
+            onMouseMove: handleCanvasMouseMove,
+          }}
+          remoteUsersByUserId={remoteUsersByUserId}
+          selectedShapeId={interaction.selectedShapeId}
+          shapeRefs={interaction.shapeRefs}
+          userIdsBySelectedNodeId={userIdsBySelectedNodeId}
+        />
+      </div>
+    </DocumentScopeProvider>
   );
 };
