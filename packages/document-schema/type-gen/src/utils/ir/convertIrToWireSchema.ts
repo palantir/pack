@@ -143,9 +143,9 @@ function convertFieldValueUnion(value: IFieldValueUnion): FieldValueUnion {
     case "double":
       return {
         type: "double",
-        defaultValue: nanToNumber(orUndefined(value.double.defaultValue)),
-        minValue: nanToNumber(orUndefined(value.double.minValue)),
-        maxValue: nanToNumber(orUndefined(value.double.maxValue)),
+        defaultValue: rejectNaN(orUndefined(value.double.defaultValue)),
+        minValue: rejectNaN(orUndefined(value.double.minValue)),
+        maxValue: rejectNaN(orUndefined(value.double.maxValue)),
       };
     case "integer":
       return {
@@ -197,6 +197,9 @@ function orUndefined<T>(value: T | null | undefined): T | undefined {
   return value ?? undefined;
 }
 
-function nanToNumber(value: number | "NaN" | undefined): number | undefined {
-  return value === "NaN" ? NaN : value;
+function rejectNaN(value: number | "NaN" | undefined): number | undefined {
+  if (value === "NaN") {
+    throw new Error("NaN is not a valid double value for wire serialization");
+  }
+  return value;
 }
