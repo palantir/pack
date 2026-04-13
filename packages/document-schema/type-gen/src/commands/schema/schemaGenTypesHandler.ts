@@ -18,6 +18,7 @@ import { consola } from "consola";
 import fs from "fs-extra";
 import path from "path";
 import { pathToFileURL } from "url";
+import { generateIndexFromSchema } from "../../utils/schema/generateIndexFromSchema.js";
 import { generateInternalFromSchema } from "../../utils/schema/generateInternalFromSchema.js";
 import { generateModelMetadataFromSchema } from "../../utils/schema/generateModelMetadataFromSchema.js";
 import { generateScopeFromSchema } from "../../utils/schema/generateScopeFromSchema.js";
@@ -139,4 +140,11 @@ export async function schemaGenTypesHandler(options: SchemaGenTypesOptions): Pro
   const versionedDocRefPath = path.join(resolvedOutputDir, "versionedDocRef.ts");
   await fs.writeFile(versionedDocRefPath, versionedDocRefContent, "utf8");
   consola.success(`Generated versioned doc ref: ${versionedDocRefPath}`);
+
+  // Generate index.ts barrel export
+  consola.info("Generating index barrel export...");
+  const indexContent = generateIndexFromSchema(schema, minSupportedVersion);
+  const indexPath = path.join(resolvedOutputDir, "index.ts");
+  await fs.writeFile(indexPath, indexContent, "utf8");
+  consola.success(`Generated index: ${indexPath}`);
 }

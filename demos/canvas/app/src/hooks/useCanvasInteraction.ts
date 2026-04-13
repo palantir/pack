@@ -97,6 +97,10 @@ export function useCanvasInteraction(
         const oldShape = await selectedShapeRef.getSnapshot();
         if (oldShape == null) return;
 
+        const newShape = oldShape.shapeType === "box"
+          ? { ...oldShape, fillColor: color, strokeColor: color }
+          : { ...oldShape, fillColor: color, strokeColor: color };
+
         doc.withTransaction(
           () => {
             switch (doc.version) {
@@ -112,7 +116,7 @@ export function useCanvasInteraction(
             eventType: "shapeUpdate",
             nodeId: selectedShapeRef.id,
             oldShape,
-            newShape: oldShape,
+            newShape,
           }),
         );
       }
