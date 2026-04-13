@@ -79,6 +79,10 @@ function convertModelDef(model: IModelDef): ModelDef {
         variants: { ...model.union.variants },
         metadata: convertSchemaMeta(model.union.metadata),
       };
+    default: {
+      const _exhaustive: never = model;
+      throw new Error(`Unknown model type: ${(_exhaustive as IModelDef).type}`);
+    }
   }
 }
 
