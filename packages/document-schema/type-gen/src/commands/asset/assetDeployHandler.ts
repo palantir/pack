@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { createPlatformClient } from "@osdk/client";
+import { createPlatformClient, PalantirApiError } from "@osdk/client";
 import type {
   CreateFirstPartyDocumentTypeRequest,
   DocumentTypeSchema,
@@ -25,6 +25,7 @@ import { CommanderError } from "commander";
 import { consola } from "consola";
 import { readFileSync } from "fs";
 import { resolve } from "path";
+import type { DocumentTypeAsset } from "../types.js";
 
 interface AssetDeployOptions {
   readonly input: string;
@@ -47,7 +48,7 @@ export async function assetDeployHandler(options: AssetDeployOptions): Promise<v
     consola.info(`Reading asset file from: ${assetPath}`);
 
     const assetContent = readFileSync(assetPath, "utf8");
-    const asset = JSON.parse(assetContent) as AssetFile;
+    const asset = JSON.parse(assetContent) as DocumentTypeAsset;
 
     const osdkClient = createPlatformClient(
       options.baseUrl,
@@ -58,7 +59,7 @@ export async function assetDeployHandler(options: AssetDeployOptions): Promise<v
       requestBody: {
         name: asset.documentTypeName,
         ontologyRid: options.ontologyRid,
-        schema: asset.schema,
+        schema: asset.documentStorageType.yjs,
         fileSystemType: asset.fileSystemType,
         version: asset.schemaVersion,
       },
@@ -70,7 +71,15 @@ export async function assetDeployHandler(options: AssetDeployOptions): Promise<v
 
     consola.success("Successfully created first-party document type", result);
   } catch (error) {
-    consola.error("❌ Error during first-party deploy:", error);
+    if (error instanceof PalantirApiError) {
+      const { message, errorName, errorCode } = error;
+      const details = [errorName, errorCode].filter(Boolean).join(" ");
+      consola.error(
+        `❌ Error during first-party deploy: ${message}${details ? ` [${details}]` : ""}`,
+      );
+    } else {
+      consola.error("❌ Error during first-party deploy:", error);
+    }
     throw new CommanderError(1, "ERRASSETDEPLOY", "Error deploying document type from asset");
   }
 }
