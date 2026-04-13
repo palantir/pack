@@ -22,6 +22,7 @@ import { consola } from "consola";
 import { readFileSync } from "fs";
 import { resolve } from "path";
 import type { IRealTimeDocumentSchema } from "../../lib/pack-docschema-api/pack-docschema-ir/index.js";
+import { convertIrToWireSchema } from "../../utils/ir/convertIrToWireSchema.js";
 import type { FileSystemType } from "../types.js";
 
 interface DeployOptions {
@@ -48,17 +49,19 @@ export async function irDeployHandler(options: DeployOptions): Promise<void> {
       () => Promise.resolve(options.auth),
     );
 
+    const schema = convertIrToWireSchema(ir);
+
     const request: CreateDocumentTypeRequest = {
       name: ir.name,
       parentFolderRid: options.parentFolder,
+      schema,
     };
 
     if (options.fileSystemType != null) {
       request.fileSystemType = options.fileSystemType;
     }
 
-    // PACK BE does not yet support storing schemas...
-    consola.warn("Creating document type without schema information", request);
+    consola.info("Creating document type with schema", request);
 
     await DocumentTypes.create(osdkClient, request, { preview: true });
   } catch (error) {
