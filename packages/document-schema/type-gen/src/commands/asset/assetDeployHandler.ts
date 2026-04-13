@@ -30,6 +30,7 @@ interface AssetDeployOptions {
   readonly ontologyRid: string;
 }
 
+/** Useful for manually deploying a document type during development to test schema changes. */
 export async function assetDeployHandler(options: AssetDeployOptions): Promise<void> {
   try {
     const assetPath = resolve(options.input);
