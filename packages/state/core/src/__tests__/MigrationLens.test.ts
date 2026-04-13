@@ -14,7 +14,10 @@
  * limitations under the License.
  */
 
-import type { MigrationRegistry, MigrationRegistryMap } from "@palantir/pack.document-schema.model-types";
+import type {
+  MigrationRegistry,
+  MigrationRegistryMap,
+} from "@palantir/pack.document-schema.model-types";
 import { describe, expect, it } from "vitest";
 import { applyLensToValue, applyReadLens } from "../migration/MigrationLens.js";
 
@@ -338,12 +341,20 @@ describe("applyLensToValue", () => {
   });
 
   it("returns undefined for optional undefined values", () => {
-    const result = applyLensToValue(undefined, { kind: "optional", inner: { kind: "primitive" } }, {});
+    const result = applyLensToValue(
+      undefined,
+      { kind: "optional", inner: { kind: "primitive" } },
+      {},
+    );
     expect(result).toBeUndefined();
   });
 
   it("unwraps optional for non-undefined values", () => {
-    const result = applyLensToValue("hello", { kind: "optional", inner: { kind: "primitive" } }, {});
+    const result = applyLensToValue(
+      "hello",
+      { kind: "optional", inner: { kind: "primitive" } },
+      {},
+    );
     expect(result).toBe("hello");
   });
 
@@ -358,7 +369,9 @@ describe("applyLensToValue", () => {
       allFields: {},
       steps: [],
     };
-    const result = applyLensToValue({ a: 1 }, { kind: "modelRef", model: "Empty" }, { Empty: registry });
+    const result = applyLensToValue({ a: 1 }, { kind: "modelRef", model: "Empty" }, {
+      Empty: registry,
+    });
     expect(result).toEqual({ a: 1 });
   });
 });

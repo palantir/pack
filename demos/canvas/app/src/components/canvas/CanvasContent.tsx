@@ -82,8 +82,8 @@ const ConnectedShapeRenderer = memo(function ShapeRenderer({
 }) {
   const isSelected = shapeRef.id === selectedShapeId;
 
-  // Lens guarantees fillColor/strokeColor/opacity are always present,
-  // even for old v1 records (derived from `color` by forward transforms).
+  // fillColor/strokeColor are optional in v2 — default when absent.
+  // For migrated v1 records, the lens derives them from `color`.
   const fill = shape.fillColor ?? DEFAULT_SHAPE_COLOR;
   const strokeColor = shape.strokeColor ?? DEFAULT_SHAPE_COLOR;
   const opacity = shape.opacity ?? 1.0;

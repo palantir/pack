@@ -14,13 +14,12 @@
  * limitations under the License.
  */
 
-import type { DocumentModel, NodeShapeModel } from "@demo/canvas.sdk";
+import type { NodeShapeModel, VersionedDocRef } from "@demo/canvas.sdk";
 import { ActivityEventModel } from "@demo/canvas.sdk";
-import type { DocumentRef, RecordRef } from "@palantir/pack.document-schema.model-types";
+import type { RecordRef } from "@palantir/pack.document-schema.model-types";
 import { ActivityEvents } from "@palantir/pack.document-schema.model-types";
 import type { MouseEvent } from "react";
 import { useCallback, useRef, useState } from "react";
-import { useDocumentScope } from "../pack.js";
 import { centerToBounds } from "../utils/centerToBounds.js";
 import { getDefaultColor } from "../utils/getDefaultColor.js";
 import { getDefaultShapeSize } from "../utils/getDefaultShapeSize.js";
@@ -48,10 +47,9 @@ export interface UseCanvasInteractionResult {
 }
 
 export function useCanvasInteraction(
-  doc: DocumentRef<DocumentModel>,
+  doc: VersionedDocRef,
   broadcastSelection: (nodeIds: readonly string[]) => void,
 ): UseCanvasInteractionResult {
-  const scope = useDocumentScope();
   const { addShape, shapeRefs } = useCanvasShapes(doc);
   const shapeIndex = useShapeIndex(doc);
   const { clearSelection, selectedShapeRef, selectShape } = useShapeSelection();
@@ -78,9 +76,9 @@ export function useCanvasInteraction(
   const deleteSelected = useCallback(() => {
     if (selectedShapeRef != null) {
       const nodeId = selectedShapeRef.id;
-      scope.withTransaction(
+      doc.withTransaction(
         () => {
-          scope.deleteRecord(selectedShapeRef);
+          doc.deleteRecord(selectedShapeRef);
         },
         ActivityEvents.describeEdit(ActivityEventModel, {
           eventType: "shapeDelete",
@@ -90,7 +88,7 @@ export function useCanvasInteraction(
       clearSelection();
       broadcastSelection([]);
     }
-  }, [broadcastSelection, clearSelection, scope, selectedShapeRef]);
+  }, [broadcastSelection, clearSelection, doc, selectedShapeRef]);
 
   const setColor = useCallback(
     async (color: string) => {
@@ -99,14 +97,14 @@ export function useCanvasInteraction(
         const oldShape = await selectedShapeRef.getSnapshot();
         if (oldShape == null) return;
 
-        scope.withTransaction(
+        doc.withTransaction(
           () => {
-            switch (scope.version) {
+            switch (doc.version) {
               case 1:
-                scope.updateRecord(selectedShapeRef, { color });
+                doc.updateRecord(selectedShapeRef, { color });
                 break;
               case 2:
-                scope.updateRecord(selectedShapeRef, { fillColor: color, strokeColor: color });
+                doc.updateRecord(selectedShapeRef, { fillColor: color, strokeColor: color });
                 break;
             }
           },
@@ -119,7 +117,7 @@ export function useCanvasInteraction(
         );
       }
     },
-    [scope, selectedShapeRef],
+    [doc, selectedShapeRef],
   );
 
   const setTool = useCallback((tool: ToolMode) => {
@@ -186,43 +184,9 @@ export function useCanvasInteraction(
 
         const shapeType = currentTool === "addBox" ? "box" : "circle";
 
-        const createShape = (shapeData: Parameters<typeof addShape>[0]) => {
-          addShape(shapeData).then(recordRef => {
-            selectShapeWithBroadcast(recordRef);
-          });
-        };
-
-        if (shapeType === "box") {
-          switch (scope.version) {
-            case 1:
-              createShape({ ...bounds, color: currentColor, shapeType });
-              break;
-            case 2:
-              createShape({
-                ...bounds,
-                fillColor: currentColor,
-                strokeColor: currentColor,
-                opacity: 1.0,
-                shapeType,
-              });
-              break;
-          }
-        } else {
-          switch (scope.version) {
-            case 1:
-              createShape({ ...bounds, color: currentColor, shapeType });
-              break;
-            case 2:
-              createShape({
-                ...bounds,
-                fillColor: currentColor,
-                strokeColor: currentColor,
-                opacity: 1.0,
-                shapeType,
-              });
-              break;
-          }
-        }
+        addShape(shapeType, bounds, currentColor).then(recordRef => {
+          selectShapeWithBroadcast(recordRef);
+        });
 
         creationStateRef.current = undefined;
         setCurrentTool("select");
@@ -232,7 +196,6 @@ export function useCanvasInteraction(
       addShape,
       currentColor,
       currentTool,
-      scope,
       selectShapeWithBroadcast,
       shapeDragHandlers,
     ],

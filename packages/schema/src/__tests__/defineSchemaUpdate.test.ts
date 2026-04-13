@@ -107,11 +107,20 @@ describe("defineSchemaUpdate", () => {
       .build();
 
     expect(schemaV2.ShapeBox.fields).not.toHaveProperty("color");
-    expect(schemaV2.ShapeBox.fields.fillColor).toEqual({ type: "optional", item: { type: "string" } });
-    expect(schemaV2.ShapeBox.fields.opacity).toEqual({ type: "optional", item: { type: "double" } });
+    expect(schemaV2.ShapeBox.fields.fillColor).toEqual({
+      type: "optional",
+      item: { type: "string" },
+    });
+    expect(schemaV2.ShapeBox.fields.opacity).toEqual({
+      type: "optional",
+      item: { type: "double" },
+    });
     expect(schemaV2.ShapeBox.fields.left).toEqual({ type: "double" });
     expect(schemaV2.ShapeCircle.fields).not.toHaveProperty("color");
-    expect(schemaV2.ShapeCircle.fields.fillColor).toEqual({ type: "optional", item: { type: "string" } });
+    expect(schemaV2.ShapeCircle.fields.fillColor).toEqual({
+      type: "optional",
+      item: { type: "string" },
+    });
     expect((schemaV2 as Record<symbol, unknown>)[__schemaVersion]).toBe(2);
   });
 
@@ -147,7 +156,10 @@ describe("defineSchemaUpdate", () => {
 
     expect((schemaV3 as Record<symbol, unknown>)[__schemaVersion]).toBe(3);
     expect(schemaV3.Item.fields.name).toEqual({ type: "string" });
-    expect(schemaV3.Item.fields.description).toEqual({ type: "optional", item: { type: "string" } });
+    expect(schemaV3.Item.fields.description).toEqual({
+      type: "optional",
+      item: { type: "string" },
+    });
     expect(schemaV3.Item.fields.tags).toEqual({ type: "optional", item: { type: "string" } });
   });
 
@@ -227,16 +239,34 @@ describe("defineSchemaUpdate", () => {
 
     // ShapeBox should have the split color fields + opacity, no color
     expect(schemaV2.ShapeBox.fields.left).toEqual({ type: "double" });
-    expect(schemaV2.ShapeBox.fields.fillColor).toEqual({ type: "optional", item: { type: "string" } });
-    expect(schemaV2.ShapeBox.fields.strokeColor).toEqual({ type: "optional", item: { type: "string" } });
-    expect(schemaV2.ShapeBox.fields.opacity).toEqual({ type: "optional", item: { type: "double" } });
+    expect(schemaV2.ShapeBox.fields.fillColor).toEqual({
+      type: "optional",
+      item: { type: "string" },
+    });
+    expect(schemaV2.ShapeBox.fields.strokeColor).toEqual({
+      type: "optional",
+      item: { type: "string" },
+    });
+    expect(schemaV2.ShapeBox.fields.opacity).toEqual({
+      type: "optional",
+      item: { type: "double" },
+    });
     expect(schemaV2.ShapeBox.fields).not.toHaveProperty("color");
 
     // ShapeCircle should have the split color fields + opacity, no color
     expect(schemaV2.ShapeCircle.fields.cx).toEqual({ type: "double" });
-    expect(schemaV2.ShapeCircle.fields.fillColor).toEqual({ type: "optional", item: { type: "string" } });
-    expect(schemaV2.ShapeCircle.fields.strokeColor).toEqual({ type: "optional", item: { type: "string" } });
-    expect(schemaV2.ShapeCircle.fields.opacity).toEqual({ type: "optional", item: { type: "double" } });
+    expect(schemaV2.ShapeCircle.fields.fillColor).toEqual({
+      type: "optional",
+      item: { type: "string" },
+    });
+    expect(schemaV2.ShapeCircle.fields.strokeColor).toEqual({
+      type: "optional",
+      item: { type: "string" },
+    });
+    expect(schemaV2.ShapeCircle.fields.opacity).toEqual({
+      type: "optional",
+      item: { type: "double" },
+    });
     expect(schemaV2.ShapeCircle.fields).not.toHaveProperty("color");
   });
 });

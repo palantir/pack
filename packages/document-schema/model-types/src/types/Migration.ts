@@ -16,11 +16,11 @@
 
 /** Type descriptor for a field, enabling recursive lens application. */
 export type FieldTypeDescriptor =
-  | { kind: 'primitive' }
-  | { kind: 'modelRef'; model: string }
-  | { kind: 'array'; element: FieldTypeDescriptor }
-  | { kind: 'map'; value: FieldTypeDescriptor }
-  | { kind: 'optional'; inner: FieldTypeDescriptor };
+  | { kind: "primitive" }
+  | { kind: "modelRef"; model: string }
+  | { kind: "array"; element: FieldTypeDescriptor }
+  | { kind: "map"; value: FieldTypeDescriptor }
+  | { kind: "optional"; inner: FieldTypeDescriptor };
 
 export interface FieldMigrationDef {
   derivedFrom: string[];

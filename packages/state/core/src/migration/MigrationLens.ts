@@ -34,7 +34,7 @@ export function applyReadLens(
   registry: MigrationRegistry,
   allRegistries: MigrationRegistryMap,
 ): Record<string, unknown> {
-  let data = { ...rawData };
+  const data = { ...rawData };
 
   // 1. Apply forward transforms for derived fields
   for (const step of registry.steps) {
@@ -85,24 +85,22 @@ export function applyLensToValue(
   allRegistries: MigrationRegistryMap,
 ): unknown {
   switch (type.kind) {
-    case 'primitive':
+    case "primitive":
       return value;
-    case 'modelRef': {
+    case "modelRef": {
       const subRegistry = allRegistries[type.model];
       if (!subRegistry || subRegistry.steps.length === 0) return value;
       return applyReadLens(value as Record<string, unknown>, subRegistry, allRegistries);
     }
-    case 'array':
-      return (value as unknown[]).map(item =>
-        applyLensToValue(item, type.element, allRegistries)
-      );
-    case 'map':
+    case "array":
+      return (value as unknown[]).map(item => applyLensToValue(item, type.element, allRegistries));
+    case "map":
       return Object.fromEntries(
-        Object.entries(value as Record<string, unknown>).map(([k, v]) =>
-          [k, applyLensToValue(v, type.value, allRegistries)]
-        )
+        Object.entries(value as Record<string, unknown>).map((
+          [k, v],
+        ) => [k, applyLensToValue(v, type.value, allRegistries)]),
       );
-    case 'optional':
+    case "optional":
       return value === undefined ? undefined : applyLensToValue(value, type.inner, allRegistries);
   }
 }

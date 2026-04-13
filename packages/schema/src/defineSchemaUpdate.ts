@@ -76,6 +76,7 @@ class SchemaVersionBuilderImpl<T extends ReturnedSchema> implements SchemaVersio
 export function nextSchema<T extends ReturnedSchema>(
   previous: Schema<T>,
 ): SchemaVersionBuilder<T> {
-  const previousVersion: number = (previous as Record<symbol, unknown>)[__schemaVersion] as number ?? 1;
+  const previousVersion: number = (previous as Record<symbol, unknown>)[__schemaVersion] as number
+    ?? 1;
   return new SchemaVersionBuilderImpl(previous, previousVersion + 1, previous);
 }

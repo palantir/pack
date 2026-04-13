@@ -99,7 +99,10 @@ class RecordBuilderImpl<T extends RecordFields> implements RecordBuilder<T> {
   private readonly name: string;
   private readonly fields: T;
   /** @internal Migration options stored as side-channel metadata for codegen. */
-  readonly _migrationOptions: Map<string, MigrationFieldOptions<any, any> | AdditiveFieldOptions<any>>;
+  readonly _migrationOptions: Map<
+    string,
+    MigrationFieldOptions<any, any> | AdditiveFieldOptions<any>
+  >;
 
   constructor(
     initialRecordDef: RecordDef<T>,
@@ -107,9 +110,12 @@ class RecordBuilderImpl<T extends RecordFields> implements RecordBuilder<T> {
   ) {
     this.name = initialRecordDef.name;
     this.fields = { ...initialRecordDef.fields };
-    const existingMeta = (initialRecordDef as unknown as Record<symbol, unknown>)[__fieldMigrationMeta];
+    const existingMeta =
+      (initialRecordDef as unknown as Record<symbol, unknown>)[__fieldMigrationMeta];
     this._migrationOptions = new Map([
-      ...(existingMeta instanceof Map ? existingMeta as Map<string, MigrationFieldOptions<any, any> | AdditiveFieldOptions<any>> : []),
+      ...(existingMeta instanceof Map
+        ? existingMeta as Map<string, MigrationFieldOptions<any, any> | AdditiveFieldOptions<any>>
+        : []),
       ...(migrationOptions ?? []),
     ]);
   }

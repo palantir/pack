@@ -14,34 +14,59 @@
  * limitations under the License.
  */
 
-import type { DocumentModel, NodeShape, NodeShape_v1 } from "@demo/canvas.sdk";
 import { ActivityEventModel, NodeShapeModel } from "@demo/canvas.sdk";
+import type { VersionedDocRef } from "@demo/canvas.sdk";
 import { generateId } from "@palantir/pack.core";
-import type { DocumentRef, RecordRef } from "@palantir/pack.document-schema.model-types";
+import type {
+  RecordCollectionRef,
+  RecordId,
+  RecordRef,
+} from "@palantir/pack.document-schema.model-types";
 import { ActivityEvents } from "@palantir/pack.document-schema.model-types";
 import { isValidRecordRef } from "@palantir/pack.state.core";
 import { useRecords } from "@palantir/pack.state.react";
 import { useCallback } from "react";
 
 export interface UseCanvasShapesResult {
-  readonly addShape: (shape: NodeShape | NodeShape_v1) => Promise<RecordRef<typeof NodeShapeModel>>;
+  readonly addShape: (
+    shapeType: "box" | "circle",
+    bounds: { top: number; left: number; bottom: number; right: number },
+    color: string,
+  ) => Promise<RecordRef<typeof NodeShapeModel>>;
   readonly shapeRefs: readonly RecordRef<typeof NodeShapeModel>[];
 }
 
-export function useCanvasShapes(docRef: DocumentRef<DocumentModel>): UseCanvasShapesResult {
-  const shapeRefs = useRecords(docRef, NodeShapeModel);
+export function useCanvasShapes(doc: VersionedDocRef): UseCanvasShapesResult {
+  const shapeRefs = useRecords(doc, NodeShapeModel);
 
   const addShape = useCallback(
-    async (shape: NodeShape | NodeShape_v1): Promise<RecordRef<typeof NodeShapeModel>> => {
-      const collection = docRef.getRecords(NodeShapeModel);
-      const id = `shape-${generateId()}`;
+    async (
+      shapeType: "box" | "circle",
+      bounds: { top: number; left: number; bottom: number; right: number },
+      color: string,
+    ): Promise<RecordRef<typeof NodeShapeModel>> => {
+      const id = `shape-${generateId()}` as RecordId;
 
-      await docRef.withTransaction(
+      await doc.withTransaction(
         () => {
-          // Cast needed: collection.set is typed to latest version (NodeShape),
-          // but we accept version-appropriate shapes via the DocumentScope pattern.
-          // The lens handles reading any version's data correctly.
-          return collection.set(id, shape as NodeShape);
+          switch (doc.version) {
+            case 1:
+              doc.setCollectionRecord(NodeShapeModel, id, {
+                ...bounds,
+                color,
+                shapeType,
+              });
+              break;
+            case 2:
+              doc.setCollectionRecord(NodeShapeModel, id, {
+                ...bounds,
+                fillColor: color,
+                strokeColor: color,
+                opacity: 1.0,
+                shapeType,
+              });
+              break;
+          }
         },
         ActivityEvents.describeEdit(ActivityEventModel, {
           eventType: "shapeAdd",
@@ -49,13 +74,14 @@ export function useCanvasShapes(docRef: DocumentRef<DocumentModel>): UseCanvasSh
         }),
       );
 
-      const recordRef = collection.get(id);
+      const collection: RecordCollectionRef<typeof NodeShapeModel> = doc.getRecords(NodeShapeModel);
+      const recordRef: RecordRef<typeof NodeShapeModel> | undefined = collection.get(id);
       if (recordRef == null || !isValidRecordRef(recordRef)) {
         throw new Error(`Failed to create shape with id: ${id}`);
       }
       return recordRef;
     },
-    [docRef],
+    [doc],
   );
 
   return {

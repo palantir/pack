@@ -133,10 +133,10 @@ export async function schemaGenTypesHandler(options: SchemaGenTypesOptions): Pro
   await fs.writeFile(versionsPath, versionsContent, "utf8");
   consola.success(`Generated versions: ${versionsPath}`);
 
-  // Generate scope.ts
-  consola.info("Generating document scope types...");
-  const scopeContent = generateScopeFromSchema(schema, minSupportedVersion);
-  const scopePath = path.join(resolvedOutputDir, "scope.ts");
-  await fs.writeFile(scopePath, scopeContent, "utf8");
-  consola.success(`Generated scope: ${scopePath}`);
+  // Generate versionedDocRef.ts
+  consola.info("Generating versioned document ref types...");
+  const versionedDocRefContent = generateScopeFromSchema(schema, minSupportedVersion);
+  const versionedDocRefPath = path.join(resolvedOutputDir, "versionedDocRef.ts");
+  await fs.writeFile(versionedDocRefPath, versionedDocRefContent, "utf8");
+  consola.success(`Generated versioned doc ref: ${versionedDocRefPath}`);
 }

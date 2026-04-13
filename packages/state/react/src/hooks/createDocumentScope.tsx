@@ -81,8 +81,7 @@ export function createDocumentScope<
         ({
           version,
           docRef,
-          updateRecord: (ref: RecordRef, data: unknown) =>
-            ref.update(data as any),
+          updateRecord: (ref: RecordRef, data: unknown) => ref.update(data as any),
           setCollectionRecord: (
             ref: RecordRef,
             data: unknown,
@@ -97,9 +96,7 @@ export function createDocumentScope<
       [docRef, version],
     );
 
-    return (
-      <ScopeContext.Provider value={scope}>{children}</ScopeContext.Provider>
-    );
+    return <ScopeContext.Provider value={scope}>{children}</ScopeContext.Provider>;
   }
 
   return { useDocumentScope, DocumentScopeProvider };
