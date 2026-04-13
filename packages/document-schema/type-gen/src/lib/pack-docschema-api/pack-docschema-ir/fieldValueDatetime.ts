@@ -15,4 +15,5 @@
  */
 
 export interface IFieldValueDatetime {
+  readonly "value"?: string;
 }

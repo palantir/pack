@@ -15,4 +15,5 @@
  */
 
 export interface IFieldValueMediaRef {
+  readonly "value"?: any;
 }

@@ -266,7 +266,7 @@ class ZodSchemaGenerator {
   private generateFieldSchema(
     field: IFieldDef,
   ): string {
-    const fieldValueSchemaStr = this.generateFieldTypeSchema(field.value);
+    const fieldValueSchemaStr = this.generateFieldTypeSchema(field.fieldType);
 
     if (field.isOptional) {
       return `${fieldValueSchemaStr}.optional()`;

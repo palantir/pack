@@ -14,11 +14,13 @@
  * limitations under the License.
  */
 
+import type { DocumentTypeSchema } from "@osdk/foundry.pack";
 import { CommanderError } from "commander";
 import { consola } from "consola";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "fs";
 import { dirname, resolve } from "path";
 import type { IRealTimeDocumentSchema } from "../../lib/pack-docschema-api/pack-docschema-ir/index.js";
+import { convertIrToWireSchema } from "../../utils/ir/convertIrToWireSchema.js";
 
 type FileSystemType = "ARTIFACTS" | "COMPASS";
 
@@ -32,7 +34,7 @@ interface DocumentTypeAsset {
   readonly documentTypeName: string;
   readonly documentStorageType: {
     readonly type: "yjs";
-    readonly yjs: Omit<IRealTimeDocumentSchema, "name" | "description" | "version">;
+    readonly yjs: DocumentTypeSchema;
   };
   readonly fileSystemType: FileSystemType;
   readonly schemaVersion: number;
@@ -58,14 +60,12 @@ export function irGenAssetHandler(options: IrGenAssetOptions): void {
     }
 
     consola.info(`Reading IR schema from: ${irPath}`);
-    const {
-      name: documentTypeName,
-      description: _description,
-      version: schemaVersion,
-      ...irSchema
-    } = JSON.parse(
+    const irSchema = JSON.parse(
       readFileSync(irPath, "utf8"),
     ) as IRealTimeDocumentSchema;
+
+    const { name: documentTypeName, version: schemaVersion } = irSchema;
+    const wireSchema = convertIrToWireSchema(irSchema);
 
     const fileSystemType = options.fileSystemType ?? "ARTIFACTS";
     if (fileSystemType !== "ARTIFACTS" && fileSystemType !== "COMPASS") {
@@ -80,7 +80,7 @@ export function irGenAssetHandler(options: IrGenAssetOptions): void {
       documentTypeName,
       documentStorageType: {
         type: "yjs",
-        yjs: irSchema,
+        yjs: wireSchema,
       },
       fileSystemType,
       schemaVersion,

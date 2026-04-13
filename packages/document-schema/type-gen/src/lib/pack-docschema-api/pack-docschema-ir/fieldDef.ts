@@ -22,6 +22,6 @@ export interface IFieldDef {
   readonly "name": string;
   readonly "description"?: string | null;
   readonly "isOptional"?: boolean | null;
-  readonly "value": IFieldTypeUnion.IFieldTypeUnion;
-  readonly "meta": ISchemaMeta;
+  readonly "fieldType": IFieldTypeUnion.IFieldTypeUnion;
+  readonly "metadata": ISchemaMeta;
 }
