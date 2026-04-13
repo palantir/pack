@@ -15,6 +15,7 @@
  */
 
 import { Command } from "commander";
+import { registerAssetCommands } from "./commands/asset/registerAssetCommands.js";
 import { registerIrCommands } from "./commands/ir/registerIrCommands.js";
 import { registerSchemaCommands } from "./commands/schema/registerSchemaCommands.js";
 import { registerStepsCommands } from "./commands/steps/registerStepsCommands.js";
@@ -27,6 +28,7 @@ export function cli(args: string[]): void {
     .description("Document schema type generation CLI")
     .version("0.0.1");
 
+  registerAssetCommands(program);
   registerIrCommands(program);
   registerSchemaCommands(program);
   registerStepsCommands(program);

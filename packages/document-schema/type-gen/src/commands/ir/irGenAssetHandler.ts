@@ -14,30 +14,18 @@
  * limitations under the License.
  */
 
-import type { DocumentTypeSchema } from "@osdk/foundry.pack";
 import { CommanderError } from "commander";
 import { consola } from "consola";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "fs";
 import { dirname, resolve } from "path";
 import type { IRealTimeDocumentSchema } from "../../lib/pack-docschema-api/pack-docschema-ir/index.js";
 import { convertIrToWireSchema } from "../../utils/ir/convertIrToWireSchema.js";
-
-type FileSystemType = "ARTIFACTS" | "COMPASS";
+import type { DocumentTypeAsset, FileSystemType } from "../types.js";
 
 interface IrGenAssetOptions {
   readonly ir: string;
   readonly output: string;
   readonly fileSystemType?: FileSystemType;
-}
-
-interface DocumentTypeAsset {
-  readonly documentTypeName: string;
-  readonly documentStorageType: {
-    readonly type: "yjs";
-    readonly yjs: DocumentTypeSchema;
-  };
-  readonly fileSystemType: FileSystemType;
-  readonly schemaVersion: number;
 }
 
 /**
