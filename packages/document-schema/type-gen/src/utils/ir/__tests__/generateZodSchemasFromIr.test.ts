@@ -33,28 +33,28 @@ describe("generateZodSchemasFromIr", () => {
       key: "name",
       name: "Name",
       description: "Person name",
-      value: {
+      fieldType: {
         type: "value",
         value: {
           type: "string",
           string: { minLength: 2, maxLength: 50 },
         },
       },
-      meta: { addedIn: 1 },
+      metadata: { addedInVersion: 1 },
     };
 
     const personField2: IFieldDef = {
       key: "age",
       name: "Age",
       description: "Person age",
-      value: {
+      fieldType: {
         type: "value",
         value: {
           type: "integer",
           integer: { minValue: 0, maxValue: 150 },
         },
       },
-      meta: { addedIn: 1 },
+      metadata: { addedInVersion: 1 },
     };
 
     const personField3: IFieldDef = {
@@ -62,14 +62,14 @@ describe("generateZodSchemasFromIr", () => {
       name: "Email",
       description: "Person email",
       isOptional: true,
-      value: {
+      fieldType: {
         type: "value",
         value: {
           type: "string",
           string: {},
         },
       },
-      meta: { addedIn: 1 },
+      metadata: { addedInVersion: 1 },
     };
 
     const personRecord: IRecordDef = {
@@ -77,7 +77,7 @@ describe("generateZodSchemasFromIr", () => {
       name: "Person",
       description: "A person record",
       fields: [personField1, personField2, personField3],
-      meta: { addedIn: 1 },
+      metadata: { addedInVersion: 1 },
     };
 
     const schema: IRealTimeDocumentSchema = {
@@ -104,7 +104,7 @@ describe("generateZodSchemasFromIr", () => {
       key: "tags",
       name: "Tags",
       description: "List of tags",
-      value: {
+      fieldType: {
         type: "array",
         array: {
           allowNullValue: false,
@@ -114,14 +114,14 @@ describe("generateZodSchemasFromIr", () => {
           },
         },
       },
-      meta: { addedIn: 1 },
+      metadata: { addedInVersion: 1 },
     };
 
     const mapField: IFieldDef = {
       key: "metadata",
       name: "Metadata",
       description: "Key-value metadata",
-      value: {
+      fieldType: {
         type: "map",
         map: {
           allowNullValue: false,
@@ -135,7 +135,7 @@ describe("generateZodSchemasFromIr", () => {
           },
         },
       },
-      meta: { addedIn: 1 },
+      metadata: { addedInVersion: 1 },
     };
 
     const containerRecord: IRecordDef = {
@@ -143,7 +143,7 @@ describe("generateZodSchemasFromIr", () => {
       name: "Container",
       description: "A container record",
       fields: [arrayField, mapField],
-      meta: { addedIn: 1 },
+      metadata: { addedInVersion: 1 },
     };
 
     const schema: IRealTimeDocumentSchema = {
@@ -170,14 +170,14 @@ describe("generateZodSchemasFromIr", () => {
       key: "timestamp",
       name: "Timestamp",
       description: "Event timestamp",
-      value: {
+      fieldType: {
         type: "value",
         value: {
           type: "datetime",
           datetime: {},
         },
       },
-      meta: { addedIn: 1 },
+      metadata: { addedInVersion: 1 },
     };
 
     const eventRecord: IRecordDef = {
@@ -185,7 +185,7 @@ describe("generateZodSchemasFromIr", () => {
       name: "Event",
       description: "An event record",
       fields: [datetimeField],
-      meta: { addedIn: 1 },
+      metadata: { addedInVersion: 1 },
     };
 
     const schema: IRealTimeDocumentSchema = {
@@ -212,14 +212,14 @@ describe("generateZodSchemasFromIr", () => {
       key: "enabled",
       name: "Enabled",
       description: "Whether feature is enabled",
-      value: {
+      fieldType: {
         type: "value",
         value: {
           type: "boolean",
           boolean: {},
         },
       },
-      meta: { addedIn: 1 },
+      metadata: { addedInVersion: 1 },
     };
 
     const optionalBooleanField: IFieldDef = {
@@ -227,21 +227,21 @@ describe("generateZodSchemasFromIr", () => {
       name: "IsPublic",
       description: "Whether feature is public",
       isOptional: true,
-      value: {
+      fieldType: {
         type: "value",
         value: {
           type: "boolean",
           boolean: {},
         },
       },
-      meta: { addedIn: 1 },
+      metadata: { addedInVersion: 1 },
     };
 
     const booleanArrayField: IFieldDef = {
       key: "flags",
       name: "Flags",
       description: "Array of boolean flags",
-      value: {
+      fieldType: {
         type: "array",
         array: {
           allowNullValue: false,
@@ -251,7 +251,7 @@ describe("generateZodSchemasFromIr", () => {
           },
         },
       },
-      meta: { addedIn: 1 },
+      metadata: { addedInVersion: 1 },
     };
 
     const featureRecord: IRecordDef = {
@@ -259,7 +259,7 @@ describe("generateZodSchemasFromIr", () => {
       name: "Feature",
       description: "A feature toggle record",
       fields: [booleanField, optionalBooleanField, booleanArrayField],
-      meta: { addedIn: 1 },
+      metadata: { addedInVersion: 1 },
     };
 
     const schema: IRealTimeDocumentSchema = {
@@ -292,44 +292,44 @@ describe("generateZodSchemasFromIr", () => {
           key: "x",
           name: "X",
           description: "X coordinate",
-          value: {
+          fieldType: {
             type: "value",
             value: {
               type: "double",
               double: {},
             },
           },
-          meta: { addedIn: 1 },
+          metadata: { addedInVersion: 1 },
         },
         {
           key: "y",
           name: "Y",
           description: "Y coordinate",
-          value: {
+          fieldType: {
             type: "value",
             value: {
               type: "double",
               double: {},
             },
           },
-          meta: { addedIn: 1 },
+          metadata: { addedInVersion: 1 },
         },
         {
           key: "label",
           name: "Label",
           description: "Node label",
           isOptional: true,
-          value: {
+          fieldType: {
             type: "value",
             value: {
               type: "string",
               string: {},
             },
           },
-          meta: { addedIn: 1 },
+          metadata: { addedInVersion: 1 },
         },
       ],
-      meta: { addedIn: 1 },
+      metadata: { addedInVersion: 1 },
     };
 
     // Define the TextBox record
@@ -342,43 +342,43 @@ describe("generateZodSchemasFromIr", () => {
           key: "x",
           name: "X",
           description: "X coordinate",
-          value: {
+          fieldType: {
             type: "value",
             value: {
               type: "double",
               double: {},
             },
           },
-          meta: { addedIn: 1 },
+          metadata: { addedInVersion: 1 },
         },
         {
           key: "y",
           name: "Y",
           description: "Y coordinate",
-          value: {
+          fieldType: {
             type: "value",
             value: {
               type: "double",
               double: {},
             },
           },
-          meta: { addedIn: 1 },
+          metadata: { addedInVersion: 1 },
         },
         {
           key: "text",
           name: "Text",
           description: "Text content",
-          value: {
+          fieldType: {
             type: "value",
             value: {
               type: "string",
               string: {},
             },
           },
-          meta: { addedIn: 1 },
+          metadata: { addedInVersion: 1 },
         },
       ],
-      meta: { addedIn: 1 },
+      metadata: { addedInVersion: 1 },
     };
 
     // Define the Node union
@@ -391,7 +391,7 @@ describe("generateZodSchemasFromIr", () => {
         object: "ObjectNode",
         "text-box": "TextBox",
       },
-      meta: { addedIn: 1 },
+      metadata: { addedInVersion: 1 },
     };
 
     const schema: IRealTimeDocumentSchema = {
@@ -432,17 +432,17 @@ describe("generateZodSchemasFromIr", () => {
           key: "value",
           name: "Value",
           description: "A value",
-          value: {
+          fieldType: {
             type: "value",
             value: {
               type: "string",
               string: {},
             },
           },
-          meta: { addedIn: 1 },
+          metadata: { addedInVersion: 1 },
         },
       ],
-      meta: { addedIn: 1 },
+      metadata: { addedInVersion: 1 },
     };
 
     const barRecord: IRecordDef = {
@@ -454,17 +454,17 @@ describe("generateZodSchemasFromIr", () => {
           key: "count",
           name: "Count",
           description: "A count",
-          value: {
+          fieldType: {
             type: "value",
             value: {
               type: "integer",
               integer: {},
             },
           },
-          meta: { addedIn: 1 },
+          metadata: { addedInVersion: 1 },
         },
       ],
-      meta: { addedIn: 1 },
+      metadata: { addedInVersion: 1 },
     };
 
     // Define union that references the records
@@ -477,7 +477,7 @@ describe("generateZodSchemasFromIr", () => {
         foo: "Foo",
         bar: "Bar",
       },
-      meta: { addedIn: 1 },
+      metadata: { addedInVersion: 1 },
     };
 
     // Intentionally put union BEFORE its variant records in primaryModelKeys
@@ -532,17 +532,17 @@ describe("generateZodSchemasFromIr", () => {
           key: "meow",
           name: "Meow",
           description: "Cat sound",
-          value: {
+          fieldType: {
             type: "value",
             value: {
               type: "string",
               string: {},
             },
           },
-          meta: { addedIn: 1 },
+          metadata: { addedInVersion: 1 },
         },
       ],
-      meta: { addedIn: 1 },
+      metadata: { addedInVersion: 1 },
     };
 
     const dogRecord: IRecordDef = {
@@ -554,17 +554,17 @@ describe("generateZodSchemasFromIr", () => {
           key: "bark",
           name: "Bark",
           description: "Dog sound",
-          value: {
+          fieldType: {
             type: "value",
             value: {
               type: "string",
               string: {},
             },
           },
-          meta: { addedIn: 1 },
+          metadata: { addedInVersion: 1 },
         },
       ],
-      meta: { addedIn: 1 },
+      metadata: { addedInVersion: 1 },
     };
 
     const animalUnion: IUnionDef = {
@@ -576,7 +576,7 @@ describe("generateZodSchemasFromIr", () => {
         cat: "Cat",
         dog: "Dog",
       },
-      meta: { addedIn: 1 },
+      metadata: { addedInVersion: 1 },
     };
 
     const schema: IRealTimeDocumentSchema = {

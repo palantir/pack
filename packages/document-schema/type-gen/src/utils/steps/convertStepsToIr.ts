@@ -112,8 +112,8 @@ export function convertRecordDefToIr(recordDef: P.RecordDef): IRecordDef {
     key: fieldKey,
     name: fieldKey,
     description: undefined,
-    value: convertTypeToFieldTypeUnion(fieldType),
-    meta: { addedIn: 1 },
+    fieldType: convertTypeToFieldTypeUnion(fieldType),
+    metadata: { addedInVersion: 1 },
     isOptional: fieldType.type === "optional" ? true : undefined,
   }));
 
@@ -122,7 +122,7 @@ export function convertRecordDefToIr(recordDef: P.RecordDef): IRecordDef {
     name: recordDef.name,
     description: recordDef.docs || undefined,
     fields,
-    meta: { addedIn: 1 },
+    metadata: { addedInVersion: 1 },
   };
 }
 
@@ -142,7 +142,7 @@ export function convertUnionDefToIr(unionDef: P.UnionDef): IUnionDef {
     description: unionDef.docs,
     discriminant: unionDef.discriminant,
     variants: Object.fromEntries(variantEntries),
-    meta: { addedIn: 1 },
+    metadata: { addedInVersion: 1 },
   };
 }
 
@@ -201,9 +201,7 @@ function convertTypeToFieldValueUnion(schemaType: P.Type): IFieldValueUnion {
       return IFieldValueUnion.double({});
 
     case "mediaRef":
-      return IFieldValueUnion.mediaRef({
-        mediaTypeRids: [], // FIXME: confirm whether we will use rids in the deployed schema.
-      });
+      return IFieldValueUnion.mediaRef({});
 
     case "objectRef":
       return IFieldValueUnion.object({

@@ -34,28 +34,28 @@ describe("generateModelsFromIr", () => {
       key: "name",
       name: "Name",
       description: "Person name",
-      value: {
+      fieldType: {
         type: "value",
         value: {
           type: "string",
           string: { minLength: 2, maxLength: 50 },
         },
       },
-      meta: { addedIn: 1 },
+      metadata: { addedInVersion: 1 },
     };
 
     const personField2: IFieldDef = {
       key: "age",
       name: "Age",
       description: "Person age",
-      value: {
+      fieldType: {
         type: "value",
         value: {
           type: "integer",
           integer: { minValue: 0, maxValue: 150 },
         },
       },
-      meta: { addedIn: 1 },
+      metadata: { addedInVersion: 1 },
     };
 
     const personRecord: IRecordDef = {
@@ -63,7 +63,7 @@ describe("generateModelsFromIr", () => {
       name: "Person",
       description: "A person record",
       fields: [personField1, personField2],
-      meta: { addedIn: 1 },
+      metadata: { addedInVersion: 1 },
     };
 
     const schema: IRealTimeDocumentSchema = {
@@ -99,7 +99,7 @@ describe("generateModelsFromIr", () => {
       key: "documentRef",
       name: "Document Reference",
       description: "Reference to a document",
-      value: {
+      fieldType: {
         type: "value",
         value: {
           type: "docRef",
@@ -108,35 +108,35 @@ describe("generateModelsFromIr", () => {
           },
         },
       },
-      meta: { addedIn: 1 },
+      metadata: { addedInVersion: 1 },
     };
 
     const eventField2: IFieldDef = {
       key: "userRef",
       name: "User Reference",
       description: "Reference to a user",
-      value: {
+      fieldType: {
         type: "value",
         value: {
           type: "userRef",
           userRef: {},
         },
       },
-      meta: { addedIn: 1 },
+      metadata: { addedInVersion: 1 },
     };
 
     const eventField3: IFieldDef = {
       key: "timestamp",
       name: "Timestamp",
       description: "Event timestamp",
-      value: {
+      fieldType: {
         type: "value",
         value: {
           type: "datetime",
           datetime: {},
         },
       },
-      meta: { addedIn: 1 },
+      metadata: { addedInVersion: 1 },
     };
 
     const eventRecord: IRecordDef = {
@@ -144,7 +144,7 @@ describe("generateModelsFromIr", () => {
       name: "Event",
       description: "An event record with external refs",
       fields: [eventField1, eventField2, eventField3],
-      meta: { addedIn: 1 },
+      metadata: { addedInVersion: 1 },
     };
 
     const schema: IRealTimeDocumentSchema = {
@@ -182,30 +182,30 @@ describe("generateModelsFromIr", () => {
           key: "x",
           name: "X",
           description: "X coordinate",
-          value: {
+          fieldType: {
             type: "value",
             value: {
               type: "double",
               double: {},
             },
           },
-          meta: { addedIn: 1 },
+          metadata: { addedInVersion: 1 },
         },
         {
           key: "y",
           name: "Y",
           description: "Y coordinate",
-          value: {
+          fieldType: {
             type: "value",
             value: {
               type: "double",
               double: {},
             },
           },
-          meta: { addedIn: 1 },
+          metadata: { addedInVersion: 1 },
         },
       ],
-      meta: { addedIn: 1 },
+      metadata: { addedInVersion: 1 },
     };
 
     // Define the TextBox record
@@ -218,30 +218,30 @@ describe("generateModelsFromIr", () => {
           key: "x",
           name: "X",
           description: "X coordinate",
-          value: {
+          fieldType: {
             type: "value",
             value: {
               type: "double",
               double: {},
             },
           },
-          meta: { addedIn: 1 },
+          metadata: { addedInVersion: 1 },
         },
         {
           key: "text",
           name: "Text",
           description: "Text content",
-          value: {
+          fieldType: {
             type: "value",
             value: {
               type: "string",
               string: {},
             },
           },
-          meta: { addedIn: 1 },
+          metadata: { addedInVersion: 1 },
         },
       ],
-      meta: { addedIn: 1 },
+      metadata: { addedInVersion: 1 },
     };
 
     // Define the Node union
@@ -254,7 +254,7 @@ describe("generateModelsFromIr", () => {
         object: "ObjectNode",
         "text-box": "TextBox",
       },
-      meta: { addedIn: 1 },
+      metadata: { addedInVersion: 1 },
     };
 
     const schema: IRealTimeDocumentSchema = {
@@ -309,17 +309,17 @@ describe("generateModelsFromIr", () => {
           key: "meow",
           name: "Meow",
           description: "Cat sound",
-          value: {
+          fieldType: {
             type: "value",
             value: {
               type: "string",
               string: {},
             },
           },
-          meta: { addedIn: 1 },
+          metadata: { addedInVersion: 1 },
         },
       ],
-      meta: { addedIn: 1 },
+      metadata: { addedInVersion: 1 },
     };
 
     const dogRecord: IRecordDef = {
@@ -331,17 +331,17 @@ describe("generateModelsFromIr", () => {
           key: "bark",
           name: "Bark",
           description: "Dog sound",
-          value: {
+          fieldType: {
             type: "value",
             value: {
               type: "string",
               string: {},
             },
           },
-          meta: { addedIn: 1 },
+          metadata: { addedInVersion: 1 },
         },
       ],
-      meta: { addedIn: 1 },
+      metadata: { addedInVersion: 1 },
     };
 
     const animalUnion: IUnionDef = {
@@ -353,7 +353,7 @@ describe("generateModelsFromIr", () => {
         cat: "Cat",
         dog: "Dog",
       },
-      meta: { addedIn: 1 },
+      metadata: { addedInVersion: 1 },
     };
 
     const schema: IRealTimeDocumentSchema = {

@@ -22,5 +22,5 @@ export interface IRecordDef {
   readonly "name": string;
   readonly "description"?: string | null;
   readonly "fields": ReadonlyArray<IFieldDef>;
-  readonly "meta": ISchemaMeta;
+  readonly "metadata": ISchemaMeta;
 }

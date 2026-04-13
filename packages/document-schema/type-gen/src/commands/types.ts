@@ -14,13 +14,16 @@
  * limitations under the License.
  */
 
-import type { IRealTimeDocumentSchema } from "../lib/pack-docschema-api/pack-docschema-ir/index.js";
+import type { DocumentTypeSchema } from "@osdk/foundry.pack";
 
 export type FileSystemType = "ARTIFACTS" | "COMPASS";
 
 export interface DocumentTypeAsset {
   readonly documentTypeName: string;
-  readonly schema: Omit<IRealTimeDocumentSchema, "name" | "description" | "version">;
+  readonly documentStorageType: {
+    readonly type: "yjs";
+    readonly yjs: DocumentTypeSchema;
+  };
   readonly fileSystemType: FileSystemType;
   readonly schemaVersion: number;
 }
