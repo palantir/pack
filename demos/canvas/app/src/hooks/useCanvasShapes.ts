@@ -43,23 +43,16 @@ export function useCanvasShapes(doc: VersionedDocRef): UseCanvasShapesResult {
     ): Promise<RecordRef<typeof NodeShapeModel>> => {
       const id = `shape-${generateId()}` as RecordId;
 
+      const v2ShapeData = { ...bounds, fillColor: color, strokeColor: color, opacity: 1.0, shapeType } as const;
+
       await doc.withTransaction(
         () => {
           matchVersion(doc, {
-            1: doc =>
-              doc.setCollectionRecord(NodeShapeModel, id, {
-                ...bounds,
-                color,
-                shapeType,
-              }),
-            2: doc =>
-              doc.setCollectionRecord(NodeShapeModel, id, {
-                ...bounds,
-                fillColor: color,
-                strokeColor: color,
-                opacity: 1.0,
-                shapeType,
-              }),
+            1: (doc) => doc.setCollectionRecord(NodeShapeModel, id, {
+              ...bounds, color, shapeType,
+            }),
+            2: (doc) => doc.setCollectionRecord(NodeShapeModel, id, v2ShapeData),
+            3: (doc) => doc.setCollectionRecord(NodeShapeModel, id, v2ShapeData),
           });
         },
         ActivityEvents.describeEdit(ActivityEventModel, {

@@ -102,9 +102,12 @@ export const CanvasPage = () => {
           ...interaction.canvasProps,
           onMouseMove: handleCanvasMouseMove,
         }}
+        penColor={interaction.currentTool === "pen" ? interaction.currentColor : undefined}
+        penPoints={interaction.penPoints}
         remoteUsersByUserId={remoteUsersByUserId}
         selectedShapeId={interaction.selectedShapeId}
         shapeRefs={interaction.shapeRefs}
+        strokeRefs={interaction.strokeRefs}
         userIdsBySelectedNodeId={userIdsBySelectedNodeId}
       />
     </div>

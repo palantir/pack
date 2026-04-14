@@ -84,11 +84,20 @@ export const CanvasToolbar = memo(function CanvasToolbar({
         >
           Add Circle
         </button>
+        {doc.version >= 3 && (
+          <button
+            className={currentTool === "pen" ? styles.activeButton : styles.button}
+            onClick={() => onToolChange("pen")}
+            type="button"
+          >
+            Pen
+          </button>
+        )}
       </div>
 
       <div className={styles.toolGroup}>
         <label className={styles.label}>
-          {doc.version === 2 ? "Fill/Stroke:" : "Color:"}
+          {doc.version >= 2 ? "Fill/Stroke:" : "Color:"}
           <select className={styles.select} onChange={handleColorChange} value={currentColor}>
             {AVAILABLE_COLORS.map(color => (
               <option key={color} value={color}>

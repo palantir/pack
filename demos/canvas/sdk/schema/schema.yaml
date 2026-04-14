@@ -40,6 +40,11 @@
         fillColor: optional<string>
         strokeColor: optional<string>
         opacity: optional<double>
+    FreehandStroke:
+      fields:
+        points: string
+        color: optional<string>
+      docs: A freehand pen stroke stored as a JSON-encoded array of [x, y, pressure] tuples.
 - add-union:
     ActivityEvent:
       variants:

@@ -31,6 +31,16 @@ export const ActivityShapeUpdateEventMigrations: MigrationRegistry<"ActivityShap
   ],
 };
 
+export const FreehandStrokeMigrations: MigrationRegistry<"FreehandStroke"> = {
+  modelName: "FreehandStroke",
+  allFields: {
+    color: { type: { kind: "optional", inner: { kind: "primitive" } } },
+    points: { type: { kind: "primitive" } },
+  },
+  steps: [
+  ],
+};
+
 export const PresenceCursorEventMigrations: MigrationRegistry<"PresenceCursorEvent"> = {
   modelName: "PresenceCursorEvent",
   allFields: {

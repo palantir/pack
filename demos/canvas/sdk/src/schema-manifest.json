@@ -1,5 +1,5 @@
 {
-  "latestVersion": 2,
+  "latestVersion": 3,
   "minSupportedVersion": 1,
   "models": {
     "ActivityShapeAddEvent": {
@@ -10,6 +10,11 @@
           ]
         },
         "2": {
+          "fields": [
+            "nodeId"
+          ]
+        },
+        "3": {
           "fields": [
             "nodeId"
           ]
@@ -24,6 +29,11 @@
           ]
         },
         "2": {
+          "fields": [
+            "nodeId"
+          ]
+        },
+        "3": {
           "fields": [
             "nodeId"
           ]
@@ -45,6 +55,13 @@
             "nodeId",
             "oldShape"
           ]
+        },
+        "3": {
+          "fields": [
+            "newShape",
+            "nodeId",
+            "oldShape"
+          ]
         }
       }
     },
@@ -57,6 +74,12 @@
           ]
         },
         "2": {
+          "fields": [
+            "x",
+            "y"
+          ]
+        },
+        "3": {
           "fields": [
             "x",
             "y"
@@ -75,6 +98,11 @@
           "fields": [
             "selectedNodeIds"
           ]
+        },
+        "3": {
+          "fields": [
+            "selectedNodeIds"
+          ]
         }
       }
     },
@@ -90,6 +118,17 @@
           ]
         },
         "2": {
+          "fields": [
+            "bottom",
+            "fillColor",
+            "left",
+            "opacity",
+            "right",
+            "strokeColor",
+            "top"
+          ]
+        },
+        "3": {
           "fields": [
             "bottom",
             "fillColor",
@@ -122,6 +161,27 @@
             "right",
             "strokeColor",
             "top"
+          ]
+        },
+        "3": {
+          "fields": [
+            "bottom",
+            "fillColor",
+            "left",
+            "opacity",
+            "right",
+            "strokeColor",
+            "top"
+          ]
+        }
+      }
+    },
+    "FreehandStroke": {
+      "versions": {
+        "3": {
+          "fields": [
+            "color",
+            "points"
           ]
         }
       }

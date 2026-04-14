@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import type { NodeShape, NodeShapeModel } from "@demo/canvas.sdk";
+import type { FreehandStrokeModel, NodeShape, NodeShapeModel } from "@demo/canvas.sdk";
 import type { RecordRef, UserId } from "@palantir/pack.document-schema.model-types";
 import { useRecord } from "@palantir/pack.state.react";
 import type { MouseEvent } from "react";
@@ -23,6 +23,7 @@ import { getUserColor } from "../../hooks/useRemotePresence.js";
 import { boundsToCenter } from "../../utils/boundsToCenter.js";
 import { getResizeHandles } from "../../utils/getResizeHandles.js";
 import styles from "./CanvasContent.module.css";
+import { FreehandStrokeRenderer, PenPreview } from "./FreehandStrokeRenderer.js";
 import { RemoteCursor } from "./RemoteCursor.js";
 
 const PRIMARY_COLOR = "#0066cc";
@@ -38,9 +39,12 @@ export interface CanvasContentProps {
     onMouseMove: (e: MouseEvent<SVGSVGElement>) => void;
     onMouseUp: (e: MouseEvent<SVGSVGElement>) => void;
   };
+  readonly penColor?: string;
+  readonly penPoints?: readonly [number, number, number][];
   readonly remoteUsersByUserId: ReadonlyMap<UserId, UserPresence>;
   readonly selectedShapeId: string | undefined;
   readonly shapeRefs: readonly RecordRef<typeof NodeShapeModel>[];
+  readonly strokeRefs: readonly RecordRef<typeof FreehandStrokeModel>[];
   readonly userIdsBySelectedNodeId: ReadonlyMap<string, ReadonlySet<UserId>>;
 }
 
@@ -206,13 +210,19 @@ const ConnectedShapeRenderer = memo(function ShapeRenderer({
 
 export const CanvasContent = memo(function CanvasContent({
   canvasProps,
+  penColor,
+  penPoints,
   remoteUsersByUserId,
   selectedShapeId,
   shapeRefs,
+  strokeRefs,
   userIdsBySelectedNodeId,
 }: CanvasContentProps) {
   return (
     <svg className={styles.canvas} {...canvasProps}>
+      {strokeRefs.map(strokeRef => (
+        <FreehandStrokeRenderer key={strokeRef.id} strokeRef={strokeRef} />
+      ))}
       {shapeRefs.map(shapeRef => (
         <ShapeRenderer
           key={shapeRef.id}
@@ -221,6 +231,7 @@ export const CanvasContent = memo(function CanvasContent({
           userIdsBySelectedNodeId={userIdsBySelectedNodeId}
         />
       ))}
+      {penPoints != null && penColor != null && <PenPreview color={penColor} points={penPoints} />}
       {Array.from(remoteUsersByUserId.entries()).map(([userId, presence]) => {
         if (presence.cursor == null) return null;
         return (

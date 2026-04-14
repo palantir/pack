@@ -2,9 +2,9 @@
 
 import type { DocumentSchema, RecordModel, UnionModel } from "@palantir/pack.document-schema.model-types";
 import { Metadata } from "@palantir/pack.document-schema.model-types";
-import type { ActivityEvent, ActivityEventShapeAdd, ActivityEventShapeDelete, ActivityEventShapeUpdate, ActivityShapeAddEvent, ActivityShapeDeleteEvent, ActivityShapeUpdateEvent, NodeShape, NodeShapeBox, NodeShapeCircle, PresenceCursorEvent, PresenceEvent, PresenceEventCursor, PresenceEventSelection, PresenceSelectionEvent, ShapeBox, ShapeCircle } from "./types.js";
-import { ActivityEventSchema, ActivityEventShapeAddSchema, ActivityEventShapeDeleteSchema, ActivityEventShapeUpdateSchema, ActivityShapeAddEventSchema, ActivityShapeDeleteEventSchema, ActivityShapeUpdateEventSchema, NodeShapeSchema, NodeShapeBoxSchema, NodeShapeCircleSchema, PresenceCursorEventSchema, PresenceEventSchema, PresenceEventCursorSchema, PresenceEventSelectionSchema, PresenceSelectionEventSchema, ShapeBoxSchema, ShapeCircleSchema } from "./schema.js";
-import { ActivityShapeAddEventMigrations, ActivityShapeDeleteEventMigrations, ActivityShapeUpdateEventMigrations, PresenceCursorEventMigrations, PresenceSelectionEventMigrations, ShapeBoxMigrations, ShapeCircleMigrations, ActivityEventMigrations, NodeShapeMigrations, PresenceEventMigrations } from "./_internal/migrations.js";
+import type { ActivityEvent, ActivityEventShapeAdd, ActivityEventShapeDelete, ActivityEventShapeUpdate, ActivityShapeAddEvent, ActivityShapeDeleteEvent, ActivityShapeUpdateEvent, FreehandStroke, NodeShape, NodeShapeBox, NodeShapeCircle, PresenceCursorEvent, PresenceEvent, PresenceEventCursor, PresenceEventSelection, PresenceSelectionEvent, ShapeBox, ShapeCircle } from "./types.js";
+import { ActivityEventSchema, ActivityEventShapeAddSchema, ActivityEventShapeDeleteSchema, ActivityEventShapeUpdateSchema, ActivityShapeAddEventSchema, ActivityShapeDeleteEventSchema, ActivityShapeUpdateEventSchema, FreehandStrokeSchema, NodeShapeSchema, NodeShapeBoxSchema, NodeShapeCircleSchema, PresenceCursorEventSchema, PresenceEventSchema, PresenceEventCursorSchema, PresenceEventSelectionSchema, PresenceSelectionEventSchema, ShapeBoxSchema, ShapeCircleSchema } from "./schema.js";
+import { ActivityShapeAddEventMigrations, ActivityShapeDeleteEventMigrations, ActivityShapeUpdateEventMigrations, PresenceCursorEventMigrations, PresenceSelectionEventMigrations, ShapeBoxMigrations, ShapeCircleMigrations, FreehandStrokeMigrations, ActivityEventMigrations, NodeShapeMigrations, PresenceEventMigrations } from "./_internal/migrations.js";
 
 export interface ActivityEventModel extends UnionModel<ActivityEvent, typeof ActivityEventSchema> {}
 export const ActivityEventModel: ActivityEventModel = {
@@ -169,6 +169,15 @@ export const ShapeCircleModel: ShapeCircleModel = {
   },
 };
 
+export interface FreehandStrokeModel extends RecordModel<FreehandStroke, typeof FreehandStrokeSchema> {}
+export const FreehandStrokeModel: FreehandStrokeModel = {
+  __type: {} as FreehandStroke,
+  zodSchema: FreehandStrokeSchema,
+  [Metadata]: {
+    name: "FreehandStroke",
+  },
+};
+
 export const DocumentModel = {
   ActivityEvent: ActivityEventModel,
   ActivityEventShapeAdd: ActivityEventShapeAddModel,
@@ -187,8 +196,9 @@ export const DocumentModel = {
   PresenceSelectionEvent: PresenceSelectionEventModel,
   ShapeBox: ShapeBoxModel,
   ShapeCircle: ShapeCircleModel,
+  FreehandStroke: FreehandStrokeModel,
   [Metadata]: {
-    version: 2,
+    version: 3,
     minSupportedVersion: 1,
     migrations: {
       ActivityShapeAddEvent: ActivityShapeAddEventMigrations,
@@ -198,6 +208,7 @@ export const DocumentModel = {
       PresenceSelectionEvent: PresenceSelectionEventMigrations,
       ShapeBox: ShapeBoxMigrations,
       ShapeCircle: ShapeCircleMigrations,
+      FreehandStroke: FreehandStrokeMigrations,
       ActivityEvent: ActivityEventMigrations,
       NodeShape: NodeShapeMigrations,
       PresenceEvent: PresenceEventMigrations,

@@ -16,6 +16,11 @@ export const ActivityShapeUpdateEventInternalSchema = z.object({
   oldShape: z.unknown(),
 }).passthrough();
 
+export const FreehandStrokeInternalSchema = z.object({
+  color: z.string().optional(),
+  points: z.string().optional(),
+}).passthrough();
+
 export const PresenceCursorEventInternalSchema = z.object({
   x: z.number(),
   y: z.number(),

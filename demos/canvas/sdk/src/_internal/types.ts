@@ -19,6 +19,12 @@ export interface ActivityShapeUpdateEvent__Internal {
 }
 
 /** Internal representation containing all fields across all schema versions. */
+export interface FreehandStroke__Internal {
+  readonly color?: string;
+  readonly points?: string;
+}
+
+/** Internal representation containing all fields across all schema versions. */
 export interface PresenceCursorEvent__Internal {
   readonly x: number;
   readonly y: number;

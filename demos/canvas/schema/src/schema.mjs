@@ -168,4 +168,21 @@ const schemaV2 = S.nextSchema(schemaV1)
   .addSchemaUpdate(addOpacity)
   .build();
 
-export default schemaV2;
+// --- Schema change: add freehand strokes (purely additive) ---
+const addFreehandStroke = S.defineSchemaUpdate("addFreehandStroke", () => {
+  const FreehandStroke = S.defineRecord("FreehandStroke", {
+    docs: "A freehand pen stroke stored as a JSON-encoded array of [x, y, pressure] tuples.",
+    fields: {
+      points: S.String,
+      color: S.Optional(S.String),
+    },
+  });
+  return { FreehandStroke };
+});
+
+// --- Schema v3: add pen tool support ---
+const schemaV3 = S.nextSchema(schemaV2)
+  .addSchemaUpdate(addFreehandStroke)
+  .build();
+
+export default schemaV3;
