@@ -46,13 +46,6 @@ export function useCanvasShapes(doc: VersionedDocRef): UseCanvasShapesResult {
       await doc.withTransaction(
         () => {
           switch (doc.version) {
-            case 1:
-              doc.setCollectionRecord(NodeShapeModel, id, {
-                ...bounds,
-                color,
-                shapeType,
-              });
-              break;
             case 2:
               doc.setCollectionRecord(NodeShapeModel, id, {
                 ...bounds,

@@ -1,6 +1,6 @@
 {
   "latestVersion": 2,
-  "minSupportedVersion": 1,
+  "minSupportedVersion": 2,
   "models": {
     "ActivityShapeAddEvent": {
       "versions": {

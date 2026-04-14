@@ -88,7 +88,7 @@ export const CanvasToolbar = memo(function CanvasToolbar({
 
       <div className={styles.toolGroup}>
         <label className={styles.label}>
-          {doc.version === 2 ? "Fill/Stroke:" : "Color:"}
+          Fill/Stroke:
           <select className={styles.select} onChange={handleColorChange} value={currentColor}>
             {AVAILABLE_COLORS.map(color => (
               <option key={color} value={color}>

@@ -104,9 +104,6 @@ export function useCanvasInteraction(
         doc.withTransaction(
           () => {
             switch (doc.version) {
-              case 1:
-                doc.updateRecord(selectedShapeRef, { color });
-                break;
               case 2:
                 doc.updateRecord(selectedShapeRef, { fillColor: color, strokeColor: color });
                 break;

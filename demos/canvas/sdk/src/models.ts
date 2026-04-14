@@ -189,7 +189,6 @@ export const DocumentModel = {
   ShapeCircle: ShapeCircleModel,
   [Metadata]: {
     version: 2,
-    minSupportedVersion: 1,
     migrations: {
       ActivityShapeAddEvent: ActivityShapeAddEventMigrations,
       ActivityShapeDeleteEvent: ActivityShapeDeleteEventMigrations,

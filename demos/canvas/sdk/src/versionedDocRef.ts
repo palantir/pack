@@ -2,36 +2,8 @@
 
 import type { DocumentRef, Model, ModelData, RecordId, RecordRef } from "@palantir/pack.document-schema.model-types";
 import type { DocumentModel, ActivityEventModel, ActivityShapeAddEventModel, ActivityShapeDeleteEventModel, ActivityShapeUpdateEventModel, NodeShapeModel, PresenceCursorEventModel, PresenceEventModel, PresenceSelectionEventModel, ShapeBoxModel, ShapeCircleModel } from "./models.js";
-import type { ActivityEvent_v1, ActivityShapeAddEvent_v1, ActivityShapeDeleteEvent_v1, ActivityShapeUpdateEvent_v1, NodeShape_v1, PresenceCursorEvent_v1, PresenceEvent_v1, PresenceSelectionEvent_v1, ShapeBox_v1, ShapeCircle_v1 } from "./types_v1.js";
-import type { ActivityShapeAddEventUpdate_v1, ActivityShapeDeleteEventUpdate_v1, ActivityShapeUpdateEventUpdate_v1, PresenceCursorEventUpdate_v1, PresenceSelectionEventUpdate_v1, ShapeBoxUpdate_v1, ShapeCircleUpdate_v1 } from "./writeTypes_v1.js";
 import type { ActivityEvent_v2, ActivityShapeAddEvent_v2, ActivityShapeDeleteEvent_v2, ActivityShapeUpdateEvent_v2, NodeShape_v2, PresenceCursorEvent_v2, PresenceEvent_v2, PresenceSelectionEvent_v2, ShapeBox_v2, ShapeCircle_v2 } from "./types_v2.js";
 import type { ActivityShapeAddEventUpdate_v2, ActivityShapeDeleteEventUpdate_v2, ActivityShapeUpdateEventUpdate_v2, PresenceCursorEventUpdate_v2, PresenceSelectionEventUpdate_v2, ShapeBoxUpdate_v2, ShapeCircleUpdate_v2 } from "./writeTypes_v2.js";
-
-export interface VersionedDocRef_v1 extends DocumentRef<DocumentModel> {
-  readonly version: 1;
-  updateRecord(ref: RecordRef<typeof ActivityEventModel>, data: Partial<ActivityEvent_v1>): Promise<void>;
-  updateRecord(ref: RecordRef<typeof ActivityShapeAddEventModel>, data: ActivityShapeAddEventUpdate_v1): Promise<void>;
-  updateRecord(ref: RecordRef<typeof ActivityShapeDeleteEventModel>, data: ActivityShapeDeleteEventUpdate_v1): Promise<void>;
-  updateRecord(ref: RecordRef<typeof ActivityShapeUpdateEventModel>, data: ActivityShapeUpdateEventUpdate_v1): Promise<void>;
-  updateRecord(ref: RecordRef<typeof NodeShapeModel>, data: Partial<NodeShape_v1>): Promise<void>;
-  updateRecord(ref: RecordRef<typeof PresenceCursorEventModel>, data: PresenceCursorEventUpdate_v1): Promise<void>;
-  updateRecord(ref: RecordRef<typeof PresenceEventModel>, data: Partial<PresenceEvent_v1>): Promise<void>;
-  updateRecord(ref: RecordRef<typeof PresenceSelectionEventModel>, data: PresenceSelectionEventUpdate_v1): Promise<void>;
-  updateRecord(ref: RecordRef<typeof ShapeBoxModel>, data: ShapeBoxUpdate_v1): Promise<void>;
-  updateRecord(ref: RecordRef<typeof ShapeCircleModel>, data: ShapeCircleUpdate_v1): Promise<void>;
-  updateRecord<M extends Model>(ref: RecordRef<M>, data: Partial<ModelData<M>>): Promise<void>;
-  setCollectionRecord(model: typeof ActivityEventModel, id: RecordId, data: ActivityEvent_v1): Promise<void>;
-  setCollectionRecord(model: typeof ActivityShapeAddEventModel, id: RecordId, data: ActivityShapeAddEvent_v1): Promise<void>;
-  setCollectionRecord(model: typeof ActivityShapeDeleteEventModel, id: RecordId, data: ActivityShapeDeleteEvent_v1): Promise<void>;
-  setCollectionRecord(model: typeof ActivityShapeUpdateEventModel, id: RecordId, data: ActivityShapeUpdateEvent_v1): Promise<void>;
-  setCollectionRecord(model: typeof NodeShapeModel, id: RecordId, data: NodeShape_v1): Promise<void>;
-  setCollectionRecord(model: typeof PresenceCursorEventModel, id: RecordId, data: PresenceCursorEvent_v1): Promise<void>;
-  setCollectionRecord(model: typeof PresenceEventModel, id: RecordId, data: PresenceEvent_v1): Promise<void>;
-  setCollectionRecord(model: typeof PresenceSelectionEventModel, id: RecordId, data: PresenceSelectionEvent_v1): Promise<void>;
-  setCollectionRecord(model: typeof ShapeBoxModel, id: RecordId, data: ShapeBox_v1): Promise<void>;
-  setCollectionRecord(model: typeof ShapeCircleModel, id: RecordId, data: ShapeCircle_v1): Promise<void>;
-  setCollectionRecord<M extends Model>(model: M, id: RecordId, data: ModelData<M>): Promise<void>;
-}
 
 export interface VersionedDocRef_v2 extends DocumentRef<DocumentModel> {
   readonly version: 2;
@@ -45,7 +17,7 @@ export interface VersionedDocRef_v2 extends DocumentRef<DocumentModel> {
   setCollectionRecord<M extends Model>(model: M, id: RecordId, data: ModelData<M>): Promise<void>;
 }
 
-export type VersionedDocRef = VersionedDocRef_v1 | VersionedDocRef_v2;
+export type VersionedDocRef = VersionedDocRef_v2;
 
 /** Narrow a DocumentRef to a version-discriminated type for type-safe writes. */
 export function asVersioned(docRef: DocumentRef<DocumentModel>): VersionedDocRef {

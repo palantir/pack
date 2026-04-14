@@ -38,7 +38,7 @@ TYPE_GEN_CLI="packages/document-schema/type-gen/bin/cli-node.js"
 node "$TYPE_GEN_CLI" schema gen-types \
     -i "$SCHEMA_DIR/src/schema.mjs" \
     -o "$GENERATED_DIR/src" \
-    --min-version 1
+    --min-version 2
 
 # Step 4: Ensure transpileTypes script exists in package.json (sorted for mrl compliance)
 echo "📦 Ensuring transpileTypes script..."
