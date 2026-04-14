@@ -118,7 +118,7 @@ describe("Foundry Document Status Tracking", () => {
     vi.mocked(Documents.get).mockResolvedValue(mockDocument);
 
     mockEventService.startDocumentSync.mockImplementation(
-      (documentId, _yDoc, _clientVersion, onStatusChange) => {
+      (documentId, _yDoc, _clientSupportedVersionRange, onStatusChange) => {
         const session: SyncSession = {
           clientId: `test-client-${++sessionCounter}`,
           documentId,
@@ -303,7 +303,7 @@ describe("Foundry Document Status Tracking", () => {
 
     it("should handle websocket subscription errors and update data status to ERROR", async () => {
       mockEventService.startDocumentSync.mockImplementationOnce(
-        (documentId, _yDoc, _clientVersion, onStatusChange) => {
+        (documentId, _yDoc, _clientSupportedVersionRange, onStatusChange) => {
           const session: SyncSession = {
             clientId: `test-client-${++sessionCounter}`,
             documentId,
@@ -339,7 +339,7 @@ describe("Foundry Document Status Tracking", () => {
 
     it("should handle error messages from websocket and update data status", async () => {
       mockEventService.startDocumentSync.mockImplementationOnce(
-        (documentId, _yDoc, _clientVersion, onStatusChange) => {
+        (documentId, _yDoc, _clientSupportedVersionRange, onStatusChange) => {
           const session: SyncSession = {
             clientId: `test-client-${++sessionCounter}`,
             documentId,

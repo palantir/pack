@@ -109,7 +109,7 @@ describe("Foundry Security Conversion", () => {
     vi.mocked(Documents.get).mockResolvedValue(WIRE_DOCUMENT_WITH_SECURITY);
 
     mockEventService.startDocumentSync.mockImplementation(
-      (documentId, _yDoc, _clientVersion, onStatusChange) => {
+      (documentId, _yDoc, _clientSupportedVersionRange, onStatusChange) => {
         const session: SyncSession = {
           clientId: `test-client-${++sessionCounter}`,
           documentId,

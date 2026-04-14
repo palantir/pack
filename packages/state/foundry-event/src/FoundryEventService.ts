@@ -17,6 +17,7 @@
 import type { Logger } from "@osdk/api";
 import type {
   ActivityCollaborativeUpdate,
+  ClientSupportedVersionRange,
   DocumentActivitySubscriptionRequest,
   DocumentEditDescription,
   DocumentMetadataUpdate,
@@ -117,14 +118,14 @@ export interface FoundryEventService {
     documentId: DocumentId,
     eventType: string,
     eventData: unknown,
-    clientVersion: number,
+    clientSupportedVersionRange: ClientSupportedVersionRange,
     options?: PresencePublishOptions,
   ): Promise<void>;
 
   startDocumentSync(
     documentId: DocumentId,
     yDoc: y.Doc,
-    clientVersion: number,
+    clientSupportedVersionRange: ClientSupportedVersionRange,
     onStatusChange: (status: Partial<DocumentSyncStatus>) => void,
   ): SyncSession;
 
@@ -132,7 +133,7 @@ export interface FoundryEventService {
 
   subscribeToActivityUpdates(
     documentId: DocumentId,
-    clientVersion: number,
+    clientSupportedVersionRange: ClientSupportedVersionRange,
     callback: (event: ActivityCollaborativeUpdate) => void,
   ): Promise<SubscriptionId>;
 
@@ -143,7 +144,7 @@ export interface FoundryEventService {
 
   subscribeToPresenceUpdates(
     documentId: DocumentId,
-    clientVersion: number,
+    clientSupportedVersionRange: ClientSupportedVersionRange,
     callback: (update: PresenceCollaborativeUpdate) => void,
     options?: PresenceSubscriptionOptions,
   ): Promise<SubscriptionId>;
@@ -189,7 +190,7 @@ class FoundryEventServiceImpl implements FoundryEventService {
   startDocumentSync(
     documentId: DocumentId,
     yDoc: y.Doc,
-    clientVersion: number,
+    clientSupportedVersionRange: ClientSupportedVersionRange,
     onStatusChange: (status: Partial<DocumentSyncStatus>) => void,
   ): SyncSession {
     const session = this.getOrCreateSession(documentId, yDoc);
@@ -221,7 +222,7 @@ class FoundryEventServiceImpl implements FoundryEventService {
         publishChannelId,
         {
           clientId: session.clientId,
-          clientVersion,
+          clientSupportedVersionRange,
           description,
           editId,
           yjsUpdate: {
@@ -254,7 +255,7 @@ class FoundryEventServiceImpl implements FoundryEventService {
       },
       () => ({
         clientId: session.clientId,
-        clientVersion,
+        clientSupportedVersionRange,
         lastRevisionId: session.lastRevisionId?.toString(),
       } satisfies DocumentUpdateSubscriptionRequest),
     ).then(subscriptionId => {
@@ -287,7 +288,7 @@ class FoundryEventServiceImpl implements FoundryEventService {
 
   subscribeToActivityUpdates(
     documentId: DocumentId,
-    clientVersion: number,
+    clientSupportedVersionRange: ClientSupportedVersionRange,
     callback: (event: ActivityCollaborativeUpdate) => void,
   ): Promise<SubscriptionId> {
     const session = this.getOrCreateSession(documentId);
@@ -305,7 +306,7 @@ class FoundryEventServiceImpl implements FoundryEventService {
       },
       () => ({
         clientId: session.clientId,
-        clientVersion,
+        clientSupportedVersionRange,
       } satisfies DocumentActivitySubscriptionRequest),
     ).then(subscriptionId => {
       session.activitySubscriptionId = subscriptionId;
@@ -348,7 +349,7 @@ class FoundryEventServiceImpl implements FoundryEventService {
 
   subscribeToPresenceUpdates(
     documentId: DocumentId,
-    clientVersion: number,
+    clientSupportedVersionRange: ClientSupportedVersionRange,
     callback: (update: PresenceCollaborativeUpdate) => void,
     options: PresenceSubscriptionOptions = {},
   ): Promise<SubscriptionId> {
@@ -390,7 +391,7 @@ class FoundryEventServiceImpl implements FoundryEventService {
       },
       () => ({
         clientId: session.clientId,
-        clientVersion,
+        clientSupportedVersionRange,
       } satisfies DocumentPresenceSubscriptionRequest),
     ).then(subscriptionId => {
       session.presenceSubscriptionId = subscriptionId;
@@ -407,7 +408,7 @@ class FoundryEventServiceImpl implements FoundryEventService {
     documentId: DocumentId,
     eventType: string,
     eventData: unknown,
-    clientVersion: number,
+    clientSupportedVersionRange: ClientSupportedVersionRange,
     options?: PresencePublishOptions,
   ): Promise<void> {
     const { isEphemeral = true } = options ?? {};
@@ -422,14 +423,16 @@ class FoundryEventServiceImpl implements FoundryEventService {
     }
 
     return this.eventService.publish(channelId, {
-      clientId: session.clientId,
-      clientVersion,
-      // FIXME: why do we have to send this, we are authenticated
-      eventData,
-      eventType,
-      isEphemeral,
-      userId,
-      type: "custom",
+      clientSupportedVersionRange,
+      messageType: {
+        type: "custom",
+        clientId: session.clientId,
+        // FIXME: why do we have to send this, we are authenticated
+        eventData,
+        eventType,
+        isEphemeral,
+        userId,
+      },
     }).catch((error: unknown) => {
       this.logger.error("Failed to publish custom presence", error, {
         docId: documentId,

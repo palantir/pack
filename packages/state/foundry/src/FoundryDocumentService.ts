@@ -15,6 +15,7 @@
  */
 
 import type {
+  ClientSupportedVersionRange,
   CreateDocumentRequest,
   DiscretionaryPrincipal,
   DiscretionaryPrincipal as WireDiscretionaryPrincipal,
@@ -326,7 +327,7 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
     internalDoc.syncSession = this.eventService.startDocumentSync(
       docRef.id,
       internalDoc.yDoc,
-      getMetadata(docRef.schema).version,
+      getClientSupportedVersionRange(docRef.schema),
       status => {
         this.updateDataStatus(internalDoc, docRef, status);
       },
@@ -360,14 +361,18 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
     };
 
     this.eventService
-      .subscribeToActivityUpdates(docRef.id, getMetadata(docRef.schema).version, foundryEvent => {
-        if (!unsubscribed) {
-          const localEvent = getActivityEvent(docRef.schema, foundryEvent);
-          if (localEvent != null) {
-            callback(docRef, localEvent);
+      .subscribeToActivityUpdates(
+        docRef.id,
+        getClientSupportedVersionRange(docRef.schema),
+        foundryEvent => {
+          if (!unsubscribed) {
+            const localEvent = getActivityEvent(docRef.schema, foundryEvent);
+            if (localEvent != null) {
+              callback(docRef, localEvent);
+            }
           }
-        }
-      })
+        },
+      )
       .catch((e: unknown) => {
         this.logger.error("Failed to subscribe to activity updates", e, {
           docId: docRef.id,
@@ -422,7 +427,7 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
     this.eventService
       .subscribeToPresenceUpdates(
         docRef.id,
-        getMetadata(docRef.schema).version,
+        getClientSupportedVersionRange(docRef.schema),
         foundryUpdate => {
           if (!unsubscribed) {
             const localEvent = getPresenceEvent(docRef.schema, foundryUpdate);
@@ -453,7 +458,7 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
         docRef.id,
         eventType,
         eventData,
-        getMetadata(docRef.schema).version,
+        getClientSupportedVersionRange(docRef.schema),
         options,
       )
       .catch((e: unknown) => {
@@ -462,6 +467,12 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
         });
       });
   }
+}
+
+function getClientSupportedVersionRange(schema: DocumentSchema): ClientSupportedVersionRange {
+  const version = getMetadata(schema).version;
+  // TODO: Placeholder versions from schema now, update when migration story is complete and implemented
+  return { minVersion: version, maxVersion: version };
 }
 
 function getWireSecurity({
