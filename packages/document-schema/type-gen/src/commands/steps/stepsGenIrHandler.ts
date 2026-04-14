@@ -19,6 +19,7 @@ import { consola } from "consola";
 import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from "fs";
 import { dirname, join } from "path";
 import * as YAML from "yaml";
+import { GENERATED_JSON_COMMENT } from "../../utils/generatedFileHeader.js";
 import { convertStepsToIr, type SchemaMetadata } from "../../utils/steps/convertStepsToIr.js";
 import type { MigrationStep } from "../../utils/steps/parseMigrationSteps.js";
 import { parseMigrationSteps } from "../../utils/steps/parseMigrationSteps.js";
@@ -76,7 +77,8 @@ export function stepsGenIrHandler(options: StepsGenIrOptions): void {
     if (!existsSync(outputDir)) {
       mkdirSync(outputDir, { recursive: true });
     }
-    writeFileSync(outputFile, JSON.stringify(schema, null, 2), "utf8");
+    const output = { __comment: GENERATED_JSON_COMMENT, ...schema };
+    writeFileSync(outputFile, JSON.stringify(output, null, 2), "utf8");
 
     consola.success("✅ Successfully converted migration steps to IR format");
     consola.info(`   Generated types written to: ${outputFile}`);
