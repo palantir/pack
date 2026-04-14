@@ -56,14 +56,14 @@ export const CanvasPage = () => {
     };
   }, []);
 
-  if (!isValidDocRef(doc.ref)) {
+  if (!isValidDocRef(doc)) {
     return <div>Canvas ID is required</div>;
   }
 
-  const { broadcastCursor, broadcastSelection } = useBroadcastPresence(doc.ref);
-  const { remoteUsersByUserId, userIdsBySelectedNodeId } = useRemotePresence(doc.ref);
+  const { broadcastCursor, broadcastSelection } = useBroadcastPresence(doc);
+  const { remoteUsersByUserId, userIdsBySelectedNodeId } = useRemotePresence(doc);
   const interaction = useCanvasInteraction(doc, broadcastSelection);
-  useActivityToast(doc.ref, toaster);
+  useActivityToast(doc, toaster);
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {

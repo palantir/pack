@@ -56,18 +56,20 @@ describe("generateScopeFromSchema", () => {
       "setCollectionRecord<M extends Model>(model: M, id: RecordId, data: ModelData<M>): void;",
     );
 
-    // deleteRecord
-    expect(result).toContain("deleteRecord<M extends Model>(ref: RecordRef<M>): void;");
+    // No deleteRecord in generated output (inherited from DocumentRef)
+    expect(result).not.toContain("deleteRecord");
 
     // Single version = no union, just alias
     expect(result).toContain("export type VersionedDocRef = VersionedDocRef_v1;");
     expect(result).not.toContain(" | ");
 
-    // Factory function
+    // asVersioned identity function
     expect(result).toContain(
-      "export function createVersionedDocRef(docRef: DocumentRef<DocumentModel>): VersionedDocRef {",
+      "export function asVersioned(docRef: DocumentRef<DocumentModel>): VersionedDocRef {",
     );
-    expect(result).toContain("getMetadata(docRef.schema).version");
+    expect(result).toContain("return docRef as VersionedDocRef;");
+    // No createVersionedDocRef factory
+    expect(result).not.toContain("createVersionedDocRef");
   });
 
   it("should generate versioned doc ref with changed model overloads for multi-version schema", () => {

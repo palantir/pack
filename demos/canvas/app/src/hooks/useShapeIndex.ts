@@ -61,7 +61,7 @@ export function useShapeIndex(docRef: VersionedDocRef): ShapeIndex {
   }
 
   useEffect(() => {
-    const shapeCollection = docRef.ref.getRecords(NodeShapeModel);
+    const shapeCollection = docRef.getRecords(NodeShapeModel);
 
     const unsubscribeAdded = shapeCollection.onItemsAdded(items =>
       Promise.all(items.map(recordRef =>

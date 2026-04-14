@@ -33,7 +33,7 @@ export interface UseCanvasShapesResult {
 }
 
 export function useCanvasShapes(doc: VersionedDocRef): UseCanvasShapesResult {
-  const shapeRefs = useRecords(doc.ref, NodeShapeModel);
+  const shapeRefs = useRecords(doc, NodeShapeModel);
 
   const addShape = useCallback(
     async (
@@ -70,7 +70,7 @@ export function useCanvasShapes(doc: VersionedDocRef): UseCanvasShapesResult {
         }),
       );
 
-      const collection = doc.ref.getRecords(NodeShapeModel);
+      const collection = doc.getRecords(NodeShapeModel);
       const recordRef = collection.get(id);
       if (recordRef == null || !isValidRecordRef(recordRef)) {
         throw new Error(`Failed to create shape with id: ${id}`);

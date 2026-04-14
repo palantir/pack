@@ -43,7 +43,7 @@ export const CanvasToolbar = memo(function CanvasToolbar({
   onDelete,
   onToolChange,
 }: CanvasToolbarProps) {
-  const { metadata } = useDocMetadata(doc.ref);
+  const { metadata } = useDocMetadata(doc);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
   const handleColorChange = (e: ChangeEvent<HTMLSelectElement>) => {
@@ -56,7 +56,7 @@ export const CanvasToolbar = memo(function CanvasToolbar({
         {metadata?.name ?? "Untitled"}
       </div>
       <EditCanvasDialog
-        docRef={doc.ref}
+        docRef={doc}
         isOpen={isEditDialogOpen}
         metadata={metadata}
         setIsOpen={setIsEditDialogOpen}
@@ -111,7 +111,7 @@ export const CanvasToolbar = memo(function CanvasToolbar({
       </div>
 
       <div className={styles.toolGroupRight}>
-        <ActivityPanel docRef={doc.ref} />
+        <ActivityPanel docRef={doc} />
       </div>
     </div>
   );

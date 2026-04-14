@@ -29,9 +29,11 @@ import type {
   PresencePublishOptions,
   PresenceSubscriptionOptions,
   RecordCollectionRef,
+  RecordId,
+  RecordRef,
   Unsubscribe,
 } from "@palantir/pack.document-schema.model-types";
-import { DocumentRefBrand } from "@palantir/pack.document-schema.model-types";
+import { DocumentRefBrand, getMetadata } from "@palantir/pack.document-schema.model-types";
 import type { StateModuleImpl } from "./StateModule.js";
 import { getStateModule } from "./StateModule.js";
 
@@ -51,6 +53,16 @@ const INVALID_DOC_REF: DocumentRef = Object.freeze(
     onStateChange: () => () => {},
     updateCustomPresence: () => {},
     withTransaction: () => {
+      throw new Error("Invalid document reference");
+    },
+    version: 0,
+    updateRecord: () => {
+      throw new Error("Invalid document reference");
+    },
+    setCollectionRecord: () => {
+      throw new Error("Invalid document reference");
+    },
+    deleteRecord: () => {
       throw new Error("Invalid document reference");
     },
   } as const,
@@ -154,5 +166,23 @@ class DocumentRefImpl<T extends DocumentSchema> implements DocumentRef<T> {
     description?: EditDescription,
   ): void {
     this.#stateModule.withTransaction(this, fn, description);
+  }
+
+  get version(): number {
+    // TODO: read from backend-provided document state when available
+    return getMetadata(this.schema).version;
+  }
+
+  updateRecord(ref: RecordRef, data: unknown): Promise<void> {
+    return ref.update(data as any);
+  }
+
+  setCollectionRecord(model: Model, id: RecordId, data: unknown): Promise<void> {
+    const collection: RecordCollectionRef = this.getRecords(model);
+    return collection.set(id, data as any);
+  }
+
+  deleteRecord(ref: RecordRef): Promise<void> {
+    return ref.delete();
   }
 }
