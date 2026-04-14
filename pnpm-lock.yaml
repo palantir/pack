@@ -22,8 +22,8 @@ catalogs:
       specifier: ^2.56.0
       version: 2.56.0
     '@osdk/foundry.pack':
-      specifier: ^2.58.0
-      version: 2.58.0
+      specifier: ^2.59.0
+      version: 2.59.0
     '@osdk/oauth':
       specifier: ^1.4.0
       version: 1.4.0
@@ -542,7 +542,7 @@ importers:
         version: 2.5.2
       '@osdk/foundry.pack':
         specifier: 'catalog:'
-        version: 2.58.0
+        version: 2.59.0
       '@palantir/pack.document-schema.model-types':
         specifier: workspace:~
         version: link:../model-types
@@ -1017,7 +1017,7 @@ importers:
         version: 2.5.2
       '@osdk/foundry.pack':
         specifier: 'catalog:'
-        version: 2.58.0
+        version: 2.59.0
       '@palantir/pack.auth':
         specifier: workspace:*
         version: link:../../auth/core
@@ -1069,7 +1069,7 @@ importers:
         version: 2.5.2
       '@osdk/foundry.pack':
         specifier: 'catalog:'
-        version: 2.58.0
+        version: 2.59.0
       '@palantir/pack.auth':
         specifier: workspace:*
         version: link:../../auth/core
@@ -2421,11 +2421,11 @@ packages:
   '@osdk/foundry.core@2.56.0':
     resolution: {integrity: sha512-lm7c5IxHfmaAhSv3FB7od+YpvA1mTGP12FBEdQYQ7FqnJTLEB+GLaHLzvX+1WsSFJA/LxnasRV3ztWfjy1Qe+w==}
 
-  '@osdk/foundry.core@2.58.0':
-    resolution: {integrity: sha512-FMUZThSXSh4Zlf3iAy2Rrh8vpw04OEPtkY9FpKGMt7ib3QKXqihPy4xjjyGv3eMyTzEQ8lJBwlxBAN+8tiw+cA==}
+  '@osdk/foundry.core@2.59.0':
+    resolution: {integrity: sha512-/KzlqwTWWoYA2Ia5FGSUjRbGPlExLA+0a19YZBXFbLNjj0xMJwybb48Z2A3l9CSzs16q6Rb9KePKuMNvoh/JKQ==}
 
-  '@osdk/foundry.filesystem@2.58.0':
-    resolution: {integrity: sha512-CtGsWkwKaOckduKAwBdzLw2XTuF/6v5K5tQK7s15BP5pBbh/hjawwzKfmsADFaqSnqMGlQENA1BjOT4S+PXYcA==}
+  '@osdk/foundry.filesystem@2.59.0':
+    resolution: {integrity: sha512-HUzvUX4NvuSjoDhJKoCiUHwCM4I1k3dxlZR/YMH5tylxJ6jeFmcCP2FRNq22TWz+BwQREn6XlO87RPKUhGw//w==}
 
   '@osdk/foundry.geo@2.30.0':
     resolution: {integrity: sha512-VsYE9vtDwUVxfHlQLKxfDq6YrknPoPt6Gf3Ui0ojY7STqT/FTJlyH8aG+D3zosUVKeTZNXZ3ybc51GhB8kuYSQ==}
@@ -2433,14 +2433,14 @@ packages:
   '@osdk/foundry.geo@2.56.0':
     resolution: {integrity: sha512-ZB7RzItE3JJSsP7MPBihz8Zq7a361MtdUfxA+zHQbdaqCwZqukZ1ghJm/0mc/rQmHkV7bt3/SVknGOcHhVj3/g==}
 
-  '@osdk/foundry.geo@2.58.0':
-    resolution: {integrity: sha512-YzfRmDvvCqfbT4xgmHlBt4cuJ5vSgp4ARnz89NIki2I/U5eg5uFqYsV4eN4q0MjVoB3DQ1feLH5whtBV8pTatw==}
+  '@osdk/foundry.geo@2.59.0':
+    resolution: {integrity: sha512-rSfpx/RxRjKuohpJpyNFkp5mrS6pmGxjXI7XZXFdIVBbSsSIfP7OMClD9XnmVCNtmA3oufi5XnvIYEkjOHJAoA==}
 
   '@osdk/foundry.ontologies@2.30.0':
     resolution: {integrity: sha512-hmUhGJ846r8FDqkDZbt9P4tSzTcYzTatwrCVr4wN43WNRMIARvPLGnKCs9lk/nL1DOoUG6AM1v2RfvfLryQngA==}
 
-  '@osdk/foundry.pack@2.58.0':
-    resolution: {integrity: sha512-B715It0AspsC1cGf9HgHuc9uHtAbx26QVs/qZv7TBv18RfZeZjoHTtAsC7ZfPG/mjjLz4R2mTQA6vR7iqhnq9Q==}
+  '@osdk/foundry.pack@2.59.0':
+    resolution: {integrity: sha512-Ca5alq/ps3uJoDjiSOdq32Hlb+UuJalbKIG0DqevM6bfK8K65sNLyVSUeiJys9qCAg6i7gkvfstYQpfg4RMORA==}
 
   '@osdk/generator-converters@2.5.2':
     resolution: {integrity: sha512-k7sJM00w70A4g6OB0LKq1Gfmka8kiiPNAPeX/CK9sT5DfwGwfJ7wIZrXJVSkSwNlEqVr6zSKSbwwgmU/FyMqQQ==}
@@ -7184,16 +7184,16 @@ snapshots:
       '@osdk/shared.client2': 1.0.0
       '@osdk/shared.net.platformapi': 1.6.0
 
-  '@osdk/foundry.core@2.58.0':
+  '@osdk/foundry.core@2.59.0':
     dependencies:
-      '@osdk/foundry.geo': 2.58.0
+      '@osdk/foundry.geo': 2.59.0
       '@osdk/shared.client': 1.0.1
       '@osdk/shared.client2': 1.0.0
       '@osdk/shared.net.platformapi': 1.6.0
 
-  '@osdk/foundry.filesystem@2.58.0':
+  '@osdk/foundry.filesystem@2.59.0':
     dependencies:
-      '@osdk/foundry.core': 2.58.0
+      '@osdk/foundry.core': 2.59.0
       '@osdk/shared.client': 1.0.1
       '@osdk/shared.client2': 1.0.0
       '@osdk/shared.net.platformapi': 1.6.0
@@ -7210,7 +7210,7 @@ snapshots:
       '@osdk/shared.client2': 1.0.0
       '@osdk/shared.net.platformapi': 1.6.0
 
-  '@osdk/foundry.geo@2.58.0':
+  '@osdk/foundry.geo@2.59.0':
     dependencies:
       '@osdk/shared.client': 1.0.1
       '@osdk/shared.client2': 1.0.0
@@ -7224,10 +7224,10 @@ snapshots:
       '@osdk/shared.client2': 1.0.0
       '@osdk/shared.net.platformapi': 1.4.0
 
-  '@osdk/foundry.pack@2.58.0':
+  '@osdk/foundry.pack@2.59.0':
     dependencies:
-      '@osdk/foundry.core': 2.58.0
-      '@osdk/foundry.filesystem': 2.58.0
+      '@osdk/foundry.core': 2.59.0
+      '@osdk/foundry.filesystem': 2.59.0
       '@osdk/shared.client': 1.0.1
       '@osdk/shared.client2': 1.0.0
       '@osdk/shared.net.platformapi': 1.6.0
