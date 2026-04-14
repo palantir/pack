@@ -19,6 +19,7 @@ import { consola } from "consola";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "fs";
 import { dirname, resolve } from "path";
 import type { IRealTimeDocumentSchema } from "../../lib/pack-docschema-api/pack-docschema-ir/index.js";
+import { GENERATED_JSON_COMMENT } from "../../utils/generatedFileHeader.js";
 import { convertIrToWireSchema } from "../../utils/ir/convertIrToWireSchema.js";
 import type { DocumentTypeAsset, FileSystemType } from "../types.js";
 
@@ -78,7 +79,8 @@ export function irGenAssetHandler(options: IrGenAssetOptions): void {
     if (!existsSync(outputDir)) {
       mkdirSync(outputDir, { recursive: true });
     }
-    writeFileSync(outputPath, JSON.stringify(asset, null, 2), "utf8");
+    const output = { __comment: GENERATED_JSON_COMMENT, ...asset };
+    writeFileSync(outputPath, JSON.stringify(output, null, 2), "utf8");
 
     consola.success("Successfully generated document type asset");
     consola.info(`   Output: ${outputPath}`);
