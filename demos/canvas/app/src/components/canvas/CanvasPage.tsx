@@ -33,7 +33,7 @@ import { CanvasToolbar } from "./CanvasToolbar.js";
 
 export const CanvasPage = () => {
   const { canvasId } = useParams<{ canvasId: string }>();
-  const { docRef, doc } = useCanvasDocRef(app, canvasId as DocumentId | undefined);
+  const doc = useCanvasDocRef(app, canvasId as DocumentId | undefined);
   const [toaster, setToaster] = useState<Toaster | null>(null);
 
   useEffect(() => {
@@ -56,14 +56,14 @@ export const CanvasPage = () => {
     };
   }, []);
 
-  if (!isValidDocRef(docRef)) {
+  if (!isValidDocRef(doc.ref)) {
     return <div>Canvas ID is required</div>;
   }
 
-  const { broadcastCursor, broadcastSelection } = useBroadcastPresence(doc);
-  const { remoteUsersByUserId, userIdsBySelectedNodeId } = useRemotePresence(doc);
+  const { broadcastCursor, broadcastSelection } = useBroadcastPresence(doc.ref);
+  const { remoteUsersByUserId, userIdsBySelectedNodeId } = useRemotePresence(doc.ref);
   const interaction = useCanvasInteraction(doc, broadcastSelection);
-  useActivityToast(doc, toaster);
+  useActivityToast(doc.ref, toaster);
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {

@@ -23,7 +23,7 @@ import type {
 } from "@palantir/pack.document-schema.model-types";
 import { getMetadata } from "@palantir/pack.document-schema.model-types";
 import type { ReactNode } from "react";
-import { createContext, useContext, useMemo } from "react";
+import { createContext, createElement, useContext, useMemo } from "react";
 
 interface DocumentScopeConstraint {
   readonly version: number;
@@ -96,7 +96,7 @@ export function createDocumentScope<
       [docRef, version],
     );
 
-    return <ScopeContext.Provider value={scope}>{children}</ScopeContext.Provider>;
+    return createElement(ScopeContext.Provider, { value: scope }, children);
   }
 
   return { useDocumentScope, DocumentScopeProvider };

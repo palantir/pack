@@ -17,11 +17,7 @@
 import { ActivityEventModel, NodeShapeModel } from "@demo/canvas.sdk";
 import type { VersionedDocRef } from "@demo/canvas.sdk";
 import { generateId } from "@palantir/pack.core";
-import type {
-  RecordCollectionRef,
-  RecordId,
-  RecordRef,
-} from "@palantir/pack.document-schema.model-types";
+import type { RecordId, RecordRef } from "@palantir/pack.document-schema.model-types";
 import { ActivityEvents } from "@palantir/pack.document-schema.model-types";
 import { isValidRecordRef } from "@palantir/pack.state.core";
 import { useRecords } from "@palantir/pack.state.react";
@@ -37,7 +33,7 @@ export interface UseCanvasShapesResult {
 }
 
 export function useCanvasShapes(doc: VersionedDocRef): UseCanvasShapesResult {
-  const shapeRefs = useRecords(doc, NodeShapeModel);
+  const shapeRefs = useRecords(doc.ref, NodeShapeModel);
 
   const addShape = useCallback(
     async (
@@ -74,8 +70,8 @@ export function useCanvasShapes(doc: VersionedDocRef): UseCanvasShapesResult {
         }),
       );
 
-      const collection: RecordCollectionRef<typeof NodeShapeModel> = doc.getRecords(NodeShapeModel);
-      const recordRef: RecordRef<typeof NodeShapeModel> | undefined = collection.get(id);
+      const collection = doc.ref.getRecords(NodeShapeModel);
+      const recordRef = collection.get(id);
       if (recordRef == null || !isValidRecordRef(recordRef)) {
         throw new Error(`Failed to create shape with id: ${id}`);
       }

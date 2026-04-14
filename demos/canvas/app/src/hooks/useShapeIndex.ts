@@ -16,7 +16,7 @@
 
 import type { NodeShape, VersionedDocRef } from "@demo/canvas.sdk";
 import { NodeShapeModel } from "@demo/canvas.sdk";
-import type { RecordCollectionRef, RecordRef } from "@palantir/pack.document-schema.model-types";
+import type { RecordRef } from "@palantir/pack.document-schema.model-types";
 import type { BBox } from "rbush";
 import RBush from "rbush";
 import { useCallback, useEffect, useRef } from "react";
@@ -61,9 +61,7 @@ export function useShapeIndex(docRef: VersionedDocRef): ShapeIndex {
   }
 
   useEffect(() => {
-    const shapeCollection: RecordCollectionRef<typeof NodeShapeModel> = docRef.getRecords(
-      NodeShapeModel,
-    );
+    const shapeCollection = docRef.ref.getRecords(NodeShapeModel);
 
     const unsubscribeAdded = shapeCollection.onItemsAdded(items =>
       Promise.all(items.map(recordRef =>

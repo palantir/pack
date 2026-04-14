@@ -17,23 +17,15 @@
 import { createVersionedDocRef, DocumentModel } from "@demo/canvas.sdk";
 import type { VersionedDocRef } from "@demo/canvas.sdk";
 import type { PackApp } from "@palantir/pack.core";
-import type { DocumentId, DocumentRef } from "@palantir/pack.document-schema.model-types";
+import type { DocumentId } from "@palantir/pack.document-schema.model-types";
 import type { WithStateModule } from "@palantir/pack.state.core";
 import { useDocRef } from "@palantir/pack.state.react";
 import { useMemo } from "react";
 
-export interface UseCanvasDocRefResult {
-  /** Base DocumentRef for validity checks and read-only framework hooks. */
-  readonly docRef: DocumentRef;
-  /** Versioned ref with type-safe write overloads narrowed by `switch (doc.version)`. */
-  readonly doc: VersionedDocRef;
-}
-
 export function useCanvasDocRef(
   app: WithStateModule<PackApp>,
   canvasId: DocumentId | undefined,
-): UseCanvasDocRefResult {
+): VersionedDocRef {
   const docRef = useDocRef(app, DocumentModel, canvasId);
-  const doc = useMemo(() => createVersionedDocRef(docRef), [docRef]);
-  return { docRef, doc };
+  return useMemo(() => createVersionedDocRef(docRef), [docRef]);
 }

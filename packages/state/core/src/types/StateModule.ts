@@ -33,6 +33,7 @@ import type {
   RecordId,
   RecordRef,
 } from "@palantir/pack.document-schema.model-types";
+import { getMetadata } from "@palantir/pack.document-schema.model-types";
 import { DOCUMENT_SERVICE_MODULE_KEY } from "../DocumentServiceModule.js";
 import type { CreateDocumentMetadata } from "./CreateDocumentMetadata.js";
 import type {
@@ -68,10 +69,17 @@ export interface StateModule {
     model: M,
   ) => RecordRef<M>;
 
-  readonly createDocument: <T extends DocumentSchema>(
-    metadata: CreateDocumentMetadata,
-    schema: T,
-  ) => Promise<DocumentRef<T>>;
+  readonly createDocument: {
+    <T extends DocumentSchema>(
+      metadata: CreateDocumentMetadata,
+      schema: T,
+    ): Promise<DocumentRef<T>>;
+    <T extends DocumentSchema>(
+      metadata: CreateDocumentMetadata,
+      schema: T,
+      initializer: (docRef: DocumentRef<T>, version: number) => void | Promise<void>,
+    ): Promise<DocumentRef<T>>;
+  };
 
   readonly searchDocuments: <T extends DocumentSchema>(
     documentTypeName: string,
@@ -215,8 +223,15 @@ export class StateModuleImpl implements StateModule {
   async createDocument<T extends DocumentSchema>(
     metadata: CreateDocumentMetadata,
     schema: T,
+    initializer?: (docRef: DocumentRef<T>, version: number) => void | Promise<void>,
   ): Promise<DocumentRef<T>> {
-    return this.documentService.createDocument(metadata, schema);
+    const docRef = await this.documentService.createDocument(metadata, schema);
+    if (initializer != null) {
+      const schemaMetadata = getMetadata(schema);
+      const version = schemaMetadata.minSupportedVersion ?? schemaMetadata.version;
+      await initializer(docRef, version);
+    }
+    return docRef;
   }
 
   async searchDocuments<T extends DocumentSchema>(

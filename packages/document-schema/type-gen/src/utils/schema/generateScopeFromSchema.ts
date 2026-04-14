@@ -217,17 +217,13 @@ export function generateScopeFromSchema(
 
   // Import model-types
   output +=
-    `import type { DocumentRef, Model, ModelData, RecordCollectionRef, RecordId, RecordRef } from "@palantir/pack.document-schema.model-types";\n`;
+    `import type { DocumentRef, EditDescription, Model, ModelData, RecordCollectionRef, RecordId, RecordRef } from "@palantir/pack.document-schema.model-types";\n`;
   output += `import { getMetadata } from "@palantir/pack.document-schema.model-types";\n`;
 
-  // Import DocumentModel type
-  output += `import type { DocumentModel } from "./models.js";\n`;
-
-  // Import model constants from models.ts
+  // Import model types from models.ts
   const modelImports = allModelNames.map(n => `${n}Model`);
-  if (modelImports.length > 0) {
-    output += `import type { ${modelImports.join(", ")} } from "./models.js";\n`;
-  }
+  const typeImportsFromModels = ["DocumentModel", ...modelImports];
+  output += `import type { ${typeImportsFromModels.join(", ")} } from "./models.js";\n`;
 
   // Import per-version types
   for (const { version } of supportedVersions) {
@@ -262,11 +258,20 @@ export function generateScopeFromSchema(
 
   output += "\n";
 
+  // Generate VersionedDocRefBase
+  output += `interface VersionedDocRefBase {\n`;
+  output +=
+    `  /** The underlying DocumentRef for framework hooks (useRecords, onPresence, etc.). */\n`;
+  output += `  readonly ref: DocumentRef<DocumentModel>;\n`;
+  output += `  withTransaction(fn: () => void, description?: EditDescription): void;\n`;
+  output += `  deleteRecord<M extends Model>(ref: RecordRef<M>): void;\n`;
+  output += `}\n\n`;
+
   // Generate per-version VersionedDocRef interfaces
   for (const { version, schema: versionSchema } of supportedVersions) {
     const changed = changedModelsPerVersion.get(version) ?? new Set<string>();
 
-    output += `export interface VersionedDocRef_v${version} extends DocumentRef<DocumentModel> {\n`;
+    output += `export interface VersionedDocRef_v${version} extends VersionedDocRefBase {\n`;
     output += `  readonly version: ${version};\n`;
 
     // updateRecord overloads — record models get write types, union models get Partial
@@ -297,9 +302,6 @@ export function generateScopeFromSchema(
     output +=
       `  setCollectionRecord<M extends Model>(model: M, id: RecordId, data: ModelData<M>): void;\n`;
 
-    // deleteRecord
-    output += `  deleteRecord<M extends Model>(ref: RecordRef<M>): void;\n`;
-
     output += `}\n\n`;
   }
 
@@ -311,28 +313,32 @@ export function generateScopeFromSchema(
     output += `export type VersionedDocRef = ${unionMembers};\n`;
   }
 
-  // Factory function
+  // createVersionedDocRef — wrap an existing DocumentRef
+  output += `\n/**\n`;
+  output += ` * Wrap a DocumentRef in a version-aware VersionedDocRef.\n`;
+  output += ` * @param version - Explicit version override. When omitted the version is\n`;
+  output += ` *   read from the schema metadata (latest).\n`;
+  output += ` */\n`;
+  output += `export function createVersionedDocRef(\n`;
+  output += `  docRef: DocumentRef<DocumentModel>,\n`;
+  output += `  version?: SupportedVersions,\n`;
+  output += `): VersionedDocRef {\n`;
   output +=
-    `\nexport function createVersionedDocRef(docRef: DocumentRef<DocumentModel>): VersionedDocRef {\n`;
-  output += `  const version = getMetadata(docRef.schema).version as SupportedVersions;\n`;
-  output += `  const ref = Object.create(docRef) as VersionedDocRef;\n`;
-  output += `  Object.defineProperties(ref, {\n`;
-  output += `    version: { value: version, enumerable: true },\n`;
-  output += `    updateRecord: {\n`;
-  output +=
-    `      value: (recordRef: RecordRef, data: unknown) => recordRef.update(data as any),\n`;
+    `  const resolvedVersion = version ?? getMetadata(docRef.schema).version as SupportedVersions;\n`;
+  output += `  return {\n`;
+  output += `    version: resolvedVersion,\n`;
+  output += `    ref: docRef,\n`;
+  output += `    withTransaction: (fn: () => void, description?: EditDescription) =>\n`;
+  output += `      docRef.withTransaction(fn, description),\n`;
+  output += `    updateRecord: (recordRef: RecordRef, data: unknown) =>\n`;
+  output += `      recordRef.update(data as any),\n`;
+  output += `    setCollectionRecord: (model: Model, id: RecordId, data: unknown) => {\n`;
+  output += `      const collection: RecordCollectionRef = docRef.getRecords(model);\n`;
+  output += `      return collection.set(id, data as any);\n`;
   output += `    },\n`;
-  output += `    setCollectionRecord: {\n`;
-  output += `      value: (model: Model, id: RecordId, data: unknown) => {\n`;
-  output += `        const collection: RecordCollectionRef = docRef.getRecords(model);\n`;
-  output += `        return collection.set(id, data as any);\n`;
-  output += `      },\n`;
-  output += `    },\n`;
-  output += `    deleteRecord: {\n`;
-  output += `      value: (recordRef: RecordRef) => recordRef.delete(),\n`;
-  output += `    },\n`;
-  output += `  });\n`;
-  output += `  return ref;\n`;
+  output += `    deleteRecord: (recordRef: RecordRef) =>\n`;
+  output += `      recordRef.delete(),\n`;
+  output += `  } as VersionedDocRef;\n`;
   output += `}\n`;
 
   return output;
