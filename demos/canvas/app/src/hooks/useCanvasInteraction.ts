@@ -15,7 +15,7 @@
  */
 
 import type { NodeShapeModel, VersionedDocRef } from "@demo/canvas.sdk";
-import { ActivityEventModel } from "@demo/canvas.sdk";
+import { ActivityEventModel, matchVersion } from "@demo/canvas.sdk";
 import type { RecordRef } from "@palantir/pack.document-schema.model-types";
 import { ActivityEvents } from "@palantir/pack.document-schema.model-types";
 import type { MouseEvent } from "react";
@@ -103,14 +103,11 @@ export function useCanvasInteraction(
 
         doc.withTransaction(
           () => {
-            switch (doc.version) {
-              case 1:
-                doc.updateRecord(selectedShapeRef, { color });
-                break;
-              case 2:
-                doc.updateRecord(selectedShapeRef, { fillColor: color, strokeColor: color });
-                break;
-            }
+            matchVersion(doc, {
+              1: doc => doc.updateRecord(selectedShapeRef, { color }),
+              2: doc =>
+                doc.updateRecord(selectedShapeRef, { fillColor: color, strokeColor: color }),
+            });
           },
           ActivityEvents.describeEdit(ActivityEventModel, {
             eventType: "shapeUpdate",

@@ -51,3 +51,18 @@ export type VersionedDocRef = VersionedDocRef_v1 | VersionedDocRef_v2;
 export function asVersioned(docRef: DocumentRef<DocumentModel>): VersionedDocRef {
   return docRef as VersionedDocRef;
 }
+
+/**
+ * Exhaustive version handler. TypeScript enforces that every supported
+ * version has a corresponding handler — adding a new schema version
+ * produces a compile error at every call site until handled.
+ */
+export function matchVersion<R>(
+  doc: VersionedDocRef,
+  handlers: {
+  readonly 1: (doc: VersionedDocRef_v1) => R;
+  readonly 2: (doc: VersionedDocRef_v2) => R;
+  },
+): R {
+  return (handlers as Record<number, (doc: VersionedDocRef) => R>)[doc.version]!(doc);
+}

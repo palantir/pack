@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { ActivityEventModel, NodeShapeModel } from "@demo/canvas.sdk";
+import { ActivityEventModel, matchVersion, NodeShapeModel } from "@demo/canvas.sdk";
 import type { VersionedDocRef } from "@demo/canvas.sdk";
 import { generateId } from "@palantir/pack.core";
 import type { RecordId, RecordRef } from "@palantir/pack.document-schema.model-types";
@@ -45,24 +45,22 @@ export function useCanvasShapes(doc: VersionedDocRef): UseCanvasShapesResult {
 
       await doc.withTransaction(
         () => {
-          switch (doc.version) {
-            case 1:
+          matchVersion(doc, {
+            1: doc =>
               doc.setCollectionRecord(NodeShapeModel, id, {
                 ...bounds,
                 color,
                 shapeType,
-              });
-              break;
-            case 2:
+              }),
+            2: doc =>
               doc.setCollectionRecord(NodeShapeModel, id, {
                 ...bounds,
                 fillColor: color,
                 strokeColor: color,
                 opacity: 1.0,
                 shapeType,
-              });
-              break;
-          }
+              }),
+          });
         },
         ActivityEvents.describeEdit(ActivityEventModel, {
           eventType: "shapeAdd",

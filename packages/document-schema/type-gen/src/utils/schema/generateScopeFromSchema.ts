@@ -305,5 +305,25 @@ export function generateScopeFromSchema(
   output += `  return docRef as VersionedDocRef;\n`;
   output += `}\n`;
 
+  // matchVersion — exhaustive version handler
+  const handlerProps = supportedVersions.map(
+    v => `  readonly ${v.version}: (doc: VersionedDocRef_v${v.version}) => R;`,
+  ).join("\n");
+
+  output += `\n/**\n`;
+  output += ` * Exhaustive version handler. TypeScript enforces that every supported\n`;
+  output += ` * version has a corresponding handler — adding a new schema version\n`;
+  output += ` * produces a compile error at every call site until handled.\n`;
+  output += ` */\n`;
+  output += `export function matchVersion<R>(\n`;
+  output += `  doc: VersionedDocRef,\n`;
+  output += `  handlers: {\n`;
+  output += handlerProps + "\n";
+  output += `  },\n`;
+  output += `): R {\n`;
+  output +=
+    `  return (handlers as Record<number, (doc: VersionedDocRef) => R>)[doc.version]!(doc);\n`;
+  output += `}\n`;
+
   return output;
 }
