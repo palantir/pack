@@ -17,6 +17,7 @@
 import { describe, expect, it } from "vitest";
 import type { IFieldTypeUnion } from "../../../lib/pack-docschema-api/pack-docschema-ir/index.js";
 import { convertStepsToIr } from "../convertStepsToIr.js";
+import { parseMigrationSteps } from "../parseMigrationSteps.js";
 import type { MigrationStep } from "../parseMigrationSteps.js";
 
 describe("convertStepsToIr", () => {
@@ -388,5 +389,39 @@ describe("convertStepsToIr", () => {
     const emailField = personRecord.fields.find(f => f.key === "email");
     expect(emailField).toBeDefined();
     expect(emailField?.isOptional).toBe(true);
+  });
+});
+
+describe("parseMigrationSteps generic type validation", () => {
+  function stepsWithField(fieldType: string): unknown {
+    return [{ "add-records": { Foo: { fields: { bar: fieldType } } } }];
+  }
+
+  it.each([
+    "optional<optional<string>>",
+    "array<array<string>>",
+    "list<list<double>>",
+    "array<optional<string>>",
+    "optional<array<array<string>>>",
+    "optional<foo<string>>",
+    "foo<string>",
+  ])("should reject invalid nested generic type: %s", fieldType => {
+    expect(() => parseMigrationSteps(stepsWithField(fieldType))).toThrow();
+  });
+
+  it.each([
+    "optional<string>",
+    "optional<double>",
+    "optional<MyType>",
+    "array<string>",
+    "list<double>",
+    "set<MyType>",
+    "map<string>",
+    "optional<array<string>>",
+    "optional<list<Tag>>",
+    "optional<set<double>>",
+    "optional<map<string>>",
+  ])("should accept valid generic type: %s", fieldType => {
+    expect(() => parseMigrationSteps(stepsWithField(fieldType))).not.toThrow();
   });
 });
