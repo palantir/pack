@@ -15,41 +15,18 @@
  */
 
 import type { DocumentRef, DocumentSchema } from "@palantir/pack.document-schema.model-types";
-import { getMetadata } from "@palantir/pack.document-schema.model-types";
-import { useMemo } from "react";
 
 /**
- * Returns the current schema version of the document.
+ * Returns the schema version the document is currently operating at.
  *
- * This is the primary branching point for developers writing transitional
- * clients that support multiple schema versions. The returned version
- * determines which per-version types and behavior the component should use.
+ * This reads from the document's metadata (set by the backend), falling back
+ * to minSupportedVersion from the schema if the metadata hasn't loaded yet.
  *
  * @param docRef The document reference to read the schema version from.
- * @returns The document's current schema version number.
- *
- * @example
- * ```tsx
- * import { useDocumentSchemaVersion, useDocRef } from "@palantir/pack.state.react";
- * import { DocumentModel } from "@myapp/schema";
- * import { app } from "./appInstance";
- *
- * const MyComponent: React.FC<{ documentId: string }> = ({ documentId }) => {
- *   const docRef = useDocRef(app, DocumentModel, documentId);
- *   const schemaVersion = useDocumentSchemaVersion(docRef);
- *
- *   if (schemaVersion === 1) {
- *     return <EditorV1 docRef={docRef} />;
- *   }
- *   return <EditorV2 docRef={docRef} />;
- * };
- * ```
+ * @returns The document's current operating schema version number.
  */
 export function useDocumentSchemaVersion<D extends DocumentSchema>(
   docRef: DocumentRef<D>,
 ): number {
-  return useMemo(
-    () => getMetadata(docRef.schema).version,
-    [docRef],
-  );
+  return docRef.version;
 }

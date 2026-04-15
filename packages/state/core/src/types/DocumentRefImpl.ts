@@ -33,7 +33,7 @@ import type {
   RecordRef,
   Unsubscribe,
 } from "@palantir/pack.document-schema.model-types";
-import { DocumentRefBrand, getMetadata } from "@palantir/pack.document-schema.model-types";
+import { DocumentRefBrand } from "@palantir/pack.document-schema.model-types";
 import type { StateModuleImpl } from "./StateModule.js";
 import { getStateModule } from "./StateModule.js";
 
@@ -169,8 +169,7 @@ class DocumentRefImpl<T extends DocumentSchema> implements DocumentRef<T> {
   }
 
   get version(): number {
-    // TODO: read from backend-provided document state when available
-    return getMetadata(this.schema).version;
+    return this.#stateModule.getDocumentSchemaVersion(this);
   }
 
   updateRecord(ref: RecordRef, data: unknown): Promise<void> {

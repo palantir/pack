@@ -161,6 +161,16 @@ export abstract class BaseYjsDocumentService<TDoc extends InternalYjsDoc = Inter
     docRef: DocumentRef,
   ) => Promise<void>;
 
+  readonly getDocumentSchemaVersion = (
+    docRef: DocumentRef,
+  ): number => {
+    const { internalDoc } = this.getCreateInternalDoc(docRef);
+    const schemaMeta = getMetadata(internalDoc.schema);
+    return internalDoc.metadata?.schemaVersion
+      ?? schemaMeta.minSupportedVersion
+      ?? schemaMeta.version;
+  };
+
   readonly createDocRef = <const T extends DocumentSchema>(
     id: DocumentId,
     schema: T,
@@ -432,6 +442,19 @@ export abstract class BaseYjsDocumentService<TDoc extends InternalYjsDoc = Inter
 
     const internalDoc = this.createInternalDoc(ref, metadata, initialYDoc);
     this.documents.set(id, internalDoc);
+
+    const schemaMeta = getMetadata(schema);
+    const documentSchemaVersion = internalDoc.metadata?.schemaVersion
+      ?? schemaMeta.minSupportedVersion
+      ?? schemaMeta.version;
+    this.logger.debug("Document loaded", {
+      docId: id,
+      documentSchemaVersion,
+      clientSchemaRange: `[${
+        schemaMeta.minSupportedVersion ?? schemaMeta.version
+      }, ${schemaMeta.version}]`,
+    });
+
     return { internalDocRef: ref, internalDoc, wasExisting: false };
   }
 
