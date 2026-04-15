@@ -1,5 +1,18 @@
 # @palantir/pack.document-schema.type-gen
 
+## 0.8.0
+
+### Minor Changes
+
+- 7081b06: update third party deploy handler to include schema
+- 212466e: Create asset deploy command for first-party document type deployment
+- 1f6f084: refactor schema types
+- 222308b: Support nested generic types in YAML migration step parser
+
+### Patch Changes
+
+- 104c969: add comment to generated json files to not edit the files directly
+
 ## 0.7.0
 
 ### Minor Changes
