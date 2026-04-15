@@ -18,6 +18,7 @@ import { describe, expect, it } from "vitest";
 import type { IFieldTypeUnion } from "../../../lib/pack-docschema-api/pack-docschema-ir/index.js";
 import { convertStepsToIr } from "../convertStepsToIr.js";
 import type { MigrationStep } from "../parseMigrationSteps.js";
+import { parseMigrationSteps } from "../parseMigrationSteps.js";
 
 describe("convertStepsToIr", () => {
   it("should convert simple record types to IR format", () => {
@@ -289,6 +290,64 @@ describe("convertStepsToIr", () => {
     });
   });
 
+  it("should convert optional array types to IR format", () => {
+    const steps: MigrationStep[] = [
+      {
+        "add-records": {
+          Tag: {
+            fields: {
+              name: "string",
+            },
+          },
+          Container: {
+            docs: "A container with optional collections",
+            fields: {
+              tags: "optional<array<Tag>>",
+              labels: "optional<array<string>>",
+            },
+          },
+        },
+      },
+    ];
+
+    const schema = convertStepsToIr(steps);
+    const containerModel = schema.models["Container"];
+    expect(containerModel).toBeDefined();
+    expect(containerModel?.type).toBe("record");
+    if (containerModel?.type !== "record") throw new Error("Expected record type");
+    const containerRecord = containerModel.record;
+
+    // Check optional array of references
+    const tagsField = containerRecord.fields.find(f => f.key === "tags");
+    expect(tagsField?.isOptional).toBe(true);
+    expect(tagsField?.fieldType).toEqual({
+      type: "array",
+      array: {
+        allowNullValue: false,
+        value: {
+          type: "modelRef",
+          modelRef: {
+            modelTypes: ["Tag"],
+          },
+        },
+      },
+    });
+
+    // Check optional array of primitives
+    const labelsField = containerRecord.fields.find(f => f.key === "labels");
+    expect(labelsField?.isOptional).toBe(true);
+    expect(labelsField?.fieldType).toEqual({
+      type: "array",
+      array: {
+        allowNullValue: false,
+        value: {
+          type: "string",
+          string: {},
+        },
+      },
+    });
+  });
+
   it("should handle modify-records step", () => {
     const steps: MigrationStep[] = [
       {
@@ -330,5 +389,39 @@ describe("convertStepsToIr", () => {
     const emailField = personRecord.fields.find(f => f.key === "email");
     expect(emailField).toBeDefined();
     expect(emailField?.isOptional).toBe(true);
+  });
+});
+
+describe("parseMigrationSteps generic type validation", () => {
+  function stepsWithField(fieldType: string): unknown {
+    return [{ "add-records": { Foo: { fields: { bar: fieldType } } } }];
+  }
+
+  it.each([
+    "optional<optional<string>>",
+    "array<array<string>>",
+    "list<list<double>>",
+    "array<optional<string>>",
+    "optional<array<array<string>>>",
+    "optional<foo<string>>",
+    "foo<string>",
+  ])("should reject invalid nested generic type: %s", fieldType => {
+    expect(() => parseMigrationSteps(stepsWithField(fieldType))).toThrow();
+  });
+
+  it.each([
+    "optional<string>",
+    "optional<double>",
+    "optional<MyType>",
+    "array<string>",
+    "list<double>",
+    "set<MyType>",
+    "map<string>",
+    "optional<array<string>>",
+    "optional<list<Tag>>",
+    "optional<set<double>>",
+    "optional<map<string>>",
+  ])("should accept valid generic type: %s", fieldType => {
+    expect(() => parseMigrationSteps(stepsWithField(fieldType))).not.toThrow();
   });
 });

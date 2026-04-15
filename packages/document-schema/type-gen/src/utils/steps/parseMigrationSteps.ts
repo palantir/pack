@@ -51,12 +51,17 @@ interface MigrationStep {
 // Define allowed primitive types (matching TypeKind from document-schema-api)
 const primitiveType: z.ZodType<PrimitiveType> = z.enum(["string", "double"]);
 
-// Define generic type patterns like "optional<T>", "list<T>", "array<T>"
+// Define generic type patterns like "optional<T>", "list<T>", "array<T>", "optional<array<T>>"
+// Flat: (optional|list|array|set|map)<primitive_or_TypeRef>
+// Nested: optional<(list|array|set|map)<primitive_or_TypeRef>>
 const genericTypePattern: z.ZodType<string> = z
   .string()
-  .regex(/^(optional|list|array|set|map)<[^<>]+>$/, {
-    message: "Invalid generic type pattern",
-  });
+  .regex(
+    /^(?:(?:list|array|set|map)<[^<>]+>|optional<(?:[^<>]+|(?:list|array|set|map)<[^<>]+>)>)$/,
+    {
+      message: "Invalid generic type pattern",
+    },
+  );
 
 // Reference to other record/union types (capitalized names)
 const typeReference: z.ZodType<string> = z.string().regex(/^[A-Z][a-zA-Z0-9]*$/, {
