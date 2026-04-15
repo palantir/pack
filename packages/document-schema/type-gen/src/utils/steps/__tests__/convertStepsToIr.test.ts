@@ -17,8 +17,8 @@
 import { describe, expect, it } from "vitest";
 import type { IFieldTypeUnion } from "../../../lib/pack-docschema-api/pack-docschema-ir/index.js";
 import { convertStepsToIr } from "../convertStepsToIr.js";
-import { parseMigrationSteps } from "../parseMigrationSteps.js";
 import type { MigrationStep } from "../parseMigrationSteps.js";
+import { parseMigrationSteps } from "../parseMigrationSteps.js";
 
 describe("convertStepsToIr", () => {
   it("should convert simple record types to IR format", () => {
@@ -320,7 +320,7 @@ describe("convertStepsToIr", () => {
     // Check optional array of references
     const tagsField = containerRecord.fields.find(f => f.key === "tags");
     expect(tagsField?.isOptional).toBe(true);
-    expect(tagsField?.value).toEqual({
+    expect(tagsField?.fieldType).toEqual({
       type: "array",
       array: {
         allowNullValue: false,
@@ -336,7 +336,7 @@ describe("convertStepsToIr", () => {
     // Check optional array of primitives
     const labelsField = containerRecord.fields.find(f => f.key === "labels");
     expect(labelsField?.isOptional).toBe(true);
-    expect(labelsField?.value).toEqual({
+    expect(labelsField?.fieldType).toEqual({
       type: "array",
       array: {
         allowNullValue: false,
