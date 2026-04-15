@@ -51,10 +51,10 @@ interface MigrationStep {
 // Define allowed primitive types (matching TypeKind from document-schema-api)
 const primitiveType: z.ZodType<PrimitiveType> = z.enum(["string", "double"]);
 
-// Define generic type patterns like "optional<T>", "list<T>", "array<T>"
+// Define generic type patterns like "optional<T>", "list<T>", "array<T>", "optional<array<T>>"
 const genericTypePattern: z.ZodType<string> = z
   .string()
-  .regex(/^(optional|list|array|set|map)<[^<>]+>$/, {
+  .regex(/^(optional|list|array|set|map)<.+>$/, {
     message: "Invalid generic type pattern",
   });
 

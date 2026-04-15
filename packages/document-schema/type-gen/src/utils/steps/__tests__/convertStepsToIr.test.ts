@@ -289,6 +289,64 @@ describe("convertStepsToIr", () => {
     });
   });
 
+  it("should convert optional array types to IR format", () => {
+    const steps: MigrationStep[] = [
+      {
+        "add-records": {
+          Tag: {
+            fields: {
+              name: "string",
+            },
+          },
+          Container: {
+            docs: "A container with optional collections",
+            fields: {
+              tags: "optional<array<Tag>>",
+              labels: "optional<array<string>>",
+            },
+          },
+        },
+      },
+    ];
+
+    const schema = convertStepsToIr(steps);
+    const containerModel = schema.models["Container"];
+    expect(containerModel).toBeDefined();
+    expect(containerModel?.type).toBe("record");
+    if (containerModel?.type !== "record") throw new Error("Expected record type");
+    const containerRecord = containerModel.record;
+
+    // Check optional array of references
+    const tagsField = containerRecord.fields.find(f => f.key === "tags");
+    expect(tagsField?.isOptional).toBe(true);
+    expect(tagsField?.value).toEqual({
+      type: "array",
+      array: {
+        allowNullValue: false,
+        value: {
+          type: "modelRef",
+          modelRef: {
+            modelTypes: ["Tag"],
+          },
+        },
+      },
+    });
+
+    // Check optional array of primitives
+    const labelsField = containerRecord.fields.find(f => f.key === "labels");
+    expect(labelsField?.isOptional).toBe(true);
+    expect(labelsField?.value).toEqual({
+      type: "array",
+      array: {
+        allowNullValue: false,
+        value: {
+          type: "string",
+          string: {},
+        },
+      },
+    });
+  });
+
   it("should handle modify-records step", () => {
     const steps: MigrationStep[] = [
       {
