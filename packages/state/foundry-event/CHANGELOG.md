@@ -1,5 +1,11 @@
 # @palantir/pack.state.foundry-event
 
+## 0.12.0
+
+### Minor Changes
+
+- 71255f9: Switch to use client supported version range instead of single client version
+
 ## 0.11.0
 
 ### Minor Changes
