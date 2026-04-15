@@ -46,4 +46,19 @@ export interface MigrationRegistry<ModelName extends string = string> {
   steps: MigrationStepDef[];
 }
 
-export type MigrationRegistryMap = Record<string, MigrationRegistry>;
+/**
+ * Migration registry for union models. Instead of having its own fields/steps,
+ * a union delegates to the variant's MigrationRegistry based on the discriminant
+ * value in the data.
+ */
+export interface UnionMigrationRegistry<ModelName extends string = string> {
+  modelName: ModelName;
+  /** The field name used to discriminate between variants. */
+  discriminant: string;
+  /** Maps discriminant values to variant model names in the MigrationRegistryMap. */
+  variants: Record<string, string>;
+}
+
+export type MigrationRegistryEntry = MigrationRegistry | UnionMigrationRegistry;
+
+export type MigrationRegistryMap = Record<string, MigrationRegistryEntry>;

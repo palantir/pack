@@ -59,8 +59,10 @@ export type {
   FieldMigrationDef,
   FieldTypeDescriptor,
   MigrationRegistry,
+  MigrationRegistryEntry,
   MigrationRegistryMap,
   MigrationStepDef,
+  UnionMigrationRegistry,
 } from "./types/Migration.js";
 export { ExternalRefType } from "./types/Model.js";
 export type {

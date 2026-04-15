@@ -195,7 +195,7 @@ export function generateModelMetadataFromSchema(
   }
 
   // Migration imports (only if there are migrations)
-  const migrationNames = recordNames.map(n => `${n}Migrations`);
+  const migrationNames = [...recordNames, ...unionNames].map(n => `${n}Migrations`);
   if (chain.length > 1 && migrationNames.length > 0) {
     output += `import { ${migrationNames.join(", ")} } from "${migrationsImportPath}";\n`;
   }
@@ -270,10 +270,11 @@ export function generateModelMetadataFromSchema(
     }
   }
 
-  // Build migrations map
+  // Build migrations map (includes both record and union entries)
   let migrationsBlock: string;
-  if (chain.length > 1 && recordNames.length > 0) {
-    const migrationEntries = recordNames.map(n => `      ${n}: ${n}Migrations,`).join("\n");
+  const allMigrationNames = [...recordNames, ...unionNames];
+  if (chain.length > 1 && allMigrationNames.length > 0) {
+    const migrationEntries = allMigrationNames.map(n => `      ${n}: ${n}Migrations,`).join("\n");
     migrationsBlock = `    migrations: {\n${migrationEntries}\n    },\n`;
   } else {
     migrationsBlock = "";

@@ -64,6 +64,15 @@ interface RuntimeSchemaUnion {
 type RuntimeSchemaItem = RuntimeSchemaRecord | RuntimeSchemaUnion;
 type RuntimeSchema = Record<string, RuntimeSchemaItem>;
 
+function findRecordExportName(recordName: string, schema: RuntimeSchema): string | null {
+  for (const [exportName, item] of Object.entries(schema)) {
+    if (item.type === SchemaDefKind.RECORD && "fields" in item && item.name === recordName) {
+      return exportName;
+    }
+  }
+  return null;
+}
+
 interface VersionedSchema {
   version: number;
   schema: RuntimeSchema;
@@ -377,7 +386,7 @@ export function generateInternalFromSchema(
   // --- Generate _internal/migrations.ts ---
   let migrations = GENERATED_FILE_HEADER;
   migrations +=
-    `import type { MigrationRegistry } from "@palantir/pack.document-schema.model-types";\n\n`;
+    `import type { MigrationRegistry, UnionMigrationRegistry } from "@palantir/pack.document-schema.model-types";\n\n`;
 
   for (const [exportName, model] of sortedEntries(allRecordModels)) {
     migrations += `export const ${exportName}Migrations: MigrationRegistry<"${exportName}"> = {\n`;
@@ -425,6 +434,33 @@ export function generateInternalFromSchema(
     }
     migrations += `  ],\n`;
 
+    migrations += `};\n\n`;
+  }
+
+  // Generate UnionMigrationRegistry entries for union models
+  const latestSchema = chain[chain.length - 1]!.schema;
+  for (const [exportName, item] of Object.entries(latestSchema)) {
+    if (item.type !== SchemaDefKind.UNION || !("variants" in item)) continue;
+    const union = item as RuntimeSchemaUnion;
+
+    migrations +=
+      `export const ${exportName}Migrations: UnionMigrationRegistry<"${exportName}"> = {\n`;
+    migrations += `  modelName: "${exportName}",\n`;
+    migrations += `  discriminant: "${union.discriminant}",\n`;
+    migrations += `  variants: {\n`;
+    for (const [variantKey, variantField] of Object.entries(union.variants)) {
+      if (
+        variantField.type === "ref" && variantField.refType === "record"
+        && variantField.name != null
+      ) {
+        // Find the export name for this record
+        const variantExportName = findRecordExportName(variantField.name, latestSchema);
+        if (variantExportName != null) {
+          migrations += `    "${variantKey}": "${variantExportName}",\n`;
+        }
+      }
+    }
+    migrations += `  },\n`;
     migrations += `};\n\n`;
   }
 

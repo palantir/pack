@@ -509,13 +509,21 @@ export abstract class BaseYjsDocumentService<TDoc extends InternalYjsDoc = Inter
     // TODO: you cannot resurrect tomb stoned records I think, so need to check for that before notify
     // TODO: perhaps we just call this via onRecordSet instead?
 
+    const storageName = getMetadata(recordRef.model).name;
     YjsSchemaMapper.setRecord(
       internalDoc.yDoc,
-      getMetadata(recordRef.model).name,
+      storageName,
       recordRef.id,
       state,
       internalDoc.migrations,
     );
+
+    this.logger.debug("setRecord", {
+      docId: recordRef.docRef.id,
+      storageName,
+      recordId: recordRef.id,
+      data: state,
+    });
 
     // Call hook method for subclass-specific handling
     this.onRecordSet?.(recordRef, state);
@@ -533,17 +541,34 @@ export abstract class BaseYjsDocumentService<TDoc extends InternalYjsDoc = Inter
       `Cannot update record as document not found: ${recordRef.docRef.id}`,
     );
 
+    const storageName = getMetadata(recordRef.model).name;
     const wasUpdated = YjsSchemaMapper.updateRecord(
       internalDoc.yDoc,
-      getMetadata(recordRef.model).name,
+      storageName,
       recordRef.id,
       partialState,
       internalDoc.migrations,
     );
 
     if (!wasUpdated) {
+      this.logger.debug("updateRecord failed - record not found", {
+        docId: recordRef.docRef.id,
+        storageName,
+        recordId: recordRef.id,
+      });
       return Promise.reject(new Error(`Record not found for update: ${recordRef.id}`));
     }
+
+    const yMap = internalDoc.yDoc.getMap(storageName).get(recordRef.id) as
+      | Y.Map<unknown>
+      | undefined;
+    this.logger.debug("updateRecord", {
+      docId: recordRef.docRef.id,
+      storageName,
+      recordId: recordRef.id,
+      data: partialState,
+      yMapState: yMap != null ? Object.fromEntries(yMap.entries()) : undefined,
+    });
 
     // Call hook method for subclass-specific handling
     this.onRecordSet?.(recordRef, partialState);

@@ -23,7 +23,7 @@ import {
   type RecordId,
 } from "@palantir/pack.document-schema.model-types";
 import * as Y from "yjs";
-import { applyReadLens } from "../migration/MigrationLens.js";
+import { resolveAndApplyLens } from "../migration/MigrationLens.js";
 
 export function initializeDocumentStructure(
   yDoc: Y.Doc,
@@ -93,9 +93,9 @@ export function getRecordSnapshot(
   const rawState = yMapToState(data);
 
   // Apply read lens if migrations exist for this model
-  const registry = migrations?.[storageName];
-  if (registry && registry.steps.length > 0) {
-    return applyReadLens(rawState as Record<string, unknown>, registry, migrations);
+  const entry = migrations?.[storageName];
+  if (entry != null) {
+    return resolveAndApplyLens(rawState as Record<string, unknown>, entry, migrations!);
   }
 
   return rawState;

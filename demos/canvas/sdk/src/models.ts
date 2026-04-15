@@ -4,7 +4,7 @@ import type { DocumentSchema, RecordModel, UnionModel } from "@palantir/pack.doc
 import { Metadata } from "@palantir/pack.document-schema.model-types";
 import type { ActivityEvent, ActivityEventShapeAdd, ActivityEventShapeDelete, ActivityEventShapeUpdate, ActivityShapeAddEvent, ActivityShapeDeleteEvent, ActivityShapeUpdateEvent, NodeShape, NodeShapeBox, NodeShapeCircle, PresenceCursorEvent, PresenceEvent, PresenceEventCursor, PresenceEventSelection, PresenceSelectionEvent, ShapeBox, ShapeCircle } from "./types.js";
 import { ActivityEventSchema, ActivityEventShapeAddSchema, ActivityEventShapeDeleteSchema, ActivityEventShapeUpdateSchema, ActivityShapeAddEventSchema, ActivityShapeDeleteEventSchema, ActivityShapeUpdateEventSchema, NodeShapeSchema, NodeShapeBoxSchema, NodeShapeCircleSchema, PresenceCursorEventSchema, PresenceEventSchema, PresenceEventCursorSchema, PresenceEventSelectionSchema, PresenceSelectionEventSchema, ShapeBoxSchema, ShapeCircleSchema } from "./schema.js";
-import { ActivityShapeAddEventMigrations, ActivityShapeDeleteEventMigrations, ActivityShapeUpdateEventMigrations, PresenceCursorEventMigrations, PresenceSelectionEventMigrations, ShapeBoxMigrations, ShapeCircleMigrations } from "./_internal/migrations.js";
+import { ActivityShapeAddEventMigrations, ActivityShapeDeleteEventMigrations, ActivityShapeUpdateEventMigrations, PresenceCursorEventMigrations, PresenceSelectionEventMigrations, ShapeBoxMigrations, ShapeCircleMigrations, ActivityEventMigrations, NodeShapeMigrations, PresenceEventMigrations } from "./_internal/migrations.js";
 
 export interface ActivityEventModel extends UnionModel<ActivityEvent, typeof ActivityEventSchema> {}
 export const ActivityEventModel: ActivityEventModel = {
@@ -198,6 +198,9 @@ export const DocumentModel = {
       PresenceSelectionEvent: PresenceSelectionEventMigrations,
       ShapeBox: ShapeBoxMigrations,
       ShapeCircle: ShapeCircleMigrations,
+      ActivityEvent: ActivityEventMigrations,
+      NodeShape: NodeShapeMigrations,
+      PresenceEvent: PresenceEventMigrations,
     },
   },
 } as const satisfies DocumentSchema;

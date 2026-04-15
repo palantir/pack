@@ -17,8 +17,50 @@
 import type {
   FieldTypeDescriptor,
   MigrationRegistry,
+  MigrationRegistryEntry,
   MigrationRegistryMap,
+  UnionMigrationRegistry,
 } from "@palantir/pack.document-schema.model-types";
+
+function isUnionRegistry(entry: MigrationRegistryEntry): entry is UnionMigrationRegistry {
+  return "discriminant" in entry;
+}
+
+/**
+ * Resolve a migration registry entry and apply the read lens.
+ *
+ * For record registries, applies the lens directly.
+ * For union registries, reads the discriminant from the data to determine the
+ * variant, then applies that variant's lens.
+ */
+export function resolveAndApplyLens(
+  rawData: Record<string, unknown>,
+  entry: MigrationRegistryEntry,
+  allRegistries: MigrationRegistryMap,
+): Record<string, unknown> {
+  if (isUnionRegistry(entry)) {
+    const discriminantValue = rawData[entry.discriminant];
+    if (typeof discriminantValue === "string") {
+      const variantModelName = entry.variants[discriminantValue];
+      if (variantModelName != null) {
+        const variantRegistry = allRegistries[variantModelName];
+        if (
+          variantRegistry != null && !isUnionRegistry(variantRegistry)
+          && variantRegistry.steps.length > 0
+        ) {
+          return applyReadLens(rawData, variantRegistry, allRegistries);
+        }
+      }
+    }
+    return rawData;
+  }
+
+  if (entry.steps.length > 0) {
+    return applyReadLens(rawData, entry, allRegistries);
+  }
+
+  return rawData;
+}
 
 /**
  * Applies the read lens to raw record data using the migration registry.
@@ -88,9 +130,9 @@ export function applyLensToValue(
     case "primitive":
       return value;
     case "modelRef": {
-      const subRegistry = allRegistries[type.model];
-      if (!subRegistry || subRegistry.steps.length === 0) return value;
-      return applyReadLens(value as Record<string, unknown>, subRegistry, allRegistries);
+      const subEntry = allRegistries[type.model];
+      if (!subEntry) return value;
+      return resolveAndApplyLens(value as Record<string, unknown>, subEntry, allRegistries);
     }
     case "array":
       return (value as unknown[]).map(item => applyLensToValue(item, type.element, allRegistries));
