@@ -72,6 +72,7 @@ export function matchVersion<R>(
   handlers: {
   readonly 1: (doc: VersionedDocRef_v1) => R;
   readonly 2: (doc: VersionedDocRef_v2) => R;
+  readonly 3: (doc: VersionedDocRef_v3) => R;
   },
 ): R {
   return (handlers as Record<number, (doc: VersionedDocRef) => R>)[doc.version]!(doc);
