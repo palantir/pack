@@ -81,8 +81,13 @@ const ConnectedShapeRenderer = memo(function ShapeRenderer({
   shape: NodeShape;
 }) {
   const isSelected = shapeRef.id === selectedShapeId;
-  const color = shape.color ?? DEFAULT_SHAPE_COLOR;
-  const fillColor = `${color}4D`;
+
+  // fillColor/strokeColor are optional in v2 — default when absent.
+  // For migrated v1 records, the lens derives them from `color`.
+  const fill = shape.fillColor ?? DEFAULT_SHAPE_COLOR;
+  const strokeColor = shape.strokeColor ?? DEFAULT_SHAPE_COLOR;
+  const opacity = shape.opacity ?? 1.0;
+  const svgFill = `${fill}4D`;
 
   const remoteSelectingUserIds = useMemo(
     () => userIdsBySelectedNodeId.get(shapeRef.id) ?? new Set<UserId>(),
@@ -96,11 +101,11 @@ const ConnectedShapeRenderer = memo(function ShapeRenderer({
 
   if (shape.shapeType === "box") {
     return (
-      <g key={shapeRef.id}>
+      <g key={shapeRef.id} opacity={opacity}>
         <rect
-          fill={fillColor}
+          fill={svgFill}
           height={shape.bottom - shape.top}
-          stroke={color}
+          stroke={strokeColor}
           strokeWidth={2}
           width={shape.right - shape.left}
           x={shape.left}
@@ -150,14 +155,14 @@ const ConnectedShapeRenderer = memo(function ShapeRenderer({
   const ry = height / 2;
 
   return (
-    <g key={shapeRef.id}>
+    <g key={shapeRef.id} opacity={opacity}>
       <ellipse
         cx={centerX}
         cy={centerY}
-        fill={fillColor}
+        fill={svgFill}
         rx={rx}
         ry={ry}
-        stroke={color}
+        stroke={strokeColor}
         strokeWidth={2}
       />
       {isSelected && (

@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-import type { DocumentModel, NodeShape, NodeShapeModel } from "@demo/canvas.sdk";
-import { ActivityEventModel } from "@demo/canvas.sdk";
-import type { DocumentRef, RecordRef } from "@palantir/pack.document-schema.model-types";
+import type { NodeShapeModel, VersionedDocRef } from "@demo/canvas.sdk";
+import { ActivityEventModel, matchVersion } from "@demo/canvas.sdk";
+import type { RecordRef } from "@palantir/pack.document-schema.model-types";
 import { ActivityEvents } from "@palantir/pack.document-schema.model-types";
 import type { MouseEvent } from "react";
 import { useCallback, useRef, useState } from "react";
@@ -47,7 +47,7 @@ export interface UseCanvasInteractionResult {
 }
 
 export function useCanvasInteraction(
-  doc: DocumentRef<DocumentModel>,
+  doc: VersionedDocRef,
   broadcastSelection: (nodeIds: readonly string[]) => void,
 ): UseCanvasInteractionResult {
   const { addShape, shapeRefs } = useCanvasShapes(doc);
@@ -78,7 +78,7 @@ export function useCanvasInteraction(
       const nodeId = selectedShapeRef.id;
       doc.withTransaction(
         () => {
-          selectedShapeRef.delete();
+          doc.deleteRecord(selectedShapeRef);
         },
         ActivityEvents.describeEdit(ActivityEventModel, {
           eventType: "shapeDelete",
@@ -97,15 +97,23 @@ export function useCanvasInteraction(
         const oldShape = await selectedShapeRef.getSnapshot();
         if (oldShape == null) return;
 
-        await doc.withTransaction(
+        const newShape = oldShape.shapeType === "box"
+          ? { ...oldShape, fillColor: color, strokeColor: color }
+          : { ...oldShape, fillColor: color, strokeColor: color };
+
+        doc.withTransaction(
           () => {
-            return selectedShapeRef.update({ color });
+            matchVersion(doc, {
+              1: doc => doc.updateRecord(selectedShapeRef, { color }),
+              2: doc =>
+                doc.updateRecord(selectedShapeRef, { fillColor: color, strokeColor: color }),
+            });
           },
           ActivityEvents.describeEdit(ActivityEventModel, {
             eventType: "shapeUpdate",
-            newShape: { ...oldShape, color },
             nodeId: selectedShapeRef.id,
             oldShape,
+            newShape,
           }),
         );
       }
@@ -176,13 +184,8 @@ export function useCanvasInteraction(
         });
 
         const shapeType = currentTool === "addBox" ? "box" : "circle";
-        const newShape: NodeShape = {
-          ...bounds,
-          color: currentColor,
-          shapeType,
-        };
 
-        addShape(newShape).then(recordRef => {
+        addShape(shapeType, bounds, currentColor).then(recordRef => {
           selectShapeWithBroadcast(recordRef);
         });
 
@@ -190,7 +193,13 @@ export function useCanvasInteraction(
         setCurrentTool("select");
       }
     },
-    [addShape, currentColor, currentTool, selectShapeWithBroadcast, shapeDragHandlers],
+    [
+      addShape,
+      currentColor,
+      currentTool,
+      selectShapeWithBroadcast,
+      shapeDragHandlers,
+    ],
   );
 
   return {

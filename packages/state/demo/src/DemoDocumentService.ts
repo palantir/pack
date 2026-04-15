@@ -191,10 +191,14 @@ export class DemoDocumentService extends BaseYjsDocumentService<DemoInternalDoc>
     const id = generateDocumentId();
     const docRef = createDocRef(this.app, id, schema);
 
+    const schemaMeta = getMetadata(schema);
+    const schemaVersion = schemaMeta.minSupportedVersion ?? schemaMeta.version;
+
     const metadata: DocumentMetadata = {
       documentTypeName,
       name,
       ontologyRid,
+      schemaVersion,
       security, // TODO: may want to add in auth.getUserId() as owner here
     };
 

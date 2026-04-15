@@ -83,6 +83,19 @@ const schemaModuleSchema = z.object({
 }).catchall(z.unknown());
 
 /**
+ * Strip symbol properties from an object so Zod's z.record(z.string(), …)
+ * doesn't choke on internal symbol metadata (e.g. __schemaVersion).
+ */
+function stripSymbolKeys(obj: unknown): unknown {
+  if (obj == null || typeof obj !== "object" || Array.isArray(obj)) return obj;
+  const result: Record<string, unknown> = {};
+  for (const key of Object.keys(obj as Record<string, unknown>)) {
+    result[key] = (obj as Record<string, unknown>)[key];
+  }
+  return result;
+}
+
+/**
  * Validates that a schema module export contains valid schema definitions
  */
 export function validateSchemaModule(schemaModule: unknown): Record<string, unknown> {
@@ -93,8 +106,12 @@ export function validateSchemaModule(schemaModule: unknown): Record<string, unkn
  * Validates and extracts a schema from a module export
  */
 export function extractValidSchema(schemaModule: unknown): ReturnedSchema {
-  const validatedModule = validateSchemaModule(schemaModule);
-  return validatedModule.default as ReturnedSchema;
+  const mod = schemaModule as Record<string, unknown>;
+  const cleanModule = { ...mod, default: stripSymbolKeys(mod?.default) };
+  validateSchemaModule(cleanModule);
+  // Return the original schema (not the stripped copy) to preserve symbol
+  // metadata (__schemaVersion, __previousSchema) needed for version chain walking.
+  return mod.default as ReturnedSchema;
 }
 
 /**

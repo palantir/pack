@@ -16,9 +16,8 @@
 
 import type { Toaster } from "@blueprintjs/core";
 import { OverlayToaster, Position } from "@blueprintjs/core";
-import { DocumentModel } from "@demo/canvas.sdk";
+import type { DocumentId } from "@palantir/pack.document-schema.model-types";
 import { isValidDocRef } from "@palantir/pack.state.core";
-import { useDocRef } from "@palantir/pack.state.react";
 import type { KeyboardEvent, MouseEvent } from "react";
 import { useCallback, useEffect, useState } from "react";
 import { useParams } from "react-router";
@@ -27,13 +26,14 @@ import { useActivityToast } from "../../hooks/useActivityToast.js";
 import { useBroadcastPresence } from "../../hooks/useBroadcastPresence.js";
 import { useCanvasInteraction } from "../../hooks/useCanvasInteraction.js";
 import { useRemotePresence } from "../../hooks/useRemotePresence.js";
+import { useCanvasDocRef } from "../../pack.js";
 import { CanvasContent } from "./CanvasContent.js";
 import styles from "./CanvasPage.module.css";
 import { CanvasToolbar } from "./CanvasToolbar.js";
 
 export const CanvasPage = () => {
   const { canvasId } = useParams<{ canvasId: string }>();
-  const docRef = useDocRef(app, DocumentModel, canvasId);
+  const doc = useCanvasDocRef(app, canvasId as DocumentId | undefined);
   const [toaster, setToaster] = useState<Toaster | null>(null);
 
   useEffect(() => {
@@ -56,14 +56,14 @@ export const CanvasPage = () => {
     };
   }, []);
 
-  if (!isValidDocRef(docRef)) {
+  if (!isValidDocRef(doc)) {
     return <div>Canvas ID is required</div>;
   }
 
-  const { broadcastCursor, broadcastSelection } = useBroadcastPresence(docRef);
-  const { remoteUsersByUserId, userIdsBySelectedNodeId } = useRemotePresence(docRef);
-  const interaction = useCanvasInteraction(docRef, broadcastSelection);
-  useActivityToast(docRef, toaster);
+  const { broadcastCursor, broadcastSelection } = useBroadcastPresence(doc);
+  const { remoteUsersByUserId, userIdsBySelectedNodeId } = useRemotePresence(doc);
+  const interaction = useCanvasInteraction(doc, broadcastSelection);
+  useActivityToast(doc, toaster);
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
@@ -92,7 +92,7 @@ export const CanvasPage = () => {
         canDelete={interaction.selectedShapeId != null}
         currentColor={interaction.currentColor}
         currentTool={interaction.currentTool}
-        docRef={docRef}
+        doc={doc}
         onColorChange={interaction.setColor}
         onDelete={interaction.deleteSelected}
         onToolChange={interaction.setTool}

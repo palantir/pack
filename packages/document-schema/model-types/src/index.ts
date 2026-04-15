@@ -54,6 +54,16 @@ export { MediaRefBrand } from "./types/MediaRef.js";
 export type { MediaId, MediaRef } from "./types/MediaRef.js";
 export { getMetadata, hasMetadata, Metadata } from "./types/Metadata.js";
 export type { WithMetadata } from "./types/Metadata.js";
+export type {
+  FieldDef,
+  FieldMigrationDef,
+  FieldTypeDescriptor,
+  MigrationRegistry,
+  MigrationRegistryEntry,
+  MigrationRegistryMap,
+  MigrationStepDef,
+  UnionMigrationRegistry,
+} from "./types/Migration.js";
 export { ExternalRefType } from "./types/Model.js";
 export type {
   EditDescription,

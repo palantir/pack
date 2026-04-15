@@ -17,11 +17,13 @@
 import {
   type DocumentSchema,
   getMetadata,
+  type MigrationRegistryMap,
   type Model,
   type ModelData,
   type RecordId,
 } from "@palantir/pack.document-schema.model-types";
 import * as Y from "yjs";
+import { resolveAndApplyLens } from "../migration/MigrationLens.js";
 
 export function initializeDocumentStructure(
   yDoc: Y.Doc,
@@ -54,6 +56,7 @@ export function setRecord(
   storageName: string,
   recordId: RecordId,
   state: ModelData<Model>,
+  _migrations?: MigrationRegistryMap,
 ): boolean {
   const recordsCollection = getRecordsMap(yDoc, storageName);
   const currentRecord = recordsCollection.get(recordId as string) as Y.Map<unknown> | undefined;
@@ -80,13 +83,22 @@ export function getRecordSnapshot(
   yDoc: Y.Doc,
   storageName: string,
   recordId: RecordId,
+  migrations?: MigrationRegistryMap,
 ): unknown {
   const data = getRecordData(yDoc, storageName, recordId);
   if (!data) {
     return undefined;
   }
 
-  return yMapToState(data);
+  const rawState = yMapToState(data);
+
+  // Apply read lens if migrations exist for this model
+  const entry = migrations?.[storageName];
+  if (entry != null) {
+    return resolveAndApplyLens(rawState as Record<string, unknown>, entry, migrations!);
+  }
+
+  return rawState;
 }
 
 export function updateRecord(
@@ -94,6 +106,7 @@ export function updateRecord(
   storageName: string,
   recordId: RecordId,
   partialState: Partial<ModelData<Model>>,
+  _migrations?: MigrationRegistryMap,
 ): boolean {
   const recordsCollection = getRecordsMap(yDoc, storageName);
   const currentRecord = recordsCollection.get(recordId as string) as Y.Map<unknown> | undefined;

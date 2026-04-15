@@ -262,4 +262,106 @@ describe("defineMigration", () => {
     expect(v2Schema.ModifiedRecord.fields.field1).toEqual({ type: "string" });
     expect(v2Schema.ModifiedRecord.fields.field2).toEqual({ type: "double" });
   });
+
+  it("should support addField with MigrationFieldOptions", () => {
+    const v1Schema = {
+      Color: defineRecord("Color", {
+        docs: "A color",
+        fields: {
+          hex: P.String,
+        },
+      }),
+    };
+
+    const v2Schema = defineMigration(v1Schema, schema => ({
+      ColorV2: schema.Color
+        .addField("red", P.Double, {
+          derivedFrom: ["hex"],
+          forward: (old: { hex: string }) => parseInt(old.hex.slice(1, 3), 16),
+        })
+        .build(),
+    }));
+
+    expect(v2Schema.ColorV2.fields.hex).toEqual({ type: "string" });
+    expect(v2Schema.ColorV2.fields.red).toEqual({ type: "double" });
+    assertExactKeys<typeof v2Schema.ColorV2.fields, "hex" | "red">();
+  });
+
+  it("should support addField with AdditiveFieldOptions", () => {
+    const v1Schema = {
+      Item: defineRecord("Item", {
+        docs: "An item",
+        fields: {
+          name: P.String,
+        },
+      }),
+    };
+
+    const v2Schema = defineMigration(v1Schema, schema => ({
+      ItemV2: schema.Item
+        .addField("description", P.String, { default: "" })
+        .build(),
+    }));
+
+    expect(v2Schema.ItemV2.fields.name).toEqual({ type: "string" });
+    expect(v2Schema.ItemV2.fields.description).toEqual({ type: "string" });
+    assertExactKeys<typeof v2Schema.ItemV2.fields, "name" | "description">();
+  });
+
+  it("should support removeField", () => {
+    const v1Schema = {
+      Person: defineRecord("Person", {
+        docs: "A person",
+        fields: {
+          name: P.String,
+          age: P.Double,
+          nickname: P.String,
+        },
+      }),
+    };
+
+    const v2Schema = defineMigration(v1Schema, schema => ({
+      PersonV2: schema.Person.removeField("nickname").build(),
+    }));
+
+    expect(v2Schema.PersonV2.fields.name).toEqual({ type: "string" });
+    expect(v2Schema.PersonV2.fields.age).toEqual({ type: "double" });
+    expect(v2Schema.PersonV2.fields).not.toHaveProperty("nickname");
+    assertExactKeys<typeof v2Schema.PersonV2.fields, "name" | "age">();
+  });
+
+  it("should support removeField + addField combo (color split pattern)", () => {
+    const v1Schema = {
+      Color: defineRecord("Color", {
+        docs: "A color",
+        fields: {
+          hex: P.String,
+        },
+      }),
+    };
+
+    const v2Schema = defineMigration(v1Schema, schema => ({
+      ColorV2: schema.Color
+        .removeField("hex")
+        .addField("red", P.Double, {
+          derivedFrom: ["hex"],
+          forward: (old: { hex: string }) => parseInt(old.hex.slice(1, 3), 16),
+        })
+        .addField("green", P.Double, {
+          derivedFrom: ["hex"],
+          forward: (old: { hex: string }) => parseInt(old.hex.slice(3, 5), 16),
+        })
+        .addField("blue", P.Double, {
+          derivedFrom: ["hex"],
+          forward: (old: { hex: string }) => parseInt(old.hex.slice(5, 7), 16),
+        })
+        .build(),
+    }));
+
+    expect(v2Schema.ColorV2.fields).not.toHaveProperty("hex");
+    expect(v2Schema.ColorV2.fields.red).toEqual({ type: "double" });
+    expect(v2Schema.ColorV2.fields.green).toEqual({ type: "double" });
+    expect(v2Schema.ColorV2.fields.blue).toEqual({ type: "double" });
+    assertExactKeys<typeof v2Schema.ColorV2.fields, "red" | "green" | "blue">();
+  });
 });

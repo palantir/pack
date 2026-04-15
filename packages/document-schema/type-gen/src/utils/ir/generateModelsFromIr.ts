@@ -22,6 +22,12 @@ import { GENERATED_FILE_HEADER } from "../generatedFileHeader.js";
 export interface ModelGeneratorOptions {
   typeImportPath?: string;
   schemaImportPath?: string;
+  /** Latest schema version. Defaults to 1. */
+  version?: number;
+  /** Minimum supported schema version. */
+  minSupportedVersion?: number;
+  /** Record model names that have migration registries in _internal/migrations.ts. */
+  migrationModels?: string[];
 }
 
 export class ModelGenerator {
@@ -74,7 +80,19 @@ export class ModelGenerator {
     }
 
     const schemaImports = Array.from(schemaNames).sort().join(", ");
-    imports += `import { ${schemaImports} } from "${schemaImportPath}";\n\n`;
+    imports += `import { ${schemaImports} } from "${schemaImportPath}";\n`;
+
+    // Import migration registries if configured
+    const migrationModels = this.options?.migrationModels ?? [];
+    if (migrationModels.length > 0) {
+      const migrationImports = migrationModels
+        .map(m => `${m}Migrations`)
+        .sort()
+        .join(", ");
+      imports += `import { ${migrationImports} } from "./_internal/migrations.js";\n`;
+    }
+
+    imports += "\n";
 
     // Generate model constants
     const modelConstants = this.generateModelConstants();
@@ -214,10 +232,27 @@ export const ${modelName}Model: ${modelName}Model = {
       }
     }
 
+    const version = this.options?.version ?? 1;
+    const minSupportedVersion = this.options?.minSupportedVersion;
+    const migrationModels = this.options?.migrationModels ?? [];
+
+    const metadataLines: string[] = [];
+    metadataLines.push(`    version: ${version},`);
+    if (minSupportedVersion != null) {
+      metadataLines.push(`    minSupportedVersion: ${minSupportedVersion},`);
+    }
+    if (migrationModels.length > 0) {
+      const migrationEntries = migrationModels
+        .sort()
+        .map(m => `      ${m}: ${m}Migrations,`)
+        .join("\n");
+      metadataLines.push(`    migrations: {\n${migrationEntries}\n    },`);
+    }
+
     return `export const DocumentModel = {
 ${modelEntries.join(",\n")},
   [Metadata]: {
-    version: 1,
+${metadataLines.join("\n")}
   },
 } as const satisfies DocumentSchema;\n
  export type DocumentModel = typeof DocumentModel;`;

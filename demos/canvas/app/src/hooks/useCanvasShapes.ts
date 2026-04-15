@@ -14,31 +14,53 @@
  * limitations under the License.
  */
 
-import type { DocumentModel, NodeShape } from "@demo/canvas.sdk";
-import { ActivityEventModel, NodeShapeModel } from "@demo/canvas.sdk";
+import { ActivityEventModel, matchVersion, NodeShapeModel } from "@demo/canvas.sdk";
+import type { VersionedDocRef } from "@demo/canvas.sdk";
 import { generateId } from "@palantir/pack.core";
-import type { DocumentRef, RecordRef } from "@palantir/pack.document-schema.model-types";
+import type { RecordId, RecordRef } from "@palantir/pack.document-schema.model-types";
 import { ActivityEvents } from "@palantir/pack.document-schema.model-types";
 import { isValidRecordRef } from "@palantir/pack.state.core";
 import { useRecords } from "@palantir/pack.state.react";
 import { useCallback } from "react";
 
 export interface UseCanvasShapesResult {
-  readonly addShape: (shape: NodeShape) => Promise<RecordRef<typeof NodeShapeModel>>;
+  readonly addShape: (
+    shapeType: "box" | "circle",
+    bounds: { top: number; left: number; bottom: number; right: number },
+    color: string,
+  ) => Promise<RecordRef<typeof NodeShapeModel>>;
   readonly shapeRefs: readonly RecordRef<typeof NodeShapeModel>[];
 }
 
-export function useCanvasShapes(docRef: DocumentRef<DocumentModel>): UseCanvasShapesResult {
-  const shapeRefs = useRecords(docRef, NodeShapeModel);
+export function useCanvasShapes(doc: VersionedDocRef): UseCanvasShapesResult {
+  const shapeRefs = useRecords(doc, NodeShapeModel);
 
   const addShape = useCallback(
-    async (shape: NodeShape): Promise<RecordRef<typeof NodeShapeModel>> => {
-      const collection = docRef.getRecords(NodeShapeModel);
-      const id = `shape-${generateId()}`;
+    async (
+      shapeType: "box" | "circle",
+      bounds: { top: number; left: number; bottom: number; right: number },
+      color: string,
+    ): Promise<RecordRef<typeof NodeShapeModel>> => {
+      const id = `shape-${generateId()}` as RecordId;
 
-      await docRef.withTransaction(
+      await doc.withTransaction(
         () => {
-          return collection.set(id, shape);
+          matchVersion(doc, {
+            1: doc =>
+              doc.setCollectionRecord(NodeShapeModel, id, {
+                ...bounds,
+                color,
+                shapeType,
+              }),
+            2: doc =>
+              doc.setCollectionRecord(NodeShapeModel, id, {
+                ...bounds,
+                fillColor: color,
+                strokeColor: color,
+                opacity: 1.0,
+                shapeType,
+              }),
+          });
         },
         ActivityEvents.describeEdit(ActivityEventModel, {
           eventType: "shapeAdd",
@@ -46,13 +68,14 @@ export function useCanvasShapes(docRef: DocumentRef<DocumentModel>): UseCanvasSh
         }),
       );
 
+      const collection = doc.getRecords(NodeShapeModel);
       const recordRef = collection.get(id);
       if (recordRef == null || !isValidRecordRef(recordRef)) {
         throw new Error(`Failed to create shape with id: ${id}`);
       }
       return recordRef;
     },
-    [docRef],
+    [doc],
   );
 
   return {

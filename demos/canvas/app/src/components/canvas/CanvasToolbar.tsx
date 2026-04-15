@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import type { DocumentRef } from "@palantir/pack.document-schema.model-types";
+import type { VersionedDocRef } from "@demo/canvas.sdk";
 import { useDocMetadata } from "@palantir/pack.state.react";
 import type { ChangeEvent } from "react";
 import { memo, useState } from "react";
@@ -28,7 +28,7 @@ export interface CanvasToolbarProps {
   readonly canDelete: boolean;
   readonly currentColor: string;
   readonly currentTool: ToolMode;
-  readonly docRef: DocumentRef;
+  readonly doc: VersionedDocRef;
   onColorChange: (color: string) => void;
   onDelete: () => void;
   onToolChange: (tool: ToolMode) => void;
@@ -38,12 +38,12 @@ export const CanvasToolbar = memo(function CanvasToolbar({
   canDelete,
   currentColor,
   currentTool,
-  docRef,
+  doc,
   onColorChange,
   onDelete,
   onToolChange,
 }: CanvasToolbarProps) {
-  const { metadata } = useDocMetadata(docRef);
+  const { metadata } = useDocMetadata(doc);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
   const handleColorChange = (e: ChangeEvent<HTMLSelectElement>) => {
@@ -56,7 +56,7 @@ export const CanvasToolbar = memo(function CanvasToolbar({
         {metadata?.name ?? "Untitled"}
       </div>
       <EditCanvasDialog
-        docRef={docRef}
+        docRef={doc}
         isOpen={isEditDialogOpen}
         metadata={metadata}
         setIsOpen={setIsEditDialogOpen}
@@ -88,7 +88,7 @@ export const CanvasToolbar = memo(function CanvasToolbar({
 
       <div className={styles.toolGroup}>
         <label className={styles.label}>
-          Color:
+          {doc.version === 2 ? "Fill/Stroke:" : "Color:"}
           <select className={styles.select} onChange={handleColorChange} value={currentColor}>
             {AVAILABLE_COLORS.map(color => (
               <option key={color} value={color}>
@@ -111,7 +111,7 @@ export const CanvasToolbar = memo(function CanvasToolbar({
       </div>
 
       <div className={styles.toolGroupRight}>
-        <ActivityPanel docRef={docRef} />
+        <ActivityPanel docRef={doc} />
       </div>
     </div>
   );
