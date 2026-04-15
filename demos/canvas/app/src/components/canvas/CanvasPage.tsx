@@ -15,12 +15,13 @@
  */
 
 import type { Toaster } from "@blueprintjs/core";
-import { OverlayToaster, Position } from "@blueprintjs/core";
+import { Callout, OverlayToaster, Position } from "@blueprintjs/core";
+import type { SupportedVersions } from "@demo/canvas.sdk";
 import type { DocumentId } from "@palantir/pack.document-schema.model-types";
 import { isValidDocRef } from "@palantir/pack.state.core";
 import type { KeyboardEvent, MouseEvent } from "react";
 import { useCallback, useEffect, useState } from "react";
-import { useParams } from "react-router";
+import { useParams, useSearchParams } from "react-router";
 import { app } from "../../app.js";
 import { useActivityToast } from "../../hooks/useActivityToast.js";
 import { useBroadcastPresence } from "../../hooks/useBroadcastPresence.js";
@@ -33,7 +34,17 @@ import { CanvasToolbar } from "./CanvasToolbar.js";
 
 export const CanvasPage = () => {
   const { canvasId } = useParams<{ canvasId: string }>();
-  const doc = useCanvasDocRef(app, canvasId as DocumentId | undefined);
+  const [searchParams] = useSearchParams();
+  const schemaOverride = searchParams.get("schema");
+  const versionOverride = schemaOverride != null
+    ? parseInt(schemaOverride, 10) as SupportedVersions
+    : undefined;
+
+  const { doc, persistedVersion } = useCanvasDocRef(
+    app,
+    canvasId as DocumentId | undefined,
+    versionOverride,
+  );
   const [toaster, setToaster] = useState<Toaster | null>(null);
 
   useEffect(() => {
@@ -58,6 +69,18 @@ export const CanvasPage = () => {
 
   if (!isValidDocRef(doc)) {
     return <div>Canvas ID is required</div>;
+  }
+
+  if (versionOverride != null && versionOverride < persistedVersion) {
+    return (
+      <div className={styles.container} style={{ padding: 24 }}>
+        <Callout intent="danger" title="Schema version incompatible">
+          This document has been written at schema version {persistedVersion}. Opening at version
+          {" "}
+          {versionOverride} would lose data. Use <code>?schema={persistedVersion}</code> or higher.
+        </Callout>
+      </div>
+    );
   }
 
   const { broadcastCursor, broadcastSelection } = useBroadcastPresence(doc);

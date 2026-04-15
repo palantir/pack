@@ -444,12 +444,10 @@ export abstract class BaseYjsDocumentService<TDoc extends InternalYjsDoc = Inter
     this.documents.set(id, internalDoc);
 
     const schemaMeta = getMetadata(schema);
-    const documentSchemaVersion = internalDoc.metadata?.schemaVersion
-      ?? schemaMeta.minSupportedVersion
-      ?? schemaMeta.version;
     this.logger.debug("Document loaded", {
       docId: id,
-      documentSchemaVersion,
+      documentSchemaVersion: this.getDocumentSchemaVersion(ref),
+      metadataSchemaVersion: internalDoc.metadata?.schemaVersion,
       clientSchemaRange: `[${
         schemaMeta.minSupportedVersion ?? schemaMeta.version
       }, ${schemaMeta.version}]`,

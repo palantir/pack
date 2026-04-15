@@ -162,17 +162,14 @@ export function useCanvasInteraction(
       if (currentTool === "select") {
         shapeDragHandlers.onMouseMove(e);
       } else if (currentTool === "pen") {
-        setPenPoints(prev => {
-          if (prev == null) return prev;
-          const svg = e.currentTarget;
-          const rect = svg.getBoundingClientRect();
-          const x = e.clientX - rect.left;
-          const y = e.clientY - rect.top;
-          const pressure = ("pressure" in e.nativeEvent)
-            ? (e.nativeEvent as PointerEvent).pressure || 0.5
-            : 0.5;
-          return [...prev, [x, y, pressure]];
-        });
+        const svg = e.currentTarget;
+        const rect = svg.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        const pressure = ("pressure" in e.nativeEvent)
+          ? (e.nativeEvent as PointerEvent).pressure || 0.5
+          : 0.5;
+        setPenPoints(prev => prev == null ? prev : [...prev, [x, y, pressure]]);
       }
     },
     [currentTool, shapeDragHandlers],

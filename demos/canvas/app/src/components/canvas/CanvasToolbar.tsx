@@ -119,6 +119,10 @@ export const CanvasToolbar = memo(function CanvasToolbar({
         </button>
       </div>
 
+      <div className={styles.toolGroup}>
+        <span style={{ fontSize: 12, color: "#8a9ba8" }}>v{doc.version}</span>
+      </div>
+
       <div className={styles.toolGroupRight}>
         <ActivityPanel docRef={doc} />
       </div>
