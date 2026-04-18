@@ -109,9 +109,11 @@ export function useCanvasInteraction(
         doc.withTransaction(
           () => {
             matchVersion(doc, {
-              1: (doc) => doc.updateRecord(selectedShapeRef, { color }),
-              2: (doc) => doc.updateRecord(selectedShapeRef, { fillColor: color, strokeColor: color }),
-              3: (doc) => doc.updateRecord(selectedShapeRef, { fillColor: color, strokeColor: color }),
+              1: doc => doc.updateRecord(selectedShapeRef, { color }),
+              2: doc =>
+                doc.updateRecord(selectedShapeRef, { fillColor: color, strokeColor: color }),
+              3: doc =>
+                doc.updateRecord(selectedShapeRef, { fillColor: color, strokeColor: color }),
             });
           },
           ActivityEvents.describeEdit(ActivityEventModel, {

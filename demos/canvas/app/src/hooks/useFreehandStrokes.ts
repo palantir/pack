@@ -35,12 +35,13 @@ export function useFreehandStrokes(doc: VersionedDocRef): UseFreehandStrokesResu
 
       doc.withTransaction(() => {
         matchVersion(doc, {
-          1: () => { /* FreehandStroke does not exist in v1 */ },
-          2: () => { /* FreehandStroke does not exist in v2 */ },
-          3: (doc) => doc.setCollectionRecord(FreehandStrokeModel, id, {
-            points: JSON.stringify(points),
-            color,
-          }),
+          1: () => {/* FreehandStroke does not exist in v1 */},
+          2: () => {/* FreehandStroke does not exist in v2 */},
+          3: doc =>
+            doc.setCollectionRecord(FreehandStrokeModel, id, {
+              points: JSON.stringify(points),
+              color,
+            }),
         });
       });
     },
