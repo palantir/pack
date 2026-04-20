@@ -44,4 +44,4 @@ export {
 export { createRecordRef, invalidRecordRef, isValidRecordRef } from "./types/RecordRefImpl.js";
 export { getStateModule, STATE_MODULE_ACCESSOR } from "./types/StateModule.js";
 export type { StateModule, WithStateModule } from "./types/StateModule.js";
-export { applyLensToValue, applyReadLens } from "./upgrade/index.js";
+export { applyLensToValue, applyReadLens } from "./upgrade/UpgradeLens.js";

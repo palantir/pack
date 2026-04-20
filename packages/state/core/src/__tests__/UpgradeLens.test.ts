@@ -15,21 +15,25 @@
  */
 
 import type {
+  FieldTypeDescriptor,
   UpgradeRegistry,
   UpgradeRegistryMap,
 } from "@palantir/pack.document-schema.model-types";
 import { describe, expect, it } from "vitest";
 import { applyLensToValue, applyReadLens } from "../upgrade/UpgradeLens.js";
 
+const primitive: FieldTypeDescriptor = { kind: "primitive" };
+const optionalPrimitive: FieldTypeDescriptor = { kind: "optional", inner: primitive };
+
 describe("applyReadLens", () => {
   it("applies forward transform when source fields are present and target is absent", () => {
     const registry: UpgradeRegistry = {
       modelName: "ShapeBox",
       allFields: {
-        left: { type: { kind: "primitive" } },
-        color: { type: { kind: "optional", inner: { kind: "primitive" } } },
-        fillColor: { type: { kind: "optional", inner: { kind: "primitive" } } },
-        strokeColor: { type: { kind: "optional", inner: { kind: "primitive" } } },
+        left: { type: primitive },
+        color: { type: optionalPrimitive },
+        fillColor: { type: optionalPrimitive },
+        strokeColor: { type: optionalPrimitive },
       },
       steps: [
         {
@@ -63,8 +67,8 @@ describe("applyReadLens", () => {
     const registry: UpgradeRegistry = {
       modelName: "ShapeBox",
       allFields: {
-        left: { type: { kind: "primitive" } },
-        opacity: { type: { kind: "optional", inner: { kind: "primitive" } }, default: 1.0 },
+        left: { type: primitive },
+        opacity: { type: optionalPrimitive, default: 1.0 },
       },
       steps: [
         {
@@ -92,8 +96,8 @@ describe("applyReadLens", () => {
     const registry: UpgradeRegistry = {
       modelName: "ShapeBox",
       allFields: {
-        color: { type: { kind: "optional", inner: { kind: "primitive" } } },
-        fillColor: { type: { kind: "optional", inner: { kind: "primitive" } } },
+        color: { type: optionalPrimitive },
+        fillColor: { type: optionalPrimitive },
       },
       steps: [
         {
@@ -119,7 +123,7 @@ describe("applyReadLens", () => {
     const registry: UpgradeRegistry = {
       modelName: "ShapeBox",
       allFields: {
-        fillColor: { type: { kind: "optional", inner: { kind: "primitive" } } },
+        fillColor: { type: optionalPrimitive },
       },
       steps: [
         {
@@ -145,9 +149,9 @@ describe("applyReadLens", () => {
     const registry: UpgradeRegistry = {
       modelName: "ShapeBox",
       allFields: {
-        color: { type: { kind: "optional", inner: { kind: "primitive" } } },
-        hexColor: { type: { kind: "optional", inner: { kind: "primitive" } } },
-        rgbaColor: { type: { kind: "optional", inner: { kind: "primitive" } } },
+        color: { type: optionalPrimitive },
+        hexColor: { type: optionalPrimitive },
+        rgbaColor: { type: optionalPrimitive },
       },
       steps: [
         {
@@ -184,7 +188,7 @@ describe("applyReadLens", () => {
     const registry: UpgradeRegistry = {
       modelName: "ShapeBox",
       allFields: {
-        left: { type: { kind: "primitive" } },
+        left: { type: primitive },
       },
       steps: [],
     };
@@ -200,8 +204,8 @@ describe("applyReadLens", () => {
     const innerRegistry: UpgradeRegistry = {
       modelName: "Color",
       allFields: {
-        hex: { type: { kind: "optional", inner: { kind: "primitive" } } },
-        rgba: { type: { kind: "optional", inner: { kind: "primitive" } } },
+        hex: { type: optionalPrimitive },
+        rgba: { type: optionalPrimitive },
       },
       steps: [
         {
@@ -220,7 +224,7 @@ describe("applyReadLens", () => {
     const outerRegistry: UpgradeRegistry = {
       modelName: "ShapeBox",
       allFields: {
-        left: { type: { kind: "primitive" } },
+        left: { type: primitive },
         color: { type: { kind: "modelRef", model: "Color" } },
       },
       steps: [],
@@ -243,8 +247,8 @@ describe("applyReadLens", () => {
     const itemRegistry: UpgradeRegistry = {
       modelName: "Item",
       allFields: {
-        name: { type: { kind: "primitive" } },
-        label: { type: { kind: "optional", inner: { kind: "primitive" } } },
+        name: { type: primitive },
+        label: { type: optionalPrimitive },
       },
       steps: [
         {
@@ -290,8 +294,8 @@ describe("applyReadLens", () => {
     const valueRegistry: UpgradeRegistry = {
       modelName: "Config",
       allFields: {
-        value: { type: { kind: "primitive" } },
-        displayValue: { type: { kind: "optional", inner: { kind: "primitive" } } },
+        value: { type: primitive },
+        displayValue: { type: optionalPrimitive },
       },
       steps: [
         {
@@ -352,8 +356,8 @@ describe("null / undefined / missing-key semantics", () => {
   const registry: UpgradeRegistry = {
     modelName: "Item",
     allFields: {
-      name: { type: { kind: "optional", inner: { kind: "primitive" } } },
-      label: { type: { kind: "optional", inner: { kind: "primitive" } } },
+      name: { type: optionalPrimitive },
+      label: { type: optionalPrimitive },
     },
     steps: [
       {
@@ -422,7 +426,7 @@ describe("applyLensToValue — optional null/undefined", () => {
   it("undefined — returns undefined without recursing into inner type", () => {
     const result = applyLensToValue(
       undefined,
-      { kind: "optional", inner: { kind: "primitive" } },
+      optionalPrimitive,
       {},
     );
     expect(result).toBeUndefined();
@@ -431,7 +435,7 @@ describe("applyLensToValue — optional null/undefined", () => {
   it("null — passes through to inner type (null is a present value)", () => {
     const result = applyLensToValue(
       null,
-      { kind: "optional", inner: { kind: "primitive" } },
+      optionalPrimitive,
       {},
     );
     expect(result).toBeNull();
@@ -440,14 +444,14 @@ describe("applyLensToValue — optional null/undefined", () => {
 
 describe("applyLensToValue", () => {
   it("returns primitive values unchanged", () => {
-    const result = applyLensToValue("hello", { kind: "primitive" }, {});
+    const result = applyLensToValue("hello", primitive, {});
     expect(result).toBe("hello");
   });
 
   it("returns undefined for optional undefined values", () => {
     const result = applyLensToValue(
       undefined,
-      { kind: "optional", inner: { kind: "primitive" } },
+      optionalPrimitive,
       {},
     );
     expect(result).toBeUndefined();
@@ -456,7 +460,7 @@ describe("applyLensToValue", () => {
   it("unwraps optional for non-undefined values", () => {
     const result = applyLensToValue(
       "hello",
-      { kind: "optional", inner: { kind: "primitive" } },
+      optionalPrimitive,
       {},
     );
     expect(result).toBe("hello");
