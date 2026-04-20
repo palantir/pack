@@ -17,12 +17,7 @@
 import { describe, expect, it } from "vitest";
 import type { SchemaBuilder } from "../defineMigration.js";
 import { defineRecord } from "../defineRecord.js";
-import {
-  __previousSchema,
-  __schemaVersion,
-  defineSchemaUpdate,
-  nextSchema,
-} from "../defineSchemaUpdate.js";
+import { defineSchemaUpdate, isVersionedSchema, nextSchema } from "../defineSchemaUpdate.js";
 import { defineUnion } from "../defineUnion.js";
 import * as P from "../primitives.js";
 import { assertExactKeys, assertHasKeys, assertTypeEquals } from "./testTypeUtils.js";
@@ -44,15 +39,15 @@ describe("defineSchemaUpdate", () => {
 
     const schemaV2 = nextSchema(schemaV1).addSchemaUpdate(addAge).build();
 
-    expect(schemaV2.Person).toBe(schemaV1.Person);
-    expect(schemaV2.PersonV2.fields.name).toEqual({ type: "string" });
-    expect(schemaV2.PersonV2.fields.age).toEqual({ type: "double" });
-    expect((schemaV2 as Record<symbol, unknown>)[__schemaVersion]).toBe(2);
+    expect(schemaV2.models.Person).toBe(schemaV1.Person);
+    expect(schemaV2.models.PersonV2.fields.name).toEqual({ type: "string" });
+    expect(schemaV2.models.PersonV2.fields.age).toEqual({ type: "double" });
+    expect(schemaV2.version).toBe(2);
 
-    assertHasKeys<typeof schemaV2, "Person" | "PersonV2">();
-    assertExactKeys<typeof schemaV2.PersonV2.fields, "name" | "age">();
-    assertTypeEquals<typeof schemaV2.PersonV2.fields.name, P.String>();
-    assertTypeEquals<typeof schemaV2.PersonV2.fields.age, P.Double>();
+    assertHasKeys<typeof schemaV2.models, "Person" | "PersonV2">();
+    assertExactKeys<typeof schemaV2.models.PersonV2.fields, "name" | "age">();
+    assertTypeEquals<typeof schemaV2.models.PersonV2.fields.name, P.String>();
+    assertTypeEquals<typeof schemaV2.models.PersonV2.fields.age, P.Double>();
   });
 
   it("should compose multiple schema updates in one version", () => {
@@ -104,24 +99,24 @@ describe("defineSchemaUpdate", () => {
       .addSchemaUpdate(addOpacity)
       .build();
 
-    expect(schemaV2.ShapeBox.fields.fillColor).toEqual({
+    expect(schemaV2.models.ShapeBox.fields.fillColor).toEqual({
       type: "optional",
       item: { type: "string" },
     });
-    expect(schemaV2.ShapeBox.fields.opacity).toEqual({
+    expect(schemaV2.models.ShapeBox.fields.opacity).toEqual({
       type: "optional",
       item: { type: "double" },
     });
-    expect(schemaV2.ShapeBox.fields.left).toEqual({ type: "double" });
-    expect(schemaV2.ShapeCircle.fields.fillColor).toEqual({
+    expect(schemaV2.models.ShapeBox.fields.left).toEqual({ type: "double" });
+    expect(schemaV2.models.ShapeCircle.fields.fillColor).toEqual({
       type: "optional",
       item: { type: "string" },
     });
-    expect(schemaV2.ShapeCircle.fields.opacity).toEqual({
+    expect(schemaV2.models.ShapeCircle.fields.opacity).toEqual({
       type: "optional",
       item: { type: "double" },
     });
-    expect((schemaV2 as Record<symbol, unknown>)[__schemaVersion]).toBe(2);
+    expect(schemaV2.version).toBe(2);
   });
 
   it("should track version advancement across multiple nextSchema calls", () => {
@@ -143,27 +138,30 @@ describe("defineSchemaUpdate", () => {
 
     const schemaV2 = nextSchema(schemaV1).addSchemaUpdate(addDescription).build();
 
-    expect((schemaV2 as Record<symbol, unknown>)[__schemaVersion]).toBe(2);
+    expect(schemaV2.version).toBe(2);
 
     const addTags = defineSchemaUpdate(
       "addTags",
-      (schema: SchemaBuilder<typeof schemaV2>) => ({
+      (schema: SchemaBuilder<typeof schemaV2.models>) => ({
         Item: schema.Item.addField("tags", P.Optional(P.String)).build(),
       }),
     );
 
     const schemaV3 = nextSchema(schemaV2).addSchemaUpdate(addTags).build();
 
-    expect((schemaV3 as Record<symbol, unknown>)[__schemaVersion]).toBe(3);
-    expect(schemaV3.Item.fields.name).toEqual({ type: "string" });
-    expect(schemaV3.Item.fields.description).toEqual({
+    expect(schemaV3.version).toBe(3);
+    expect(schemaV3.models.Item.fields.name).toEqual({ type: "string" });
+    expect(schemaV3.models.Item.fields.description).toEqual({
       type: "optional",
       item: { type: "string" },
     });
-    expect(schemaV3.Item.fields.tags).toEqual({ type: "optional", item: { type: "string" } });
+    expect(schemaV3.models.Item.fields.tags).toEqual({
+      type: "optional",
+      item: { type: "string" },
+    });
   });
 
-  it("should store __previousSchema reference on built schema", () => {
+  it("should build a walkable version chain via .previous", () => {
     const schemaV1 = {
       Node: defineRecord("Node", {
         docs: "A node",
@@ -182,8 +180,73 @@ describe("defineSchemaUpdate", () => {
 
     const schemaV2 = nextSchema(schemaV1).addSchemaUpdate(addWeight).build();
 
-    expect((schemaV2 as Record<symbol, unknown>)[__previousSchema]).toBe(schemaV1);
-    expect((schemaV2 as Record<symbol, unknown>)[__schemaVersion]).toBe(2);
+    // v2 points back to a synthetic v1 wrapper
+    expect(schemaV2.previous?.models).toBe(schemaV1);
+    expect(schemaV2.previous?.version).toBe(1);
+    expect(schemaV2.previous?.previous).toBeUndefined();
+    expect(schemaV2.version).toBe(2);
+  });
+
+  it("should build a multi-step version chain", () => {
+    const schemaV1 = {
+      Item: defineRecord("Item", {
+        docs: "An item",
+        fields: { name: P.String },
+      }),
+    };
+
+    const schemaV2 = nextSchema(schemaV1)
+      .addSchemaUpdate(
+        defineSchemaUpdate(
+          "addPrice",
+          schema => ({
+            Item: schema.Item.addField("price", P.Double).build(),
+          }),
+        ),
+      )
+      .build();
+
+    const schemaV3 = nextSchema(schemaV2)
+      .addSchemaUpdate(
+        defineSchemaUpdate(
+          "addTags",
+          schema => ({
+            Item: schema.Item.addField("tags", P.Optional(P.String)).build(),
+          }),
+        ),
+      )
+      .build();
+
+    // Walk the chain: v3 -> v2 -> v1 -> undefined
+    expect(schemaV3.version).toBe(3);
+    expect(schemaV3.previous).toBe(schemaV2);
+    expect(schemaV3.previous?.previous?.models).toBe(schemaV1);
+    expect(schemaV3.previous?.previous?.previous).toBeUndefined();
+  });
+
+  it("should correctly identify versioned schemas with isVersionedSchema", () => {
+    const schemaV1 = {
+      Item: defineRecord("Item", {
+        docs: "An item",
+        fields: { name: P.String },
+      }),
+    };
+
+    const schemaV2 = nextSchema(schemaV1)
+      .addSchemaUpdate(
+        defineSchemaUpdate(
+          "addPrice",
+          schema => ({
+            Item: schema.Item.addField("price", P.Double).build(),
+          }),
+        ),
+      )
+      .build();
+
+    expect(isVersionedSchema(schemaV2)).toBe(true);
+    expect(isVersionedSchema(schemaV1)).toBe(false);
+    expect(isVersionedSchema(null)).toBe(false);
+    expect(isVersionedSchema(undefined)).toBe(false);
   });
 
   it("should work with union schema updates", () => {
@@ -221,19 +284,22 @@ describe("defineSchemaUpdate", () => {
 
     const schemaV2 = nextSchema(schemaV1).addSchemaUpdate(addTriangle).build();
 
-    expect(schemaV2.Shape.variants.circle).toEqual({
+    expect(schemaV2.models.Shape.variants.circle).toEqual({
       type: "ref",
       name: "Circle",
       refType: "record",
     });
-    expect(schemaV2.Shape.variants.triangle).toEqual({
+    expect(schemaV2.models.Shape.variants.triangle).toEqual({
       type: "ref",
       name: "Triangle",
       refType: "record",
     });
-    expect((schemaV2 as Record<symbol, unknown>)[__schemaVersion]).toBe(2);
+    expect(schemaV2.version).toBe(2);
 
-    assertExactKeys<typeof schemaV2.Shape.variants, "circle" | "rectangle" | "triangle">();
+    assertExactKeys<
+      typeof schemaV2.models.Shape.variants,
+      "circle" | "rectangle" | "triangle"
+    >();
   });
 
   it("should handle mixed record and union updates in one version", () => {
@@ -276,42 +342,21 @@ describe("defineSchemaUpdate", () => {
       .addSchemaUpdate(addOrgVariant)
       .build();
 
-    expect(schemaV2.PersonV2.fields.name).toEqual({ type: "string" });
-    expect(schemaV2.PersonV2.fields.age).toEqual({ type: "double" });
-    expect(schemaV2.Entity.variants.person).toEqual({
+    expect(schemaV2.models.PersonV2.fields.name).toEqual({ type: "string" });
+    expect(schemaV2.models.PersonV2.fields.age).toEqual({ type: "double" });
+    expect(schemaV2.models.Entity.variants.person).toEqual({
       type: "ref",
       name: "Person",
       refType: "record",
     });
-    expect(schemaV2.Entity.variants.organization).toEqual({
+    expect(schemaV2.models.Entity.variants.organization).toEqual({
       type: "ref",
       name: "Organization",
       refType: "record",
     });
 
-    assertHasKeys<typeof schemaV2, "Person" | "PersonV2" | "Entity">();
-    assertExactKeys<typeof schemaV2.PersonV2.fields, "name" | "age">();
-    assertExactKeys<typeof schemaV2.Entity.variants, "person" | "organization">();
-  });
-
-  it("should not affect enumerable properties with version symbols", () => {
-    const schemaV1 = {
-      Item: defineRecord("Item", {
-        docs: "An item",
-        fields: { name: P.String },
-      }),
-    };
-
-    const addPrice = defineSchemaUpdate(
-      "addPrice",
-      (schema: SchemaBuilder<typeof schemaV1>) => ({
-        Item: schema.Item.addField("price", P.Double).build(),
-      }),
-    );
-
-    const schemaV2 = nextSchema(schemaV1).addSchemaUpdate(addPrice).build();
-
-    // Symbols should not appear in Object.keys
-    expect(Object.keys(schemaV2)).toEqual(["Item"]);
+    assertHasKeys<typeof schemaV2.models, "Person" | "PersonV2" | "Entity">();
+    assertExactKeys<typeof schemaV2.models.PersonV2.fields, "name" | "age">();
+    assertExactKeys<typeof schemaV2.models.Entity.variants, "person" | "organization">();
   });
 });

@@ -17,8 +17,21 @@
 import type { ReturnedSchema, Schema, SchemaBuilder } from "./defineMigration.js";
 import { defineMigration } from "./defineMigration.js";
 
-export const __schemaVersion: unique symbol = Symbol.for("__schemaVersion") as any;
-export const __previousSchema: unique symbol = Symbol.for("__previousSchema") as any;
+export interface VersionedSchema<T extends ReturnedSchema = ReturnedSchema> {
+  readonly models: T;
+  readonly version: number;
+  readonly previous?: VersionedSchema;
+}
+
+export function isVersionedSchema(value: unknown): value is VersionedSchema {
+  return (
+    typeof value === "object"
+    && value != null
+    && "models" in value
+    && "version" in value
+    && typeof (value as VersionedSchema).version === "number"
+  );
+}
 
 export interface SchemaUpdate<T extends ReturnedSchema, S extends ReturnedSchema> {
   readonly name: string;
@@ -36,15 +49,15 @@ export interface SchemaVersionBuilder<T extends ReturnedSchema> {
   addSchemaUpdate<S extends ReturnedSchema>(
     update: SchemaUpdate<T, S>,
   ): SchemaVersionBuilder<T & S>;
-  build(): Schema<T>;
+  build(): VersionedSchema<T>;
 }
 
 class SchemaVersionBuilderImpl<T extends ReturnedSchema> implements SchemaVersionBuilder<T> {
   private readonly schema: Schema<T>;
   private readonly version: number;
-  private readonly previous: Schema<any>;
+  private readonly previous: VersionedSchema;
 
-  constructor(schema: Schema<T>, version: number, previous: Schema<any>) {
+  constructor(schema: Schema<T>, version: number, previous: VersionedSchema) {
     this.schema = schema;
     this.version = version;
     this.previous = previous;
@@ -57,26 +70,26 @@ class SchemaVersionBuilderImpl<T extends ReturnedSchema> implements SchemaVersio
     return new SchemaVersionBuilderImpl(merged, this.version, this.previous);
   }
 
-  build(): Schema<T> {
-    const result = { ...this.schema };
-    Object.defineProperty(result, __schemaVersion, {
-      value: this.version,
-      enumerable: false,
-      writable: false,
-    });
-    Object.defineProperty(result, __previousSchema, {
-      value: this.previous,
-      enumerable: false,
-      writable: false,
-    });
-    return result;
+  build(): VersionedSchema<T> {
+    return {
+      models: { ...this.schema },
+      version: this.version,
+      previous: this.previous,
+    };
   }
 }
 
 export function nextSchema<T extends ReturnedSchema>(
+  previous: VersionedSchema<T>,
+): SchemaVersionBuilder<T>;
+export function nextSchema<T extends ReturnedSchema>(
   previous: Schema<T>,
-): SchemaVersionBuilder<T> {
-  const previousVersion: number = (previous as Record<symbol, unknown>)[__schemaVersion] as number
-    ?? 1;
-  return new SchemaVersionBuilderImpl(previous, previousVersion + 1, previous);
+): SchemaVersionBuilder<T>;
+export function nextSchema(
+  previous: ReturnedSchema | VersionedSchema,
+): SchemaVersionBuilder<ReturnedSchema> {
+  if (isVersionedSchema(previous)) {
+    return new SchemaVersionBuilderImpl(previous.models, previous.version + 1, previous);
+  }
+  return new SchemaVersionBuilderImpl(previous, 2, { models: previous, version: 1 });
 }
