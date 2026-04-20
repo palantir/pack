@@ -23,6 +23,10 @@ export type FieldTypeDescriptor =
   | { kind: "optional"; inner: FieldTypeDescriptor };
 
 export interface FieldLensDef {
+  /**
+   * Source field names. `forward` receives only these fields, not the full record.
+   * When empty, the field is additive — only `default` applies and `forward` is never called.
+   */
   derivedFrom: string[];
   forward: (oldFields: Record<string, unknown>) => unknown;
   default?: unknown;
@@ -42,7 +46,9 @@ export interface UpgradeStepDef {
 
 export interface UpgradeRegistry<ModelName extends string = string> {
   modelName: ModelName;
+  /** All fields in the current schema (not just upgraded ones). Drives recursive lens application on nested types. */
   allFields: Record<string, FieldDef>;
+  /** Must be in version order — the lens walks them sequentially. */
   steps: UpgradeStepDef[];
 }
 
