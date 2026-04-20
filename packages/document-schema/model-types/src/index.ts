@@ -79,6 +79,16 @@ export type { RecordCollectionRef } from "./types/RecordCollectionRef.js";
 export { RecordRefBrand } from "./types/RecordRef.js";
 export type { RecordId, RecordRef } from "./types/RecordRef.js";
 export type { Unsubscribe } from "./types/Unsubscribe.js";
+export type {
+  FieldDef,
+  FieldLensDef,
+  FieldTypeDescriptor,
+  UnionUpgradeRegistry,
+  UpgradeRegistry,
+  UpgradeRegistryEntry,
+  UpgradeRegistryMap,
+  UpgradeStepDef,
+} from "./types/UpgradeLens.js";
 export { UserRefBrand } from "./types/UserRef.js";
 export type { UserId, UserRef } from "./types/UserRef.js";
 export * as ActivityEvents from "./utils/ActivityEvents.js";
