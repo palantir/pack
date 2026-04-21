@@ -14,184 +14,70 @@
  * limitations under the License.
  */
 
-import type { SchemaBuilder, SchemaDefinition } from "@palantir/pack.schema";
-import { defineRecord, defineSchema, defineSchemaUpdate, nextSchema } from "@palantir/pack.schema";
-import * as P from "@palantir/pack.schema";
+import path from "path";
 import { describe, expect, it } from "vitest";
 import { generateVersionedZodFromSchema } from "../generateVersionedZodFromSchema.js";
+import {
+  singleVersionSchema,
+  twoVersionAdditiveSchema,
+  twoVersionFieldRemovalSchema,
+} from "./fixtures.js";
+import { formatWithPrettier } from "./formatWithPrettier.js";
 
 describe("generateVersionedZodFromSchema", () => {
-  it("should generate Zod schemas for a single-version schema (v1 only)", () => {
-    const schemaV1 = defineSchema({
-      ShapeBox: defineRecord("ShapeBox", {
-        docs: "A box shape",
-        fields: {
-          left: P.Double,
-          right: P.Double,
-          top: P.Double,
-          bottom: P.Double,
-          color: P.Optional(P.String),
-        },
-      }),
-    });
+  const snapshotDir = path.join(__dirname, "__snapshots__", "generateVersionedZodFromSchema");
 
-    const result = generateVersionedZodFromSchema(schemaV1);
+  it("single-version schema", async () => {
+    const result = generateVersionedZodFromSchema(singleVersionSchema);
 
-    // Should generate v1 Zod schema
-    expect(result.zodSchemas.size).toBe(1);
-    const zodV1 = result.zodSchemas.get(1)!;
-    expect(zodV1).toContain("export const ShapeBoxSchema_v1 = z.object({");
-    expect(zodV1).toContain("left: z.number()");
-    expect(zodV1).toContain("right: z.number()");
-    expect(zodV1).toContain("top: z.number()");
-    expect(zodV1).toContain("bottom: z.number()");
-    expect(zodV1).toContain("color: z.string().optional()");
-    expect(zodV1).not.toContain(".passthrough()");
-    expect(zodV1).toContain("satisfies ZodType<ShapeBox_v1>");
-
-    // Should have imports
-    expect(zodV1).toContain("import type { ZodType } from \"zod\"");
-    expect(zodV1).toContain("import { z } from \"zod\"");
-    expect(zodV1).toContain("import type { ShapeBox_v1 }");
-
-    // Should generate schema re-export
-    expect(result.schemaReExport).toContain(
-      "export { ShapeBoxSchema_v1 as ShapeBoxSchema } from \"./schema_v1.js\";",
+    await expect(await formatWithPrettier(result.zodSchemas.get(1)!)).toMatchFileSnapshot(
+      path.join(snapshotDir, "single-version", "schema_v1.ts"),
+    );
+    await expect(await formatWithPrettier(result.internalSchema)).toMatchFileSnapshot(
+      path.join(snapshotDir, "single-version", "_internal_schema.ts"),
+    );
+    await expect(await formatWithPrettier(result.schemaReExport)).toMatchFileSnapshot(
+      path.join(snapshotDir, "single-version", "schema.ts"),
     );
   });
 
-  it("should generate per-version Zod schemas for multi-version schemas", () => {
-    const schemaV1 = defineSchema({
-      ShapeBox: defineRecord("ShapeBox", {
-        docs: "A box shape",
-        fields: {
-          left: P.Double,
-          right: P.Double,
-          color: P.Optional(P.String),
-        },
-      }),
-    });
+  it("two-version additive change", async () => {
+    const result = generateVersionedZodFromSchema(twoVersionAdditiveSchema, 1);
 
-    const addFillColor = defineSchemaUpdate(
-      "addFillColor",
-      (schema: SchemaBuilder<typeof schemaV1.models>) => ({
-        ShapeBox: schema.ShapeBox
-          .addField("fillColor", P.Optional(P.String))
-          .build(),
-      }),
+    for (const [version, content] of result.zodSchemas) {
+      await expect(await formatWithPrettier(content)).toMatchFileSnapshot(
+        path.join(snapshotDir, "two-version-additive", `schema_v${version}.ts`),
+      );
+    }
+    await expect(await formatWithPrettier(result.internalSchema)).toMatchFileSnapshot(
+      path.join(snapshotDir, "two-version-additive", "_internal_schema.ts"),
     );
-
-    const schemaV2 = nextSchema(schemaV1).addSchemaUpdate(addFillColor).build();
-
-    const result = generateVersionedZodFromSchema(schemaV2, 1);
-
-    // Should generate both v1 and v2 Zod schemas
-    expect(result.zodSchemas.size).toBe(2);
-
-    // v1 Zod schema
-    const zodV1 = result.zodSchemas.get(1)!;
-    expect(zodV1).toContain("export const ShapeBoxSchema_v1 = z.object({");
-    expect(zodV1).toContain("color: z.string().optional()");
-    expect(zodV1).not.toContain("fillColor");
-
-    // v2 Zod schema
-    const zodV2 = result.zodSchemas.get(2)!;
-    expect(zodV2).toContain("export const ShapeBoxSchema_v2 = z.object({");
-    expect(zodV2).toContain("color: z.string().optional()");
-    expect(zodV2).toContain("fillColor: z.string().optional()");
-    expect(zodV2).toContain("satisfies ZodType<ShapeBox_v2>");
+    await expect(await formatWithPrettier(result.schemaReExport)).toMatchFileSnapshot(
+      path.join(snapshotDir, "two-version-additive", "schema.ts"),
+    );
   });
 
-  it("should generate internal schema with all fields across all versions", () => {
-    // Use manual VersionedSchema for field removal scenario
-    const v1Models = {
-      ShapeBox: defineRecord("ShapeBox", {
-        docs: "A box shape",
-        fields: {
-          left: P.Double,
-          right: P.Double,
-          color: P.Optional(P.String),
-        },
-      }),
-    };
+  it("two-version field removal", async () => {
+    const result = generateVersionedZodFromSchema(twoVersionFieldRemovalSchema, 1);
 
-    const v2Models = {
-      ShapeBox: defineRecord("ShapeBox", {
-        docs: "A box shape",
-        fields: {
-          left: P.Double,
-          right: P.Double,
-          fillColor: P.Optional(P.String),
-          strokeColor: P.Optional(P.String),
-        },
-      }),
-    };
-
-    const schemaV2: SchemaDefinition = {
-      type: "versioned",
-      models: v2Models,
-      version: 2,
-      previous: { type: "initial", models: v1Models },
-    };
-
-    const result = generateVersionedZodFromSchema(schemaV2, 1);
-
-    // Internal schema should include ALL fields from ALL versions, all optional
-    const internal = result.internalSchema;
-    expect(internal).toContain("export const ShapeBoxInternalSchema = z.object({");
-    expect(internal).toContain("left: z.number().optional()");
-    expect(internal).toContain("right: z.number().optional()");
-    expect(internal).toContain("color: z.string().optional()");
-    expect(internal).toContain("fillColor: z.string().optional()");
-    expect(internal).toContain("strokeColor: z.string().optional()");
-    expect(internal).toContain(".passthrough()");
-    expect(internal).not.toContain("satisfies");
+    for (const [version, content] of result.zodSchemas) {
+      await expect(await formatWithPrettier(content)).toMatchFileSnapshot(
+        path.join(snapshotDir, "two-version-field-removal", `schema_v${version}.ts`),
+      );
+    }
+    await expect(await formatWithPrettier(result.internalSchema)).toMatchFileSnapshot(
+      path.join(snapshotDir, "two-version-field-removal", "_internal_schema.ts"),
+    );
+    await expect(await formatWithPrettier(result.schemaReExport)).toMatchFileSnapshot(
+      path.join(snapshotDir, "two-version-field-removal", "schema.ts"),
+    );
   });
 
-  it("should respect minSupportedVersion", () => {
-    const schemaV1 = defineSchema({
-      Item: defineRecord("Item", {
-        docs: "An item",
-        fields: {
-          name: P.String,
-        },
-      }),
-    });
+  it("respects minSupportedVersion default (latest only)", async () => {
+    const result = generateVersionedZodFromSchema(twoVersionAdditiveSchema);
 
-    const addDescription = defineSchemaUpdate(
-      "addDescription",
-      (schema: SchemaBuilder<typeof schemaV1.models>) => ({
-        Item: schema.Item.addField("description", P.Optional(P.String)).build(),
-      }),
-    );
-
-    const schemaV2 = nextSchema(schemaV1).addSchemaUpdate(addDescription).build();
-
-    // Only generate from v2 (default: latest only)
-    const result = generateVersionedZodFromSchema(schemaV2);
     expect(result.zodSchemas.size).toBe(1);
     expect(result.zodSchemas.has(2)).toBe(true);
     expect(result.zodSchemas.has(1)).toBe(false);
-
-    // Generate from v1 onward
-    const resultWithV1 = generateVersionedZodFromSchema(schemaV2, 1);
-    expect(resultWithV1.zodSchemas.size).toBe(2);
-    expect(resultWithV1.zodSchemas.has(1)).toBe(true);
-    expect(resultWithV1.zodSchemas.has(2)).toBe(true);
-  });
-
-  it("should use custom typeImportPathBase", () => {
-    const schemaV1 = defineSchema({
-      Item: defineRecord("Item", {
-        docs: "",
-        fields: {
-          name: P.String,
-        },
-      }),
-    });
-
-    const result = generateVersionedZodFromSchema(schemaV1, undefined, "../types");
-    const zodV1 = result.zodSchemas.get(1)!;
-    expect(zodV1).toContain("from \"../types_v1.js\"");
   });
 });

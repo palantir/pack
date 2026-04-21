@@ -14,78 +14,40 @@
  * limitations under the License.
  */
 
-import type { SchemaBuilder } from "@palantir/pack.schema";
-import { defineRecord, defineSchema, defineSchemaUpdate, nextSchema } from "@palantir/pack.schema";
-import * as P from "@palantir/pack.schema";
+import path from "path";
 import { describe, expect, it } from "vitest";
 import { generateVersionsFromSchema } from "../generateVersionsFromSchema.js";
+import {
+  singleVersionSchema,
+  threeVersionChainSchema,
+  twoVersionAdditiveSchema,
+} from "./fixtures.js";
+import { formatWithPrettier } from "./formatWithPrettier.js";
 
 describe("generateVersionsFromSchema", () => {
-  it("should generate version types for a single-version schema", () => {
-    const schemaV1 = defineSchema({
-      Item: defineRecord("Item", {
-        docs: "",
-        fields: { name: P.String },
-      }),
-    });
+  const snapshotDir = path.join(__dirname, "__snapshots__", "generateVersionsFromSchema");
 
-    const result = generateVersionsFromSchema(schemaV1);
+  it("single-version schema", async () => {
+    const result = generateVersionsFromSchema(singleVersionSchema);
 
-    expect(result).toContain("export type SupportedVersions = 1;");
-    expect(result).toContain("export type LatestVersion = 1;");
-    expect(result).toContain("export type MinSupportedVersion = 1;");
+    await expect(await formatWithPrettier(result)).toMatchFileSnapshot(
+      path.join(snapshotDir, "single-version", "versions.ts"),
+    );
   });
 
-  it("should generate version types for a multi-version schema", () => {
-    const schemaV1 = defineSchema({
-      Item: defineRecord("Item", {
-        docs: "",
-        fields: { name: P.String },
-      }),
-    });
+  it("two-version with minSupportedVersion", async () => {
+    const result = generateVersionsFromSchema(twoVersionAdditiveSchema, 1);
 
-    const addDescription = defineSchemaUpdate(
-      "addDescription",
-      (schema: SchemaBuilder<typeof schemaV1.models>) => ({
-        Item: schema.Item.addField("description", P.Optional(P.String)).build(),
-      }),
+    await expect(await formatWithPrettier(result)).toMatchFileSnapshot(
+      path.join(snapshotDir, "two-version", "versions.ts"),
     );
-
-    const schemaV2 = nextSchema(schemaV1).addSchemaUpdate(addDescription).build();
-
-    const result = generateVersionsFromSchema(schemaV2, 1);
-
-    expect(result).toContain("export type SupportedVersions = 1 | 2;");
-    expect(result).toContain("export type LatestVersion = 2;");
-    expect(result).toContain("export type MinSupportedVersion = 1;");
   });
 
-  it("should respect minSupportedVersion", () => {
-    const schemaV1 = defineSchema({
-      Item: defineRecord("Item", {
-        docs: "",
-        fields: { name: P.String },
-      }),
-    });
+  it("three-version chain", async () => {
+    const result = generateVersionsFromSchema(threeVersionChainSchema, 1);
 
-    const addDescription = defineSchemaUpdate(
-      "addDescription",
-      (schema: SchemaBuilder<typeof schemaV1.models>) => ({
-        Item: schema.Item.addField("description", P.Optional(P.String)).build(),
-      }),
+    await expect(await formatWithPrettier(result)).toMatchFileSnapshot(
+      path.join(snapshotDir, "three-version-chain", "versions.ts"),
     );
-
-    const schemaV2 = nextSchema(schemaV1).addSchemaUpdate(addDescription).build();
-
-    // Default (no minVersion): latest only
-    const resultDefault = generateVersionsFromSchema(schemaV2);
-    expect(resultDefault).toContain("export type SupportedVersions = 2;");
-    expect(resultDefault).toContain("export type LatestVersion = 2;");
-    expect(resultDefault).toContain("export type MinSupportedVersion = 2;");
-
-    // Explicit minVersion = 1
-    const resultWithV1 = generateVersionsFromSchema(schemaV2, 1);
-    expect(resultWithV1).toContain("export type SupportedVersions = 1 | 2;");
-    expect(resultWithV1).toContain("export type MinSupportedVersion = 1;");
   });
 });

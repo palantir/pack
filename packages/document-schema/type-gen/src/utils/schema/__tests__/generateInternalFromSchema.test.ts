@@ -14,140 +14,40 @@
  * limitations under the License.
  */
 
-import type { SchemaDefinition } from "@palantir/pack.schema";
-import { defineRecord, defineSchema } from "@palantir/pack.schema";
-import * as P from "@palantir/pack.schema";
+import path from "path";
 import { describe, expect, it } from "vitest";
 import { generateInternalFromSchema } from "../generateInternalFromSchema.js";
+import { singleVersionSchema, twoVersionFieldRemovalSchema } from "./fixtures.js";
+import { formatWithPrettier } from "./formatWithPrettier.js";
 
 describe("generateInternalFromSchema", () => {
-  function buildCanvasDemo(): SchemaDefinition {
-    const v1Models = {
-      ShapeBox: defineRecord("ShapeBox", {
-        docs: "A box shape",
-        fields: {
-          left: P.Double,
-          right: P.Double,
-          top: P.Double,
-          bottom: P.Double,
-          color: P.Optional(P.String),
-        },
-      }),
-    };
+  const snapshotDir = path.join(__dirname, "__snapshots__", "generateInternalFromSchema");
 
-    const v2Models = {
-      ShapeBox: defineRecord("ShapeBox", {
-        docs: "A box shape",
-        fields: {
-          left: P.Double,
-          right: P.Double,
-          top: P.Double,
-          bottom: P.Double,
-          fillColor: P.Optional(P.String),
-          strokeColor: P.Optional(P.String),
-          opacity: P.Optional(P.Double),
-        },
-      }),
-    };
+  it("two-version field removal", async () => {
+    const result = generateInternalFromSchema(twoVersionFieldRemovalSchema);
 
-    return {
-      type: "versioned",
-      models: v2Models,
-      version: 2,
-      previous: { type: "initial", models: v1Models },
-    };
-  }
-
-  it("should generate internal types with all fields from all versions", () => {
-    const schemaV2 = buildCanvasDemo();
-    const result = generateInternalFromSchema(schemaV2);
-
-    // Internal types should include ALL fields from both v1 and v2
-    expect(result.internalTypes).toContain("export interface ShapeBox__Internal {");
-    expect(result.internalTypes).toContain("readonly bottom: number;");
-    expect(result.internalTypes).toContain("readonly left: number;");
-    expect(result.internalTypes).toContain("readonly right: number;");
-    expect(result.internalTypes).toContain("readonly top: number;");
-    // color was removed in v2, so it should be optional
-    expect(result.internalTypes).toContain("readonly color?: string;");
-    // fillColor, strokeColor, opacity were added in v2, so they should be optional
-    expect(result.internalTypes).toContain("readonly fillColor?: string;");
-    expect(result.internalTypes).toContain("readonly strokeColor?: string;");
-    expect(result.internalTypes).toContain("readonly opacity?: number;");
-  });
-
-  it("should generate migration registry with steps", () => {
-    const schemaV2 = buildCanvasDemo();
-    const result = generateInternalFromSchema(schemaV2);
-
-    // Should import MigrationRegistry
-    expect(result.migrations).toContain(
-      "import type { MigrationRegistry",
+    await expect(await formatWithPrettier(result.internalTypes)).toMatchFileSnapshot(
+      path.join(snapshotDir, "two-version-field-removal", "_internal_types.ts"),
     );
-
-    // Should define ShapeBoxMigrations
-    expect(result.migrations).toContain(
-      "export const ShapeBoxMigrations: MigrationRegistry<\"ShapeBox\">",
+    await expect(await formatWithPrettier(result.migrations)).toMatchFileSnapshot(
+      path.join(snapshotDir, "two-version-field-removal", "_internal_migrations.ts"),
     );
-    expect(result.migrations).toContain("modelName: \"ShapeBox\"");
-
-    // allFields should contain every field
-    expect(result.migrations).toContain("bottom: { type: { kind: ");
-    expect(result.migrations).toContain("color: { type: { kind: ");
-    expect(result.migrations).toContain("fillColor: { type: { kind: ");
-    expect(result.migrations).toContain("opacity: { type: { kind: ");
-
-    // Steps should mention added fields
-    expect(result.migrations).toContain("addedInVersion: 2");
-    expect(result.migrations).toContain("removedFields: [\"color\"]");
+    await expect(await formatWithPrettier(result.internalSchema)).toMatchFileSnapshot(
+      path.join(snapshotDir, "two-version-field-removal", "_internal_schema.ts"),
+    );
   });
 
-  it("should generate internal Zod schemas", () => {
-    const schemaV2 = buildCanvasDemo();
-    const result = generateInternalFromSchema(schemaV2);
+  it("single-version schema (no migrations)", async () => {
+    const result = generateInternalFromSchema(singleVersionSchema);
 
-    // Should import zod
-    expect(result.internalSchema).toContain("import { z } from \"zod\";");
-
-    // Should define internal schema
-    expect(result.internalSchema).toContain("export const ShapeBoxInternalSchema = z.object({");
-    expect(result.internalSchema).toContain("bottom: z.number(),");
-    expect(result.internalSchema).toContain("left: z.number(),");
-    // Optional fields
-    expect(result.internalSchema).toContain("color: z.string().optional(),");
-    expect(result.internalSchema).toContain("fillColor: z.string().optional(),");
-    expect(result.internalSchema).toContain("strokeColor: z.string().optional(),");
-    expect(result.internalSchema).toContain("opacity: z.number().optional(),");
-    // Passthrough
-    expect(result.internalSchema).toContain("}).passthrough();");
-  });
-
-  it("should handle single-version schemas (no migrations)", () => {
-    const schemaV1 = defineSchema({
-      Item: defineRecord("Item", {
-        docs: "An item",
-        fields: {
-          name: P.String,
-          count: P.Double,
-        },
-      }),
-    });
-
-    const result = generateInternalFromSchema(schemaV1);
-
-    // Internal types
-    expect(result.internalTypes).toContain("export interface Item__Internal {");
-    expect(result.internalTypes).toContain("readonly count: number;");
-    expect(result.internalTypes).toContain("readonly name: string;");
-
-    // No migration steps
-    expect(result.migrations).toContain("export const ItemMigrations: MigrationRegistry<\"Item\">");
-    expect(result.migrations).toContain("steps: [");
-    expect(result.migrations).not.toContain("addedInVersion");
-
-    // Internal schema
-    expect(result.internalSchema).toContain("export const ItemInternalSchema = z.object({");
-    expect(result.internalSchema).toContain("count: z.number(),");
-    expect(result.internalSchema).toContain("name: z.string(),");
+    await expect(await formatWithPrettier(result.internalTypes)).toMatchFileSnapshot(
+      path.join(snapshotDir, "single-version", "_internal_types.ts"),
+    );
+    await expect(await formatWithPrettier(result.migrations)).toMatchFileSnapshot(
+      path.join(snapshotDir, "single-version", "_internal_migrations.ts"),
+    );
+    await expect(await formatWithPrettier(result.internalSchema)).toMatchFileSnapshot(
+      path.join(snapshotDir, "single-version", "_internal_schema.ts"),
+    );
   });
 });

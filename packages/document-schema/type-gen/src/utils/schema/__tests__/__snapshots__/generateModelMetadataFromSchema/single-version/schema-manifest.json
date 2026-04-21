@@ -1,0 +1,13 @@
+{
+  "latestVersion": 1,
+  "minSupportedVersion": 1,
+  "models": {
+    "ShapeBox": {
+      "versions": {
+        "1": {
+          "fields": ["bottom", "color", "left", "right", "top"]
+        }
+      }
+    }
+  }
+}
