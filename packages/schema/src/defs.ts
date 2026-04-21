@@ -44,3 +44,4 @@ export interface RecordDef<TFields extends RecordFields = RecordFields> extends 
 }
 
 export type ModelDef = RecordDef | UnionDef;
+export type ModelDefs = Record<string, ModelDef>;

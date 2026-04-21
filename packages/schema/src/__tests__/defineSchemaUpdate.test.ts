@@ -17,29 +17,32 @@
 import { describe, expect, it } from "vitest";
 import type { SchemaBuilder } from "../defineMigration.js";
 import { defineRecord } from "../defineRecord.js";
-import { defineSchemaUpdate, isVersionedSchema, nextSchema } from "../defineSchemaUpdate.js";
+import { defineSchema, defineSchemaUpdate, nextSchema } from "../defineSchemaUpdate.js";
 import { defineUnion } from "../defineUnion.js";
 import * as P from "../primitives.js";
 import { assertExactKeys, assertHasKeys, assertTypeEquals } from "./testTypeUtils.js";
 
 describe("defineSchemaUpdate", () => {
   it("should create a schema update and apply it via nextSchema", () => {
-    const schemaV1 = {
+    const schemaV1 = defineSchema({
       Person: defineRecord("Person", {
         docs: "A person",
         fields: {
           name: P.String,
         },
       }),
-    };
+    });
 
-    const addAge = defineSchemaUpdate("addAge", (schema: SchemaBuilder<typeof schemaV1>) => ({
-      PersonV2: schema.Person.addField("age", P.Double).build(),
-    }));
+    const addAge = defineSchemaUpdate(
+      "addAge",
+      (schema: SchemaBuilder<typeof schemaV1.models>) => ({
+        PersonV2: schema.Person.addField("age", P.Double).build(),
+      }),
+    );
 
     const schemaV2 = nextSchema(schemaV1).addSchemaUpdate(addAge).build();
 
-    expect(schemaV2.models.Person).toBe(schemaV1.Person);
+    expect(schemaV2.models.Person).toBe(schemaV1.models.Person);
     expect(schemaV2.models.PersonV2.fields.name).toEqual({ type: "string" });
     expect(schemaV2.models.PersonV2.fields.age).toEqual({ type: "double" });
     expect(schemaV2.version).toBe(2);
@@ -51,7 +54,7 @@ describe("defineSchemaUpdate", () => {
   });
 
   it("should compose multiple schema updates in one version", () => {
-    const schemaV1 = {
+    const schemaV1 = defineSchema({
       ShapeBox: defineRecord("ShapeBox", {
         docs: "A box shape",
         fields: {
@@ -68,11 +71,11 @@ describe("defineSchemaUpdate", () => {
           color: P.Optional(P.String),
         },
       }),
-    };
+    });
 
     const addFillColor = defineSchemaUpdate(
       "addFillColor",
-      (schema: SchemaBuilder<typeof schemaV1>) => ({
+      (schema: SchemaBuilder<typeof schemaV1.models>) => ({
         ShapeBox: schema.ShapeBox
           .addField("fillColor", P.Optional(P.String))
           .build(),
@@ -84,7 +87,7 @@ describe("defineSchemaUpdate", () => {
 
     const addOpacity = defineSchemaUpdate(
       "addOpacity",
-      (schema: SchemaBuilder<typeof schemaV1>) => ({
+      (schema: SchemaBuilder<typeof schemaV1.models>) => ({
         ShapeBox: schema.ShapeBox
           .addField("opacity", P.Optional(P.Double))
           .build(),
@@ -120,18 +123,18 @@ describe("defineSchemaUpdate", () => {
   });
 
   it("should track version advancement across multiple nextSchema calls", () => {
-    const schemaV1 = {
+    const schemaV1 = defineSchema({
       Item: defineRecord("Item", {
         docs: "An item",
         fields: {
           name: P.String,
         },
       }),
-    };
+    });
 
     const addDescription = defineSchemaUpdate(
       "addDescription",
-      (schema: SchemaBuilder<typeof schemaV1>) => ({
+      (schema: SchemaBuilder<typeof schemaV1.models>) => ({
         Item: schema.Item.addField("description", P.Optional(P.String)).build(),
       }),
     );
@@ -162,38 +165,37 @@ describe("defineSchemaUpdate", () => {
   });
 
   it("should build a walkable version chain via .previous", () => {
-    const schemaV1 = {
+    const schemaV1 = defineSchema({
       Node: defineRecord("Node", {
         docs: "A node",
         fields: {
           label: P.String,
         },
       }),
-    };
+    });
 
     const addWeight = defineSchemaUpdate(
       "addWeight",
-      (schema: SchemaBuilder<typeof schemaV1>) => ({
+      (schema: SchemaBuilder<typeof schemaV1.models>) => ({
         Node: schema.Node.addField("weight", P.Double).build(),
       }),
     );
 
     const schemaV2 = nextSchema(schemaV1).addSchemaUpdate(addWeight).build();
 
-    // v2 points back to a synthetic v1 wrapper
-    expect(schemaV2.previous?.models).toBe(schemaV1);
-    expect(schemaV2.previous?.version).toBe(1);
-    expect(schemaV2.previous?.previous).toBeUndefined();
+    // v2 points back to the v1 InitialSchema
+    expect(schemaV2.previous).toBe(schemaV1);
+    expect(schemaV2.previous.type).toBe("initial");
     expect(schemaV2.version).toBe(2);
   });
 
   it("should build a multi-step version chain", () => {
-    const schemaV1 = {
+    const schemaV1 = defineSchema({
       Item: defineRecord("Item", {
         docs: "An item",
         fields: { name: P.String },
       }),
-    };
+    });
 
     const schemaV2 = nextSchema(schemaV1)
       .addSchemaUpdate(
@@ -217,20 +219,23 @@ describe("defineSchemaUpdate", () => {
       )
       .build();
 
-    // Walk the chain: v3 -> v2 -> v1 -> undefined
+    // Walk the chain: v3 (versioned) -> v2 (versioned) -> v1 (initial)
     expect(schemaV3.version).toBe(3);
     expect(schemaV3.previous).toBe(schemaV2);
-    expect(schemaV3.previous?.previous?.models).toBe(schemaV1);
-    expect(schemaV3.previous?.previous?.previous).toBeUndefined();
+    expect(schemaV3.previous.type).toBe("versioned");
+    if (schemaV3.previous.type === "versioned") {
+      expect(schemaV3.previous.previous).toBe(schemaV1);
+      expect(schemaV3.previous.previous.type).toBe("initial");
+    }
   });
 
-  it("should correctly identify versioned schemas with isVersionedSchema", () => {
-    const schemaV1 = {
+  it("should discriminate via type field on built schemas", () => {
+    const schemaV1 = defineSchema({
       Item: defineRecord("Item", {
         docs: "An item",
         fields: { name: P.String },
       }),
-    };
+    });
 
     const schemaV2 = nextSchema(schemaV1)
       .addSchemaUpdate(
@@ -243,10 +248,8 @@ describe("defineSchemaUpdate", () => {
       )
       .build();
 
-    expect(isVersionedSchema(schemaV2)).toBe(true);
-    expect(isVersionedSchema(schemaV1)).toBe(false);
-    expect(isVersionedSchema(null)).toBe(false);
-    expect(isVersionedSchema(undefined)).toBe(false);
+    expect(schemaV2.type).toBe("versioned");
+    expect(schemaV2.previous.type).toBe("initial");
   });
 
   it("should work with union schema updates", () => {
@@ -265,7 +268,7 @@ describe("defineSchemaUpdate", () => {
       fields: { base: P.Double, height: P.Double },
     });
 
-    const schemaV1 = {
+    const schemaV1 = defineSchema({
       Shape: defineUnion("Shape", {
         docs: "A shape",
         variants: {
@@ -273,11 +276,11 @@ describe("defineSchemaUpdate", () => {
           rectangle: RectangleRecord,
         },
       }),
-    };
+    });
 
     const addTriangle = defineSchemaUpdate(
       "addTriangle",
-      (schema: SchemaBuilder<typeof schemaV1>) => ({
+      (schema: SchemaBuilder<typeof schemaV1.models>) => ({
         Shape: schema.Shape.addVariant("triangle", TriangleRecord).build(),
       }),
     );
@@ -313,7 +316,7 @@ describe("defineSchemaUpdate", () => {
       fields: { orgName: P.String },
     });
 
-    const schemaV1 = {
+    const schemaV1 = defineSchema({
       Person: PersonRecord,
       Entity: defineUnion("Entity", {
         docs: "An entity",
@@ -321,18 +324,18 @@ describe("defineSchemaUpdate", () => {
           person: PersonRecord,
         },
       }),
-    };
+    });
 
     const addAge = defineSchemaUpdate(
       "addAge",
-      (schema: SchemaBuilder<typeof schemaV1>) => ({
+      (schema: SchemaBuilder<typeof schemaV1.models>) => ({
         PersonV2: schema.Person.addField("age", P.Double).build(),
       }),
     );
 
     const addOrgVariant = defineSchemaUpdate(
       "addOrgVariant",
-      (schema: SchemaBuilder<typeof schemaV1>) => ({
+      (schema: SchemaBuilder<typeof schemaV1.models>) => ({
         Entity: schema.Entity.addVariant("organization", OrganizationRecord).build(),
       }),
     );

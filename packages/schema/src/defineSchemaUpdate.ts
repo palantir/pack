@@ -14,82 +14,80 @@
  * limitations under the License.
  */
 
-import type { ReturnedSchema, Schema, SchemaBuilder } from "./defineMigration.js";
+import type { SchemaBuilder } from "./defineMigration.js";
 import { defineMigration } from "./defineMigration.js";
+import type { ModelDefs } from "./defs.js";
 
-export interface VersionedSchema<T extends ReturnedSchema = ReturnedSchema> {
+export interface InitialSchema<T extends ModelDefs = ModelDefs> {
+  readonly type: "initial";
+  readonly models: T;
+}
+
+export interface VersionedSchema<T extends ModelDefs = ModelDefs> {
+  readonly type: "versioned";
   readonly models: T;
   readonly version: number;
-  readonly previous?: VersionedSchema;
+  readonly previous: SchemaDefinition;
 }
 
-export function isVersionedSchema(value: unknown): value is VersionedSchema {
-  return (
-    typeof value === "object"
-    && value != null
-    && "models" in value
-    && "version" in value
-    && typeof (value as VersionedSchema).version === "number"
-  );
+export type SchemaDefinition<T extends ModelDefs = ModelDefs> =
+  | InitialSchema<T>
+  | VersionedSchema<T>;
+
+export function defineSchema<T extends ModelDefs>(models: T): InitialSchema<T> {
+  return { type: "initial", models };
 }
 
-export interface SchemaUpdate<T extends ReturnedSchema, S extends ReturnedSchema> {
+export interface SchemaUpdate<T extends ModelDefs, S extends ModelDefs> {
   readonly name: string;
   readonly migration: (schema: SchemaBuilder<T>) => S;
 }
 
-export function defineSchemaUpdate<T extends ReturnedSchema, S extends ReturnedSchema>(
+export function defineSchemaUpdate<T extends ModelDefs, S extends ModelDefs>(
   name: string,
   migration: (schema: SchemaBuilder<T>) => S,
 ): SchemaUpdate<T, S> {
   return { name, migration };
 }
 
-export interface SchemaVersionBuilder<T extends ReturnedSchema> {
-  addSchemaUpdate<S extends ReturnedSchema>(
+export interface SchemaVersionBuilder<T extends ModelDefs> {
+  addSchemaUpdate<S extends ModelDefs>(
     update: SchemaUpdate<T, S>,
   ): SchemaVersionBuilder<T & S>;
   build(): VersionedSchema<T>;
 }
 
-class SchemaVersionBuilderImpl<T extends ReturnedSchema> implements SchemaVersionBuilder<T> {
-  private readonly schema: Schema<T>;
+class SchemaVersionBuilderImpl<T extends ModelDefs> implements SchemaVersionBuilder<T> {
+  private readonly models: T;
   private readonly version: number;
-  private readonly previous: VersionedSchema;
+  private readonly previous: SchemaDefinition;
 
-  constructor(schema: Schema<T>, version: number, previous: VersionedSchema) {
-    this.schema = schema;
+  constructor(models: T, version: number, previous: SchemaDefinition) {
+    this.models = models;
     this.version = version;
     this.previous = previous;
   }
 
-  addSchemaUpdate<S extends ReturnedSchema>(
+  addSchemaUpdate<S extends ModelDefs>(
     update: SchemaUpdate<T, S>,
   ): SchemaVersionBuilder<T & S> {
-    const merged = defineMigration(this.schema, update.migration);
+    const merged = defineMigration(this.models, update.migration);
     return new SchemaVersionBuilderImpl(merged, this.version, this.previous);
   }
 
   build(): VersionedSchema<T> {
     return {
-      models: { ...this.schema },
+      type: "versioned",
+      models: { ...this.models },
       version: this.version,
       previous: this.previous,
     };
   }
 }
 
-export function nextSchema<T extends ReturnedSchema>(
-  previous: VersionedSchema<T>,
-): SchemaVersionBuilder<T>;
-export function nextSchema<T extends ReturnedSchema>(
-  previous: Schema<T>,
-): SchemaVersionBuilder<T>;
-export function nextSchema(
-  previous: ReturnedSchema | VersionedSchema,
-): SchemaVersionBuilder<ReturnedSchema> {
-  if (isVersionedSchema(previous)) {
-    return new SchemaVersionBuilderImpl(previous.models, previous.version + 1, previous);
-  }
-  return new SchemaVersionBuilderImpl(previous, 2, { models: previous, version: 1 });
+export function nextSchema<T extends ModelDefs>(
+  previous: SchemaDefinition<T>,
+): SchemaVersionBuilder<T> {
+  const prevVersion = previous.type === "versioned" ? previous.version : 1;
+  return new SchemaVersionBuilderImpl(previous.models, prevVersion + 1, previous);
 }

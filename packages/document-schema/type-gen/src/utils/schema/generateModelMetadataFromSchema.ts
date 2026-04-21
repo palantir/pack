@@ -1,0 +1,317 @@
+/*
+ * Copyright 2026 Palantir Technologies, Inc. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+import type { SchemaDefinition } from "@palantir/pack.schema";
+import { formatVariantName } from "../formatVariantName.js";
+import { GENERATED_FILE_HEADER } from "../generatedFileHeader.js";
+
+const SchemaDefKind = {
+  RECORD: "record",
+  UNION: "union",
+} as const;
+
+interface SchemaField {
+  readonly type: string;
+  readonly items?: SchemaField;
+  readonly item?: SchemaField;
+  readonly refType?: "record" | "union";
+  readonly name?: string;
+}
+
+interface RuntimeSchemaRecord {
+  readonly type: typeof SchemaDefKind.RECORD;
+  readonly name: string;
+  readonly docs?: string;
+  readonly fields: Readonly<Record<string, SchemaField>>;
+}
+
+interface RuntimeSchemaUnion {
+  readonly type: typeof SchemaDefKind.UNION;
+  readonly name?: string;
+  readonly variants: Readonly<Record<string, SchemaField>>;
+  readonly discriminant: string;
+}
+
+type RuntimeSchemaItem = RuntimeSchemaRecord | RuntimeSchemaUnion;
+type RuntimeSchema = Record<string, RuntimeSchemaItem>;
+
+interface VersionedSchemaEntry {
+  version: number;
+  schema: RuntimeSchema;
+}
+
+export interface ModelMetadataOutput {
+  /** models.ts content — DocumentModel with version metadata and migration references */
+  modelsFile: string;
+  /** Schema manifest JSON for backend consumption */
+  schemaManifest: SchemaManifestCompact;
+}
+
+export interface SchemaManifestCompact {
+  latestVersion: number;
+  minSupportedVersion: number;
+  models: Record<string, {
+    versions: Record<string, { fields: string[] }>;
+  }>;
+}
+
+function isRecordSchema(item: RuntimeSchemaItem): item is RuntimeSchemaRecord {
+  return item.type === SchemaDefKind.RECORD && "fields" in item;
+}
+
+function isUnionSchema(item: RuntimeSchemaItem): item is RuntimeSchemaUnion {
+  return item.type === SchemaDefKind.UNION && "variants" in item;
+}
+
+function collectVersionChain(input: SchemaDefinition): VersionedSchemaEntry[] {
+  const chain: VersionedSchemaEntry[] = [];
+  let current: SchemaDefinition = input;
+
+  while (current.type === "versioned") {
+    chain.unshift({ version: current.version, schema: current.models as RuntimeSchema });
+    current = current.previous;
+  }
+  chain.unshift({ version: 1, schema: current.models as RuntimeSchema });
+
+  return chain;
+}
+
+/**
+ * Detect which external ref field types (docRef, mediaRef, objectRef, userRef)
+ * are present on a record for its model metadata.
+ */
+function extractExternalRefFieldTypes(
+  record: RuntimeSchemaRecord,
+): Array<[string, string]> {
+  const refs: Array<[string, string]> = [];
+  for (const [fieldName, fieldType] of Object.entries(record.fields)) {
+    const innerType = fieldType.type === "optional" && fieldType.item ? fieldType.item : fieldType;
+    switch (innerType.type) {
+      case "docRef":
+        refs.push([fieldName, "docRef"]);
+        break;
+      case "mediaRef":
+        refs.push([fieldName, "mediaRef"]);
+        break;
+      case "objectRef":
+        refs.push([fieldName, "objectRef"]);
+        break;
+      case "userRef":
+        refs.push([fieldName, "userRef"]);
+        break;
+    }
+  }
+  return refs;
+}
+
+/**
+ * Generate models.ts and schema manifest from a versioned schema chain.
+ *
+ * @param schema - The schema (ReturnedSchema for v1, or VersionedSchema for multi-version)
+ * @param minSupportedVersion - Minimum version this client supports (defaults to latest)
+ * @param options - Configuration for import paths
+ * @returns Object containing generated models.ts content and schema manifest JSON
+ */
+export function generateModelMetadataFromSchema(
+  schema: SchemaDefinition,
+  minSupportedVersion?: number,
+  options?: {
+    typeImportPath?: string;
+    schemaImportPath?: string;
+    migrationsImportPath?: string;
+  },
+): ModelMetadataOutput {
+  const chain = collectVersionChain(schema);
+
+  if (chain.length === 0) {
+    throw new Error("Schema version chain is empty");
+  }
+
+  const latestVersion = chain[chain.length - 1]!.version;
+  const minVersion = minSupportedVersion ?? latestVersion;
+  const latestSchema = chain[chain.length - 1]!.schema;
+
+  const typeImportPath = options?.typeImportPath ?? "./types.js";
+  const schemaImportPath = options?.schemaImportPath ?? "./schema.js";
+  const migrationsImportPath = options?.migrationsImportPath ?? "./_internal/migrations.js";
+
+  // --- Generate models.ts ---
+  let output = GENERATED_FILE_HEADER;
+
+  // Collect model names for imports
+  const recordNames: string[] = [];
+  const unionNames: string[] = [];
+  const variantNames: string[] = [];
+
+  for (const [exportName, item] of Object.entries(latestSchema)) {
+    if (isRecordSchema(item)) {
+      recordNames.push(exportName);
+    } else if (isUnionSchema(item)) {
+      unionNames.push(exportName);
+      for (const variantName of Object.keys(item.variants)) {
+        variantNames.push(`${exportName}${formatVariantName(variantName)}`);
+      }
+    }
+  }
+
+  const allModelNames = [...recordNames, ...unionNames, ...variantNames].sort();
+
+  // Imports
+  const modelTypesImports: string[] = ["DocumentSchema"];
+  if (recordNames.length > 0) modelTypesImports.push("RecordModel");
+  if (unionNames.length > 0) modelTypesImports.push("UnionModel");
+
+  output += `import type { ${
+    modelTypesImports.sort().join(", ")
+  } } from "@palantir/pack.document-schema.model-types";\n`;
+  output += `import { Metadata } from "@palantir/pack.document-schema.model-types";\n`;
+
+  if (allModelNames.length > 0) {
+    output += `import type { ${allModelNames.join(", ")} } from "${typeImportPath}";\n`;
+  }
+
+  // Schema imports
+  const schemaNames = allModelNames.map(n => `${n}Schema`);
+  if (schemaNames.length > 0) {
+    output += `import { ${schemaNames.join(", ")} } from "${schemaImportPath}";\n`;
+  }
+
+  // Migration imports (only if there are migrations)
+  const migrationNames = [...recordNames, ...unionNames].map(n => `${n}Migrations`);
+  if (chain.length > 1 && migrationNames.length > 0) {
+    output += `import { ${migrationNames.join(", ")} } from "${migrationsImportPath}";\n`;
+  }
+
+  output += "\n";
+
+  // Generate model constants
+  for (const [exportName, item] of Object.entries(latestSchema)) {
+    if (isRecordSchema(item)) {
+      const externalRefs = extractExternalRefFieldTypes(item);
+      const metadataFields: string[] = [];
+
+      if (externalRefs.length > 0) {
+        const entries = externalRefs.map(([field, type]) => `      ${field}: "${type}",`).join(
+          "\n",
+        );
+        metadataFields.push(`    externalRefFieldTypes: {\n${entries}\n    },`);
+      }
+      metadataFields.push(`    name: "${exportName}",`);
+
+      output +=
+        `export interface ${exportName}Model extends RecordModel<${exportName}, typeof ${exportName}Schema> {}\n`;
+      output += `export const ${exportName}Model: ${exportName}Model = {\n`;
+      output += `  __type: {} as ${exportName},\n`;
+      output += `  zodSchema: ${exportName}Schema,\n`;
+      output += `  [Metadata]: {\n${metadataFields.join("\n")}\n  },\n`;
+      output += `};\n\n`;
+    } else if (isUnionSchema(item)) {
+      const metadataFields: string[] = [];
+      metadataFields.push(`    discriminant: "${item.discriminant}",`);
+      metadataFields.push(`    name: "${exportName}",`);
+
+      output +=
+        `export interface ${exportName}Model extends UnionModel<${exportName}, typeof ${exportName}Schema> {}\n`;
+      output += `export const ${exportName}Model: ${exportName}Model = {\n`;
+      output += `  __type: {} as ${exportName},\n`;
+      output += `  zodSchema: ${exportName}Schema,\n`;
+      output += `  [Metadata]: {\n${metadataFields.join("\n")}\n  },\n`;
+      output += `};\n\n`;
+
+      // Generate variant models
+      for (const variantName of Object.keys(item.variants)) {
+        const formattedVariant = formatVariantName(variantName);
+        const variantTypeName = `${exportName}${formattedVariant}`;
+        const variantMetadata: string[] = [];
+        variantMetadata.push(`    discriminant: "${item.discriminant}",`);
+        variantMetadata.push(`    name: "${variantTypeName}",`);
+
+        output +=
+          `export interface ${variantTypeName}Model extends UnionModel<${variantTypeName}, typeof ${variantTypeName}Schema> {}\n`;
+        output += `export const ${variantTypeName}Model: ${variantTypeName}Model = {\n`;
+        output += `  __type: {} as ${variantTypeName},\n`;
+        output += `  zodSchema: ${variantTypeName}Schema,\n`;
+        output += `  [Metadata]: {\n${variantMetadata.join("\n")}\n  },\n`;
+        output += `};\n\n`;
+      }
+    }
+  }
+
+  // Generate DocumentModel
+  const modelEntries: string[] = [];
+  for (const [exportName, item] of Object.entries(latestSchema)) {
+    if (isRecordSchema(item)) {
+      modelEntries.push(`  ${exportName}: ${exportName}Model`);
+    } else if (isUnionSchema(item)) {
+      modelEntries.push(`  ${exportName}: ${exportName}Model`);
+      for (const variantName of Object.keys(item.variants)) {
+        const formattedVariant = formatVariantName(variantName);
+        const variantTypeName = `${exportName}${formattedVariant}`;
+        modelEntries.push(`  ${variantTypeName}: ${variantTypeName}Model`);
+      }
+    }
+  }
+
+  // Build migrations map (includes both record and union entries)
+  let migrationsBlock: string;
+  const allMigrationNames = [...recordNames, ...unionNames];
+  if (chain.length > 1 && allMigrationNames.length > 0) {
+    const migrationEntries = allMigrationNames.map(n => `      ${n}: ${n}Migrations,`).join("\n");
+    migrationsBlock = `    migrations: {\n${migrationEntries}\n    },\n`;
+  } else {
+    migrationsBlock = "";
+  }
+
+  output += `export const DocumentModel = {\n`;
+  output += `${modelEntries.join(",\n")},\n`;
+  output += `  [Metadata]: {\n`;
+  output += `    version: ${latestVersion},\n`;
+  if (minVersion !== latestVersion) {
+    output += `    minSupportedVersion: ${minVersion},\n`;
+  }
+  output += migrationsBlock;
+  output += `  },\n`;
+  output += `} as const satisfies DocumentSchema;\n\n`;
+  output += `export type DocumentModel = typeof DocumentModel;\n`;
+
+  // --- Generate schema manifest ---
+  const models: SchemaManifestCompact["models"] = {};
+
+  for (const [exportName, item] of Object.entries(latestSchema)) {
+    if (!isRecordSchema(item)) continue;
+
+    const versions: Record<string, { fields: string[] }> = {};
+
+    for (const { version, schema: versionSchema } of chain) {
+      const versionItem = versionSchema[exportName];
+      if (versionItem != null && isRecordSchema(versionItem)) {
+        versions[String(version)] = {
+          fields: Object.keys(versionItem.fields).sort(),
+        };
+      }
+    }
+
+    models[exportName] = { versions };
+  }
+
+  const schemaManifest: SchemaManifestCompact = {
+    latestVersion,
+    minSupportedVersion: minVersion,
+    models,
+  };
+
+  return { modelsFile: output, schemaManifest };
+}
