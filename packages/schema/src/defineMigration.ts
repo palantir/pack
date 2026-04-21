@@ -16,16 +16,18 @@
 
 import type { UnionVariantArg } from "./defineUnion.js";
 import { resolveUnionVariantArg } from "./defineUnion.js";
-import type { RecordDef, RecordFields, UnionDef, UnionVariants } from "./defs.js";
+import type { ModelDefs, RecordDef, RecordFields, UnionDef, UnionVariants } from "./defs.js";
 import { ModelDefType } from "./defs.js";
 import type { Ref, Type } from "./primitives.js";
 import { isRecordDef, isUnionDef } from "./utils.js";
 
-export type ReturnedSchema = Record<string, RecordDef | UnionDef>;
+/** Soon to be deprecated - Use `ModelDefs` instead. */
+export type ReturnedSchema = ModelDefs;
 
-export type Schema<T extends ReturnedSchema> = T;
+/** Soon to be deprecated - use `ModelDefs` instead. */
+export type Schema<T extends ModelDefs> = T;
 
-export type SchemaBuilder<T extends ReturnedSchema> = {
+export type SchemaBuilder<T extends ModelDefs> = {
   [k in keyof T]: T[k] extends UnionDef<infer R> ? UnionBuilder<R>
     : T[k] extends RecordDef<infer R> ? RecordBuilder<R>
     : never;
@@ -114,46 +116,28 @@ class RecordBuilderImpl<T extends RecordFields> implements RecordBuilder<T> {
 }
 
 export function defineMigration<
-  const T extends ReturnedSchema,
-  const S extends ReturnedSchema,
+  const T extends ModelDefs,
+  const S extends ModelDefs,
 >(
-  previous: Schema<T>,
+  models: T,
   migration: (schema: SchemaBuilder<T>) => S,
-): Schema<T & S> {
-  /**
-   * Create a map of builders for the schema.
-   *
-   * Note about type assertions:
-   * We use a type assertion here (SchemaBuilder<T>) because TypeScript cannot
-   * track the relationship between the keys in the original schema and the
-   * corresponding builder types. This is a fundamental limitation of TypeScript's
-   * type system when dealing with dynamically constructed objects.
-   *
-   * The assertion is safe because:
-   * 1. We're only adding keys that exist in the original schema
-   * 2. For each key, we're creating a builder of the correct type
-   * 3. The resulting object exactly matches the SchemaBuilder<T> type
-   */
+): T & S {
   const builders = {} as SchemaBuilder<T>;
 
-  for (const key in previous) {
-    const v = previous[key];
+  for (const key in models) {
+    const v = models[key];
 
-    // Use our type guards for safer type narrowing
     if (isRecordDef(v)) {
-      // This assertion is necessary because TypeScript can't track the field types
-      // through the dynamic property access and object construction
       const recordBuilder = new RecordBuilderImpl(v);
       builders[key] = recordBuilder as unknown as SchemaBuilder<T>[typeof key];
     } else if (isUnionDef(v)) {
-      // Similar assertion needed for union builders
       const unionBuilder = new UnionBuilderImpl(v);
       builders[key] = unionBuilder as unknown as SchemaBuilder<T>[typeof key];
     }
   }
 
   return {
-    ...previous,
+    ...models,
     ...migration(builders),
   };
 }

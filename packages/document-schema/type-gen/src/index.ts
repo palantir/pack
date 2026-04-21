@@ -24,6 +24,7 @@ export {
   convertStepsToYamlString,
 } from "./utils/schema/convertSchemaToSteps.js";
 export { generateTypesFromSchema } from "./utils/schema/generateTypesFromSchema.js";
+export { generateVersionedTypesFromSchema } from "./utils/schema/generateVersionedTypesFromSchema.js";
 export { generateZodFromSchema } from "./utils/schema/generateZodFromSchema.js";
 export {
   convertRecordDefToIr,
