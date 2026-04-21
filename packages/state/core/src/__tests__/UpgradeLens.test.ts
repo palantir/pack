@@ -16,11 +16,12 @@
 
 import type {
   FieldTypeDescriptor,
+  UnionUpgradeRegistry,
   UpgradeRegistry,
   UpgradeRegistryMap,
 } from "@palantir/pack.document-schema.model-types";
 import { describe, expect, it } from "vitest";
-import { applyLensToValue, applyReadLens } from "../upgrade/UpgradeLens.js";
+import { applyLensToValue, applyReadLens, resolveAndApplyLens } from "../upgrade/UpgradeLens.js";
 
 const primitive: FieldTypeDescriptor = { kind: "primitive" };
 const optionalPrimitive: FieldTypeDescriptor = { kind: "optional", inner: primitive };
@@ -481,5 +482,91 @@ describe("applyLensToValue", () => {
       Empty: registry,
     });
     expect(result).toEqual({ a: 1 });
+  });
+});
+
+describe("resolveAndApplyLens", () => {
+  const circleRegistry: UpgradeRegistry = {
+    modelName: "Circle",
+    allFields: {
+      radius: { type: primitive },
+      diameter: { type: optionalPrimitive },
+    },
+    steps: [
+      {
+        name: "addDiameter",
+        addedInVersion: 2,
+        fields: {
+          diameter: {
+            derivedFrom: ["radius"],
+            forward: ({ radius }) => (radius as number) * 2,
+          },
+        },
+      },
+    ],
+  };
+
+  const rectRegistry: UpgradeRegistry = {
+    modelName: "Rect",
+    allFields: {
+      width: { type: primitive },
+      height: { type: primitive },
+    },
+    steps: [],
+  };
+
+  const shapeUnion: UnionUpgradeRegistry = {
+    modelName: "Shape",
+    discriminant: "kind",
+    variants: { circle: "Circle", rect: "Rect" },
+  };
+
+  const allRegistries: UpgradeRegistryMap = {
+    Shape: shapeUnion,
+    Circle: circleRegistry,
+    Rect: rectRegistry,
+  };
+
+  it("routes to the correct variant lens based on discriminant", () => {
+    const rawData = { kind: "circle", radius: 5 };
+    const result = resolveAndApplyLens(rawData, shapeUnion, allRegistries);
+
+    expect(result.diameter).toBe(10);
+    expect(result.radius).toBe(5);
+  });
+
+  it("returns raw data when discriminant value is not a known variant", () => {
+    const rawData = { kind: "triangle", base: 3 };
+    const result = resolveAndApplyLens(rawData, shapeUnion, allRegistries);
+
+    expect(result).toBe(rawData);
+  });
+
+  it("returns raw data when discriminant field is missing", () => {
+    const rawData = { radius: 5 };
+    const result = resolveAndApplyLens(rawData, shapeUnion, allRegistries);
+
+    expect(result).toBe(rawData);
+  });
+
+  it("returns raw data when variant has no upgrade steps", () => {
+    const rawData = { kind: "rect", width: 10, height: 20 };
+    const result = resolveAndApplyLens(rawData, shapeUnion, allRegistries);
+
+    expect(result).toBe(rawData);
+  });
+
+  it("delegates to applyReadLens for record registries with steps", () => {
+    const rawData = { radius: 5 };
+    const result = resolveAndApplyLens(rawData, circleRegistry, allRegistries);
+
+    expect(result.diameter).toBe(10);
+  });
+
+  it("returns raw data for record registries with no steps", () => {
+    const rawData = { width: 10, height: 20 };
+    const result = resolveAndApplyLens(rawData, rectRegistry, allRegistries);
+
+    expect(result).toBe(rawData);
   });
 });
