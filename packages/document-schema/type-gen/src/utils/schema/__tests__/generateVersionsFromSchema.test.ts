@@ -22,32 +22,29 @@ import {
   threeVersionChainSchema,
   twoVersionAdditiveSchema,
 } from "./fixtures.js";
-import { formatWithPrettier } from "./formatWithPrettier.js";
+import { formatSingleSnapshot } from "./snapshotUtils.js";
 
 describe("generateVersionsFromSchema", () => {
   const snapshotDir = path.join(__dirname, "__snapshots__", "generateVersionsFromSchema");
 
   it("single-version schema", async () => {
     const result = generateVersionsFromSchema(singleVersionSchema);
-
-    await expect(await formatWithPrettier(result)).toMatchFileSnapshot(
-      path.join(snapshotDir, "single-version", "versions.ts"),
+    await expect(await formatSingleSnapshot("versions.ts", result)).toMatchFileSnapshot(
+      path.join(snapshotDir, "single-version.ts"),
     );
   });
 
   it("two-version with minSupportedVersion", async () => {
     const result = generateVersionsFromSchema(twoVersionAdditiveSchema, 1);
-
-    await expect(await formatWithPrettier(result)).toMatchFileSnapshot(
-      path.join(snapshotDir, "two-version", "versions.ts"),
+    await expect(await formatSingleSnapshot("versions.ts", result)).toMatchFileSnapshot(
+      path.join(snapshotDir, "two-version.ts"),
     );
   });
 
   it("three-version chain", async () => {
     const result = generateVersionsFromSchema(threeVersionChainSchema, 1);
-
-    await expect(await formatWithPrettier(result)).toMatchFileSnapshot(
-      path.join(snapshotDir, "three-version-chain", "versions.ts"),
+    await expect(await formatSingleSnapshot("versions.ts", result)).toMatchFileSnapshot(
+      path.join(snapshotDir, "three-version-chain.ts"),
     );
   });
 });
