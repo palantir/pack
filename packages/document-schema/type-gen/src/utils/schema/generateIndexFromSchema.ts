@@ -47,6 +47,15 @@ export function generateIndexFromSchema(
     throw new Error("Schema version chain is empty");
   }
 
+  if (
+    minSupportedVersion != null && !chain.find(({ version }) => version === minSupportedVersion)
+  ) {
+    throw new Error(
+      `minSupportedVersion ${minSupportedVersion} is not in the schema chain `
+        + `(available versions: ${chain.map(c => c.version).join(", ")})`,
+    );
+  }
+
   const latestVersion = chain[chain.length - 1]!.version;
   const minVersion = minSupportedVersion ?? latestVersion;
 

@@ -18,21 +18,12 @@ import type { SchemaDefinition } from "@palantir/pack.schema";
 import { formatVariantName } from "../formatVariantName.js";
 import { GENERATED_FILE_HEADER } from "../generatedFileHeader.js";
 import type { RuntimeSchema, SchemaField, VersionedSchemaEntry } from "./runtimeSchema.js";
-import { collectVersionedSchemaChain, isRecordSchema, isUnionSchema } from "./runtimeSchema.js";
-
-const TypeKind = {
-  ANY: "any",
-  ARRAY: "array",
-  BOOLEAN: "boolean",
-  DOC_REF: "docRef",
-  DOUBLE: "double",
-  MEDIA_REF: "mediaRef",
-  OBJECT_REF: "objectRef",
-  OPTIONAL: "optional",
-  REF: "ref",
-  STRING: "string",
-  USER_REF: "userRef",
-} as const;
+import {
+  collectVersionedSchemaChain,
+  isRecordSchema,
+  isUnionSchema,
+  TypeKind,
+} from "./runtimeSchema.js";
 
 export interface VersionedTypesOutput {
   /** types_vN.ts files keyed by version number */

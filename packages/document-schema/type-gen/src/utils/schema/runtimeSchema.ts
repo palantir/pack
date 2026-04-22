@@ -15,6 +15,12 @@
  */
 
 import type { SchemaDefinition } from "@palantir/pack.schema";
+import { TypeKind as SchemaTypeKind } from "@palantir/pack.schema";
+
+export const TypeKind: typeof SchemaTypeKind & { readonly ANY: "any" } = {
+  ...SchemaTypeKind,
+  ANY: "any",
+};
 
 export const SchemaDefKind = {
   RECORD: "record",
