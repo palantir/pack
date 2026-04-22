@@ -63,7 +63,6 @@ describe("generateModelsFromIr", () => {
       name: "Person",
       description: "A person record",
       fields: [personField1, personField2],
-      metadata: { addedInVersion: 1 },
     };
 
     const schema: IRealTimeDocumentSchema = {
@@ -144,7 +143,6 @@ describe("generateModelsFromIr", () => {
       name: "Event",
       description: "An event record with external refs",
       fields: [eventField1, eventField2, eventField3],
-      metadata: { addedInVersion: 1 },
     };
 
     const schema: IRealTimeDocumentSchema = {
@@ -205,7 +203,6 @@ describe("generateModelsFromIr", () => {
           metadata: { addedInVersion: 1 },
         },
       ],
-      metadata: { addedInVersion: 1 },
     };
 
     // Define the TextBox record
@@ -241,7 +238,6 @@ describe("generateModelsFromIr", () => {
           metadata: { addedInVersion: 1 },
         },
       ],
-      metadata: { addedInVersion: 1 },
     };
 
     // Define the Node union
@@ -319,7 +315,6 @@ describe("generateModelsFromIr", () => {
           metadata: { addedInVersion: 1 },
         },
       ],
-      metadata: { addedInVersion: 1 },
     };
 
     const dogRecord: IRecordDef = {
@@ -341,7 +336,6 @@ describe("generateModelsFromIr", () => {
           metadata: { addedInVersion: 1 },
         },
       ],
-      metadata: { addedInVersion: 1 },
     };
 
     const animalUnion: IUnionDef = {

@@ -61,14 +61,16 @@ export function convertIrToWireSchema(ir: IRealTimeDocumentSchema): DocumentType
 function convertModelDef(model: IModelDef): ModelDef {
   switch (model.type) {
     case "record":
+      // TODO: The @osdk/foundry.pack wire types still declare `metadata` as required on
+      // RecordDef, but the Pack API schema (api-gateway / backpack) has removed it.
+      // Cast through unknown until the published types catch up.
       return {
         type: "record",
         key: model.record.key,
         name: model.record.name,
         description: orUndefined(model.record.description),
         fields: [...model.record.fields.map(convertFieldDef)],
-        metadata: convertSchemaMeta(model.record.metadata),
-      };
+      } as unknown as ModelDef;
     case "union":
       return {
         type: "union",
