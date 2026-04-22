@@ -17,6 +17,8 @@
 import type { SchemaDefinition } from "@palantir/pack.schema";
 import { formatVariantName } from "../formatVariantName.js";
 import { GENERATED_FILE_HEADER } from "../generatedFileHeader.js";
+import type { RuntimeSchema, SchemaField, VersionedSchemaEntry } from "./runtimeSchema.js";
+import { collectVersionedSchemaChain, isRecordSchema, isUnionSchema } from "./runtimeSchema.js";
 
 const TypeKind = {
   ANY: "any",
@@ -32,42 +34,6 @@ const TypeKind = {
   USER_REF: "userRef",
 } as const;
 
-const SchemaDefKind = {
-  RECORD: "record",
-  UNION: "union",
-} as const;
-
-// Runtime types mirroring the schema structure
-interface SchemaField {
-  readonly type: string;
-  readonly items?: SchemaField;
-  readonly item?: SchemaField;
-  readonly refType?: "record" | "union";
-  readonly name?: string;
-}
-
-interface RuntimeSchemaRecord {
-  readonly type: typeof SchemaDefKind.RECORD;
-  readonly name: string;
-  readonly docs?: string;
-  readonly fields: Readonly<Record<string, SchemaField>>;
-}
-
-interface RuntimeSchemaUnion {
-  readonly type: typeof SchemaDefKind.UNION;
-  readonly name?: string;
-  readonly variants: Readonly<Record<string, SchemaField>>;
-  readonly discriminant: string;
-}
-
-type RuntimeSchemaItem = RuntimeSchemaRecord | RuntimeSchemaUnion;
-type RuntimeSchema = Record<string, RuntimeSchemaItem>;
-
-interface VersionedSchemaEntry {
-  version: number;
-  schema: RuntimeSchema;
-}
-
 export interface VersionedTypesOutput {
   /** types_vN.ts files keyed by version number */
   readTypes: Map<number, string>;
@@ -75,31 +41,6 @@ export interface VersionedTypesOutput {
   writeTypes: Map<number, string>;
   /** types.ts re-export of latest version types under unversioned names */
   typesReExport: string;
-}
-
-function isRecordSchema(item: RuntimeSchemaItem): item is RuntimeSchemaRecord {
-  return item.type === SchemaDefKind.RECORD && "fields" in item;
-}
-
-function isUnionSchema(item: RuntimeSchemaItem): item is RuntimeSchemaUnion {
-  return item.type === SchemaDefKind.UNION && "variants" in item;
-}
-
-/**
- * Walk the schema version chain to collect all versions.
- * Returns versions in ascending order (v1, v2, v3, ...).
- */
-function collectVersionChain(input: SchemaDefinition): VersionedSchemaEntry[] {
-  const chain: VersionedSchemaEntry[] = [];
-  let current: SchemaDefinition = input;
-
-  while (current.type === "versioned") {
-    chain.unshift({ version: current.version, schema: current.models as RuntimeSchema });
-    current = current.previous;
-  }
-  chain.unshift({ version: current.version, schema: current.models as RuntimeSchema });
-
-  return chain;
 }
 
 function detectUsedRefTypes(schema: RuntimeSchema): Set<string> {
@@ -381,49 +322,41 @@ function generateWriteTypesForVersion(
 /**
  * Generate the types.ts re-export file that maps unversioned names to the latest version.
  */
-function generateTypesReExport(
-  latestVersion: number,
-  schema: RuntimeSchema,
-): string {
-  let output = GENERATED_FILE_HEADER;
+function generateTypesReExport(schema: VersionedSchemaEntry): string {
+  const version = schema.version;
 
   const reExports: string[] = [];
-
   for (const [exportName, item] of Object.entries(schema)) {
     if (isRecordSchema(item)) {
-      const versioned = versionedTypeName(exportName, latestVersion);
+      const versioned = versionedTypeName(exportName, version);
       reExports.push(
-        `export type { ${versioned} as ${exportName} } from "./types_v${latestVersion}.js";`,
+        `export type { ${versioned} as ${exportName} } from "./types_v${version}.js";`,
       );
     } else if (isUnionSchema(item)) {
-      const versioned = versionedTypeName(exportName, latestVersion);
+      const versioned = versionedTypeName(exportName, version);
       reExports.push(
-        `export type { ${versioned} as ${exportName} } from "./types_v${latestVersion}.js";`,
+        `export type { ${versioned} as ${exportName} } from "./types_v${version}.js";`,
       );
 
       // Also re-export union variant types
       for (const variantName of Object.keys(item.variants)) {
         const formattedVariant = formatVariantName(variantName);
-        const versionedVariant = `${
-          versionedTypeName(exportName, latestVersion)
-        }${formattedVariant}`;
+        const versionedVariant = `${versionedTypeName(exportName, version)}${formattedVariant}`;
         const unversionedVariant = `${exportName}${formattedVariant}`;
         reExports.push(
-          `export type { ${versionedVariant} as ${unversionedVariant} } from "./types_v${latestVersion}.js";`,
+          `export type { ${versionedVariant} as ${unversionedVariant} } from "./types_v${version}.js";`,
         );
       }
     }
   }
 
-  output += reExports.join("\n") + "\n";
-
-  return output;
+  return GENERATED_FILE_HEADER + reExports.join("\n") + "\n";
 }
 
 /**
  * Generate per-version public types and write types from a schema with version chain.
  *
- * @param schema - The schema (ReturnedSchema for v1, or VersionedSchema for multi-version)
+ * @param schema - The schema, initial or versioned
  * @param minSupportedVersion - Minimum version to generate types for (defaults to latest)
  * @returns Object containing generated code for each output file
  */
@@ -431,10 +364,17 @@ export function generateVersionedTypesFromSchema(
   schema: SchemaDefinition,
   minSupportedVersion?: number,
 ): VersionedTypesOutput {
-  const chain = collectVersionChain(schema);
+  const chain = collectVersionedSchemaChain(schema);
 
   if (chain.length === 0) {
     throw new Error("Schema version chain is empty");
+  }
+
+  if (minSupportedVersion != null && chain.find(({ version }) => version === minSupportedVersion)) {
+    throw new Error(
+      `minSupportedVersion ${minSupportedVersion} is not in the schema chain `
+        + `(available versions: ${chain.map(c => c.version).join(", ")})`,
+    );
   }
 
   const latestVersion = chain[chain.length - 1]!.version;
@@ -450,7 +390,7 @@ export function generateVersionedTypesFromSchema(
     writeTypes.set(version, generateWriteTypesForVersion(version, versionSchema));
   }
 
-  const typesReExport = generateTypesReExport(latestVersion, chain[chain.length - 1]!.schema);
+  const typesReExport = generateTypesReExport(chain[chain.length - 1]!);
 
   return { readTypes, writeTypes, typesReExport };
 }

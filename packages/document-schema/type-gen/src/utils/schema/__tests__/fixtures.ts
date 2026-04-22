@@ -15,7 +15,14 @@
  */
 
 import type { SchemaBuilder, SchemaDefinition } from "@palantir/pack.schema";
-import { defineRecord, defineSchema, defineSchemaUpdate, nextSchema } from "@palantir/pack.schema";
+import {
+  defineRecord,
+  defineSchema,
+  defineSchemaUpdate,
+  defineUnion,
+  modelToRef,
+  nextSchema,
+} from "@palantir/pack.schema";
 import * as P from "@palantir/pack.schema";
 
 /** Single-version schema: ShapeBox with 5 fields */
@@ -68,6 +75,51 @@ const addFillColorUpdate = defineSchemaUpdate(
 export const twoVersionAdditiveSchema: SchemaDefinition = nextSchema(singleVersionSchemaNarrow)
   .addSchemaUpdate(addFillColorUpdate)
   .build();
+
+/** Schema with ref fields: tests import paths for record refs, DocumentRef, UserRef */
+const CircleRecord = defineRecord("Circle", {
+  docs: "A circle",
+  fields: {
+    radius: P.Double,
+  },
+});
+
+const DocRef: P.DocRef = { type: "docRef" };
+const UserRefField: P.UserRef = { type: "userRef" };
+
+export const refFieldsSchema: SchemaDefinition = defineSchema({
+  Circle: CircleRecord,
+  Drawing: defineRecord("Drawing", {
+    docs: "A drawing with references",
+    fields: {
+      mainShape: CircleRecord,
+      extraShapes: P.Array(modelToRef(CircleRecord)),
+      attachment: DocRef,
+      owner: P.Optional(UserRefField),
+    },
+  }),
+});
+
+/** Schema with union types: tests union variant interfaces, discriminated union, and type guards */
+const RectangleRecord = defineRecord("Rectangle", {
+  docs: "A rectangle",
+  fields: {
+    width: P.Double,
+    height: P.Double,
+  },
+});
+
+export const unionTypesSchema: SchemaDefinition = defineSchema({
+  Circle: CircleRecord,
+  Rectangle: RectangleRecord,
+  Shape: defineUnion("Shape", {
+    docs: "A shape",
+    variants: {
+      circle: CircleRecord,
+      rectangle: RectangleRecord,
+    },
+  }),
+});
 
 /** Three-version chain: Item (name, color -> name, hexColor -> name, hexColor, tags) */
 export const threeVersionChainSchema: SchemaDefinition = (() => {

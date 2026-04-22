@@ -18,10 +18,12 @@ import path from "path";
 import { describe, expect, it } from "vitest";
 import { generateVersionedTypesFromSchema } from "../generateVersionedTypesFromSchema.js";
 import {
+  refFieldsSchema,
   singleVersionSchema,
   threeVersionChainSchema,
   twoVersionAdditiveSchema,
   twoVersionFieldRemovalSchema,
+  unionTypesSchema,
 } from "./fixtures.js";
 import { formatVersionedTypesSnapshot } from "./snapshotUtils.js";
 
@@ -53,6 +55,20 @@ describe("generateVersionedTypesFromSchema", () => {
     const result = generateVersionedTypesFromSchema(threeVersionChainSchema, 1);
     await expect(await formatVersionedTypesSnapshot(result)).toMatchFileSnapshot(
       path.join(snapshotDir, "three-version-chain.ts"),
+    );
+  });
+
+  it("schema with ref fields", async () => {
+    const result = generateVersionedTypesFromSchema(refFieldsSchema);
+    await expect(await formatVersionedTypesSnapshot(result)).toMatchFileSnapshot(
+      path.join(snapshotDir, "ref-fields.ts"),
+    );
+  });
+
+  it("schema with union types", async () => {
+    const result = generateVersionedTypesFromSchema(unionTypesSchema);
+    await expect(await formatVersionedTypesSnapshot(result)).toMatchFileSnapshot(
+      path.join(snapshotDir, "union-types.ts"),
     );
   });
 

@@ -16,53 +16,7 @@
 
 import type { SchemaDefinition } from "@palantir/pack.schema";
 import { GENERATED_FILE_HEADER } from "../generatedFileHeader.js";
-
-const SchemaDefKind = {
-  RECORD: "record",
-  UNION: "union",
-} as const;
-
-interface RuntimeSchemaRecord {
-  readonly type: typeof SchemaDefKind.RECORD;
-  readonly name: string;
-  readonly fields: Readonly<Record<string, unknown>>;
-}
-
-interface RuntimeSchemaUnion {
-  readonly type: typeof SchemaDefKind.UNION;
-  readonly name?: string;
-  readonly variants: Readonly<Record<string, unknown>>;
-  readonly discriminant: string;
-}
-
-type RuntimeSchemaItem = RuntimeSchemaRecord | RuntimeSchemaUnion;
-type RuntimeSchema = Record<string, RuntimeSchemaItem>;
-
-interface VersionedSchemaEntry {
-  version: number;
-  schema: RuntimeSchema;
-}
-
-function isRecordSchema(item: RuntimeSchemaItem): item is RuntimeSchemaRecord {
-  return item.type === SchemaDefKind.RECORD && "fields" in item;
-}
-
-function isUnionSchema(item: RuntimeSchemaItem): item is RuntimeSchemaUnion {
-  return item.type === SchemaDefKind.UNION && "variants" in item;
-}
-
-function collectVersionChain(input: SchemaDefinition): VersionedSchemaEntry[] {
-  const chain: VersionedSchemaEntry[] = [];
-  let current: SchemaDefinition = input;
-
-  while (current.type === "versioned") {
-    chain.unshift({ version: current.version, schema: current.models as RuntimeSchema });
-    current = current.previous;
-  }
-  chain.unshift({ version: current.version, schema: current.models as RuntimeSchema });
-
-  return chain;
-}
+import { collectVersionedSchemaChain, isRecordSchema, isUnionSchema } from "./runtimeSchema.js";
 
 function formatVariantName(variantName: string): string {
   return variantName.charAt(0).toUpperCase() + variantName.slice(1);
@@ -87,7 +41,7 @@ export function generateIndexFromSchema(
   schema: SchemaDefinition,
   minSupportedVersion?: number,
 ): string {
-  const chain = collectVersionChain(schema);
+  const chain = collectVersionedSchemaChain(schema);
 
   if (chain.length === 0) {
     throw new Error("Schema version chain is empty");
