@@ -313,9 +313,7 @@ function generateWriteTypesForVersion(
 /**
  * Generate the types.ts re-export file that maps unversioned names to the latest version.
  */
-function generateTypesReExport(schema: VersionedSchemaEntry): string {
-  const version = schema.version;
-
+function generateTypesReExport({ schema, version }: VersionedSchemaEntry): string {
   const reExports: string[] = [];
   for (const [exportName, item] of Object.entries(schema)) {
     if (isRecordSchema(item)) {
