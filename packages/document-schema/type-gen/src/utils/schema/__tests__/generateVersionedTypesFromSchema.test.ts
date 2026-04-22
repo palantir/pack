@@ -33,42 +33,42 @@ describe("generateVersionedTypesFromSchema", () => {
   it("single-version schema", async () => {
     const result = generateVersionedTypesFromSchema(singleVersionSchema);
     await expect(await formatVersionedTypesSnapshot(result)).toMatchFileSnapshot(
-      path.join(snapshotDir, "single-version.ts"),
+      path.join(snapshotDir, "single-version.snap"),
     );
   });
 
   it("two-version additive change", async () => {
     const result = generateVersionedTypesFromSchema(twoVersionAdditiveSchema, 1);
     await expect(await formatVersionedTypesSnapshot(result)).toMatchFileSnapshot(
-      path.join(snapshotDir, "two-version-additive.ts"),
+      path.join(snapshotDir, "two-version-additive.snap"),
     );
   });
 
   it("two-version field removal", async () => {
     const result = generateVersionedTypesFromSchema(twoVersionFieldRemovalSchema, 1);
     await expect(await formatVersionedTypesSnapshot(result)).toMatchFileSnapshot(
-      path.join(snapshotDir, "two-version-field-removal.ts"),
+      path.join(snapshotDir, "two-version-field-removal.snap"),
     );
   });
 
   it("three-version chain", async () => {
     const result = generateVersionedTypesFromSchema(threeVersionChainSchema, 1);
     await expect(await formatVersionedTypesSnapshot(result)).toMatchFileSnapshot(
-      path.join(snapshotDir, "three-version-chain.ts"),
+      path.join(snapshotDir, "three-version-chain.snap"),
     );
   });
 
   it("schema with ref fields", async () => {
     const result = generateVersionedTypesFromSchema(refFieldsSchema);
     await expect(await formatVersionedTypesSnapshot(result)).toMatchFileSnapshot(
-      path.join(snapshotDir, "ref-fields.ts"),
+      path.join(snapshotDir, "ref-fields.snap"),
     );
   });
 
   it("schema with union types", async () => {
     const result = generateVersionedTypesFromSchema(unionTypesSchema);
     await expect(await formatVersionedTypesSnapshot(result)).toMatchFileSnapshot(
-      path.join(snapshotDir, "union-types.ts"),
+      path.join(snapshotDir, "union-types.snap"),
     );
   });
 
