@@ -370,7 +370,9 @@ export function generateVersionedTypesFromSchema(
     throw new Error("Schema version chain is empty");
   }
 
-  if (minSupportedVersion != null && chain.find(({ version }) => version === minSupportedVersion)) {
+  if (
+    minSupportedVersion != null && !chain.find(({ version }) => version === minSupportedVersion)
+  ) {
     throw new Error(
       `minSupportedVersion ${minSupportedVersion} is not in the schema chain `
         + `(available versions: ${chain.map(c => c.version).join(", ")})`,
