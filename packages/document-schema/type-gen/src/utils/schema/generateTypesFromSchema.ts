@@ -17,25 +17,7 @@
 import type { ReturnedSchema, Schema } from "@palantir/pack.schema";
 import { formatVariantName } from "../formatVariantName.js";
 import { GENERATED_FILE_HEADER } from "../generatedFileHeader.js";
-
-// Define schema types for internal use
-const SchemaDefKind = {
-  RECORD: "record",
-  UNION: "union",
-} as const;
-
-const TypeKind = {
-  ANY: "any",
-  ARRAY: "array",
-  DOC_REF: "docRef",
-  DOUBLE: "double",
-  MEDIA_REF: "mediaRef",
-  OBJECT_REF: "objectRef",
-  OPTIONAL: "optional",
-  REF: "ref",
-  STRING: "string",
-  USER_REF: "userRef",
-} as const;
+import { SchemaDefKind, TypeKind } from "./runtimeSchema.js";
 
 // Base type definition for schema fields
 interface BaseSchemaField {
