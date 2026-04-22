@@ -122,7 +122,6 @@ export function convertRecordDefToIr(recordDef: P.RecordDef): IRecordDef {
     name: recordDef.name,
     description: recordDef.docs || undefined,
     fields,
-    metadata: { addedInVersion: 1 },
   };
 }
 

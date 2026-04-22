@@ -77,7 +77,6 @@ describe("generateZodSchemasFromIr", () => {
       name: "Person",
       description: "A person record",
       fields: [personField1, personField2, personField3],
-      metadata: { addedInVersion: 1 },
     };
 
     const schema: IRealTimeDocumentSchema = {
@@ -143,7 +142,6 @@ describe("generateZodSchemasFromIr", () => {
       name: "Container",
       description: "A container record",
       fields: [arrayField, mapField],
-      metadata: { addedInVersion: 1 },
     };
 
     const schema: IRealTimeDocumentSchema = {
@@ -185,7 +183,6 @@ describe("generateZodSchemasFromIr", () => {
       name: "Event",
       description: "An event record",
       fields: [datetimeField],
-      metadata: { addedInVersion: 1 },
     };
 
     const schema: IRealTimeDocumentSchema = {
@@ -259,7 +256,6 @@ describe("generateZodSchemasFromIr", () => {
       name: "Feature",
       description: "A feature toggle record",
       fields: [booleanField, optionalBooleanField, booleanArrayField],
-      metadata: { addedInVersion: 1 },
     };
 
     const schema: IRealTimeDocumentSchema = {
@@ -329,7 +325,6 @@ describe("generateZodSchemasFromIr", () => {
           metadata: { addedInVersion: 1 },
         },
       ],
-      metadata: { addedInVersion: 1 },
     };
 
     // Define the TextBox record
@@ -378,7 +373,6 @@ describe("generateZodSchemasFromIr", () => {
           metadata: { addedInVersion: 1 },
         },
       ],
-      metadata: { addedInVersion: 1 },
     };
 
     // Define the Node union
@@ -442,7 +436,6 @@ describe("generateZodSchemasFromIr", () => {
           metadata: { addedInVersion: 1 },
         },
       ],
-      metadata: { addedInVersion: 1 },
     };
 
     const barRecord: IRecordDef = {
@@ -464,7 +457,6 @@ describe("generateZodSchemasFromIr", () => {
           metadata: { addedInVersion: 1 },
         },
       ],
-      metadata: { addedInVersion: 1 },
     };
 
     // Define union that references the records
@@ -542,7 +534,6 @@ describe("generateZodSchemasFromIr", () => {
           metadata: { addedInVersion: 1 },
         },
       ],
-      metadata: { addedInVersion: 1 },
     };
 
     const dogRecord: IRecordDef = {
@@ -564,7 +555,6 @@ describe("generateZodSchemasFromIr", () => {
           metadata: { addedInVersion: 1 },
         },
       ],
-      metadata: { addedInVersion: 1 },
     };
 
     const animalUnion: IUnionDef = {

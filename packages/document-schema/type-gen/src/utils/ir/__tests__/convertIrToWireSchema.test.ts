@@ -42,7 +42,6 @@ describe("convertIrToWireSchema", () => {
           metadata: { addedInVersion: 1 },
         },
       ],
-      metadata: { addedInVersion: 1 },
     };
 
     const ir: IRealTimeDocumentSchema = {
@@ -123,7 +122,6 @@ describe("convertIrToWireSchema", () => {
           metadata: { addedInVersion: 1 },
         },
       ],
-      metadata: { addedInVersion: 1 },
     };
 
     const ir: IRealTimeDocumentSchema = {
@@ -168,7 +166,6 @@ describe("convertIrToWireSchema", () => {
           metadata: { addedInVersion: 1 },
         },
       ],
-      metadata: { addedInVersion: 1 },
     };
 
     const ir: IRealTimeDocumentSchema = {
@@ -235,7 +232,6 @@ describe("convertIrToWireSchema", () => {
             metadata: { addedInVersion: 1 },
           },
         ],
-        metadata: { addedInVersion: 1 },
       };
 
       const ir: IRealTimeDocumentSchema = {

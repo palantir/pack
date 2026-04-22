@@ -16,11 +16,9 @@
 
 import type { IModelTypeKey } from "../pack-docschema-api/modelTypeKey.js";
 import type { IFieldDef } from "./fieldDef.js";
-import type { ISchemaMeta } from "./schemaMeta.js";
 export interface IRecordDef {
   readonly "key": IModelTypeKey;
   readonly "name": string;
   readonly "description"?: string | null;
   readonly "fields": ReadonlyArray<IFieldDef>;
-  readonly "metadata": ISchemaMeta;
 }
