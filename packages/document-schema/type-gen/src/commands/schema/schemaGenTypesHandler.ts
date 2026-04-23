@@ -120,15 +120,6 @@ export async function schemaGenTypesHandler(options: SchemaGenTypesOptions): Pro
   await fs.writeFile(modelsPath, modelMetadata.modelsFile, "utf8");
   consola.success(`Generated models: ${modelsPath}`);
 
-  // Generate schema manifest for the backend
-  const manifestPath = path.join(resolvedOutputDir, "schema-manifest.json");
-  await fs.writeFile(
-    manifestPath,
-    JSON.stringify(modelMetadata.schemaManifest, null, 2) + "\n",
-    "utf8",
-  );
-  consola.success(`Generated schema manifest: ${manifestPath}`);
-
   // Generate versionedDocRef.ts
   consola.info("Generating versioned document ref types...");
   const versionedDocRefContent = generateScopeFromSchema(schema, minSupportedVersion);

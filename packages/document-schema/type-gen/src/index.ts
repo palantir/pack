@@ -26,7 +26,6 @@ export {
 export {
   generateModelMetadataFromSchema,
   type ModelMetadataOutput,
-  type SchemaManifest,
 } from "./utils/schema/generateModelMetadataFromSchema.js";
 export { generateScopeFromSchema } from "./utils/schema/generateScopeFromSchema.js";
 export { generateTypesFromSchema } from "./utils/schema/generateTypesFromSchema.js";

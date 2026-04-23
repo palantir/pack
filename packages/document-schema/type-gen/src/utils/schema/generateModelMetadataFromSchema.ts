@@ -24,16 +24,6 @@ import { isRecordSchema, isUnionSchema, modelName, schemaName } from "./runtimeS
 export interface ModelMetadataOutput {
   /** models.ts content -- DocumentModel with version metadata and migration references */
   modelsFile: string;
-  /** Schema manifest JSON for backend consumption */
-  schemaManifest: SchemaManifest;
-}
-
-export interface SchemaManifest {
-  latestVersion: number;
-  minSupportedVersion: number;
-  models: Record<string, {
-    versions: Record<string, { fields: string[] }>;
-  }>;
 }
 
 /**
@@ -238,31 +228,5 @@ export function generateModelMetadataFromSchema(
   output += `} as const satisfies DocumentSchema;\n\n`;
   output += `export type DocumentModel = typeof DocumentModel;\n`;
 
-  // --- Generate schema manifest ---
-  const models: SchemaManifest["models"] = {};
-
-  for (const [exportName, item] of Object.entries(latestSchema)) {
-    if (!isRecordSchema(item)) continue;
-
-    const versions: Record<string, { fields: string[] }> = {};
-
-    for (const { version, schema: versionSchema } of chain) {
-      const versionItem = versionSchema[exportName];
-      if (versionItem != null && isRecordSchema(versionItem)) {
-        versions[String(version)] = {
-          fields: Object.keys(versionItem.fields).sort(),
-        };
-      }
-    }
-
-    models[exportName] = { versions };
-  }
-
-  const schemaManifest: SchemaManifest = {
-    latestVersion,
-    minSupportedVersion: minVersion,
-    models,
-  };
-
-  return { modelsFile: output, schemaManifest };
+  return { modelsFile: output };
 }

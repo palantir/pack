@@ -94,28 +94,3 @@ export const DocumentModel = {
 } as const satisfies DocumentSchema;
 
 export type DocumentModel = typeof DocumentModel;
-
-// ============================================================
-// schema-manifest.json
-// ============================================================
-
-{
-  "latestVersion": 1,
-  "minSupportedVersion": 1,
-  "models": {
-    "Circle": {
-      "versions": {
-        "1": {
-          "fields": ["radius"]
-        }
-      }
-    },
-    "Rectangle": {
-      "versions": {
-        "1": {
-          "fields": ["height", "width"]
-        }
-      }
-    }
-  }
-}

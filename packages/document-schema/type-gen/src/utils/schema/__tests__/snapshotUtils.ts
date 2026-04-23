@@ -63,26 +63,12 @@ export async function formatVersionedTypesSnapshot(
 }
 
 /**
- * Combine a ModelMetadataOutput into a single snapshot string.
- *
- * Layout:
- *   // === models.ts ===
- *   ...formatted code...
- *   // === schema-manifest.json ===
- *   ...formatted json...
+ * Format a ModelMetadataOutput into a snapshot string.
  */
 export async function formatModelMetadataSnapshot(
   result: ModelMetadataOutput,
 ): Promise<string> {
-  const sections: string[] = [];
-
-  sections.push(section("models.ts", await fmt(result.modelsFile)));
-  sections.push(section(
-    "schema-manifest.json",
-    await format(JSON.stringify(result.schemaManifest, null, 2), { parser: "json" }),
-  ));
-
-  return sections.join("\n");
+  return section("models.ts", await fmt(result.modelsFile));
 }
 
 /**
