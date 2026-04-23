@@ -120,7 +120,7 @@ export function convertRecordDefToIr(recordDef: P.RecordDef): IRecordDef {
   return {
     key: recordDef.name,
     name: recordDef.name,
-    description: recordDef.docs || undefined,
+    description: recordDef.docs ?? undefined,
     fields,
   };
 }

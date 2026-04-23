@@ -94,11 +94,11 @@ function collectReferencedTypes(
       if (fieldType.item) collectReferencedTypes(fieldType.item, schema, version, out);
       break;
     case TypeKind.REF: {
-      let name: string;
-      if (fieldType.refType === "record") {
-        name = findRecordExportName(fieldType.name!, schema) || fieldType.name || "unknown";
-      } else {
-        name = fieldType.name || "unknown";
+      const name = fieldType.refType === "record"
+        ? findRecordExportName(fieldType.name!, schema) ?? fieldType.name
+        : fieldType.name;
+      if (name == null) {
+        throw new Error(`Could not find name for ref: ${fieldType.type}:${fieldType.refType}`);
       }
       out.add(versionedTypeName(name, version));
       break;
@@ -135,11 +135,11 @@ function convertTypeToTypeScript(
       }
       return "unknown";
     case TypeKind.REF: {
-      let name: string;
-      if (fieldType.refType === "record" && schema) {
-        name = findRecordExportName(fieldType.name!, schema) || fieldType.name || "unknown";
-      } else {
-        name = fieldType.name || "unknown";
+      const name = fieldType.refType === "record" && schema != null
+        ? findRecordExportName(fieldType.name!, schema) ?? fieldType.name
+        : fieldType.name;
+      if (name == null) {
+        throw new Error(`Could not find name for ref: ${fieldType.type}:${fieldType.refType}`);
       }
       return version != null ? versionedTypeName(name, version) : name;
     }

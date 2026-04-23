@@ -328,7 +328,7 @@ function convertTypeToTypeScript(
     case TypeKind.REF:
       if (isRefField(fieldType) && fieldType.refType === "record") {
         const exportName = schema ? findRecordExportName(fieldType.name, schema) : null;
-        return exportName || (isRefField(fieldType) ? fieldType.name : "unknown");
+        return exportName ?? (isRefField(fieldType) ? fieldType.name : "unknown");
       } else if (isRefField(fieldType) && fieldType.refType === "union") {
         return isRefField(fieldType) ? fieldType.name : "unknown";
       }

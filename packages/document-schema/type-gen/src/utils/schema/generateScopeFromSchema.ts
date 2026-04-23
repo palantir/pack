@@ -41,7 +41,7 @@ export function generateScopeFromSchema(
   schema: SchemaDefinition,
   minSupportedVersion?: number,
 ): string {
-  const { chain, latestVersion, minVersion } = resolveSchemaChain(schema, minSupportedVersion);
+  const { chain, minVersion } = resolveSchemaChain(schema, minSupportedVersion);
 
   // Filter to supported versions
   const supportedVersions = chain.filter(v => v.version >= minVersion);
@@ -68,8 +68,7 @@ export function generateScopeFromSchema(
   output += `import type { ${typeImportsFromModels.join(", ")} } from "./models.js";\n`;
 
   // Import per-version types
-  for (const { version } of supportedVersions) {
-    const versionSchema = chain.find(v => v.version === version)!.schema;
+  for (const { version, schema: versionSchema } of supportedVersions) {
     const readTypeImports: string[] = [];
     const writeTypeImports: string[] = [];
 

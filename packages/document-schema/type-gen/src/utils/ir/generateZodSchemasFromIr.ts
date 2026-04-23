@@ -192,7 +192,7 @@ class ZodSchemaGenerator {
       variantSchemaNames.push(`${union.key}${formattedVariantName}Schema`);
     }
 
-    const discriminatorField = union.discriminant || "type";
+    const discriminatorField = union.discriminant ?? "type";
     return `z.discriminatedUnion("${discriminatorField}", [\n  ${
       variantSchemaNames.join(",\n  ")
     }\n])`;
