@@ -16,7 +16,7 @@
 
 import type { SchemaDefinition } from "@palantir/pack.schema";
 import { GENERATED_FILE_HEADER } from "../generatedFileHeader.js";
-import { resolveSchemaChain } from "./runtimeSchema.js";
+import { resolveSchemaChain } from "./resolveSchemaChain.js";
 
 /**
  * Generate versions.ts from a versioned schema chain.

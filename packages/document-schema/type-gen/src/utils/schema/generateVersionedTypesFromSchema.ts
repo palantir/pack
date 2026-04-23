@@ -17,12 +17,13 @@
 import type { SchemaDefinition } from "@palantir/pack.schema";
 import { formatVariantName } from "../formatVariantName.js";
 import { GENERATED_FILE_HEADER } from "../generatedFileHeader.js";
-import type { RuntimeSchema, SchemaField, VersionedSchemaEntry } from "./runtimeSchema.js";
+import type { VersionedSchemaEntry } from "./resolveSchemaChain.js";
+import { resolveSchemaChain } from "./resolveSchemaChain.js";
+import type { RuntimeSchema, SchemaField } from "./runtimeSchema.js";
 import {
   findRecordExportName,
   isRecordSchema,
   isUnionSchema,
-  resolveSchemaChain,
   TypeKind,
   typesFilePath,
   versionedTypeName,

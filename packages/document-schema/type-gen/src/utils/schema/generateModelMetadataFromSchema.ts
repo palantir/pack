@@ -17,14 +17,9 @@
 import type { SchemaDefinition } from "@palantir/pack.schema";
 import { formatVariantName } from "../formatVariantName.js";
 import { GENERATED_FILE_HEADER } from "../generatedFileHeader.js";
+import { resolveSchemaChain } from "./resolveSchemaChain.js";
 import type { RuntimeSchemaRecord, SchemaField } from "./runtimeSchema.js";
-import {
-  isRecordSchema,
-  isUnionSchema,
-  modelName,
-  resolveSchemaChain,
-  schemaName,
-} from "./runtimeSchema.js";
+import { isRecordSchema, isUnionSchema, modelName, schemaName } from "./runtimeSchema.js";
 
 export interface ModelMetadataOutput {
   /** models.ts content -- DocumentModel with version metadata and migration references */

@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-import type { SchemaDefinition } from "@palantir/pack.schema";
 import { TypeKind as SchemaTypeKind } from "@palantir/pack.schema";
 
 export const TypeKind: typeof SchemaTypeKind & { readonly ANY: "any" } = {
@@ -52,57 +51,6 @@ export interface RuntimeSchemaUnion {
 
 export type RuntimeSchemaItem = RuntimeSchemaRecord | RuntimeSchemaUnion;
 export type RuntimeSchema = Record<string, RuntimeSchemaItem>;
-
-export interface VersionedSchemaEntry {
-  version: number;
-  schema: RuntimeSchema;
-}
-export interface ResolvedSchemaChain {
-  chain: VersionedSchemaEntry[];
-  latestVersion: number;
-  minVersion: number;
-}
-
-/**
- * Collect the version chain and resolve min/latest versions.
- * Throws on empty chain or invalid minSupportedVersion.
- */
-export function resolveSchemaChain(
-  schema: SchemaDefinition,
-  minSupportedVersion?: number,
-): ResolvedSchemaChain {
-  const chain = collectVersionedSchemaChain(schema);
-
-  if (chain.length === 0) {
-    throw new Error("Schema version chain is empty");
-  }
-
-  const latestVersion = chain[chain.length - 1]!.version;
-
-  if (minSupportedVersion != null && !chain.some(c => c.version === minSupportedVersion)) {
-    throw new Error(
-      `minSupportedVersion ${minSupportedVersion} is not in the schema chain `
-        + `(available versions: ${chain.map(c => c.version).join(", ")})`,
-    );
-  }
-
-  const minVersion = minSupportedVersion ?? latestVersion;
-
-  return { chain, latestVersion, minVersion };
-}
-
-function collectVersionedSchemaChain(input: SchemaDefinition): VersionedSchemaEntry[] {
-  const chain: VersionedSchemaEntry[] = [];
-  let current: SchemaDefinition = input;
-
-  while (current.type === "versioned") {
-    chain.unshift({ version: current.version, schema: current.models as RuntimeSchema });
-    current = current.previous;
-  }
-  chain.unshift({ version: current.version, schema: current.models as RuntimeSchema });
-
-  return chain;
-}
 
 export function isRecordSchema(item: RuntimeSchemaItem): item is RuntimeSchemaRecord {
   return item.type === SchemaDefKind.RECORD && "fields" in item;

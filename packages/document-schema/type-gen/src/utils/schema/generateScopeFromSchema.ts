@@ -16,11 +16,11 @@
 
 import type { SchemaDefinition } from "@palantir/pack.schema";
 import { GENERATED_FILE_HEADER } from "../generatedFileHeader.js";
+import { resolveSchemaChain } from "./resolveSchemaChain.js";
 import {
   isRecordSchema,
   isUnionSchema,
   modelName,
-  resolveSchemaChain,
   typesFilePath,
   versionedTypeName,
   versionedWriteTypeName,
