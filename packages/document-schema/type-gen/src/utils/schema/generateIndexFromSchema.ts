@@ -15,16 +15,14 @@
  */
 
 import type { SchemaDefinition } from "@palantir/pack.schema";
+import { formatVariantName } from "../formatVariantName.js";
 import { GENERATED_FILE_HEADER } from "../generatedFileHeader.js";
-import { collectVersionedSchemaChain, isRecordSchema, isUnionSchema } from "./runtimeSchema.js";
-
-function formatVariantName(variantName: string): string {
-  return variantName.charAt(0).toUpperCase() + variantName.slice(1);
-}
-
-function versionedTypeName(exportName: string, version: number): string {
-  return `${exportName}_v${version}`;
-}
+import {
+  collectVersionedSchemaChain,
+  isRecordSchema,
+  isUnionSchema,
+  versionedTypeName,
+} from "./runtimeSchema.js";
 
 /**
  * Generate the index.ts barrel export from a versioned schema.

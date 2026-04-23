@@ -66,6 +66,30 @@ export function isUnionSchema(item: RuntimeSchemaItem): item is RuntimeSchemaUni
   return item.type === SchemaDefKind.UNION && "variants" in item;
 }
 
+export function findRecordExportName(recordName: string, schema: RuntimeSchema): string | null {
+  for (const [exportName, item] of Object.entries(schema)) {
+    if (isRecordSchema(item) && item.name === recordName) {
+      return exportName;
+    }
+  }
+  return null;
+}
+
+/** Versioned read type name: `RecordName_vN` */
+export function versionedTypeName(exportName: string, version: number): string {
+  return `${exportName}_v${version}`;
+}
+
+/** Versioned write type name: `RecordNameUpdate_vN` */
+export function versionedWriteTypeName(exportName: string, version: number): string {
+  return `${exportName}Update_v${version}`;
+}
+
+/** Versioned Zod schema name: `RecordNameSchema_vN` */
+export function versionedSchemaName(exportName: string, version: number): string {
+  return `${exportName}Schema_v${version}`;
+}
+
 export function collectVersionedSchemaChain(input: SchemaDefinition): VersionedSchemaEntry[] {
   const chain: VersionedSchemaEntry[] = [];
   let current: SchemaDefinition = input;

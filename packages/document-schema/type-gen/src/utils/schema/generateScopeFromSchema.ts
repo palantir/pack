@@ -18,7 +18,14 @@ import type { SchemaDefinition } from "@palantir/pack.schema";
 import { GENERATED_FILE_HEADER } from "../generatedFileHeader.js";
 import { setIsEqual } from "../sets.js";
 import type { RuntimeSchema, RuntimeSchemaRecord, RuntimeSchemaUnion } from "./runtimeSchema.js";
-import { collectVersionedSchemaChain, isRecordSchema, isUnionSchema } from "./runtimeSchema.js";
+import {
+  collectVersionedSchemaChain,
+  findRecordExportName,
+  isRecordSchema,
+  isUnionSchema,
+  versionedTypeName,
+  versionedWriteTypeName,
+} from "./runtimeSchema.js";
 
 /**
  * Compare field sets between two record definitions.
@@ -35,15 +42,6 @@ function recordFieldsChanged(
   const prevFields = new Set(Object.keys(prev.fields));
   const currFields = new Set(Object.keys(curr.fields));
   return !setIsEqual(prevFields, currFields);
-}
-
-function findRecordExportName(recordName: string, schema: RuntimeSchema): string | null {
-  for (const [exportName, item] of Object.entries(schema)) {
-    if (isRecordSchema(item) && item.name === recordName) {
-      return exportName;
-    }
-  }
-  return null;
 }
 
 /**
@@ -85,14 +83,6 @@ function getChangedRecordModels(
   }
 
   return changed;
-}
-
-function versionedTypeName(exportName: string, version: number): string {
-  return `${exportName}_v${version}`;
-}
-
-function versionedWriteTypeName(exportName: string, version: number): string {
-  return `${exportName}Update_v${version}`;
 }
 
 /**

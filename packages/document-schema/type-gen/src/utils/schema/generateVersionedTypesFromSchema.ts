@@ -20,9 +20,12 @@ import { GENERATED_FILE_HEADER } from "../generatedFileHeader.js";
 import type { RuntimeSchema, SchemaField, VersionedSchemaEntry } from "./runtimeSchema.js";
 import {
   collectVersionedSchemaChain,
+  findRecordExportName,
   isRecordSchema,
   isUnionSchema,
   TypeKind,
+  versionedTypeName,
+  versionedWriteTypeName,
 } from "./runtimeSchema.js";
 
 export interface VersionedTypesOutput {
@@ -73,15 +76,6 @@ function detectUsedRefTypes(schema: RuntimeSchema): Set<string> {
   }
 
   return refTypes;
-}
-
-function findRecordExportName(recordName: string, schema: RuntimeSchema): string | null {
-  for (const [exportName, item] of Object.entries(schema)) {
-    if (isRecordSchema(item) && item.name === recordName) {
-      return exportName;
-    }
-  }
-  return null;
 }
 
 function collectReferencedTypes(
@@ -154,20 +148,6 @@ function convertTypeToTypeScript(
     default:
       return "unknown";
   }
-}
-
-/**
- * Generate versioned read type name: RecordName_vN
- */
-function versionedTypeName(exportName: string, version: number): string {
-  return `${exportName}_v${version}`;
-}
-
-/**
- * Generate versioned write type name: RecordNameUpdate_vN
- */
-function versionedWriteTypeName(exportName: string, version: number): string {
-  return `${exportName}Update_v${version}`;
 }
 
 /**
