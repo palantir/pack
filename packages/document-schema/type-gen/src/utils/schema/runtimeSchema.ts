@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-import type { SchemaDefinition } from "@palantir/pack.schema";
 import { TypeKind as SchemaTypeKind } from "@palantir/pack.schema";
 
 export const TypeKind: typeof SchemaTypeKind & { readonly ANY: "any" } = {
@@ -53,11 +52,6 @@ export interface RuntimeSchemaUnion {
 export type RuntimeSchemaItem = RuntimeSchemaRecord | RuntimeSchemaUnion;
 export type RuntimeSchema = Record<string, RuntimeSchemaItem>;
 
-export interface VersionedSchemaEntry {
-  version: number;
-  schema: RuntimeSchema;
-}
-
 export function isRecordSchema(item: RuntimeSchemaItem): item is RuntimeSchemaRecord {
   return item.type === SchemaDefKind.RECORD && "fields" in item;
 }
@@ -66,15 +60,64 @@ export function isUnionSchema(item: RuntimeSchemaItem): item is RuntimeSchemaUni
   return item.type === SchemaDefKind.UNION && "variants" in item;
 }
 
-export function collectVersionedSchemaChain(input: SchemaDefinition): VersionedSchemaEntry[] {
-  const chain: VersionedSchemaEntry[] = [];
-  let current: SchemaDefinition = input;
-
-  while (current.type === "versioned") {
-    chain.unshift({ version: current.version, schema: current.models as RuntimeSchema });
-    current = current.previous;
+export function findRecordExportName(recordName: string, schema: RuntimeSchema): string | null {
+  for (const [exportName, item] of Object.entries(schema)) {
+    if (isRecordSchema(item) && item.name === recordName) {
+      return exportName;
+    }
   }
-  chain.unshift({ version: current.version, schema: current.models as RuntimeSchema });
-
-  return chain;
+  return null;
 }
+
+/** Versioned read type name: `RecordName_vN` */
+export function versionedTypeName(exportName: string, version: number): string {
+  return `${exportName}_v${version}`;
+}
+
+/** Versioned write type name: `RecordNameUpdate_vN` */
+export function versionedWriteTypeName(exportName: string, version: number): string {
+  return `${exportName}Update_v${version}`;
+}
+
+/** Versioned Zod schema name: `RecordNameSchema_vN` */
+export function versionedSchemaName(exportName: string, version: number): string {
+  return `${exportName}Schema_v${version}`;
+}
+
+/** Model constant name: `RecordNameModel` */
+export function modelName(exportName: string): string {
+  return `${exportName}Model`;
+}
+
+/** Unversioned Zod schema name: `RecordNameSchema` */
+export function schemaName(exportName: string): string {
+  return `${exportName}Schema`;
+}
+
+/** Per-version types file path: `./types_vN.js` */
+export function typesFilePath(version: number): string {
+  return `./types_v${version}.js`;
+}
+
+/** Per-version write types file path: `./writeTypes_vN.js` */
+export function writeTypesFilePath(version: number): string {
+  return `./writeTypes_v${version}.js`;
+}
+
+/** Types re-export file path: `./types.js` */
+export const TYPES_REEXPORT_PATH = "./types.js";
+
+/** Schema re-export file path: `./schema.js` */
+export const SCHEMA_REEXPORT_PATH = "./schema.js";
+
+/** Models file path: `./models.js` */
+export const MODELS_PATH = "./models.js";
+
+/** Internal migrations file path: `./_internal/migrations.js` */
+export const INTERNAL_MIGRATIONS_PATH = "./_internal/migrations.js";
+
+/** Versions file path: `./versions.js` */
+export const VERSIONS_PATH = "./versions.js";
+
+/** Versioned doc ref file path: `./versionedDocRef.js` */
+export const VERSIONED_DOC_REF_PATH = "./versionedDocRef.js";

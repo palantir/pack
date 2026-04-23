@@ -17,12 +17,17 @@
 import type { SchemaDefinition } from "@palantir/pack.schema";
 import { formatVariantName } from "../formatVariantName.js";
 import { GENERATED_FILE_HEADER } from "../generatedFileHeader.js";
-import type { RuntimeSchema, SchemaField, VersionedSchemaEntry } from "./runtimeSchema.js";
+import type { VersionedSchemaEntry } from "./resolveSchemaChain.js";
+import { resolveSchemaChain } from "./resolveSchemaChain.js";
+import type { RuntimeSchema, SchemaField } from "./runtimeSchema.js";
 import {
-  collectVersionedSchemaChain,
+  findRecordExportName,
   isRecordSchema,
   isUnionSchema,
   TypeKind,
+  typesFilePath,
+  versionedTypeName,
+  versionedWriteTypeName,
 } from "./runtimeSchema.js";
 
 export interface VersionedTypesOutput {
@@ -75,15 +80,6 @@ function detectUsedRefTypes(schema: RuntimeSchema): Set<string> {
   return refTypes;
 }
 
-function findRecordExportName(recordName: string, schema: RuntimeSchema): string | null {
-  for (const [exportName, item] of Object.entries(schema)) {
-    if (isRecordSchema(item) && item.name === recordName) {
-      return exportName;
-    }
-  }
-  return null;
-}
-
 function collectReferencedTypes(
   fieldType: SchemaField,
   schema: RuntimeSchema,
@@ -98,11 +94,11 @@ function collectReferencedTypes(
       if (fieldType.item) collectReferencedTypes(fieldType.item, schema, version, out);
       break;
     case TypeKind.REF: {
-      let name: string;
-      if (fieldType.refType === "record") {
-        name = findRecordExportName(fieldType.name!, schema) || fieldType.name || "unknown";
-      } else {
-        name = fieldType.name || "unknown";
+      const name = fieldType.refType === "record"
+        ? findRecordExportName(fieldType.name!, schema) ?? fieldType.name
+        : fieldType.name;
+      if (name == null) {
+        throw new Error(`Could not find name for ref: ${fieldType.type}:${fieldType.refType}`);
       }
       out.add(versionedTypeName(name, version));
       break;
@@ -139,11 +135,11 @@ function convertTypeToTypeScript(
       }
       return "unknown";
     case TypeKind.REF: {
-      let name: string;
-      if (fieldType.refType === "record" && schema) {
-        name = findRecordExportName(fieldType.name!, schema) || fieldType.name || "unknown";
-      } else {
-        name = fieldType.name || "unknown";
+      const name = fieldType.refType === "record" && schema != null
+        ? findRecordExportName(fieldType.name!, schema) ?? fieldType.name
+        : fieldType.name;
+      if (name == null) {
+        throw new Error(`Could not find name for ref: ${fieldType.type}:${fieldType.refType}`);
       }
       return version != null ? versionedTypeName(name, version) : name;
     }
@@ -154,20 +150,6 @@ function convertTypeToTypeScript(
     default:
       return "unknown";
   }
-}
-
-/**
- * Generate versioned read type name: RecordName_vN
- */
-function versionedTypeName(exportName: string, version: number): string {
-  return `${exportName}_v${version}`;
-}
-
-/**
- * Generate versioned write type name: RecordNameUpdate_vN
- */
-function versionedWriteTypeName(exportName: string, version: number): string {
-  return `${exportName}Update_v${version}`;
 }
 
 /**
@@ -285,7 +267,7 @@ function generateWriteTypesForVersion(
 
   if (referencedLocalTypes.size > 0) {
     const localTypesList = Array.from(referencedLocalTypes).sort().join(", ");
-    output += `import type { ${localTypesList} } from "./types_v${version}.js";\n`;
+    output += `import type { ${localTypesList} } from "${typesFilePath(version)}";\n`;
   }
 
   output += "\n";
@@ -319,12 +301,12 @@ function generateTypesReExport({ schema, version }: VersionedSchemaEntry): strin
     if (isRecordSchema(item)) {
       const versioned = versionedTypeName(exportName, version);
       reExports.push(
-        `export type { ${versioned} as ${exportName} } from "./types_v${version}.js";`,
+        `export type { ${versioned} as ${exportName} } from "${typesFilePath(version)}";`,
       );
     } else if (isUnionSchema(item)) {
       const versioned = versionedTypeName(exportName, version);
       reExports.push(
-        `export type { ${versioned} as ${exportName} } from "./types_v${version}.js";`,
+        `export type { ${versioned} as ${exportName} } from "${typesFilePath(version)}";`,
       );
 
       // Also re-export union variant types
@@ -333,7 +315,9 @@ function generateTypesReExport({ schema, version }: VersionedSchemaEntry): strin
         const versionedVariant = `${versionedTypeName(exportName, version)}${formattedVariant}`;
         const unversionedVariant = `${exportName}${formattedVariant}`;
         reExports.push(
-          `export type { ${versionedVariant} as ${unversionedVariant} } from "./types_v${version}.js";`,
+          `export type { ${versionedVariant} as ${unversionedVariant} } from "${
+            typesFilePath(version)
+          }";`,
         );
       }
     }
@@ -353,23 +337,7 @@ export function generateVersionedTypesFromSchema(
   schema: SchemaDefinition,
   minSupportedVersion?: number,
 ): VersionedTypesOutput {
-  const chain = collectVersionedSchemaChain(schema);
-
-  if (chain.length === 0) {
-    throw new Error("Schema version chain is empty");
-  }
-
-  if (
-    minSupportedVersion != null && !chain.find(({ version }) => version === minSupportedVersion)
-  ) {
-    throw new Error(
-      `minSupportedVersion ${minSupportedVersion} is not in the schema chain `
-        + `(available versions: ${chain.map(c => c.version).join(", ")})`,
-    );
-  }
-
-  const latestVersion = chain[chain.length - 1]!.version;
-  const minVersion = minSupportedVersion ?? latestVersion;
+  const { chain, latestVersion, minVersion } = resolveSchemaChain(schema, minSupportedVersion);
 
   const readTypes = new Map<number, string>();
   const writeTypes = new Map<number, string>();

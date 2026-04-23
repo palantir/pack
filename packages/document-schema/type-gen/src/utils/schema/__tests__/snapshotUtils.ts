@@ -15,6 +15,7 @@
  */
 
 import { format } from "prettier";
+import type { ModelMetadataOutput } from "../generateModelMetadataFromSchema.js";
 import type { VersionedTypesOutput } from "../generateVersionedTypesFromSchema.js";
 
 const prettierOpts = {
@@ -59,6 +60,15 @@ export async function formatVersionedTypesSnapshot(
   sections.push(section("types.ts", await fmt(result.typesReExport)));
 
   return sections.join("\n");
+}
+
+/**
+ * Format a ModelMetadataOutput into a snapshot string.
+ */
+export async function formatModelMetadataSnapshot(
+  result: ModelMetadataOutput,
+): Promise<string> {
+  return section("models.ts", await fmt(result.modelsFile));
 }
 
 /**

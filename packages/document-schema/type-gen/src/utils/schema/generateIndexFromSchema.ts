@@ -15,16 +15,19 @@
  */
 
 import type { SchemaDefinition } from "@palantir/pack.schema";
+import { formatVariantName } from "../formatVariantName.js";
 import { GENERATED_FILE_HEADER } from "../generatedFileHeader.js";
-import { collectVersionedSchemaChain, isRecordSchema, isUnionSchema } from "./runtimeSchema.js";
-
-function formatVariantName(variantName: string): string {
-  return variantName.charAt(0).toUpperCase() + variantName.slice(1);
-}
-
-function versionedTypeName(exportName: string, version: number): string {
-  return `${exportName}_v${version}`;
-}
+import { resolveSchemaChain } from "./resolveSchemaChain.js";
+import {
+  isRecordSchema,
+  isUnionSchema,
+  MODELS_PATH,
+  TYPES_REEXPORT_PATH,
+  typesFilePath,
+  VERSIONED_DOC_REF_PATH,
+  versionedTypeName,
+  VERSIONS_PATH,
+} from "./runtimeSchema.js";
 
 /**
  * Generate the index.ts barrel export from a versioned schema.
@@ -41,31 +44,15 @@ export function generateIndexFromSchema(
   schema: SchemaDefinition,
   minSupportedVersion?: number,
 ): string {
-  const chain = collectVersionedSchemaChain(schema);
-
-  if (chain.length === 0) {
-    throw new Error("Schema version chain is empty");
-  }
-
-  if (
-    minSupportedVersion != null && !chain.find(({ version }) => version === minSupportedVersion)
-  ) {
-    throw new Error(
-      `minSupportedVersion ${minSupportedVersion} is not in the schema chain `
-        + `(available versions: ${chain.map(c => c.version).join(", ")})`,
-    );
-  }
-
-  const latestVersion = chain[chain.length - 1]!.version;
-  const minVersion = minSupportedVersion ?? latestVersion;
+  const { chain, minVersion } = resolveSchemaChain(schema, minSupportedVersion);
 
   let output = GENERATED_FILE_HEADER;
 
   // Star exports for core modules
-  output += `export * from "./models.js";\n`;
-  output += `export * from "./types.js";\n`;
-  output += `export * from "./versions.js";\n`;
-  output += `export * from "./versionedDocRef.js";\n`;
+  output += `export * from "${MODELS_PATH}";\n`;
+  output += `export * from "${TYPES_REEXPORT_PATH}";\n`;
+  output += `export * from "${VERSIONS_PATH}";\n`;
+  output += `export * from "${VERSIONED_DOC_REF_PATH}";\n`;
 
   // Per-version explicit named type exports
   for (const { version, schema: versionSchema } of chain) {
@@ -88,7 +75,9 @@ export function generateIndexFromSchema(
     }
 
     if (typeNames.length > 0) {
-      output += `export type { ${typeNames.sort().join(", ")} } from "./types_v${version}.js";\n`;
+      output += `export type { ${typeNames.sort().join(", ")} } from "${
+        typesFilePath(version)
+      }";\n`;
     }
   }
 
