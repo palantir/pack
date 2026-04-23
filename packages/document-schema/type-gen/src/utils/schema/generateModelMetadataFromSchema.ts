@@ -18,7 +18,13 @@ import type { SchemaDefinition } from "@palantir/pack.schema";
 import { formatVariantName } from "../formatVariantName.js";
 import { GENERATED_FILE_HEADER } from "../generatedFileHeader.js";
 import type { RuntimeSchemaRecord, SchemaField } from "./runtimeSchema.js";
-import { collectVersionedSchemaChain, isRecordSchema, isUnionSchema } from "./runtimeSchema.js";
+import {
+  collectVersionedSchemaChain,
+  isRecordSchema,
+  isUnionSchema,
+  modelName,
+  schemaName,
+} from "./runtimeSchema.js";
 
 export interface ModelMetadataOutput {
   /** models.ts content -- DocumentModel with version metadata and migration references */
@@ -141,7 +147,7 @@ export function generateModelMetadataFromSchema(
   }
 
   // Schema imports
-  const schemaNames = allModelNames.map(n => `${n}Schema`);
+  const schemaNames = allModelNames.map(n => schemaName(n));
   if (schemaNames.length > 0) {
     output += `import { ${schemaNames.join(", ")} } from "${schemaImportPath}";\n`;
   }
@@ -168,11 +174,12 @@ export function generateModelMetadataFromSchema(
       }
       metadataFields.push(`    name: "${exportName}",`);
 
-      output +=
-        `export interface ${exportName}Model extends RecordModel<${exportName}, typeof ${exportName}Schema> {}\n`;
-      output += `export const ${exportName}Model: ${exportName}Model = {\n`;
+      output += `export interface ${
+        modelName(exportName)
+      } extends RecordModel<${exportName}, typeof ${schemaName(exportName)}> {}\n`;
+      output += `export const ${modelName(exportName)}: ${modelName(exportName)} = {\n`;
       output += `  __type: {} as ${exportName},\n`;
-      output += `  zodSchema: ${exportName}Schema,\n`;
+      output += `  zodSchema: ${schemaName(exportName)},\n`;
       output += `  [Metadata]: {\n${metadataFields.join("\n")}\n  },\n`;
       output += `};\n\n`;
     } else if (isUnionSchema(item)) {
@@ -180,11 +187,12 @@ export function generateModelMetadataFromSchema(
       metadataFields.push(`    discriminant: "${item.discriminant}",`);
       metadataFields.push(`    name: "${exportName}",`);
 
-      output +=
-        `export interface ${exportName}Model extends UnionModel<${exportName}, typeof ${exportName}Schema> {}\n`;
-      output += `export const ${exportName}Model: ${exportName}Model = {\n`;
+      output += `export interface ${
+        modelName(exportName)
+      } extends UnionModel<${exportName}, typeof ${schemaName(exportName)}> {}\n`;
+      output += `export const ${modelName(exportName)}: ${modelName(exportName)} = {\n`;
       output += `  __type: {} as ${exportName},\n`;
-      output += `  zodSchema: ${exportName}Schema,\n`;
+      output += `  zodSchema: ${schemaName(exportName)},\n`;
       output += `  [Metadata]: {\n${metadataFields.join("\n")}\n  },\n`;
       output += `};\n\n`;
 
@@ -196,11 +204,12 @@ export function generateModelMetadataFromSchema(
         variantMetadata.push(`    discriminant: "${item.discriminant}",`);
         variantMetadata.push(`    name: "${variantTypeName}",`);
 
-        output +=
-          `export interface ${variantTypeName}Model extends UnionModel<${variantTypeName}, typeof ${variantTypeName}Schema> {}\n`;
-        output += `export const ${variantTypeName}Model: ${variantTypeName}Model = {\n`;
+        output += `export interface ${
+          modelName(variantTypeName)
+        } extends UnionModel<${variantTypeName}, typeof ${schemaName(variantTypeName)}> {}\n`;
+        output += `export const ${modelName(variantTypeName)}: ${modelName(variantTypeName)} = {\n`;
         output += `  __type: {} as ${variantTypeName},\n`;
-        output += `  zodSchema: ${variantTypeName}Schema,\n`;
+        output += `  zodSchema: ${schemaName(variantTypeName)},\n`;
         output += `  [Metadata]: {\n${variantMetadata.join("\n")}\n  },\n`;
         output += `};\n\n`;
       }
@@ -211,13 +220,13 @@ export function generateModelMetadataFromSchema(
   const modelEntries: string[] = [];
   for (const [exportName, item] of Object.entries(latestSchema)) {
     if (isRecordSchema(item)) {
-      modelEntries.push(`  ${exportName}: ${exportName}Model`);
+      modelEntries.push(`  ${exportName}: ${modelName(exportName)}`);
     } else if (isUnionSchema(item)) {
-      modelEntries.push(`  ${exportName}: ${exportName}Model`);
+      modelEntries.push(`  ${exportName}: ${modelName(exportName)}`);
       for (const variantName of Object.keys(item.variants)) {
         const formattedVariant = formatVariantName(variantName);
         const variantTypeName = `${exportName}${formattedVariant}`;
-        modelEntries.push(`  ${variantTypeName}: ${variantTypeName}Model`);
+        modelEntries.push(`  ${variantTypeName}: ${modelName(variantTypeName)}`);
       }
     }
   }

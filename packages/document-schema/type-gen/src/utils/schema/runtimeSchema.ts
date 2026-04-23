@@ -90,6 +90,26 @@ export function versionedSchemaName(exportName: string, version: number): string
   return `${exportName}Schema_v${version}`;
 }
 
+/** Model constant name: `RecordNameModel` */
+export function modelName(exportName: string): string {
+  return `${exportName}Model`;
+}
+
+/** Unversioned Zod schema name: `RecordNameSchema` */
+export function schemaName(exportName: string): string {
+  return `${exportName}Schema`;
+}
+
+/** Per-version types file path: `./types_vN.js` */
+export function typesFilePath(version: number): string {
+  return `./types_v${version}.js`;
+}
+
+/** Per-version write types file path: `./writeTypes_vN.js` */
+export function writeTypesFilePath(version: number): string {
+  return `./writeTypes_v${version}.js`;
+}
+
 export function collectVersionedSchemaChain(input: SchemaDefinition): VersionedSchemaEntry[] {
   const chain: VersionedSchemaEntry[] = [];
   let current: SchemaDefinition = input;

@@ -21,6 +21,7 @@ import {
   collectVersionedSchemaChain,
   isRecordSchema,
   isUnionSchema,
+  typesFilePath,
   versionedTypeName,
 } from "./runtimeSchema.js";
 
@@ -86,7 +87,9 @@ export function generateIndexFromSchema(
     }
 
     if (typeNames.length > 0) {
-      output += `export type { ${typeNames.sort().join(", ")} } from "./types_v${version}.js";\n`;
+      output += `export type { ${typeNames.sort().join(", ")} } from "${
+        typesFilePath(version)
+      }";\n`;
     }
   }
 

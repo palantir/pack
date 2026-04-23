@@ -23,8 +23,11 @@ import {
   findRecordExportName,
   isRecordSchema,
   isUnionSchema,
+  modelName,
+  typesFilePath,
   versionedTypeName,
   versionedWriteTypeName,
+  writeTypesFilePath,
 } from "./runtimeSchema.js";
 
 /**
@@ -166,7 +169,7 @@ export function generateScopeFromSchema(
     `import type { DocumentRef, Model, ModelData, RecordId, RecordRef } from "@palantir/pack.document-schema.model-types";\n`;
 
   // Import model types from models.ts
-  const modelImports = allModelNames.map(n => `${n}Model`);
+  const modelImports = allModelNames.map(n => modelName(n));
   const typeImportsFromModels = ["DocumentModel", ...modelImports];
   output += `import type { ${typeImportsFromModels.join(", ")} } from "./models.js";\n`;
 
@@ -186,14 +189,14 @@ export function generateScopeFromSchema(
     }
 
     if (readTypeImports.length > 0) {
-      output += `import type { ${
-        readTypeImports.sort().join(", ")
-      } } from "./types_v${version}.js";\n`;
+      output += `import type { ${readTypeImports.sort().join(", ")} } from "${
+        typesFilePath(version)
+      }";\n`;
     }
     if (writeTypeImports.length > 0) {
-      output += `import type { ${
-        writeTypeImports.sort().join(", ")
-      } } from "./writeTypes_v${version}.js";\n`;
+      output += `import type { ${writeTypeImports.sort().join(", ")} } from "${
+        writeTypesFilePath(version)
+      }";\n`;
     }
   }
 
@@ -212,12 +215,14 @@ export function generateScopeFromSchema(
 
       if (isRecordSchema(item)) {
         const writeType = versionedWriteTypeName(exportName, version);
-        output +=
-          `  updateRecord(ref: RecordRef<typeof ${exportName}Model>, data: ${writeType}): Promise<void>;\n`;
+        output += `  updateRecord(ref: RecordRef<typeof ${
+          modelName(exportName)
+        }>, data: ${writeType}): Promise<void>;\n`;
       } else if (isUnionSchema(item)) {
         const readType = versionedTypeName(exportName, version);
-        output +=
-          `  updateRecord(ref: RecordRef<typeof ${exportName}Model>, data: Partial<${readType}>): Promise<void>;\n`;
+        output += `  updateRecord(ref: RecordRef<typeof ${
+          modelName(exportName)
+        }>, data: Partial<${readType}>): Promise<void>;\n`;
       }
     }
     output +=
@@ -228,8 +233,9 @@ export function generateScopeFromSchema(
       if (!changed.has(exportName)) continue;
 
       const readType = versionedTypeName(exportName, version);
-      output +=
-        `  setCollectionRecord(model: typeof ${exportName}Model, id: RecordId, data: ${readType}): Promise<void>;\n`;
+      output += `  setCollectionRecord(model: typeof ${
+        modelName(exportName)
+      }, id: RecordId, data: ${readType}): Promise<void>;\n`;
     }
     output +=
       `  setCollectionRecord<M extends Model>(model: M, id: RecordId, data: ModelData<M>): Promise<void>;\n`;

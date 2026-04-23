@@ -24,6 +24,7 @@ import {
   isRecordSchema,
   isUnionSchema,
   TypeKind,
+  typesFilePath,
   versionedTypeName,
   versionedWriteTypeName,
 } from "./runtimeSchema.js";
@@ -265,7 +266,7 @@ function generateWriteTypesForVersion(
 
   if (referencedLocalTypes.size > 0) {
     const localTypesList = Array.from(referencedLocalTypes).sort().join(", ");
-    output += `import type { ${localTypesList} } from "./types_v${version}.js";\n`;
+    output += `import type { ${localTypesList} } from "${typesFilePath(version)}";\n`;
   }
 
   output += "\n";
@@ -299,12 +300,12 @@ function generateTypesReExport({ schema, version }: VersionedSchemaEntry): strin
     if (isRecordSchema(item)) {
       const versioned = versionedTypeName(exportName, version);
       reExports.push(
-        `export type { ${versioned} as ${exportName} } from "./types_v${version}.js";`,
+        `export type { ${versioned} as ${exportName} } from "${typesFilePath(version)}";`,
       );
     } else if (isUnionSchema(item)) {
       const versioned = versionedTypeName(exportName, version);
       reExports.push(
-        `export type { ${versioned} as ${exportName} } from "./types_v${version}.js";`,
+        `export type { ${versioned} as ${exportName} } from "${typesFilePath(version)}";`,
       );
 
       // Also re-export union variant types
@@ -313,7 +314,9 @@ function generateTypesReExport({ schema, version }: VersionedSchemaEntry): strin
         const versionedVariant = `${versionedTypeName(exportName, version)}${formattedVariant}`;
         const unversionedVariant = `${exportName}${formattedVariant}`;
         reExports.push(
-          `export type { ${versionedVariant} as ${unversionedVariant} } from "./types_v${version}.js";`,
+          `export type { ${versionedVariant} as ${unversionedVariant} } from "${
+            typesFilePath(version)
+          }";`,
         );
       }
     }
