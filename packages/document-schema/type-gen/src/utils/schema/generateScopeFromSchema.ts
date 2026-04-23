@@ -21,6 +21,7 @@ import {
   isRecordSchema,
   isUnionSchema,
   modelName,
+  MODELS_PATH,
   typesFilePath,
   versionedTypeName,
   versionedWriteTypeName,
@@ -65,7 +66,7 @@ export function generateScopeFromSchema(
   // Import model types from models.ts
   const modelImports = allModelNames.map(n => modelName(n));
   const typeImportsFromModels = ["DocumentModel", ...modelImports];
-  output += `import type { ${typeImportsFromModels.join(", ")} } from "./models.js";\n`;
+  output += `import type { ${typeImportsFromModels.join(", ")} } from "${MODELS_PATH}";\n`;
 
   // Import per-version types
   for (const { version, schema: versionSchema } of supportedVersions) {

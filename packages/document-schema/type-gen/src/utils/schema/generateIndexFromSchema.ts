@@ -21,8 +21,12 @@ import { resolveSchemaChain } from "./resolveSchemaChain.js";
 import {
   isRecordSchema,
   isUnionSchema,
+  MODELS_PATH,
+  TYPES_REEXPORT_PATH,
   typesFilePath,
+  VERSIONED_DOC_REF_PATH,
   versionedTypeName,
+  VERSIONS_PATH,
 } from "./runtimeSchema.js";
 
 /**
@@ -45,10 +49,10 @@ export function generateIndexFromSchema(
   let output = GENERATED_FILE_HEADER;
 
   // Star exports for core modules
-  output += `export * from "./models.js";\n`;
-  output += `export * from "./types.js";\n`;
-  output += `export * from "./versions.js";\n`;
-  output += `export * from "./versionedDocRef.js";\n`;
+  output += `export * from "${MODELS_PATH}";\n`;
+  output += `export * from "${TYPES_REEXPORT_PATH}";\n`;
+  output += `export * from "${VERSIONS_PATH}";\n`;
+  output += `export * from "${VERSIONED_DOC_REF_PATH}";\n`;
 
   // Per-version explicit named type exports
   for (const { version, schema: versionSchema } of chain) {

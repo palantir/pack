@@ -19,7 +19,15 @@ import { formatVariantName } from "../formatVariantName.js";
 import { GENERATED_FILE_HEADER } from "../generatedFileHeader.js";
 import { resolveSchemaChain } from "./resolveSchemaChain.js";
 import type { RuntimeSchemaRecord, SchemaField } from "./runtimeSchema.js";
-import { isRecordSchema, isUnionSchema, modelName, schemaName } from "./runtimeSchema.js";
+import {
+  INTERNAL_MIGRATIONS_PATH,
+  isRecordSchema,
+  isUnionSchema,
+  modelName,
+  SCHEMA_REEXPORT_PATH,
+  schemaName,
+  TYPES_REEXPORT_PATH,
+} from "./runtimeSchema.js";
 
 export interface ModelMetadataOutput {
   /** models.ts content -- DocumentModel with version metadata and migration references */
@@ -73,18 +81,9 @@ function extractExternalRefFieldTypes(
 export function generateModelMetadataFromSchema(
   schema: SchemaDefinition,
   minSupportedVersion?: number,
-  options?: {
-    typeImportPath?: string;
-    schemaImportPath?: string;
-    migrationsImportPath?: string;
-  },
 ): ModelMetadataOutput {
   const { chain, latestVersion, minVersion } = resolveSchemaChain(schema, minSupportedVersion);
   const latestSchema = chain[chain.length - 1]!.schema;
-
-  const typeImportPath = options?.typeImportPath ?? "./types.js";
-  const schemaImportPath = options?.schemaImportPath ?? "./schema.js";
-  const migrationsImportPath = options?.migrationsImportPath ?? "./_internal/migrations.js";
 
   // --- Generate models.ts ---
   let output = GENERATED_FILE_HEADER;
@@ -118,19 +117,19 @@ export function generateModelMetadataFromSchema(
   output += `import { Metadata } from "@palantir/pack.document-schema.model-types";\n`;
 
   if (allModelNames.length > 0) {
-    output += `import type { ${allModelNames.join(", ")} } from "${typeImportPath}";\n`;
+    output += `import type { ${allModelNames.join(", ")} } from "${TYPES_REEXPORT_PATH}";\n`;
   }
 
   // Schema imports
   const schemaNames = allModelNames.map(n => schemaName(n));
   if (schemaNames.length > 0) {
-    output += `import { ${schemaNames.join(", ")} } from "${schemaImportPath}";\n`;
+    output += `import { ${schemaNames.join(", ")} } from "${SCHEMA_REEXPORT_PATH}";\n`;
   }
 
   // Migration imports (only if there are migrations)
   const migrationNames = [...recordNames, ...unionNames].map(n => `${n}Migrations`);
   if (chain.length > 1 && migrationNames.length > 0) {
-    output += `import { ${migrationNames.join(", ")} } from "${migrationsImportPath}";\n`;
+    output += `import { ${migrationNames.join(", ")} } from "${INTERNAL_MIGRATIONS_PATH}";\n`;
   }
 
   output += "\n";

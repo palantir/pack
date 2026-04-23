@@ -103,3 +103,21 @@ export function typesFilePath(version: number): string {
 export function writeTypesFilePath(version: number): string {
   return `./writeTypes_v${version}.js`;
 }
+
+/** Types re-export file path: `./types.js` */
+export const TYPES_REEXPORT_PATH = "./types.js";
+
+/** Schema re-export file path: `./schema.js` */
+export const SCHEMA_REEXPORT_PATH = "./schema.js";
+
+/** Models file path: `./models.js` */
+export const MODELS_PATH = "./models.js";
+
+/** Internal migrations file path: `./_internal/migrations.js` */
+export const INTERNAL_MIGRATIONS_PATH = "./_internal/migrations.js";
+
+/** Versions file path: `./versions.js` */
+export const VERSIONS_PATH = "./versions.js";
+
+/** Versioned doc ref file path: `./versionedDocRef.js` */
+export const VERSIONED_DOC_REF_PATH = "./versionedDocRef.js";
