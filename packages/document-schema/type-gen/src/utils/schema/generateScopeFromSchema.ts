@@ -273,8 +273,14 @@ export function generateScopeFromSchema(
   output += handlerProps + "\n";
   output += `  },\n`;
   output += `): R {\n`;
-  output +=
-    `  return (handlers as Record<number, (doc: VersionedDocRef) => R>)[doc.version]!(doc);\n`;
+  output += `  switch (doc.version) {\n`;
+  for (const { version } of supportedVersions) {
+    output += `    case ${version}:\n`;
+    output += `      return handlers[${version}](doc);\n`;
+  }
+  output += `    default:\n`;
+  output += `      throw new Error(\`Unexpected document version: \${(doc as any).version}\`);\n`;
+  output += `  }\n`;
   output += `}\n`;
 
   return output;

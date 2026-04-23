@@ -80,7 +80,10 @@ export function matchVersion<R>(
     readonly 1: (doc: VersionedDocRef_v1) => R;
   }
 ): R {
-  return (handlers as Record<number, (doc: VersionedDocRef) => R>)[
-    doc.version
-  ]!(doc);
+  switch (doc.version) {
+    case 1:
+      return handlers[1](doc);
+    default:
+      throw new Error(`Unexpected document version: ${(doc as any).version}`);
+  }
 }
