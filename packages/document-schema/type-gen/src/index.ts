@@ -23,6 +23,13 @@ export {
   convertSchemaToSteps,
   convertStepsToYamlString,
 } from "./utils/schema/convertSchemaToSteps.js";
+export { generateModelMetadataFromSchema } from "./utils/schema/generateModelMetadataFromSchema.js";
+export {
+  generateSchemaManifest,
+  type ModelManifest,
+  type SchemaManifest,
+  type VersionManifest,
+} from "./utils/schema/generateSchemaManifest.js";
 export { generateTypesFromSchema } from "./utils/schema/generateTypesFromSchema.js";
 export { generateVersionedTypesFromSchema } from "./utils/schema/generateVersionedTypesFromSchema.js";
 export { generateZodFromSchema } from "./utils/schema/generateZodFromSchema.js";

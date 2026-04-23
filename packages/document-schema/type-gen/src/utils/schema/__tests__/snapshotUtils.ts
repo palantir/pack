@@ -15,6 +15,7 @@
  */
 
 import { format } from "prettier";
+import type { ModelMetadataOutput } from "../generateModelMetadataFromSchema.js";
 import type { VersionedTypesOutput } from "../generateVersionedTypesFromSchema.js";
 
 const prettierOpts = {
@@ -57,6 +58,29 @@ export async function formatVersionedTypesSnapshot(
     sections.push(section(`writeTypes_v${version}.ts`, await fmt(result.writeTypes.get(version)!)));
   }
   sections.push(section("types.ts", await fmt(result.typesReExport)));
+
+  return sections.join("\n");
+}
+
+/**
+ * Combine a ModelMetadataOutput into a single snapshot string.
+ *
+ * Layout:
+ *   // === models.ts ===
+ *   ...formatted code...
+ *   // === schema-manifest.json ===
+ *   ...formatted json...
+ */
+export async function formatModelMetadataSnapshot(
+  result: ModelMetadataOutput,
+): Promise<string> {
+  const sections: string[] = [];
+
+  sections.push(section("models.ts", await fmt(result.modelsFile)));
+  sections.push(section(
+    "schema-manifest.json",
+    await format(JSON.stringify(result.schemaManifest, null, 2), { parser: "json" }),
+  ));
 
   return sections.join("\n");
 }
