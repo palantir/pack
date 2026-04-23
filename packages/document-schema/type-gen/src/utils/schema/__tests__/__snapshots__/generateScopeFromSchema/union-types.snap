@@ -6,8 +6,6 @@
 
 import type {
   DocumentRef,
-  Model,
-  ModelData,
   RecordId,
   RecordRef,
 } from '@palantir/pack.document-schema.model-types';
@@ -34,10 +32,6 @@ export interface VersionedDocRef_v1 extends DocumentRef<DocumentModel> {
     ref: RecordRef<typeof ShapeModel>,
     data: Partial<Shape_v1>
   ): Promise<void>;
-  updateRecord<M extends Model>(
-    ref: RecordRef<M>,
-    data: Partial<ModelData<M>>
-  ): Promise<void>;
   setCollectionRecord(
     model: typeof CircleModel,
     id: RecordId,
@@ -52,11 +46,6 @@ export interface VersionedDocRef_v1 extends DocumentRef<DocumentModel> {
     model: typeof ShapeModel,
     id: RecordId,
     data: Shape_v1
-  ): Promise<void>;
-  setCollectionRecord<M extends Model>(
-    model: M,
-    id: RecordId,
-    data: ModelData<M>
   ): Promise<void>;
 }
 

@@ -18,9 +18,9 @@ import type { SchemaDefinition } from "@palantir/pack.schema";
 import { formatVariantName } from "../formatVariantName.js";
 import { GENERATED_FILE_HEADER } from "../generatedFileHeader.js";
 import {
-  collectVersionedSchemaChain,
   isRecordSchema,
   isUnionSchema,
+  resolveSchemaChain,
   typesFilePath,
   versionedTypeName,
 } from "./runtimeSchema.js";
@@ -40,23 +40,7 @@ export function generateIndexFromSchema(
   schema: SchemaDefinition,
   minSupportedVersion?: number,
 ): string {
-  const chain = collectVersionedSchemaChain(schema);
-
-  if (chain.length === 0) {
-    throw new Error("Schema version chain is empty");
-  }
-
-  if (
-    minSupportedVersion != null && !chain.find(({ version }) => version === minSupportedVersion)
-  ) {
-    throw new Error(
-      `minSupportedVersion ${minSupportedVersion} is not in the schema chain `
-        + `(available versions: ${chain.map(c => c.version).join(", ")})`,
-    );
-  }
-
-  const latestVersion = chain[chain.length - 1]!.version;
-  const minVersion = minSupportedVersion ?? latestVersion;
+  const { chain, minVersion } = resolveSchemaChain(schema, minSupportedVersion);
 
   let output = GENERATED_FILE_HEADER;
 

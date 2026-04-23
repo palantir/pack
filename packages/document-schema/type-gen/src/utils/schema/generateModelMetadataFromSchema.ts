@@ -19,10 +19,10 @@ import { formatVariantName } from "../formatVariantName.js";
 import { GENERATED_FILE_HEADER } from "../generatedFileHeader.js";
 import type { RuntimeSchemaRecord, SchemaField } from "./runtimeSchema.js";
 import {
-  collectVersionedSchemaChain,
   isRecordSchema,
   isUnionSchema,
   modelName,
+  resolveSchemaChain,
   schemaName,
 } from "./runtimeSchema.js";
 
@@ -45,27 +45,33 @@ export interface SchemaManifest {
  * Detect which external ref field types (docRef, mediaRef, objectRef, userRef)
  * are present on a record for its model metadata.
  */
+function findExternalRefType(field: SchemaField): string | undefined {
+  switch (field.type) {
+    case "docRef":
+      return "docRef";
+    case "mediaRef":
+      return "mediaRef";
+    case "objectRef":
+      return "objectRef";
+    case "userRef":
+      return "userRef";
+    case "optional":
+      return field.item ? findExternalRefType(field.item) : undefined;
+    case "array":
+      return field.items ? findExternalRefType(field.items) : undefined;
+    default:
+      return undefined;
+  }
+}
+
 function extractExternalRefFieldTypes(
   record: RuntimeSchemaRecord,
 ): Array<[string, string]> {
   const refs: Array<[string, string]> = [];
   for (const [fieldName, fieldType] of Object.entries(record.fields)) {
-    const innerType: SchemaField = fieldType.type === "optional" && fieldType.item
-      ? fieldType.item
-      : fieldType;
-    switch (innerType.type) {
-      case "docRef":
-        refs.push([fieldName, "docRef"]);
-        break;
-      case "mediaRef":
-        refs.push([fieldName, "mediaRef"]);
-        break;
-      case "objectRef":
-        refs.push([fieldName, "objectRef"]);
-        break;
-      case "userRef":
-        refs.push([fieldName, "userRef"]);
-        break;
+    const refType = findExternalRefType(fieldType);
+    if (refType != null) {
+      refs.push([fieldName, refType]);
     }
   }
   return refs;
@@ -88,23 +94,7 @@ export function generateModelMetadataFromSchema(
     migrationsImportPath?: string;
   },
 ): ModelMetadataOutput {
-  const chain = collectVersionedSchemaChain(schema);
-
-  if (chain.length === 0) {
-    throw new Error("Schema version chain is empty");
-  }
-
-  if (
-    minSupportedVersion != null && !chain.find(({ version }) => version === minSupportedVersion)
-  ) {
-    throw new Error(
-      `minSupportedVersion ${minSupportedVersion} is not in the schema chain `
-        + `(available versions: ${chain.map(c => c.version).join(", ")})`,
-    );
-  }
-
-  const latestVersion = chain[chain.length - 1]!.version;
-  const minVersion = minSupportedVersion ?? latestVersion;
+  const { chain, latestVersion, minVersion } = resolveSchemaChain(schema, minSupportedVersion);
   const latestSchema = chain[chain.length - 1]!.schema;
 
   const typeImportPath = options?.typeImportPath ?? "./types.js";

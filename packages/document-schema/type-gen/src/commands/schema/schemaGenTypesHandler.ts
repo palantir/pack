@@ -64,7 +64,13 @@ export async function schemaGenTypesHandler(options: SchemaGenTypesOptions): Pro
   const schemaModule: unknown = await import(schemaUrl);
 
   const schema = extractSchemaDefinition(schemaModule);
-  const minSupportedVersion = minVersion != null ? parseInt(minVersion, 10) : undefined;
+  let minSupportedVersion: number | undefined;
+  if (minVersion != null) {
+    minSupportedVersion = parseInt(minVersion, 10);
+    if (isNaN(minSupportedVersion)) {
+      throw new Error(`--min-version must be a valid integer, got: "${minVersion}"`);
+    }
+  }
 
   const resolvedOutputDir = path.resolve(outputDir);
   await fs.ensureDir(resolvedOutputDir);

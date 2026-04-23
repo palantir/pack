@@ -16,14 +16,11 @@
 
 import type { SchemaDefinition } from "@palantir/pack.schema";
 import { GENERATED_FILE_HEADER } from "../generatedFileHeader.js";
-import { setIsEqual } from "../sets.js";
-import type { RuntimeSchema, RuntimeSchemaRecord, RuntimeSchemaUnion } from "./runtimeSchema.js";
 import {
-  collectVersionedSchemaChain,
-  findRecordExportName,
   isRecordSchema,
   isUnionSchema,
   modelName,
+  resolveSchemaChain,
   typesFilePath,
   versionedTypeName,
   versionedWriteTypeName,
@@ -31,134 +28,31 @@ import {
 } from "./runtimeSchema.js";
 
 /**
- * Compare field sets between two record definitions.
- * Returns true if any field was added, removed, or the set differs.
- */
-function recordFieldsChanged(
-  prev: RuntimeSchemaRecord | undefined,
-  curr: RuntimeSchemaRecord,
-): boolean {
-  if (prev == null) {
-    // new model -- treat as changed
-    return true;
-  }
-  const prevFields = new Set(Object.keys(prev.fields));
-  const currFields = new Set(Object.keys(curr.fields));
-  return !setIsEqual(prevFields, currFields);
-}
-
-/**
- * For a union, check if any of its record variants reference changed models.
- */
-function unionReferencesChangedModel(
-  union: RuntimeSchemaUnion,
-  changedRecordNames: Set<string>,
-  schema: RuntimeSchema,
-): boolean {
-  for (const variantField of Object.values(union.variants)) {
-    if (variantField.type === "ref" && variantField.refType === "record") {
-      const exportName = findRecordExportName(variantField.name!, schema);
-      if (exportName != null && changedRecordNames.has(exportName)) {
-        return true;
-      }
-    }
-  }
-  return false;
-}
-
-/**
- * Determine which record models changed between two adjacent schema versions.
- * Returns the set of export names (e.g. "ShapeBox") that changed.
- */
-function getChangedRecordModels(
-  prev: RuntimeSchema | undefined,
-  curr: RuntimeSchema,
-): Set<string> {
-  const changed = new Set<string>();
-
-  for (const [exportName, item] of Object.entries(curr)) {
-    if (!isRecordSchema(item)) continue;
-    const prevItem = prev?.[exportName];
-    const prevRecord = prevItem != null && isRecordSchema(prevItem) ? prevItem : undefined;
-    if (recordFieldsChanged(prevRecord, item)) {
-      changed.add(exportName);
-    }
-  }
-
-  return changed;
-}
-
-/**
  * Generate versionedDocRef.ts from a versioned schema chain.
  *
  * Produces:
  * - Per-version VersionedDocRef_vN interfaces extending DocumentRef<DocumentModel>
  * - Union type VersionedDocRef = VersionedDocRef_v1 | VersionedDocRef_v2
- * - createVersionedDocRef factory function
  *
- * The generated type extends DocumentRef so it can be used anywhere a DocumentRef
- * is expected (reads, subscriptions, etc.) while adding version-specific overloads
- * for write operations (updateRecord, setCollectionRecord, deleteRecord).
- *
- * Consumers narrow writes via `switch (doc.version)` -- no React context needed.
+ * Every model gets a version-specific overload on every version so that
+ * write data is always typed to the exact version, not the latest.
  */
 export function generateScopeFromSchema(
   schema: SchemaDefinition,
   minSupportedVersion?: number,
 ): string {
-  const chain = collectVersionedSchemaChain(schema);
-
-  if (chain.length === 0) {
-    throw new Error("Schema version chain is empty");
-  }
-
-  if (
-    minSupportedVersion != null && !chain.find(({ version }) => version === minSupportedVersion)
-  ) {
-    throw new Error(
-      `minSupportedVersion ${minSupportedVersion} is not in the schema chain `
-        + `(available versions: ${chain.map(c => c.version).join(", ")})`,
-    );
-  }
-
-  const latestVersion = chain[chain.length - 1]!.version;
-  const minVersion = minSupportedVersion ?? latestVersion;
+  const { chain, latestVersion, minVersion } = resolveSchemaChain(schema, minSupportedVersion);
 
   // Filter to supported versions
   const supportedVersions = chain.filter(v => v.version >= minVersion);
 
   // Collect all model names from the latest schema
   const latestSchema = chain[chain.length - 1]!.schema;
-  const allRecordNames: string[] = [];
-  const allUnionNames: string[] = [];
   const allModelNames: string[] = [];
   for (const [exportName, item] of Object.entries(latestSchema)) {
-    if (isRecordSchema(item)) {
-      allRecordNames.push(exportName);
-      allModelNames.push(exportName);
-    } else if (isUnionSchema(item)) {
-      allUnionNames.push(exportName);
+    if (isRecordSchema(item) || isUnionSchema(item)) {
       allModelNames.push(exportName);
     }
-  }
-
-  // For each supported version, determine which models changed relative to previous
-  const changedModelsPerVersion = new Map<number, Set<string>>();
-  for (let i = 0; i < supportedVersions.length; i++) {
-    const curr = supportedVersions[i]!;
-    const chainIdx = chain.findIndex(v => v.version === curr.version);
-    const prev = chainIdx > 0 ? chain[chainIdx - 1] : undefined;
-    const changedRecords = getChangedRecordModels(prev?.schema, curr.schema);
-
-    // Also include unions that reference changed records
-    const changedModels = new Set(changedRecords);
-    for (const [exportName, item] of Object.entries(curr.schema)) {
-      if (isUnionSchema(item) && unionReferencesChangedModel(item, changedRecords, curr.schema)) {
-        changedModels.add(exportName);
-      }
-    }
-
-    changedModelsPerVersion.set(curr.version, changedModels);
   }
 
   // Build output
@@ -166,7 +60,7 @@ export function generateScopeFromSchema(
 
   // Import model-types
   output +=
-    `import type { DocumentRef, Model, ModelData, RecordId, RecordRef } from "@palantir/pack.document-schema.model-types";\n`;
+    `import type { DocumentRef, RecordId, RecordRef } from "@palantir/pack.document-schema.model-types";\n`;
 
   // Import model types from models.ts
   const modelImports = allModelNames.map(n => modelName(n));
@@ -202,17 +96,15 @@ export function generateScopeFromSchema(
 
   output += "\n";
 
-  // Generate per-version VersionedDocRef interfaces extending DocumentRef
+  // Generate per-version VersionedDocRef interfaces extending DocumentRef.
+  // Every model gets a version-specific overload on every version so that
+  // write data is always typed to the exact version, not the latest.
   for (const { version, schema: versionSchema } of supportedVersions) {
-    const changed = changedModelsPerVersion.get(version) ?? new Set<string>();
-
     output += `export interface VersionedDocRef_v${version} extends DocumentRef<DocumentModel> {\n`;
     output += `  readonly version: ${version};\n`;
 
-    // updateRecord overloads -- record models get write types, union models get Partial
+    // updateRecord overloads — record models get write types, union models get Partial<read>
     for (const [exportName, item] of Object.entries(versionSchema)) {
-      if (!changed.has(exportName)) continue;
-
       if (isRecordSchema(item)) {
         const writeType = versionedWriteTypeName(exportName, version);
         output += `  updateRecord(ref: RecordRef<typeof ${
@@ -225,20 +117,16 @@ export function generateScopeFromSchema(
         }>, data: Partial<${readType}>): Promise<void>;\n`;
       }
     }
-    output +=
-      `  updateRecord<M extends Model>(ref: RecordRef<M>, data: Partial<ModelData<M>>): Promise<void>;\n`;
 
-    // setCollectionRecord overloads -- for changed records AND unions
+    // setCollectionRecord overloads
     for (const [exportName, item] of Object.entries(versionSchema)) {
-      if (!changed.has(exportName)) continue;
-
-      const readType = versionedTypeName(exportName, version);
-      output += `  setCollectionRecord(model: typeof ${
-        modelName(exportName)
-      }, id: RecordId, data: ${readType}): Promise<void>;\n`;
+      if (isRecordSchema(item) || isUnionSchema(item)) {
+        const readType = versionedTypeName(exportName, version);
+        output += `  setCollectionRecord(model: typeof ${
+          modelName(exportName)
+        }, id: RecordId, data: ${readType}): Promise<void>;\n`;
+      }
     }
-    output +=
-      `  setCollectionRecord<M extends Model>(model: M, id: RecordId, data: ModelData<M>): Promise<void>;\n`;
 
     output += `}\n\n`;
   }
@@ -251,13 +139,13 @@ export function generateScopeFromSchema(
     output += `export type VersionedDocRef = ${unionMembers};\n`;
   }
 
-  // asVersioned -- identity cast to unlock version-specific write overloads
+  // asVersioned — identity cast to unlock version-specific write overloads
   output += `\n/** Narrow a DocumentRef to a version-discriminated type for type-safe writes. */\n`;
   output += `export function asVersioned(docRef: DocumentRef<DocumentModel>): VersionedDocRef {\n`;
   output += `  return docRef as VersionedDocRef;\n`;
   output += `}\n`;
 
-  // matchVersion -- exhaustive version handler
+  // matchVersion — exhaustive version handler
   const handlerProps = supportedVersions.map(
     v => `  readonly ${v.version}: (doc: VersionedDocRef_v${v.version}) => R;`,
   ).join("\n");

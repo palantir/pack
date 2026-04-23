@@ -16,7 +16,7 @@
 
 import type { SchemaDefinition } from "@palantir/pack.schema";
 import { GENERATED_FILE_HEADER } from "../generatedFileHeader.js";
-import { collectVersionedSchemaChain } from "./runtimeSchema.js";
+import { resolveSchemaChain } from "./runtimeSchema.js";
 
 /**
  * Generate versions.ts from a versioned schema chain.
@@ -32,23 +32,7 @@ export function generateVersionsFromSchema(
   schema: SchemaDefinition,
   minSupportedVersion?: number,
 ): string {
-  const chain = collectVersionedSchemaChain(schema);
-
-  if (chain.length === 0) {
-    throw new Error("Schema version chain is empty");
-  }
-
-  if (
-    minSupportedVersion != null && !chain.find(({ version }) => version === minSupportedVersion)
-  ) {
-    throw new Error(
-      `minSupportedVersion ${minSupportedVersion} is not in the schema chain `
-        + `(available versions: ${chain.map(c => c.version).join(", ")})`,
-    );
-  }
-
-  const latestVersion = chain[chain.length - 1]!.version;
-  const minVersion = minSupportedVersion ?? latestVersion;
+  const { chain, latestVersion, minVersion } = resolveSchemaChain(schema, minSupportedVersion);
 
   const supportedVersions: number[] = [];
   for (const { version } of chain) {

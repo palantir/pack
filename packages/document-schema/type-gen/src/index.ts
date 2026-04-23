@@ -23,15 +23,15 @@ export {
   convertSchemaToSteps,
   convertStepsToYamlString,
 } from "./utils/schema/convertSchemaToSteps.js";
-export { generateModelMetadataFromSchema } from "./utils/schema/generateModelMetadataFromSchema.js";
 export {
-  generateSchemaManifest,
-  type ModelManifest,
+  generateModelMetadataFromSchema,
+  type ModelMetadataOutput,
   type SchemaManifest,
-  type VersionManifest,
-} from "./utils/schema/generateSchemaManifest.js";
+} from "./utils/schema/generateModelMetadataFromSchema.js";
+export { generateScopeFromSchema } from "./utils/schema/generateScopeFromSchema.js";
 export { generateTypesFromSchema } from "./utils/schema/generateTypesFromSchema.js";
 export { generateVersionedTypesFromSchema } from "./utils/schema/generateVersionedTypesFromSchema.js";
+export { generateVersionsFromSchema } from "./utils/schema/generateVersionsFromSchema.js";
 export { generateZodFromSchema } from "./utils/schema/generateZodFromSchema.js";
 export {
   convertRecordDefToIr,
