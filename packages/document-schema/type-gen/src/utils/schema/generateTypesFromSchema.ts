@@ -308,10 +308,10 @@ function convertTypeToTypeScript(
     case TypeKind.ANY:
       return "any";
     case TypeKind.ARRAY:
-      if (isArrayField(fieldType)) {
-        return `readonly ${convertTypeToTypeScript(fieldType.items, schema)}[]`;
+      if (!isArrayField(fieldType)) {
+        throw new Error("Array field is missing items type");
       }
-      return "readonly unknown[]";
+      return `readonly ${convertTypeToTypeScript(fieldType.items, schema)}[]`;
     case TypeKind.DOC_REF:
       return "DocumentRef";
     case TypeKind.DOUBLE:
@@ -321,24 +321,26 @@ function convertTypeToTypeScript(
     case TypeKind.OBJECT_REF:
       return "ObjectRef";
     case TypeKind.OPTIONAL:
-      if (isOptionalField(fieldType)) {
-        return convertTypeToTypeScript(fieldType.item, schema);
+      if (!isOptionalField(fieldType)) {
+        throw new Error("Optional field is missing inner type");
       }
-      return "unknown";
+      return convertTypeToTypeScript(fieldType.item, schema);
     case TypeKind.REF:
-      if (isRefField(fieldType) && fieldType.refType === "record") {
-        const exportName = schema ? findRecordExportName(fieldType.name, schema) : null;
-        return exportName ?? (isRefField(fieldType) ? fieldType.name : "unknown");
-      } else if (isRefField(fieldType) && fieldType.refType === "union") {
-        return isRefField(fieldType) ? fieldType.name : "unknown";
+      if (!isRefField(fieldType)) {
+        throw new Error("Ref field is missing name or refType");
       }
-      return "unknown";
+      if (fieldType.refType === "record") {
+        const exportName = schema ? findRecordExportName(fieldType.name, schema) : null;
+        return exportName ?? fieldType.name;
+      }
+      return fieldType.name;
     case TypeKind.STRING:
       return "string";
     case TypeKind.USER_REF:
       return "UserRef";
-    default:
-      fieldType satisfies never;
-      return "unknown";
+    default: {
+      const _exhaustive: never = fieldType;
+      throw new Error(`Unknown schema field type: ${(_exhaustive as SchemaField).type}`);
+    }
   }
 }
