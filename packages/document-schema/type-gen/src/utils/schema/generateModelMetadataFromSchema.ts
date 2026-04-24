@@ -20,7 +20,7 @@ import { GENERATED_FILE_HEADER } from "../generatedFileHeader.js";
 import { resolveSchemaChain } from "./resolveSchemaChain.js";
 import type { RuntimeSchemaRecord, SchemaField } from "./runtimeSchema.js";
 import {
-  INTERNAL_MIGRATIONS_PATH,
+  INTERNAL_UPGRADES_PATH,
   isRecordSchema,
   isUnionSchema,
   modelName,
@@ -127,9 +127,9 @@ export function generateModelMetadataFromSchema(
   }
 
   // Upgrade imports (only if there are upgrades)
-  const upgradeNames = [...recordNames, ...unionNames].map(n => `${n}Migrations`);
+  const upgradeNames = [...recordNames, ...unionNames].map(n => `${n}Upgrades`);
   if (chain.length > 1 && upgradeNames.length > 0) {
-    output += `import { ${upgradeNames.join(", ")} } from "${INTERNAL_MIGRATIONS_PATH}";\n`;
+    output += `import { ${upgradeNames.join(", ")} } from "${INTERNAL_UPGRADES_PATH}";\n`;
   }
 
   output += "\n";
@@ -209,7 +209,7 @@ export function generateModelMetadataFromSchema(
   let upgradesBlock: string;
   const allUpgradeNames = [...recordNames, ...unionNames];
   if (chain.length > 1 && allUpgradeNames.length > 0) {
-    const upgradeEntries = allUpgradeNames.map(n => `      ${n}: ${n}Migrations,`).join("\n");
+    const upgradeEntries = allUpgradeNames.map(n => `      ${n}: ${n}Upgrades,`).join("\n");
     upgradesBlock = `    upgrades: {\n${upgradeEntries}\n    },\n`;
   } else {
     upgradesBlock = "";

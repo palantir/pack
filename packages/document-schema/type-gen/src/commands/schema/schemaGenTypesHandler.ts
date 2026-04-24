@@ -116,7 +116,7 @@ export async function schemaGenTypesHandler(options: SchemaGenTypesOptions): Pro
   consola.success(`Generated schema re-export: ${schemaPath}`);
 
   // Generate internal files
-  consola.info("Generating internal types and migrations...");
+  consola.info("Generating internal types and upgrades...");
   const internal = generateInternalFromSchema(schema);
 
   const internalDir = path.join(resolvedOutputDir, "_internal");
@@ -126,9 +126,9 @@ export async function schemaGenTypesHandler(options: SchemaGenTypesOptions): Pro
   await fs.writeFile(internalTypesPath, internal.internalTypes, "utf8");
   consola.success(`Generated internal types: ${internalTypesPath}`);
 
-  const migrationsPath = path.join(internalDir, "migrations.ts");
-  await fs.writeFile(migrationsPath, internal.migrations, "utf8");
-  consola.success(`Generated migrations: ${migrationsPath}`);
+  const upgradesPath = path.join(internalDir, "upgrades.ts");
+  await fs.writeFile(upgradesPath, internal.upgrades, "utf8");
+  consola.success(`Generated upgrades: ${upgradesPath}`);
 
   const internalSchemaPath = path.join(internalDir, "schema.ts");
   await fs.writeFile(internalSchemaPath, internal.internalSchema, "utf8");

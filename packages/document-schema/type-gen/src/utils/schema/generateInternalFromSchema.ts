@@ -24,8 +24,8 @@ import { findRecordExportName, isRecordSchema, isUnionSchema, TypeKind } from ".
 export interface InternalTypesOutput {
   /** _internal/types.ts content */
   internalTypes: string;
-  /** _internal/migrations.ts content */
-  migrations: string;
+  /** _internal/upgrades.ts content */
+  upgrades: string;
   /** _internal/schema.ts content */
   internalSchema: string;
 }
@@ -148,9 +148,9 @@ interface AllFieldInfo {
 }
 
 /**
- * Represents a migration step for a model between version transitions.
+ * Represents an upgrade step for a model between version transitions.
  */
-interface MigrationStep {
+interface UpgradeStep {
   name: string;
   addedInVersion: number;
   fields: Map<string, { derivedFrom: string[]; forwardSource: string; default?: unknown }>;
@@ -159,7 +159,7 @@ interface MigrationStep {
 
 interface RecordModelInfo {
   allFields: Map<string, AllFieldInfo>;
-  steps: MigrationStep[];
+  steps: UpgradeStep[];
 }
 
 /**
@@ -170,7 +170,7 @@ function sortedEntries<V>(map: Map<string, V>): [string, V][] {
 }
 
 /**
- * Collect all record model info across all versions and compute migration steps.
+ * Collect all record model info across all versions and compute upgrade steps.
  */
 function collectRecordModels(
   chain: VersionedSchemaEntry[],
@@ -209,7 +209,7 @@ function collectRecordModels(
     }
   }
 
-  // Compute migration steps from version diffs
+  // Compute upgrade steps from version diffs
   for (let i = 1; i < chain.length; i++) {
     const prevVersion = chain[i - 1]!;
     const currVersion = chain[i]!;
@@ -231,10 +231,10 @@ function collectRecordModels(
         string,
         { derivedFrom: string[]; forwardSource: string; default?: unknown }
       >();
-      const recordMigrations = currVersion.migrations?.[exportName];
+      const recordUpgrades = currVersion.migrations?.[exportName];
       for (const fieldName of currFields) {
         if (!prevFields.has(fieldName)) {
-          const annotation = recordMigrations?.[fieldName];
+          const annotation = recordUpgrades?.[fieldName];
           if (annotation != null) {
             addedFields.set(fieldName, {
               derivedFrom: [...annotation.derivedFrom],
@@ -307,9 +307,9 @@ function generateInternalTypes(
 }
 
 /**
- * Generate _internal/migrations.ts content.
+ * Generate _internal/upgrades.ts content.
  */
-function generateMigrations(
+function generateUpgrades(
   allRecordModels: Map<string, RecordModelInfo>,
   latestSchema: RuntimeSchema,
 ): string {
@@ -329,7 +329,7 @@ function generateMigrations(
   }
 
   for (const [exportName, model] of sortedEntries(allRecordModels)) {
-    output += `export const ${exportName}Migrations: UpgradeRegistry<"${exportName}"> = {\n`;
+    output += `export const ${exportName}Upgrades: UpgradeRegistry<"${exportName}"> = {\n`;
     output += `  modelName: "${exportName}",\n`;
 
     // allFields
@@ -379,7 +379,7 @@ function generateMigrations(
   for (const [exportName, item] of Object.entries(latestSchema)) {
     if (!isUnionSchema(item)) continue;
 
-    output += `export const ${exportName}Migrations: UnionUpgradeRegistry<"${exportName}"> = {\n`;
+    output += `export const ${exportName}Upgrades: UnionUpgradeRegistry<"${exportName}"> = {\n`;
     output += `  modelName: "${exportName}",\n`;
     output += `  discriminant: "${item.discriminant}",\n`;
     output += `  variants: {\n`;
@@ -435,7 +435,7 @@ function generateInternalSchemaContent(
 }
 
 /**
- * Generate _internal/types.ts, _internal/migrations.ts, and _internal/schema.ts
+ * Generate _internal/types.ts, _internal/upgrades.ts, and _internal/schema.ts
  * from a versioned schema chain.
  *
  * @param schema - The schema definition (initial or versioned)
@@ -450,8 +450,8 @@ export function generateInternalFromSchema(
   const allRecordModels = collectRecordModels(chain);
 
   const internalTypes = generateInternalTypes(allRecordModels);
-  const migrations = generateMigrations(allRecordModels, latestSchema);
+  const upgrades = generateUpgrades(allRecordModels, latestSchema);
   const internalSchema = generateInternalSchemaContent(allRecordModels);
 
-  return { internalTypes, migrations, internalSchema };
+  return { internalTypes, upgrades, internalSchema };
 }

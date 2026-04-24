@@ -11,7 +11,7 @@ import type {
 import { Metadata } from '@palantir/pack.document-schema.model-types';
 import type { Item } from './types.js';
 import { ItemSchema } from './schema.js';
-import { ItemMigrations } from './_internal/migrations.js';
+import { ItemUpgrades } from './_internal/upgrades.js';
 
 export interface ItemModel extends RecordModel<Item, typeof ItemSchema> {}
 export const ItemModel: ItemModel = {
@@ -28,7 +28,7 @@ export const DocumentModel = {
     version: 3,
     minSupportedVersion: 1,
     upgrades: {
-      Item: ItemMigrations,
+      Item: ItemUpgrades,
     },
   },
 } as const satisfies DocumentSchema;
