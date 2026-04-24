@@ -94,6 +94,7 @@ export const refFieldsSchema: SchemaDefinition = defineSchema({
     fields: {
       mainShape: CircleRecord,
       extraShapes: P.Array(modelToRef(CircleRecord)),
+      background: P.Optional(modelToRef(CircleRecord)),
       attachment: DocRef,
       owner: P.Optional(UserRefField),
     },
@@ -117,6 +118,20 @@ export const unionTypesSchema: SchemaDefinition = defineSchema({
     variants: {
       circle: CircleRecord,
       rectangle: RectangleRecord,
+    },
+  }),
+});
+
+/** Schema with nested optionals: tests that optional inside array/nested structures is preserved */
+export const nestedOptionalsSchema: SchemaDefinition = defineSchema({
+  Config: defineRecord("Config", {
+    docs: "A config with nested optional fields",
+    fields: {
+      tags: P.Array(P.Optional(P.String)),
+      matrix: P.Array(P.Array(P.Optional(P.Double))),
+      label: P.Optional(P.String),
+      // Sparse 3D point cloud: pages of rows where each row may omit coordinate triples
+      pointCloud: P.Array(P.Array(P.Optional(P.Array(P.Double)))),
     },
   }),
 });

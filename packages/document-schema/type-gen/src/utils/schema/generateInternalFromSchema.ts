@@ -35,11 +35,13 @@ export interface InternalTypesOutput {
  */
 function convertTypeToTypeScript(fieldType: SchemaField): string {
   switch (fieldType.type) {
-    case TypeKind.ARRAY:
-      if (fieldType.items) {
-        return `readonly ${convertTypeToTypeScript(fieldType.items)}[]`;
-      }
-      return "readonly unknown[]";
+    case TypeKind.ARRAY: {
+      const inner = fieldType.items ? convertTypeToTypeScript(fieldType.items) : "unknown";
+      // Wrap compound types (unions, other arrays) in parens before appending []
+      const needsParens = inner.includes("|") || inner.startsWith("readonly ");
+      const wrapped = needsParens ? `(${inner})` : inner;
+      return `readonly ${wrapped}[]`;
+    }
     case TypeKind.BOOLEAN:
       return "boolean";
     case TypeKind.DOC_REF:
@@ -52,7 +54,7 @@ function convertTypeToTypeScript(fieldType: SchemaField): string {
       return "string";
     case TypeKind.OPTIONAL:
       if (fieldType.item) {
-        return convertTypeToTypeScript(fieldType.item);
+        return `(${convertTypeToTypeScript(fieldType.item)} | undefined)`;
       }
       return "unknown";
     case TypeKind.REF:

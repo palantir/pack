@@ -22,6 +22,7 @@ export interface Circle_v1 {
 export interface Drawing_v1 {
   readonly mainShape: Circle_v1;
   readonly extraShapes: readonly Circle_v1[];
+  readonly background?: Circle_v1;
   readonly attachment: DocumentRef;
   readonly owner?: UserRef;
 }
@@ -45,6 +46,7 @@ export type CircleUpdate_v1 = {
 export type DrawingUpdate_v1 = {
   readonly mainShape?: Circle_v1;
   readonly extraShapes?: readonly Circle_v1[];
+  readonly background?: Circle_v1;
   readonly attachment?: DocumentRef;
   readonly owner?: UserRef;
 };

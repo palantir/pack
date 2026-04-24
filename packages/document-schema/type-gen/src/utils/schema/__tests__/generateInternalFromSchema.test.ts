@@ -17,7 +17,11 @@
 import path from "path";
 import { describe, expect, it } from "vitest";
 import { generateInternalFromSchema } from "../generateInternalFromSchema.js";
-import { singleVersionSchema, twoVersionFieldRemovalSchema } from "./fixtures.js";
+import {
+  nestedOptionalsSchema,
+  singleVersionSchema,
+  twoVersionFieldRemovalSchema,
+} from "./fixtures.js";
 import { formatInternalTypesSnapshot } from "./snapshotUtils.js";
 
 describe("generateInternalFromSchema", () => {
@@ -27,6 +31,13 @@ describe("generateInternalFromSchema", () => {
     const result = generateInternalFromSchema(singleVersionSchema);
     await expect(await formatInternalTypesSnapshot(result)).toMatchFileSnapshot(
       path.join(snapshotDir, "single-version.snap"),
+    );
+  });
+
+  it("nested optionals inside arrays", async () => {
+    const result = generateInternalFromSchema(nestedOptionalsSchema);
+    await expect(await formatInternalTypesSnapshot(result)).toMatchFileSnapshot(
+      path.join(snapshotDir, "nested-optionals.snap"),
     );
   });
 

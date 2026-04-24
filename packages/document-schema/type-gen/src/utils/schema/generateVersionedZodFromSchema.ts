@@ -34,8 +34,6 @@ import {
 export interface VersionedZodOutput {
   /** schema_vN.ts files keyed by version number */
   zodSchemas: Map<number, string>;
-  /** _internal/schema.ts -- internal schema with all fields across all versions */
-  internalSchema: string;
   /** schema.ts re-export of latest version schemas under unversioned names */
   schemaReExport: string;
 }
@@ -65,9 +63,9 @@ function convertFieldTypeToZodSchema(
       return "z.string()";
     case TypeKind.OPTIONAL:
       if (fieldType.item) {
-        return convertFieldTypeToZodSchema(fieldType.item, schema, version);
+        return `${convertFieldTypeToZodSchema(fieldType.item, schema, version)}.optional()`;
       }
-      return "z.unknown()";
+      return "z.unknown().optional()";
     case TypeKind.REF: {
       let refSchemaName: string;
       if (fieldType.refType === "record" && schema) {
@@ -78,47 +76,12 @@ function convertFieldTypeToZodSchema(
         const name = fieldType.name || "unknown";
         refSchemaName = version != null ? versionedSchemaName(name, version) : `${name}Schema`;
       }
-      return `z.lazy(() => ${refSchemaName}) as any`;
+      return `(z.lazy(() => ${refSchemaName}) as any)`;
     }
     case TypeKind.STRING:
       return "z.string()";
     case TypeKind.USER_REF:
       return "z.string()";
-    default:
-      return "z.unknown()";
-  }
-}
-
-/**
- * Convert a field type to a Zod schema string for the internal schema.
- * Refs are emitted as `z.unknown()` since internal schemas don't import
- * other schema definitions — they use `.passthrough()` for loose validation.
- */
-function convertFieldTypeToInternalZod(fieldType: SchemaField): string {
-  switch (fieldType.type) {
-    case TypeKind.ARRAY:
-      if (fieldType.items) {
-        return `z.array(${convertFieldTypeToInternalZod(fieldType.items)})`;
-      }
-      return "z.array(z.unknown())";
-    case TypeKind.BOOLEAN:
-      return "z.boolean()";
-    case TypeKind.DOUBLE:
-      return "z.number()";
-    case TypeKind.OPTIONAL:
-      if (fieldType.item) {
-        return convertFieldTypeToInternalZod(fieldType.item);
-      }
-      return "z.unknown()";
-    case TypeKind.STRING:
-      return "z.string()";
-    case TypeKind.DOC_REF:
-    case TypeKind.MEDIA_REF:
-    case TypeKind.OBJECT_REF:
-    case TypeKind.USER_REF:
-      return "z.string()";
-    case TypeKind.REF:
-      return "z.unknown()";
     default:
       return "z.unknown()";
   }
@@ -167,15 +130,8 @@ function generateZodSchemasForVersion(
     const fieldLines: string[] = [];
 
     for (const [fieldName, fieldType] of Object.entries(item.fields)) {
-      if (fieldType.type === TypeKind.OPTIONAL) {
-        const innerZod = fieldType.item
-          ? convertFieldTypeToZodSchema(fieldType.item, schema, version)
-          : "z.unknown()";
-        fieldLines.push(`  ${fieldName}: ${innerZod}.optional()`);
-      } else {
-        const zodType = convertFieldTypeToZodSchema(fieldType, schema, version);
-        fieldLines.push(`  ${fieldName}: ${zodType}`);
-      }
+      const zodType = convertFieldTypeToZodSchema(fieldType, schema, version);
+      fieldLines.push(`  ${fieldName}: ${zodType}`);
     }
 
     output += `export const ${zodSchemaName} = z.object({\n${
@@ -219,60 +175,6 @@ function generateZodSchemasForVersion(
       `export const ${unionZodSchemaName} = z.discriminatedUnion("${discriminantField}", [\n  ${
         variantSchemaNames.join(",\n  ")
       }\n]) satisfies ZodType<${typeName}>;\n\n`;
-  }
-
-  return output;
-}
-
-/**
- * Generate the internal Zod schema with all fields across all versions, all optional, with `.passthrough()`.
- */
-function generateInternalZodSchema(
-  chain: VersionedSchemaEntry[],
-): string {
-  let output = GENERATED_FILE_HEADER;
-  output += "import { z } from \"zod\";\n\n";
-
-  // Collect all fields across all versions for each record
-  const allRecordFields = new Map<string, Map<string, { zodType: string; isOptional: boolean }>>();
-
-  for (const { schema } of chain) {
-    for (const [exportName, item] of Object.entries(schema)) {
-      if (!isRecordSchema(item)) continue;
-
-      if (!allRecordFields.has(exportName)) {
-        allRecordFields.set(exportName, new Map());
-      }
-
-      const fieldMap = allRecordFields.get(exportName)!;
-
-      for (const [fieldName, fieldType] of Object.entries(item.fields)) {
-        if (fieldMap.has(fieldName)) continue;
-
-        if (fieldType.type === TypeKind.OPTIONAL) {
-          const innerZod = fieldType.item
-            ? convertFieldTypeToInternalZod(fieldType.item)
-            : "z.unknown()";
-          fieldMap.set(fieldName, { zodType: innerZod, isOptional: true });
-        } else {
-          const zodType = convertFieldTypeToInternalZod(fieldType);
-          fieldMap.set(fieldName, { zodType, isOptional: false });
-        }
-      }
-    }
-  }
-
-  // Emit internal schemas -- all fields optional
-  for (const [exportName, fieldMap] of allRecordFields) {
-    const fieldLines: string[] = [];
-
-    for (const [fieldName, { zodType }] of fieldMap) {
-      fieldLines.push(`  ${fieldName}: ${zodType}.optional()`);
-    }
-
-    output += `export const ${exportName}InternalSchema = z.object({\n${
-      fieldLines.join(",\n")
-    }\n}).passthrough();\n\n`;
   }
 
   return output;
@@ -338,8 +240,7 @@ export function generateVersionedZodFromSchema(
     zodSchemas.set(version, generateZodSchemasForVersion(version, versionSchema));
   }
 
-  const internalSchema = generateInternalZodSchema(chain);
   const schemaReExport = generateSchemaReExport(chain[chain.length - 1]!);
 
-  return { zodSchemas, internalSchema, schemaReExport };
+  return { zodSchemas, schemaReExport };
 }

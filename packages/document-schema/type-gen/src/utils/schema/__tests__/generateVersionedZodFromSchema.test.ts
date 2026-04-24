@@ -18,6 +18,8 @@ import path from "path";
 import { describe, expect, it } from "vitest";
 import { generateVersionedZodFromSchema } from "../generateVersionedZodFromSchema.js";
 import {
+  nestedOptionalsSchema,
+  refFieldsSchema,
   singleVersionSchema,
   twoVersionAdditiveSchema,
   twoVersionFieldRemovalSchema,
@@ -53,6 +55,20 @@ describe("generateVersionedZodFromSchema", () => {
     const result = generateVersionedZodFromSchema(unionTypesSchema);
     await expect(await formatVersionedZodSnapshot(result)).toMatchFileSnapshot(
       path.join(snapshotDir, "union-types.snap"),
+    );
+  });
+
+  it("schema with ref fields", async () => {
+    const result = generateVersionedZodFromSchema(refFieldsSchema);
+    await expect(await formatVersionedZodSnapshot(result)).toMatchFileSnapshot(
+      path.join(snapshotDir, "ref-fields.snap"),
+    );
+  });
+
+  it("nested optionals inside arrays", async () => {
+    const result = generateVersionedZodFromSchema(nestedOptionalsSchema);
+    await expect(await formatVersionedZodSnapshot(result)).toMatchFileSnapshot(
+      path.join(snapshotDir, "nested-optionals.snap"),
     );
   });
 

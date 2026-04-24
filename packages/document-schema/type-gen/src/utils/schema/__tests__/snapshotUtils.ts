@@ -89,8 +89,6 @@ export async function formatSingleSnapshot(
  * Layout:
  *   // === schema_v1.ts ===
  *   ...formatted code...
- *   // === _internal/schema.ts ===
- *   ...
  *   // === schema.ts ===
  *   ...
  */
@@ -104,7 +102,6 @@ export async function formatVersionedZodSnapshot(
   for (const version of sortedVersions) {
     sections.push(section(`schema_v${version}.ts`, await fmt(result.zodSchemas.get(version)!)));
   }
-  sections.push(section("_internal/schema.ts", await fmt(result.internalSchema)));
   sections.push(section("schema.ts", await fmt(result.schemaReExport)));
 
   return sections.join("\n");

@@ -7,7 +7,7 @@
 /** Internal representation containing all fields across all schema versions. */
 export interface ShapeBox__Internal {
   readonly bottom: number;
-  readonly color?: string;
+  readonly color?: string | undefined;
   readonly left: number;
   readonly right: number;
   readonly top: number;
