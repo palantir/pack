@@ -24,11 +24,19 @@ export interface InitialSchema<T extends ModelDefs = ModelDefs> {
   readonly models: T;
 }
 
+export interface FieldMigration {
+  readonly derivedFrom: readonly string[];
+  readonly forward: (oldFields: Record<string, unknown>) => unknown;
+}
+
+export type VersionMigrations = Record<string, Record<string, FieldMigration>>;
+
 export interface VersionedSchema<T extends ModelDefs = ModelDefs> {
   readonly type: "versioned";
   readonly models: T;
   readonly version: number;
   readonly previous: SchemaDefinition;
+  readonly migrations?: VersionMigrations;
 }
 
 export type SchemaDefinition<T extends ModelDefs = ModelDefs> =
@@ -55,6 +63,7 @@ export interface SchemaVersionBuilder<T extends ModelDefs> {
   addSchemaUpdate<S extends ModelDefs>(
     update: SchemaUpdate<T, S>,
   ): SchemaVersionBuilder<T & S>;
+  withMigrations(migrations: VersionMigrations): SchemaVersionBuilder<T>;
   build(): VersionedSchema<T>;
 }
 
@@ -62,18 +71,29 @@ class SchemaVersionBuilderImpl<T extends ModelDefs> implements SchemaVersionBuil
   private readonly models: T;
   private readonly version: number;
   private readonly previous: SchemaDefinition;
+  private readonly _migrations: VersionMigrations | undefined;
 
-  constructor(models: T, version: number, previous: SchemaDefinition) {
+  constructor(
+    models: T,
+    version: number,
+    previous: SchemaDefinition,
+    migrations?: VersionMigrations,
+  ) {
     this.models = models;
     this.version = version;
     this.previous = previous;
+    this._migrations = migrations;
   }
 
   addSchemaUpdate<S extends ModelDefs>(
     update: SchemaUpdate<T, S>,
   ): SchemaVersionBuilder<T & S> {
     const merged = defineMigration(this.models, update.migration);
-    return new SchemaVersionBuilderImpl(merged, this.version, this.previous);
+    return new SchemaVersionBuilderImpl(merged, this.version, this.previous, this._migrations);
+  }
+
+  withMigrations(migrations: VersionMigrations): SchemaVersionBuilder<T> {
+    return new SchemaVersionBuilderImpl(this.models, this.version, this.previous, migrations);
   }
 
   build(): VersionedSchema<T> {
@@ -82,6 +102,7 @@ class SchemaVersionBuilderImpl<T extends ModelDefs> implements SchemaVersionBuil
       models: { ...this.models },
       version: this.version,
       previous: this.previous,
+      ...(this._migrations != null ? { migrations: this._migrations } : {}),
     };
   }
 }

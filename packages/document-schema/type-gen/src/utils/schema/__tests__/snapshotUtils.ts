@@ -15,8 +15,10 @@
  */
 
 import { format } from "prettier";
+import type { InternalTypesOutput } from "../generateInternalFromSchema.js";
 import type { ModelMetadataOutput } from "../generateModelMetadataFromSchema.js";
 import type { VersionedTypesOutput } from "../generateVersionedTypesFromSchema.js";
+import type { VersionedZodOutput } from "../generateVersionedZodFromSchema.js";
 
 const prettierOpts = {
   parser: "typescript" as const,
@@ -79,4 +81,51 @@ export async function formatSingleSnapshot(
   code: string,
 ): Promise<string> {
   return section(filename, await fmt(code));
+}
+
+/**
+ * Combine a VersionedZodOutput into a single snapshot string.
+ *
+ * Layout:
+ *   // === schema_v1.ts ===
+ *   ...formatted code...
+ *   // === schema.ts ===
+ *   ...
+ */
+export async function formatVersionedZodSnapshot(
+  result: VersionedZodOutput,
+): Promise<string> {
+  const sections: string[] = [];
+
+  const sortedVersions = [...result.zodSchemas.keys()].sort((a, b) => a - b);
+
+  for (const version of sortedVersions) {
+    sections.push(section(`schema_v${version}.ts`, await fmt(result.zodSchemas.get(version)!)));
+  }
+  sections.push(section("schema.ts", await fmt(result.schemaReExport)));
+
+  return sections.join("\n");
+}
+
+/**
+ * Combine an InternalTypesOutput into a single snapshot string.
+ *
+ * Layout:
+ *   // === _internal/types.ts ===
+ *   ...formatted code...
+ *   // === _internal/migrations.ts ===
+ *   ...
+ *   // === _internal/schema.ts ===
+ *   ...
+ */
+export async function formatInternalTypesSnapshot(
+  result: InternalTypesOutput,
+): Promise<string> {
+  const sections: string[] = [];
+
+  sections.push(section("_internal/types.ts", await fmt(result.internalTypes)));
+  sections.push(section("_internal/migrations.ts", await fmt(result.migrations)));
+  sections.push(section("_internal/schema.ts", await fmt(result.internalSchema)));
+
+  return sections.join("\n");
 }

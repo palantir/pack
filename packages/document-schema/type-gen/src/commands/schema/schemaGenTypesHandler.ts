@@ -20,9 +20,11 @@ import fs from "fs-extra";
 import path from "path";
 import { pathToFileURL } from "url";
 import { generateIndexFromSchema } from "../../utils/schema/generateIndexFromSchema.js";
+import { generateInternalFromSchema } from "../../utils/schema/generateInternalFromSchema.js";
 import { generateModelMetadataFromSchema } from "../../utils/schema/generateModelMetadataFromSchema.js";
 import { generateScopeFromSchema } from "../../utils/schema/generateScopeFromSchema.js";
 import { generateVersionedTypesFromSchema } from "../../utils/schema/generateVersionedTypesFromSchema.js";
+import { generateVersionedZodFromSchema } from "../../utils/schema/generateVersionedZodFromSchema.js";
 import { generateVersionsFromSchema } from "../../utils/schema/generateVersionsFromSchema.js";
 import { extractValidSchema } from "../../utils/schema/validateSchemaModule.js";
 
@@ -97,6 +99,40 @@ export async function schemaGenTypesHandler(options: SchemaGenTypesOptions): Pro
   const typesPath = path.join(resolvedOutputDir, "types.ts");
   await fs.writeFile(typesPath, result.typesReExport, "utf8");
   consola.success(`Generated types re-export: ${typesPath}`);
+
+  // Generate per-version Zod schemas
+  consola.info("Generating versioned Zod schemas...");
+  const zodResult = generateVersionedZodFromSchema(schema, minSupportedVersion);
+
+  for (const [version, content] of zodResult.zodSchemas) {
+    const filePath = path.join(resolvedOutputDir, `schema_v${version}.ts`);
+    await fs.writeFile(filePath, content, "utf8");
+    consola.success(`Generated Zod schema: ${filePath}`);
+  }
+
+  // Write schema.ts re-export
+  const schemaPath = path.join(resolvedOutputDir, "schema.ts");
+  await fs.writeFile(schemaPath, zodResult.schemaReExport, "utf8");
+  consola.success(`Generated schema re-export: ${schemaPath}`);
+
+  // Generate internal files
+  consola.info("Generating internal types and migrations...");
+  const internal = generateInternalFromSchema(schema);
+
+  const internalDir = path.join(resolvedOutputDir, "_internal");
+  await fs.ensureDir(internalDir);
+
+  const internalTypesPath = path.join(internalDir, "types.ts");
+  await fs.writeFile(internalTypesPath, internal.internalTypes, "utf8");
+  consola.success(`Generated internal types: ${internalTypesPath}`);
+
+  const migrationsPath = path.join(internalDir, "migrations.ts");
+  await fs.writeFile(migrationsPath, internal.migrations, "utf8");
+  consola.success(`Generated migrations: ${migrationsPath}`);
+
+  const internalSchemaPath = path.join(internalDir, "schema.ts");
+  await fs.writeFile(internalSchemaPath, internal.internalSchema, "utf8");
+  consola.success(`Generated internal schema: ${internalSchemaPath}`);
 
   // Generate versions.ts
   consola.info("Generating version types...");

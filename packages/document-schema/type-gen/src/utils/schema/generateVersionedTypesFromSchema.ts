@@ -115,10 +115,10 @@ function convertTypeToTypeScript(
     case TypeKind.ANY:
       return "any";
     case TypeKind.ARRAY:
-      if (fieldType.items) {
-        return `readonly ${convertTypeToTypeScript(fieldType.items, schema, version)}[]`;
+      if (fieldType.items == null) {
+        throw new Error("Array field is missing items type");
       }
-      return "readonly unknown[]";
+      return `readonly ${convertTypeToTypeScript(fieldType.items, schema, version)}[]`;
     case TypeKind.BOOLEAN:
       return "boolean";
     case TypeKind.DOC_REF:
@@ -130,10 +130,10 @@ function convertTypeToTypeScript(
     case TypeKind.OBJECT_REF:
       return "ObjectRef";
     case TypeKind.OPTIONAL:
-      if (fieldType.item) {
-        return convertTypeToTypeScript(fieldType.item, schema, version);
+      if (fieldType.item == null) {
+        throw new Error("Optional field is missing inner type");
       }
-      return "unknown";
+      return convertTypeToTypeScript(fieldType.item, schema, version);
     case TypeKind.REF: {
       const name = fieldType.refType === "record" && schema != null
         ? findRecordExportName(fieldType.name!, schema) ?? fieldType.name
@@ -148,7 +148,7 @@ function convertTypeToTypeScript(
     case TypeKind.USER_REF:
       return "UserRef";
     default:
-      return "unknown";
+      throw new Error(`Unknown schema field type: ${fieldType.type}`);
   }
 }
 

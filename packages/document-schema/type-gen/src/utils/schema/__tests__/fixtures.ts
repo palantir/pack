@@ -94,6 +94,7 @@ export const refFieldsSchema: SchemaDefinition = defineSchema({
     fields: {
       mainShape: CircleRecord,
       extraShapes: P.Array(modelToRef(CircleRecord)),
+      background: P.Optional(modelToRef(CircleRecord)),
       attachment: DocRef,
       owner: P.Optional(UserRefField),
     },
@@ -120,6 +121,53 @@ export const unionTypesSchema: SchemaDefinition = defineSchema({
     },
   }),
 });
+
+/** Schema with nested optionals: tests that optional inside array/nested structures is preserved */
+export const nestedOptionalsSchema: SchemaDefinition = defineSchema({
+  Config: defineRecord("Config", {
+    docs: "A config with nested optional fields",
+    fields: {
+      tags: P.Array(P.Optional(P.String)),
+      matrix: P.Array(P.Array(P.Optional(P.Double))),
+      label: P.Optional(P.String),
+      // Sparse 3D point cloud: pages of rows where each row may omit coordinate triples
+      pointCloud: P.Array(P.Array(P.Optional(P.Array(P.Double)))),
+    },
+  }),
+});
+
+/** Two-version schema with derived fields (color split into fillColor + strokeColor) */
+export const twoVersionDerivedFieldsSchema: SchemaDefinition = {
+  type: "versioned",
+  models: {
+    ShapeBox: defineRecord("ShapeBox", {
+      docs: "A box shape",
+      fields: {
+        left: P.Double,
+        right: P.Double,
+        top: P.Double,
+        bottom: P.Double,
+        fillColor: P.Optional(P.String),
+        strokeColor: P.Optional(P.String),
+        opacity: P.Optional(P.Double),
+      },
+    }),
+  },
+  version: 2,
+  previous: singleVersionSchema,
+  migrations: {
+    ShapeBox: {
+      fillColor: {
+        derivedFrom: ["color"],
+        forward: ({ color }: Record<string, unknown>) => color,
+      },
+      strokeColor: {
+        derivedFrom: ["color"],
+        forward: ({ color }: Record<string, unknown>) => color,
+      },
+    },
+  },
+};
 
 /** Three-version chain: Item (name, color -> name, hexColor -> name, hexColor, tags) */
 export const threeVersionChainSchema: SchemaDefinition = (() => {

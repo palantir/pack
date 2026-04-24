@@ -14,12 +14,13 @@
  * limitations under the License.
  */
 
-import type { SchemaDefinition } from "@palantir/pack.schema";
+import type { SchemaDefinition, VersionMigrations } from "@palantir/pack.schema";
 import type { RuntimeSchema } from "./runtimeSchema.js";
 
 export interface VersionedSchemaEntry {
   version: number;
   schema: RuntimeSchema;
+  migrations?: VersionMigrations;
 }
 
 export interface ResolvedSchemaChain {
@@ -33,7 +34,11 @@ function collectVersionedSchemaChain(input: SchemaDefinition): VersionedSchemaEn
   let current: SchemaDefinition = input;
 
   while (current.type === "versioned") {
-    chain.unshift({ version: current.version, schema: current.models as RuntimeSchema });
+    chain.unshift({
+      version: current.version,
+      schema: current.models as RuntimeSchema,
+      migrations: current.migrations,
+    });
     current = current.previous;
   }
   chain.unshift({ version: current.version, schema: current.models as RuntimeSchema });
