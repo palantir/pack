@@ -34,6 +34,7 @@ import {
   type RecordCollectionRef,
   type RecordId,
   type RecordRef,
+  type UpgradeRegistryMap,
 } from "@palantir/pack.document-schema.model-types";
 import { isDeepEqual } from "remeda";
 import invariant from "tiny-invariant";
@@ -107,6 +108,8 @@ export interface InternalYjsDoc {
   readonly statusSubscribers: Set<DocumentStatusChangeCallback>;
 
   readonly yjsCollectionHandlers: Map<string, () => void>;
+
+  readonly migrations?: UpgradeRegistryMap;
 }
 
 export interface BaseYjsDocumentServiceOptions {
@@ -157,6 +160,16 @@ export abstract class BaseYjsDocumentService<TDoc extends InternalYjsDoc = Inter
   abstract readonly deleteDocument: (
     docRef: DocumentRef,
   ) => Promise<void>;
+
+  readonly getDocumentSchemaVersion = (
+    docRef: DocumentRef,
+  ): number => {
+    const { internalDoc } = this.getCreateInternalDoc(docRef);
+    const schemaMeta = getMetadata(internalDoc.schema);
+    return internalDoc.metadata?.schemaVersion
+      ?? schemaMeta.minSupportedVersion
+      ?? schemaMeta.version;
+  };
 
   readonly createDocRef = <const T extends DocumentSchema>(
     id: DocumentId,
@@ -265,6 +278,7 @@ export abstract class BaseYjsDocumentService<TDoc extends InternalYjsDoc = Inter
     metadata: DocumentMetadata | undefined,
   ): InternalYjsDoc => {
     const schema = ref.schema;
+    const schemaMeta = getMetadata(schema);
     return {
       ref: new WeakRef(ref),
       metadata,
@@ -291,6 +305,7 @@ export abstract class BaseYjsDocumentService<TDoc extends InternalYjsDoc = Inter
       yDoc: this.initializeYDoc(schema),
       yDocUpdateHandler: undefined,
       yjsCollectionHandlers: new Map(),
+      migrations: schemaMeta.migrations,
     };
   };
 
@@ -427,6 +442,19 @@ export abstract class BaseYjsDocumentService<TDoc extends InternalYjsDoc = Inter
 
     const internalDoc = this.createInternalDoc(ref, metadata, initialYDoc);
     this.documents.set(id, internalDoc);
+
+    const schemaMeta = getMetadata(schema);
+    const documentSchemaVersion = internalDoc.metadata?.schemaVersion
+      ?? schemaMeta.minSupportedVersion
+      ?? schemaMeta.version;
+    this.logger.debug("Document loaded", {
+      docId: id,
+      documentSchemaVersion,
+      clientSchemaRange: `[${
+        schemaMeta.minSupportedVersion ?? schemaMeta.version
+      }, ${schemaMeta.version}]`,
+    });
+
     return { internalDocRef: ref, internalDoc, wasExisting: false };
   }
 
@@ -464,6 +492,7 @@ export abstract class BaseYjsDocumentService<TDoc extends InternalYjsDoc = Inter
       internalDoc.yDoc,
       getMetadata(recordRef.model).name,
       recordRef.id,
+      internalDoc.migrations,
     ) as ModelData<M>;
   }
 
@@ -480,12 +509,21 @@ export abstract class BaseYjsDocumentService<TDoc extends InternalYjsDoc = Inter
     // TODO: you cannot resurrect tomb stoned records I think, so need to check for that before notify
     // TODO: perhaps we just call this via onRecordSet instead?
 
+    const storageName = getMetadata(recordRef.model).name;
     YjsSchemaMapper.setRecord(
       internalDoc.yDoc,
-      getMetadata(recordRef.model).name,
+      storageName,
       recordRef.id,
       state,
+      internalDoc.migrations,
     );
+
+    this.logger.debug("setRecord", {
+      docId: recordRef.docRef.id,
+      storageName,
+      recordId: recordRef.id,
+      data: state,
+    });
 
     // Call hook method for subclass-specific handling
     this.onRecordSet?.(recordRef, state);
@@ -503,16 +541,30 @@ export abstract class BaseYjsDocumentService<TDoc extends InternalYjsDoc = Inter
       `Cannot update record as document not found: ${recordRef.docRef.id}`,
     );
 
+    const storageName = getMetadata(recordRef.model).name;
     const wasUpdated = YjsSchemaMapper.updateRecord(
       internalDoc.yDoc,
-      getMetadata(recordRef.model).name,
+      storageName,
       recordRef.id,
       partialState,
+      internalDoc.migrations,
     );
 
     if (!wasUpdated) {
+      this.logger.debug("updateRecord failed - record not found", {
+        docId: recordRef.docRef.id,
+        storageName,
+        recordId: recordRef.id,
+      });
       return Promise.reject(new Error(`Record not found for update: ${recordRef.id}`));
     }
+
+    this.logger.debug("updateRecord", {
+      docId: recordRef.docRef.id,
+      storageName,
+      recordId: recordRef.id,
+      data: partialState,
+    });
 
     // Call hook method for subclass-specific handling
     this.onRecordSet?.(recordRef, partialState);

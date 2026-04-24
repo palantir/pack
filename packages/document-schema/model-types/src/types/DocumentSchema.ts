@@ -16,6 +16,7 @@
 
 import type { WithMetadata } from "./Metadata.js";
 import type { Model, ModelData } from "./Model.js";
+import type { UpgradeRegistryMap } from "./UpgradeLens.js";
 
 /**
  * The base type for an application sdk's generated document schema.
@@ -33,4 +34,6 @@ export type DocumentState<S extends DocumentSchema> = {
 
 export interface DocumentSchemaMetadata {
   readonly version: number;
+  readonly minSupportedVersion?: number;
+  readonly migrations?: UpgradeRegistryMap;
 }
