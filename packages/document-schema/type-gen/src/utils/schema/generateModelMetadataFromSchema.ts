@@ -210,7 +210,7 @@ export function generateModelMetadataFromSchema(
   const allMigrationNames = [...recordNames, ...unionNames];
   if (chain.length > 1 && allMigrationNames.length > 0) {
     const migrationEntries = allMigrationNames.map(n => `      ${n}: ${n}Migrations,`).join("\n");
-    migrationsBlock = `    migrations: {\n${migrationEntries}\n    },\n`;
+    migrationsBlock = `    upgrades: {\n${migrationEntries}\n    },\n`;
   } else {
     migrationsBlock = "";
   }

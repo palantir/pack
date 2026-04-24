@@ -27,7 +27,7 @@ export const DocumentModel = {
   [Metadata]: {
     version: 3,
     minSupportedVersion: 1,
-    migrations: {
+    upgrades: {
       Item: ItemMigrations,
     },
   },

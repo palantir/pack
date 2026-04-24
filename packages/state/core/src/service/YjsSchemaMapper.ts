@@ -56,7 +56,6 @@ export function setRecord(
   storageName: string,
   recordId: RecordId,
   state: ModelData<Model>,
-  _migrations?: UpgradeRegistryMap,
 ): boolean {
   const recordsCollection = getRecordsMap(yDoc, storageName);
   const currentRecord = recordsCollection.get(recordId as string) as Y.Map<unknown> | undefined;
@@ -83,7 +82,7 @@ export function getRecordSnapshot(
   yDoc: Y.Doc,
   storageName: string,
   recordId: RecordId,
-  migrations?: UpgradeRegistryMap,
+  upgrades?: UpgradeRegistryMap,
 ): unknown {
   const data = getRecordData(yDoc, storageName, recordId);
   if (!data) {
@@ -92,10 +91,10 @@ export function getRecordSnapshot(
 
   const rawState = yMapToState(data);
 
-  // Apply read lens if migrations exist for this model
-  const entry = migrations?.[storageName];
+  // Apply read lens if upgrades exist for this model
+  const entry = upgrades?.[storageName];
   if (entry != null) {
-    return resolveAndApplyLens(rawState as Record<string, unknown>, entry, migrations!);
+    return resolveAndApplyLens(rawState as Record<string, unknown>, entry, upgrades!);
   }
 
   return rawState;
@@ -106,7 +105,6 @@ export function updateRecord(
   storageName: string,
   recordId: RecordId,
   partialState: Partial<ModelData<Model>>,
-  _migrations?: UpgradeRegistryMap,
 ): boolean {
   const recordsCollection = getRecordsMap(yDoc, storageName);
   const currentRecord = recordsCollection.get(recordId as string) as Y.Map<unknown> | undefined;

@@ -30,7 +30,7 @@ export const DocumentModel = {
   [Metadata]: {
     version: 2,
     minSupportedVersion: 1,
-    migrations: {
+    upgrades: {
       ShapeBox: ShapeBoxMigrations,
     },
   },

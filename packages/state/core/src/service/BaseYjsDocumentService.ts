@@ -109,7 +109,7 @@ export interface InternalYjsDoc {
 
   readonly yjsCollectionHandlers: Map<string, () => void>;
 
-  readonly migrations?: UpgradeRegistryMap;
+  readonly upgrades?: UpgradeRegistryMap;
 }
 
 export interface BaseYjsDocumentServiceOptions {
@@ -305,7 +305,7 @@ export abstract class BaseYjsDocumentService<TDoc extends InternalYjsDoc = Inter
       yDoc: this.initializeYDoc(schema),
       yDocUpdateHandler: undefined,
       yjsCollectionHandlers: new Map(),
-      migrations: schemaMeta.migrations,
+      upgrades: schemaMeta.upgrades,
     };
   };
 
@@ -492,7 +492,7 @@ export abstract class BaseYjsDocumentService<TDoc extends InternalYjsDoc = Inter
       internalDoc.yDoc,
       getMetadata(recordRef.model).name,
       recordRef.id,
-      internalDoc.migrations,
+      internalDoc.upgrades,
     ) as ModelData<M>;
   }
 
@@ -515,7 +515,6 @@ export abstract class BaseYjsDocumentService<TDoc extends InternalYjsDoc = Inter
       storageName,
       recordRef.id,
       state,
-      internalDoc.migrations,
     );
 
     this.logger.debug("setRecord", {
@@ -547,7 +546,6 @@ export abstract class BaseYjsDocumentService<TDoc extends InternalYjsDoc = Inter
       storageName,
       recordRef.id,
       partialState,
-      internalDoc.migrations,
     );
 
     if (!wasUpdated) {

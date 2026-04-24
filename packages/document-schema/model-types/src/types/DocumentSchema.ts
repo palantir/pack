@@ -35,5 +35,5 @@ export type DocumentState<S extends DocumentSchema> = {
 export interface DocumentSchemaMetadata {
   readonly version: number;
   readonly minSupportedVersion?: number;
-  readonly migrations?: UpgradeRegistryMap;
+  readonly upgrades?: UpgradeRegistryMap;
 }
