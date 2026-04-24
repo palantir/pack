@@ -20,6 +20,7 @@ import { generateInternalFromSchema } from "../generateInternalFromSchema.js";
 import {
   nestedOptionalsSchema,
   singleVersionSchema,
+  twoVersionDerivedFieldsSchema,
   twoVersionFieldRemovalSchema,
 } from "./fixtures.js";
 import { formatInternalTypesSnapshot } from "./snapshotUtils.js";
@@ -45,6 +46,13 @@ describe("generateInternalFromSchema", () => {
     const result = generateInternalFromSchema(twoVersionFieldRemovalSchema);
     await expect(await formatInternalTypesSnapshot(result)).toMatchFileSnapshot(
       path.join(snapshotDir, "two-version-field-removal.snap"),
+    );
+  });
+
+  it("two-version derived fields", async () => {
+    const result = generateInternalFromSchema(twoVersionDerivedFieldsSchema);
+    await expect(await formatInternalTypesSnapshot(result)).toMatchFileSnapshot(
+      path.join(snapshotDir, "two-version-derived-fields.snap"),
     );
   });
 });

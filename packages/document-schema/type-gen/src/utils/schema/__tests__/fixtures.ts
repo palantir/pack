@@ -136,6 +136,39 @@ export const nestedOptionalsSchema: SchemaDefinition = defineSchema({
   }),
 });
 
+/** Two-version schema with derived fields (color split into fillColor + strokeColor) */
+export const twoVersionDerivedFieldsSchema: SchemaDefinition = {
+  type: "versioned",
+  models: {
+    ShapeBox: defineRecord("ShapeBox", {
+      docs: "A box shape",
+      fields: {
+        left: P.Double,
+        right: P.Double,
+        top: P.Double,
+        bottom: P.Double,
+        fillColor: P.Optional(P.String),
+        strokeColor: P.Optional(P.String),
+        opacity: P.Optional(P.Double),
+      },
+    }),
+  },
+  version: 2,
+  previous: singleVersionSchema,
+  migrations: {
+    ShapeBox: {
+      fillColor: {
+        derivedFrom: ["color"],
+        forward: ({ color }: Record<string, unknown>) => color,
+      },
+      strokeColor: {
+        derivedFrom: ["color"],
+        forward: ({ color }: Record<string, unknown>) => color,
+      },
+    },
+  },
+};
+
 /** Three-version chain: Item (name, color -> name, hexColor -> name, hexColor, tags) */
 export const threeVersionChainSchema: SchemaDefinition = (() => {
   const v1Models = {

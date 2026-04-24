@@ -231,12 +231,21 @@ function collectRecordModels(
         string,
         { derivedFrom: string[]; forwardSource: string; default?: unknown }
       >();
+      const recordMigrations = currVersion.migrations?.[exportName];
       for (const fieldName of currFields) {
         if (!prevFields.has(fieldName)) {
-          addedFields.set(fieldName, {
-            derivedFrom: [],
-            forwardSource: "() => undefined",
-          });
+          const annotation = recordMigrations?.[fieldName];
+          if (annotation != null) {
+            addedFields.set(fieldName, {
+              derivedFrom: [...annotation.derivedFrom],
+              forwardSource: annotation.forward.toString(),
+            });
+          } else {
+            addedFields.set(fieldName, {
+              derivedFrom: [],
+              forwardSource: "() => undefined",
+            });
+          }
         }
       }
 
