@@ -153,6 +153,15 @@ export interface DocumentService {
     docRef: DocumentRef,
   ) => Promise<void>;
 
+  /**
+   * Get the schema version a document is currently operating at.
+   * Returns the version from the document's metadata if available,
+   * falling back to minSupportedVersion from the schema.
+   */
+  readonly getDocumentSchemaVersion: (
+    docRef: DocumentRef,
+  ) => number;
+
   readonly createDocRef: <const T extends DocumentSchema>(
     id: DocumentId,
     schema: T,

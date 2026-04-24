@@ -113,8 +113,8 @@ export const SCHEMA_REEXPORT_PATH = "./schema.js";
 /** Models file path: `./models.js` */
 export const MODELS_PATH = "./models.js";
 
-/** Internal migrations file path: `./_internal/migrations.js` */
-export const INTERNAL_MIGRATIONS_PATH = "./_internal/migrations.js";
+/** Internal upgrades file path: `./_internal/upgrades.js` */
+export const INTERNAL_UPGRADES_PATH = "./_internal/upgrades.js";
 
 /** Versions file path: `./versions.js` */
 export const VERSIONS_PATH = "./versions.js";

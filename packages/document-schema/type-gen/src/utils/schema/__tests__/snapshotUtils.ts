@@ -113,7 +113,7 @@ export async function formatVersionedZodSnapshot(
  * Layout:
  *   // === _internal/types.ts ===
  *   ...formatted code...
- *   // === _internal/migrations.ts ===
+ *   // === _internal/upgrades.ts ===
  *   ...
  *   // === _internal/schema.ts ===
  *   ...
@@ -124,7 +124,7 @@ export async function formatInternalTypesSnapshot(
   const sections: string[] = [];
 
   sections.push(section("_internal/types.ts", await fmt(result.internalTypes)));
-  sections.push(section("_internal/migrations.ts", await fmt(result.migrations)));
+  sections.push(section("_internal/upgrades.ts", await fmt(result.upgrades)));
   sections.push(section("_internal/schema.ts", await fmt(result.internalSchema)));
 
   return sections.join("\n");

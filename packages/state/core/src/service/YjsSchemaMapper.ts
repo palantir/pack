@@ -20,8 +20,10 @@ import {
   type Model,
   type ModelData,
   type RecordId,
+  type UpgradeRegistryMap,
 } from "@palantir/pack.document-schema.model-types";
 import * as Y from "yjs";
+import { resolveAndApplyLens } from "../upgrade/UpgradeLens.js";
 
 export function initializeDocumentStructure(
   yDoc: Y.Doc,
@@ -80,13 +82,22 @@ export function getRecordSnapshot(
   yDoc: Y.Doc,
   storageName: string,
   recordId: RecordId,
+  upgrades?: UpgradeRegistryMap,
 ): unknown {
   const data = getRecordData(yDoc, storageName, recordId);
   if (!data) {
     return undefined;
   }
 
-  return yMapToState(data);
+  const rawState = yMapToState(data);
+
+  // Apply read lens if upgrades exist for this model
+  const entry = upgrades?.[storageName];
+  if (entry != null) {
+    return resolveAndApplyLens(rawState as Record<string, unknown>, entry, upgrades!);
+  }
+
+  return rawState;
 }
 
 export function updateRecord(
