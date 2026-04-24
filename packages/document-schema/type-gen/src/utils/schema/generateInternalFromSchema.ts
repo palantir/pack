@@ -36,7 +36,10 @@ export interface InternalTypesOutput {
 function convertTypeToTypeScript(fieldType: SchemaField): string {
   switch (fieldType.type) {
     case TypeKind.ARRAY: {
-      const inner = fieldType.items ? convertTypeToTypeScript(fieldType.items) : "unknown";
+      if (fieldType.items == null) {
+        throw new Error("Array field is missing items type");
+      }
+      const inner = convertTypeToTypeScript(fieldType.items);
       // Wrap compound types (unions, other arrays) in parens before appending []
       const needsParens = inner.includes("|") || inner.startsWith("readonly ");
       const wrapped = needsParens ? `(${inner})` : inner;
@@ -53,10 +56,10 @@ function convertTypeToTypeScript(fieldType: SchemaField): string {
     case TypeKind.OBJECT_REF:
       return "string";
     case TypeKind.OPTIONAL:
-      if (fieldType.item) {
-        return `(${convertTypeToTypeScript(fieldType.item)} | undefined)`;
+      if (fieldType.item == null) {
+        throw new Error("Optional field is missing inner type");
       }
-      return "unknown";
+      return `(${convertTypeToTypeScript(fieldType.item)} | undefined)`;
     case TypeKind.REF:
       return "unknown";
     case TypeKind.STRING:
@@ -64,7 +67,7 @@ function convertTypeToTypeScript(fieldType: SchemaField): string {
     case TypeKind.USER_REF:
       return "string";
     default:
-      return "unknown";
+      throw new Error(`Unknown schema field type: ${fieldType.type}`);
   }
 }
 
@@ -74,24 +77,27 @@ function convertTypeToTypeScript(fieldType: SchemaField): string {
 function convertTypeToFieldTypeDescriptor(fieldType: SchemaField, schema: RuntimeSchema): string {
   switch (fieldType.type) {
     case TypeKind.ARRAY:
-      if (fieldType.items) {
-        return `{ kind: "array", element: ${
-          convertTypeToFieldTypeDescriptor(fieldType.items, schema)
-        } }`;
+      if (fieldType.items == null) {
+        throw new Error("Array field is missing items type");
       }
-      return `{ kind: "array", element: { kind: "primitive" } }`;
+      return `{ kind: "array", element: ${
+        convertTypeToFieldTypeDescriptor(fieldType.items, schema)
+      } }`;
     case TypeKind.OPTIONAL:
-      if (fieldType.item) {
-        return `{ kind: "optional", inner: ${
-          convertTypeToFieldTypeDescriptor(fieldType.item, schema)
-        } }`;
+      if (fieldType.item == null) {
+        throw new Error("Optional field is missing inner type");
       }
-      return `{ kind: "optional", inner: { kind: "primitive" } }`;
+      return `{ kind: "optional", inner: ${
+        convertTypeToFieldTypeDescriptor(fieldType.item, schema)
+      } }`;
     case TypeKind.REF: {
+      if (fieldType.name == null) {
+        throw new Error("Ref field is missing a name");
+      }
       const exportKey = fieldType.refType === "record"
-        ? findRecordExportName(fieldType.name!, schema) ?? fieldType.name
+        ? findRecordExportName(fieldType.name, schema) ?? fieldType.name
         : fieldType.name;
-      return `{ kind: "modelRef", model: "${exportKey ?? "unknown"}" }`;
+      return `{ kind: "modelRef", model: "${exportKey}" }`;
     }
     default:
       return `{ kind: "primitive" }`;
@@ -104,10 +110,10 @@ function convertTypeToFieldTypeDescriptor(fieldType: SchemaField, schema: Runtim
 function convertTypeToZodSchema(fieldType: SchemaField): string {
   switch (fieldType.type) {
     case TypeKind.ARRAY:
-      if (fieldType.items) {
-        return `z.array(${convertTypeToZodSchema(fieldType.items)})`;
+      if (fieldType.items == null) {
+        throw new Error("Array field is missing items type");
       }
-      return "z.array(z.unknown())";
+      return `z.array(${convertTypeToZodSchema(fieldType.items)})`;
     case TypeKind.BOOLEAN:
       return "z.boolean()";
     case TypeKind.DOC_REF:
@@ -119,14 +125,14 @@ function convertTypeToZodSchema(fieldType: SchemaField): string {
     case TypeKind.DOUBLE:
       return "z.number()";
     case TypeKind.OPTIONAL:
-      if (fieldType.item) {
-        return `${convertTypeToZodSchema(fieldType.item)}.optional()`;
+      if (fieldType.item == null) {
+        throw new Error("Optional field is missing inner type");
       }
-      return "z.unknown().optional()";
+      return `${convertTypeToZodSchema(fieldType.item)}.optional()`;
     case TypeKind.REF:
       return "z.unknown()";
     default:
-      return "z.unknown()";
+      throw new Error(`Unknown schema field type: ${fieldType.type}`);
   }
 }
 

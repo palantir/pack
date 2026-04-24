@@ -47,10 +47,10 @@ function convertFieldTypeToZodSchema(
     case TypeKind.ANY:
       return "z.unknown()";
     case TypeKind.ARRAY:
-      if (fieldType.items) {
-        return `z.array(${convertFieldTypeToZodSchema(fieldType.items, schema, version)})`;
+      if (fieldType.items == null) {
+        throw new Error("Array field is missing items type");
       }
-      return "z.array(z.unknown())";
+      return `z.array(${convertFieldTypeToZodSchema(fieldType.items, schema, version)})`;
     case TypeKind.BOOLEAN:
       return "z.boolean()";
     case TypeKind.DOC_REF:
@@ -62,28 +62,29 @@ function convertFieldTypeToZodSchema(
     case TypeKind.OBJECT_REF:
       return "z.string()";
     case TypeKind.OPTIONAL:
-      if (fieldType.item) {
-        return `${convertFieldTypeToZodSchema(fieldType.item, schema, version)}.optional()`;
+      if (fieldType.item == null) {
+        throw new Error("Optional field is missing inner type");
       }
-      return "z.unknown().optional()";
+      return `${convertFieldTypeToZodSchema(fieldType.item, schema, version)}.optional()`;
     case TypeKind.REF: {
-      let refSchemaName: string;
-      if (fieldType.refType === "record" && schema) {
-        const exportName = findRecordExportName(fieldType.name!, schema);
-        const name = exportName || fieldType.name || "unknown";
-        refSchemaName = version != null ? versionedSchemaName(name, version) : `${name}Schema`;
-      } else {
-        const name = fieldType.name || "unknown";
-        refSchemaName = version != null ? versionedSchemaName(name, version) : `${name}Schema`;
+      if (fieldType.name == null) {
+        throw new Error("Ref field is missing a name");
       }
-      return `(z.lazy(() => ${refSchemaName}) as any)`;
+      const exportName = fieldType.refType === "record" && schema
+        ? findRecordExportName(fieldType.name, schema) ?? fieldType.name
+        : fieldType.name;
+      const refSchemaName = version != null
+        ? versionedSchemaName(exportName, version)
+        : `${exportName}Schema`;
+      const refTypeName = version != null ? versionedTypeName(exportName, version) : exportName;
+      return `z.lazy((): ZodType<${refTypeName}> => ${refSchemaName})`;
     }
     case TypeKind.STRING:
       return "z.string()";
     case TypeKind.USER_REF:
       return "z.string()";
     default:
-      return "z.unknown()";
+      throw new Error(`Unknown schema field type: ${fieldType.type}`);
   }
 }
 

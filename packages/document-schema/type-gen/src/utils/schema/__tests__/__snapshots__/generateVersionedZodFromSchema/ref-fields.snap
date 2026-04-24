@@ -16,9 +16,9 @@ export const CircleSchema_v1 = z
 
 export const DrawingSchema_v1 = z
   .object({
-    mainShape: z.lazy(() => CircleSchema_v1) as any,
-    extraShapes: z.array(z.lazy(() => CircleSchema_v1) as any),
-    background: (z.lazy(() => CircleSchema_v1) as any).optional(),
+    mainShape: z.lazy((): ZodType<Circle_v1> => CircleSchema_v1),
+    extraShapes: z.array(z.lazy((): ZodType<Circle_v1> => CircleSchema_v1)),
+    background: z.lazy((): ZodType<Circle_v1> => CircleSchema_v1).optional(),
     attachment: z.string(),
     owner: z.string().optional(),
   })
