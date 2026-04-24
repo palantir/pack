@@ -305,8 +305,19 @@ function generateMigrations(
   latestSchema: RuntimeSchema,
 ): string {
   let output = GENERATED_FILE_HEADER;
-  output +=
-    `import type { UnionUpgradeRegistry, UpgradeRegistry } from "@palantir/pack.document-schema.model-types";\n\n`;
+
+  const hasRecords = allRecordModels.size > 0;
+  const hasUnions = Object.values(latestSchema).some(isUnionSchema);
+
+  const imports: string[] = [];
+  if (hasRecords) imports.push("UpgradeRegistry");
+  if (hasUnions) imports.push("UnionUpgradeRegistry");
+
+  if (imports.length > 0) {
+    output += `import type { ${
+      imports.join(", ")
+    } } from "@palantir/pack.document-schema.model-types";\n\n`;
+  }
 
   for (const [exportName, model] of sortedEntries(allRecordModels)) {
     output += `export const ${exportName}Migrations: UpgradeRegistry<"${exportName}"> = {\n`;
