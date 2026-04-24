@@ -30,7 +30,7 @@ import {
 } from "./runtimeSchema.js";
 
 export interface ModelMetadataOutput {
-  /** models.ts content -- DocumentModel with version metadata and migration references */
+  /** models.ts content -- DocumentModel with version metadata and upgrade references */
   modelsFile: string;
 }
 
@@ -126,10 +126,10 @@ export function generateModelMetadataFromSchema(
     output += `import { ${schemaNames.join(", ")} } from "${SCHEMA_REEXPORT_PATH}";\n`;
   }
 
-  // Migration imports (only if there are migrations)
-  const migrationNames = [...recordNames, ...unionNames].map(n => `${n}Migrations`);
-  if (chain.length > 1 && migrationNames.length > 0) {
-    output += `import { ${migrationNames.join(", ")} } from "${INTERNAL_MIGRATIONS_PATH}";\n`;
+  // Upgrade imports (only if there are upgrades)
+  const upgradeNames = [...recordNames, ...unionNames].map(n => `${n}Migrations`);
+  if (chain.length > 1 && upgradeNames.length > 0) {
+    output += `import { ${upgradeNames.join(", ")} } from "${INTERNAL_MIGRATIONS_PATH}";\n`;
   }
 
   output += "\n";
@@ -205,14 +205,14 @@ export function generateModelMetadataFromSchema(
     }
   }
 
-  // Build migrations map (includes both record and union entries)
-  let migrationsBlock: string;
-  const allMigrationNames = [...recordNames, ...unionNames];
-  if (chain.length > 1 && allMigrationNames.length > 0) {
-    const migrationEntries = allMigrationNames.map(n => `      ${n}: ${n}Migrations,`).join("\n");
-    migrationsBlock = `    upgrades: {\n${migrationEntries}\n    },\n`;
+  // Build upgrades map (includes both record and union entries)
+  let upgradesBlock: string;
+  const allUpgradeNames = [...recordNames, ...unionNames];
+  if (chain.length > 1 && allUpgradeNames.length > 0) {
+    const upgradeEntries = allUpgradeNames.map(n => `      ${n}: ${n}Migrations,`).join("\n");
+    upgradesBlock = `    upgrades: {\n${upgradeEntries}\n    },\n`;
   } else {
-    migrationsBlock = "";
+    upgradesBlock = "";
   }
 
   output += `export const DocumentModel = {\n`;
@@ -222,7 +222,7 @@ export function generateModelMetadataFromSchema(
   if (minVersion !== latestVersion) {
     output += `    minSupportedVersion: ${minVersion},\n`;
   }
-  output += migrationsBlock;
+  output += upgradesBlock;
   output += `  },\n`;
   output += `} as const satisfies DocumentSchema;\n\n`;
   output += `export type DocumentModel = typeof DocumentModel;\n`;
