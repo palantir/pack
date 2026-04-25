@@ -18,6 +18,8 @@ import path from "path";
 import { describe, expect, it } from "vitest";
 import { generateVersionedTypesFromSchema } from "../generateVersionedTypesFromSchema.js";
 import {
+  aliasedEntryNameSchema,
+  nestedUnionSchema,
   refFieldsSchema,
   singleVersionSchema,
   threeVersionChainSchema,
@@ -69,6 +71,20 @@ describe("generateVersionedTypesFromSchema", () => {
     const result = generateVersionedTypesFromSchema(unionTypesSchema);
     await expect(await formatVersionedTypesSnapshot(result)).toMatchFileSnapshot(
       path.join(snapshotDir, "union-types.snap"),
+    );
+  });
+
+  it("preserves aliased export name when export key differs from model name", async () => {
+    const result = generateVersionedTypesFromSchema(aliasedEntryNameSchema);
+    await expect(await formatVersionedTypesSnapshot(result)).toMatchFileSnapshot(
+      path.join(snapshotDir, "alias-types.snap"),
+    );
+  });
+
+  it("includes value field for union variants that reference another union", async () => {
+    const result = generateVersionedTypesFromSchema(nestedUnionSchema);
+    await expect(await formatVersionedTypesSnapshot(result)).toMatchFileSnapshot(
+      path.join(snapshotDir, "union-reference-union.snap"),
     );
   });
 

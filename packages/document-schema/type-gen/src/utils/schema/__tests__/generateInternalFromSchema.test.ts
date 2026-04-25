@@ -19,6 +19,7 @@ import { describe, expect, it } from "vitest";
 import { generateInternalFromSchema } from "../generateInternalFromSchema.js";
 import {
   nestedOptionalsSchema,
+  optionalToRequiredFieldSchema,
   singleVersionSchema,
   twoVersionDerivedFieldsSchema,
   twoVersionFieldRemovalSchema,
@@ -53,6 +54,16 @@ describe("generateInternalFromSchema", () => {
     const result = generateInternalFromSchema(twoVersionDerivedFieldsSchema);
     await expect(await formatInternalTypesSnapshot(result)).toMatchFileSnapshot(
       path.join(snapshotDir, "two-version-derived-fields.snap"),
+    );
+  });
+
+  it("field optional in v1 and required in v2 stays optional in internal schema", async () => {
+    const result = generateInternalFromSchema(optionalToRequiredFieldSchema);
+    // "label" is Optional(String) in v1 but String in v2.
+    // The internal Zod schema must keep it optional because v1 documents
+    // may legitimately omit the field.
+    await expect(await formatInternalTypesSnapshot(result)).toMatchFileSnapshot(
+      path.join(snapshotDir, "two-version-optional-fields.snap"),
     );
   });
 });
