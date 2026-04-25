@@ -45,6 +45,8 @@ interface AllFieldInfo {
   presentInVersions: Set<number>;
   /** Whether field is always optional. */
   alwaysOptional: boolean;
+  /** Whether field is optional in at least one version. */
+  everOptional: boolean;
 }
 
 /**
@@ -99,11 +101,15 @@ function collectRecordModels(
             isOptional: field.isOptional === true,
             presentInVersions: new Set([version]),
             alwaysOptional: field.isOptional === true,
+            everOptional: field.isOptional === true,
           });
         } else {
           existing.presentInVersions.add(version);
           if (field.isOptional !== true) {
             existing.alwaysOptional = false;
+          }
+          if (field.isOptional === true) {
+            existing.everOptional = true;
           }
         }
       }
@@ -312,9 +318,11 @@ function generateInternalSchemaContent(
     output += `export const ${modelKey}InternalSchema = z.object({\n`;
 
     for (const [fieldName, fieldInfo] of sortedEntries(model.allFields)) {
+      // Use everOptional: a field optional in ANY version must stay optional
+      // in the internal schema because older documents may legitimately omit it.
       const zodType = convertFieldTypeToInternalZod(
         fieldInfo.fieldType,
-        fieldInfo.alwaysOptional,
+        fieldInfo.alwaysOptional || fieldInfo.everOptional,
       );
       output += `  ${fieldName}: ${zodType},\n`;
     }

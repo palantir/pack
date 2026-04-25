@@ -42,6 +42,7 @@ export function isLivingBeing_v1Plant(
 
 export interface Entity_v1LivingBeing {
   readonly type: 'livingBeing';
+  readonly value: LivingBeing_v1;
 }
 
 export type Entity_v1 = Entity_v1LivingBeing;

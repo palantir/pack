@@ -43,6 +43,7 @@ export const LivingBeingSchema_v1 = z.discriminatedUnion('type', [
 
 export const EntitySchema_v1LivingBeing = z.object({
   type: z.literal('livingBeing'),
+  value: z.lazy((): ZodType<LivingBeing_v1> => LivingBeingSchema_v1),
 }) satisfies ZodType<Entity_v1LivingBeing>;
 
 export const EntitySchema_v1 = z.discriminatedUnion('type', [

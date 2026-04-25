@@ -98,8 +98,11 @@ function generateReadTypesForVersion(
         output += `  readonly ${discriminantField}: "${variantName}";\n`;
         output += "}\n\n";
       } else {
+        // Non-record variant (e.g. another union): emit a value field referencing the type
+        const tsType = versionedTypeName(variantModelKey, version);
         output += `export interface ${interfaceName} {\n`;
         output += `  readonly ${discriminantField}: "${variantName}";\n`;
+        output += `  readonly value: ${tsType};\n`;
         output += "}\n\n";
       }
     }

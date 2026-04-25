@@ -37,7 +37,7 @@ import { z } from 'zod';
 
 export const ItemInternalSchema = z
   .object({
-    label: z.string(),
+    label: z.string().optional(),
     name: z.string(),
   })
   .passthrough();

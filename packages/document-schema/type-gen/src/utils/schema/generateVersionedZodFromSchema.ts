@@ -107,8 +107,12 @@ function generateZodSchemasForVersion(
         output += `  ${discriminantField}: z.literal("${variantName}")\n`;
         output += `}) satisfies ZodType<${variantTypeName}>;\n\n`;
       } else {
+        // Non-record variant (e.g. another union): emit a value field referencing the schema
+        const refZodSchemaName = versionedSchemaName(variantModelKey, version);
+        const refTypeName = versionedTypeName(variantModelKey, version);
         output += `export const ${variantZodSchemaName} = z.object({\n`;
-        output += `  ${discriminantField}: z.literal("${variantName}")\n`;
+        output += `  ${discriminantField}: z.literal("${variantName}"),\n`;
+        output += `  value: z.lazy((): ZodType<${refTypeName}> => ${refZodSchemaName})\n`;
         output += `}) satisfies ZodType<${variantTypeName}>;\n\n`;
       }
     }
