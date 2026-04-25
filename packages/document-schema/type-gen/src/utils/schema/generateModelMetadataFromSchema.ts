@@ -15,14 +15,13 @@
  */
 
 import type { SchemaDefinition } from "@palantir/pack.schema";
+import type { IRecordDef } from "../../lib/pack-docschema-api/pack-docschema-ir/index.js";
 import { formatVariantName } from "../formatVariantName.js";
 import { GENERATED_FILE_HEADER } from "../generatedFileHeader.js";
+import { findExternalRefType } from "../ir/irFieldHelpers.js";
 import { resolveSchemaChain } from "./resolveSchemaChain.js";
-import type { RuntimeSchemaRecord, SchemaField } from "./runtimeSchema.js";
 import {
   INTERNAL_UPGRADES_PATH,
-  isRecordSchema,
-  isUnionSchema,
   modelName,
   SCHEMA_REEXPORT_PATH,
   schemaName,
@@ -34,37 +33,14 @@ export interface ModelMetadataOutput {
   modelsFile: string;
 }
 
-/**
- * Detect which external ref field types (docRef, mediaRef, objectRef, userRef)
- * are present on a record for its model metadata.
- */
-function findExternalRefType(field: SchemaField): string | undefined {
-  switch (field.type) {
-    case "docRef":
-      return "docRef";
-    case "mediaRef":
-      return "mediaRef";
-    case "objectRef":
-      return "objectRef";
-    case "userRef":
-      return "userRef";
-    case "optional":
-      return field.item ? findExternalRefType(field.item) : undefined;
-    case "array":
-      return field.items ? findExternalRefType(field.items) : undefined;
-    default:
-      return undefined;
-  }
-}
-
 function extractExternalRefFieldTypes(
-  record: RuntimeSchemaRecord,
+  record: IRecordDef,
 ): Array<[string, string]> {
   const refs: Array<[string, string]> = [];
-  for (const [fieldName, fieldType] of Object.entries(record.fields)) {
-    const refType = findExternalRefType(fieldType);
+  for (const field of record.fields) {
+    const refType = findExternalRefType(field.fieldType);
     if (refType != null) {
-      refs.push([fieldName, refType]);
+      refs.push([field.key, refType]);
     }
   }
   return refs;
@@ -75,15 +51,14 @@ function extractExternalRefFieldTypes(
  *
  * @param schema - The schema definition (initial or versioned)
  * @param minSupportedVersion - Minimum version this client supports (defaults to latest)
- * @param options - Configuration for import paths
- * @returns Object containing generated models.ts content and schema manifest JSON
+ * @returns Object containing generated models.ts content
  */
 export function generateModelMetadataFromSchema(
   schema: SchemaDefinition,
   minSupportedVersion?: number,
 ): ModelMetadataOutput {
   const { chain, latestVersion, minVersion } = resolveSchemaChain(schema, minSupportedVersion);
-  const latestSchema = chain[chain.length - 1]!.schema;
+  const latestIr = chain[chain.length - 1]!.ir;
 
   // --- Generate models.ts ---
   let output = GENERATED_FILE_HEADER;
@@ -93,13 +68,13 @@ export function generateModelMetadataFromSchema(
   const unionNames: string[] = [];
   const variantNames: string[] = [];
 
-  for (const [exportName, item] of Object.entries(latestSchema)) {
-    if (isRecordSchema(item)) {
-      recordNames.push(exportName);
-    } else if (isUnionSchema(item)) {
-      unionNames.push(exportName);
-      for (const variantName of Object.keys(item.variants)) {
-        variantNames.push(`${exportName}${formatVariantName(variantName)}`);
+  for (const [modelKey, modelDef] of Object.entries(latestIr.models)) {
+    if (modelDef.type === "record") {
+      recordNames.push(modelKey);
+    } else if (modelDef.type === "union") {
+      unionNames.push(modelKey);
+      for (const variantName of Object.keys(modelDef.union.variants)) {
+        variantNames.push(`${modelKey}${formatVariantName(variantName)}`);
       }
     }
   }
@@ -135,9 +110,9 @@ export function generateModelMetadataFromSchema(
   output += "\n";
 
   // Generate model constants
-  for (const [exportName, item] of Object.entries(latestSchema)) {
-    if (isRecordSchema(item)) {
-      const externalRefs = extractExternalRefFieldTypes(item);
+  for (const [modelKey, modelDef] of Object.entries(latestIr.models)) {
+    if (modelDef.type === "record") {
+      const externalRefs = extractExternalRefFieldTypes(modelDef.record);
       const metadataFields: string[] = [];
 
       if (externalRefs.length > 0) {
@@ -146,36 +121,37 @@ export function generateModelMetadataFromSchema(
         );
         metadataFields.push(`    externalRefFieldTypes: {\n${entries}\n    },`);
       }
-      metadataFields.push(`    name: "${exportName}",`);
+      metadataFields.push(`    name: "${modelKey}",`);
 
-      output += `export interface ${
-        modelName(exportName)
-      } extends RecordModel<${exportName}, typeof ${schemaName(exportName)}> {}\n`;
-      output += `export const ${modelName(exportName)}: ${modelName(exportName)} = {\n`;
-      output += `  __type: {} as ${exportName},\n`;
-      output += `  zodSchema: ${schemaName(exportName)},\n`;
+      output += `export interface ${modelName(modelKey)} extends RecordModel<${modelKey}, typeof ${
+        schemaName(modelKey)
+      }> {}\n`;
+      output += `export const ${modelName(modelKey)}: ${modelName(modelKey)} = {\n`;
+      output += `  __type: {} as ${modelKey},\n`;
+      output += `  zodSchema: ${schemaName(modelKey)},\n`;
       output += `  [Metadata]: {\n${metadataFields.join("\n")}\n  },\n`;
       output += `};\n\n`;
-    } else if (isUnionSchema(item)) {
+    } else if (modelDef.type === "union") {
+      const union = modelDef.union;
       const metadataFields: string[] = [];
-      metadataFields.push(`    discriminant: "${item.discriminant}",`);
-      metadataFields.push(`    name: "${exportName}",`);
+      metadataFields.push(`    discriminant: "${union.discriminant}",`);
+      metadataFields.push(`    name: "${modelKey}",`);
 
-      output += `export interface ${
-        modelName(exportName)
-      } extends UnionModel<${exportName}, typeof ${schemaName(exportName)}> {}\n`;
-      output += `export const ${modelName(exportName)}: ${modelName(exportName)} = {\n`;
-      output += `  __type: {} as ${exportName},\n`;
-      output += `  zodSchema: ${schemaName(exportName)},\n`;
+      output += `export interface ${modelName(modelKey)} extends UnionModel<${modelKey}, typeof ${
+        schemaName(modelKey)
+      }> {}\n`;
+      output += `export const ${modelName(modelKey)}: ${modelName(modelKey)} = {\n`;
+      output += `  __type: {} as ${modelKey},\n`;
+      output += `  zodSchema: ${schemaName(modelKey)},\n`;
       output += `  [Metadata]: {\n${metadataFields.join("\n")}\n  },\n`;
       output += `};\n\n`;
 
       // Generate variant models
-      for (const variantName of Object.keys(item.variants)) {
+      for (const variantName of Object.keys(union.variants)) {
         const formattedVariant = formatVariantName(variantName);
-        const variantTypeName = `${exportName}${formattedVariant}`;
+        const variantTypeName = `${modelKey}${formattedVariant}`;
         const variantMetadata: string[] = [];
-        variantMetadata.push(`    discriminant: "${item.discriminant}",`);
+        variantMetadata.push(`    discriminant: "${union.discriminant}",`);
         variantMetadata.push(`    name: "${variantTypeName}",`);
 
         output += `export interface ${
@@ -192,14 +168,14 @@ export function generateModelMetadataFromSchema(
 
   // Generate DocumentModel
   const modelEntries: string[] = [];
-  for (const [exportName, item] of Object.entries(latestSchema)) {
-    if (isRecordSchema(item)) {
-      modelEntries.push(`  ${exportName}: ${modelName(exportName)}`);
-    } else if (isUnionSchema(item)) {
-      modelEntries.push(`  ${exportName}: ${modelName(exportName)}`);
-      for (const variantName of Object.keys(item.variants)) {
+  for (const [modelKey, modelDef] of Object.entries(latestIr.models)) {
+    if (modelDef.type === "record") {
+      modelEntries.push(`  ${modelKey}: ${modelName(modelKey)}`);
+    } else if (modelDef.type === "union") {
+      modelEntries.push(`  ${modelKey}: ${modelName(modelKey)}`);
+      for (const variantName of Object.keys(modelDef.union.variants)) {
         const formattedVariant = formatVariantName(variantName);
-        const variantTypeName = `${exportName}${formattedVariant}`;
+        const variantTypeName = `${modelKey}${formattedVariant}`;
         modelEntries.push(`  ${variantTypeName}: ${modelName(variantTypeName)}`);
       }
     }

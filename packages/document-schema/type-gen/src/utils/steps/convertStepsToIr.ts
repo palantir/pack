@@ -145,17 +145,26 @@ export function convertUnionDefToIr(unionDef: P.UnionDef): IUnionDef {
   };
 }
 
-// TODO: rename to convertSchemaTypeToFieldTypeUnion
+/**
+ * Unwraps a single layer of Optional, recording whether it was present.
+ */
+function unwrapOptional(schemaType: P.Type): { allowNullValue: boolean; innerType: P.Type } {
+  if (schemaType.type === "optional") {
+    return { allowNullValue: true, innerType: (schemaType as P.Optional).item as P.Type };
+  }
+  return { allowNullValue: false, innerType: schemaType };
+}
+
 export function convertTypeToFieldTypeUnion(schemaType: P.Type): IFieldTypeUnion {
   switch (schemaType.type) {
     case "array": {
       const arrayType = schemaType as P.Array;
+      const { allowNullValue, innerType } = unwrapOptional(arrayType.items as P.Type);
       return IFieldTypeUnion.array({
-        allowNullValue: false,
-        value: convertTypeToFieldValueUnion(arrayType.items as P.Type),
+        allowNullValue,
+        value: convertTypeToFieldValueUnion(innerType),
       });
     }
-    // TODO: have map/set types in document-schema-api
 
     case "optional": {
       // Optional flag is handled at field level, but we need to unwrap the inner type
@@ -181,19 +190,22 @@ export function convertTypeToFieldTypeUnion(schemaType: P.Type): IFieldTypeUnion
 
 function convertTypeToFieldValueUnion(schemaType: P.Type): IFieldValueUnion {
   switch (schemaType.type) {
-    case "array":
-      // TODO: fix the argument types so these aren't possible
-      invariant(
-        false,
-        `Collection type passed to convertTypeToFieldValueUnion: ${schemaType.type}`,
-      );
+    case "array": {
+      // Nested array (e.g. Array(Array(String)))
+      const arrayType = schemaType as P.Array;
+      const { allowNullValue, innerType } = unwrapOptional(arrayType.items as P.Type);
+      return IFieldValueUnion.array({
+        allowNullValue,
+        value: convertTypeToFieldValueUnion(innerType),
+      });
+    }
 
     case "boolean":
       return IFieldValueUnion.boolean({});
 
     case "docRef":
       return IFieldValueUnion.docRef({
-        documentTypeRids: [], // FIXME: confirm whether we will use rids in the deployed schema.
+        documentTypeRids: [],
       });
 
     case "double":
@@ -204,14 +216,12 @@ function convertTypeToFieldValueUnion(schemaType: P.Type): IFieldValueUnion {
 
     case "objectRef":
       return IFieldValueUnion.object({
-        // FIXME: confirm whether we will use rids in the deployed schema.
         interfaceTypeRids: [],
         objectTypeRids: [],
       });
 
     case "optional": {
-      // If we get here, it means we have nested optionals - unwrap and continue
-      // TODO: probably warn? maybe throw
+      // Nested optional — unwrap and continue
       const optionalType = schemaType as P.Optional;
       return convertTypeToFieldValueUnion(optionalType.item as P.Type);
     }

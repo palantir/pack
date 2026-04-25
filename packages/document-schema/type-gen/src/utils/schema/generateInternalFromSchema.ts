@@ -15,11 +15,18 @@
  */
 
 import type { SchemaDefinition } from "@palantir/pack.schema";
+import type {
+  IFieldTypeUnion,
+  IRealTimeDocumentSchema,
+} from "../../lib/pack-docschema-api/pack-docschema-ir/index.js";
 import { GENERATED_FILE_HEADER } from "../generatedFileHeader.js";
-import type { VersionedSchemaEntry } from "./resolveSchemaChain.js";
+import {
+  convertFieldTypeToDescriptor,
+  convertFieldTypeToInternalTypeScript,
+  convertFieldTypeToInternalZod,
+} from "../ir/irFieldHelpers.js";
+import type { VersionedIrEntry } from "./resolveSchemaChain.js";
 import { resolveSchemaChain } from "./resolveSchemaChain.js";
-import type { RuntimeSchema, SchemaField } from "./runtimeSchema.js";
-import { findRecordExportName, isRecordSchema, isUnionSchema, TypeKind } from "./runtimeSchema.js";
 
 export interface InternalTypesOutput {
   /** _internal/types.ts content */
@@ -30,121 +37,14 @@ export interface InternalTypesOutput {
   internalSchema: string;
 }
 
-/**
- * Convert a schema field type to TypeScript string for internal types.
- */
-function convertTypeToTypeScript(fieldType: SchemaField): string {
-  switch (fieldType.type) {
-    case TypeKind.ARRAY: {
-      if (fieldType.items == null) {
-        throw new Error("Array field is missing items type");
-      }
-      const inner = convertTypeToTypeScript(fieldType.items);
-      // Wrap compound types (unions, other arrays) in parens before appending []
-      const needsParens = inner.includes("|") || inner.startsWith("readonly ");
-      const wrapped = needsParens ? `(${inner})` : inner;
-      return `readonly ${wrapped}[]`;
-    }
-    case TypeKind.BOOLEAN:
-      return "boolean";
-    case TypeKind.DOC_REF:
-      return "string";
-    case TypeKind.DOUBLE:
-      return "number";
-    case TypeKind.MEDIA_REF:
-      return "string";
-    case TypeKind.OBJECT_REF:
-      return "string";
-    case TypeKind.OPTIONAL:
-      if (fieldType.item == null) {
-        throw new Error("Optional field is missing inner type");
-      }
-      return `(${convertTypeToTypeScript(fieldType.item)} | undefined)`;
-    case TypeKind.REF:
-      return "unknown";
-    case TypeKind.STRING:
-      return "string";
-    case TypeKind.USER_REF:
-      return "string";
-    default:
-      throw new Error(`Unknown schema field type: ${fieldType.type}`);
-  }
-}
-
-/**
- * Convert a schema field type to a FieldTypeDescriptor source string.
- */
-function convertTypeToFieldTypeDescriptor(fieldType: SchemaField, schema: RuntimeSchema): string {
-  switch (fieldType.type) {
-    case TypeKind.ARRAY:
-      if (fieldType.items == null) {
-        throw new Error("Array field is missing items type");
-      }
-      return `{ kind: "array", element: ${
-        convertTypeToFieldTypeDescriptor(fieldType.items, schema)
-      } }`;
-    case TypeKind.OPTIONAL:
-      if (fieldType.item == null) {
-        throw new Error("Optional field is missing inner type");
-      }
-      return `{ kind: "optional", inner: ${
-        convertTypeToFieldTypeDescriptor(fieldType.item, schema)
-      } }`;
-    case TypeKind.REF: {
-      if (fieldType.name == null) {
-        throw new Error("Ref field is missing a name");
-      }
-      const exportKey = fieldType.refType === "record"
-        ? findRecordExportName(fieldType.name, schema) ?? fieldType.name
-        : fieldType.name;
-      return `{ kind: "modelRef", model: "${exportKey}" }`;
-    }
-    default:
-      return `{ kind: "primitive" }`;
-  }
-}
-
-/**
- * Convert a schema field type to a Zod schema string.
- */
-function convertTypeToZodSchema(fieldType: SchemaField): string {
-  switch (fieldType.type) {
-    case TypeKind.ARRAY:
-      if (fieldType.items == null) {
-        throw new Error("Array field is missing items type");
-      }
-      return `z.array(${convertTypeToZodSchema(fieldType.items)})`;
-    case TypeKind.BOOLEAN:
-      return "z.boolean()";
-    case TypeKind.DOC_REF:
-    case TypeKind.MEDIA_REF:
-    case TypeKind.OBJECT_REF:
-    case TypeKind.STRING:
-    case TypeKind.USER_REF:
-      return "z.string()";
-    case TypeKind.DOUBLE:
-      return "z.number()";
-    case TypeKind.OPTIONAL:
-      if (fieldType.item == null) {
-        throw new Error("Optional field is missing inner type");
-      }
-      return `${convertTypeToZodSchema(fieldType.item)}.optional()`;
-    case TypeKind.REF:
-      return "z.unknown()";
-    default:
-      throw new Error(`Unknown schema field type: ${fieldType.type}`);
-  }
-}
-
 /** Collected info about all fields for a model across all versions. */
 interface AllFieldInfo {
-  fieldType: SchemaField;
+  fieldType: IFieldTypeUnion;
+  isOptional: boolean;
   /** Versions where this field exists. */
   presentInVersions: Set<number>;
   /** Whether field is always optional. */
   alwaysOptional: boolean;
-  /** Default value if any. */
-  default?: unknown;
 }
 
 /**
@@ -173,35 +73,36 @@ function sortedEntries<V>(map: Map<string, V>): [string, V][] {
  * Collect all record model info across all versions and compute upgrade steps.
  */
 function collectRecordModels(
-  chain: VersionedSchemaEntry[],
+  chain: VersionedIrEntry[],
 ): Map<string, RecordModelInfo> {
   const allRecordModels = new Map<string, RecordModelInfo>();
 
   // Initialize models from all versions
-  for (const { version, schema } of chain) {
-    for (const [exportName, item] of Object.entries(schema)) {
-      if (!isRecordSchema(item)) continue;
+  for (const { version, ir } of chain) {
+    for (const [modelKey, modelDef] of Object.entries(ir.models)) {
+      if (modelDef.type !== "record") continue;
 
-      if (!allRecordModels.has(exportName)) {
-        allRecordModels.set(exportName, {
+      if (!allRecordModels.has(modelKey)) {
+        allRecordModels.set(modelKey, {
           allFields: new Map(),
           steps: [],
         });
       }
 
-      const model = allRecordModels.get(exportName)!;
+      const model = allRecordModels.get(modelKey)!;
 
-      for (const [fieldName, fieldType] of Object.entries(item.fields)) {
-        const existing = model.allFields.get(fieldName);
+      for (const field of modelDef.record.fields) {
+        const existing = model.allFields.get(field.key);
         if (existing == null) {
-          model.allFields.set(fieldName, {
-            fieldType,
+          model.allFields.set(field.key, {
+            fieldType: field.fieldType,
+            isOptional: field.isOptional === true,
             presentInVersions: new Set([version]),
-            alwaysOptional: fieldType.type === TypeKind.OPTIONAL,
+            alwaysOptional: field.isOptional === true,
           });
         } else {
           existing.presentInVersions.add(version);
-          if (fieldType.type !== TypeKind.OPTIONAL) {
+          if (field.isOptional !== true) {
             existing.alwaysOptional = false;
           }
         }
@@ -211,37 +112,37 @@ function collectRecordModels(
 
   // Compute upgrade steps from version diffs
   for (let i = 1; i < chain.length; i++) {
-    const prevVersion = chain[i - 1]!;
-    const currVersion = chain[i]!;
+    const prevEntry = chain[i - 1]!;
+    const currEntry = chain[i]!;
 
-    for (const [exportName, currItem] of Object.entries(currVersion.schema)) {
-      if (!isRecordSchema(currItem)) continue;
+    for (const [modelKey, currModelDef] of Object.entries(currEntry.ir.models)) {
+      if (currModelDef.type !== "record") continue;
 
-      const prevItem = prevVersion.schema[exportName];
-      if (prevItem == null || !isRecordSchema(prevItem)) continue;
+      const prevModelDef = prevEntry.ir.models[modelKey];
+      if (prevModelDef == null || prevModelDef.type !== "record") continue;
 
-      const model = allRecordModels.get(exportName);
+      const model = allRecordModels.get(modelKey);
       if (model == null) continue;
 
-      const prevFields = new Set(Object.keys(prevItem.fields));
-      const currFields = new Set(Object.keys(currItem.fields));
+      const prevFields = new Set(prevModelDef.record.fields.map(f => f.key));
+      const currFields = new Set(currModelDef.record.fields.map(f => f.key));
 
       // Fields added in this version
       const addedFields = new Map<
         string,
         { derivedFrom: string[]; forwardSource: string; default?: unknown }
       >();
-      const recordUpgrades = currVersion.migrations?.[exportName];
-      for (const fieldName of currFields) {
-        if (!prevFields.has(fieldName)) {
-          const annotation = recordUpgrades?.[fieldName];
+      const recordUpgrades = currEntry.migrations?.[modelKey];
+      for (const fieldKey of currFields) {
+        if (!prevFields.has(fieldKey)) {
+          const annotation = recordUpgrades?.[fieldKey];
           if (annotation != null) {
-            addedFields.set(fieldName, {
+            addedFields.set(fieldKey, {
               derivedFrom: [...annotation.derivedFrom],
               forwardSource: annotation.forward.toString(),
             });
           } else {
-            addedFields.set(fieldName, {
+            addedFields.set(fieldKey, {
               derivedFrom: [],
               forwardSource: "() => undefined",
             });
@@ -251,16 +152,16 @@ function collectRecordModels(
 
       // Fields removed in this version
       const removedFields: string[] = [];
-      for (const fieldName of prevFields) {
-        if (!currFields.has(fieldName)) {
-          removedFields.push(fieldName);
+      for (const fieldKey of prevFields) {
+        if (!currFields.has(fieldKey)) {
+          removedFields.push(fieldKey);
         }
       }
 
       if (addedFields.size > 0 || removedFields.length > 0) {
         model.steps.push({
-          name: `v${currVersion.version}`,
-          addedInVersion: currVersion.version,
+          name: `v${currEntry.version}`,
+          addedInVersion: currEntry.version,
           fields: addedFields,
           removedFields,
         });
@@ -290,12 +191,15 @@ function generateInternalTypes(
   let output = GENERATED_FILE_HEADER;
   output += "\n";
 
-  for (const [exportName, model] of sortedEntries(allRecordModels)) {
+  for (const [modelKey, model] of sortedEntries(allRecordModels)) {
     output += `/** Internal representation containing all fields across all schema versions. */\n`;
-    output += `export interface ${exportName}__Internal {\n`;
+    output += `export interface ${modelKey}__Internal {\n`;
 
     for (const [fieldName, fieldInfo] of sortedEntries(model.allFields)) {
-      const tsType = convertTypeToTypeScript(fieldInfo.fieldType);
+      const tsType = convertFieldTypeToInternalTypeScript(
+        fieldInfo.fieldType,
+        fieldInfo.isOptional,
+      );
       const optional = fieldInfo.alwaysOptional ? "?" : "";
       output += `  readonly ${fieldName}${optional}: ${tsType};\n`;
     }
@@ -311,12 +215,12 @@ function generateInternalTypes(
  */
 function generateUpgrades(
   allRecordModels: Map<string, RecordModelInfo>,
-  latestSchema: RuntimeSchema,
+  latestIr: IRealTimeDocumentSchema,
 ): string {
   let output = GENERATED_FILE_HEADER;
 
   const hasRecords = allRecordModels.size > 0;
-  const hasUnions = Object.values(latestSchema).some(isUnionSchema);
+  const hasUnions = Object.values(latestIr.models).some(m => m.type === "union");
 
   const imports: string[] = [];
   if (hasRecords) imports.push("UpgradeRegistry");
@@ -328,21 +232,19 @@ function generateUpgrades(
     } } from "@palantir/pack.document-schema.model-types";\n\n`;
   }
 
-  for (const [exportName, model] of sortedEntries(allRecordModels)) {
-    output += `export const ${exportName}Upgrades: UpgradeRegistry<"${exportName}"> = {\n`;
-    output += `  modelName: "${exportName}",\n`;
+  for (const [modelKey, model] of sortedEntries(allRecordModels)) {
+    output += `export const ${modelKey}Upgrades: UpgradeRegistry<"${modelKey}"> = {\n`;
+    output += `  modelName: "${modelKey}",\n`;
 
     // allFields
     output += `  allFields: {\n`;
     for (const [fieldName, fieldInfo] of sortedEntries(model.allFields)) {
-      const typeDescriptor = convertTypeToFieldTypeDescriptor(fieldInfo.fieldType, latestSchema);
-      if (fieldInfo.default !== undefined) {
-        output += `    ${fieldName}: { type: ${typeDescriptor}, default: ${
-          JSON.stringify(fieldInfo.default)
-        } },\n`;
-      } else {
-        output += `    ${fieldName}: { type: ${typeDescriptor} },\n`;
-      }
+      const typeDescriptor = convertFieldTypeToDescriptor(
+        fieldInfo.fieldType,
+        fieldInfo.isOptional,
+        latestIr,
+      );
+      output += `    ${fieldName}: { type: ${typeDescriptor} },\n`;
     }
     output += `  },\n`;
 
@@ -376,22 +278,18 @@ function generateUpgrades(
   }
 
   // Generate UnionUpgradeRegistry entries for union models
-  for (const [exportName, item] of Object.entries(latestSchema)) {
-    if (!isUnionSchema(item)) continue;
+  for (const [modelKey, modelDef] of Object.entries(latestIr.models)) {
+    if (modelDef.type !== "union") continue;
 
-    output += `export const ${exportName}Upgrades: UnionUpgradeRegistry<"${exportName}"> = {\n`;
-    output += `  modelName: "${exportName}",\n`;
-    output += `  discriminant: "${item.discriminant}",\n`;
+    const union = modelDef.union;
+    output += `export const ${modelKey}Upgrades: UnionUpgradeRegistry<"${modelKey}"> = {\n`;
+    output += `  modelName: "${modelKey}",\n`;
+    output += `  discriminant: "${union.discriminant}",\n`;
     output += `  variants: {\n`;
-    for (const [variantKey, variantField] of Object.entries(item.variants)) {
-      if (
-        variantField.type === "ref" && variantField.refType === "record"
-        && variantField.name != null
-      ) {
-        const variantExportName = findRecordExportName(variantField.name, latestSchema);
-        if (variantExportName != null) {
-          output += `    "${variantKey}": "${variantExportName}",\n`;
-        }
+    for (const [variantKey, variantModelKey] of Object.entries(union.variants)) {
+      const variantModel = latestIr.models[variantModelKey];
+      if (variantModel != null && variantModel.type === "record") {
+        output += `    "${variantKey}": "${variantModelKey}",\n`;
       }
     }
     output += `  },\n`;
@@ -410,22 +308,15 @@ function generateInternalSchemaContent(
   let output = GENERATED_FILE_HEADER;
   output += `import { z } from "zod";\n\n`;
 
-  for (const [exportName, model] of sortedEntries(allRecordModels)) {
-    output += `export const ${exportName}InternalSchema = z.object({\n`;
+  for (const [modelKey, model] of sortedEntries(allRecordModels)) {
+    output += `export const ${modelKey}InternalSchema = z.object({\n`;
 
     for (const [fieldName, fieldInfo] of sortedEntries(model.allFields)) {
-      const zodType = convertTypeToZodSchema(fieldInfo.fieldType);
-      // In internal schema, all fields that might be absent are optional
-      if (fieldInfo.alwaysOptional) {
-        // If the type already ends with .optional(), don't double-wrap
-        if (zodType.endsWith(".optional()")) {
-          output += `  ${fieldName}: ${zodType},\n`;
-        } else {
-          output += `  ${fieldName}: ${zodType}.optional(),\n`;
-        }
-      } else {
-        output += `  ${fieldName}: ${zodType},\n`;
-      }
+      const zodType = convertFieldTypeToInternalZod(
+        fieldInfo.fieldType,
+        fieldInfo.alwaysOptional,
+      );
+      output += `  ${fieldName}: ${zodType},\n`;
     }
 
     output += `}).passthrough();\n\n`;
@@ -445,12 +336,12 @@ export function generateInternalFromSchema(
   schema: SchemaDefinition,
 ): InternalTypesOutput {
   const { chain } = resolveSchemaChain(schema);
-  const latestSchema = chain[chain.length - 1]!.schema;
+  const latestIr = chain[chain.length - 1]!.ir;
 
   const allRecordModels = collectRecordModels(chain);
 
   const internalTypes = generateInternalTypes(allRecordModels);
-  const upgrades = generateUpgrades(allRecordModels, latestSchema);
+  const upgrades = generateUpgrades(allRecordModels, latestIr);
   const internalSchema = generateInternalSchemaContent(allRecordModels);
 
   return { internalTypes, upgrades, internalSchema };

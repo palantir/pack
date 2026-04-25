@@ -15,20 +15,17 @@
  */
 
 import type { SchemaDefinition } from "@palantir/pack.schema";
+import type { IRealTimeDocumentSchema } from "../../lib/pack-docschema-api/pack-docschema-ir/index.js";
 import { formatVariantName } from "../formatVariantName.js";
 import { GENERATED_FILE_HEADER } from "../generatedFileHeader.js";
-import type { VersionedSchemaEntry } from "./resolveSchemaChain.js";
-import { resolveSchemaChain } from "./resolveSchemaChain.js";
-import type { RuntimeSchema, SchemaField } from "./runtimeSchema.js";
 import {
-  findRecordExportName,
-  isRecordSchema,
-  isUnionSchema,
-  TypeKind,
-  typesFilePath,
-  versionedTypeName,
-  versionedWriteTypeName,
-} from "./runtimeSchema.js";
+  collectReferencedTypes,
+  convertFieldTypeToTypeScript,
+  detectUsedRefTypes,
+} from "../ir/irFieldHelpers.js";
+import type { VersionedIrEntry } from "./resolveSchemaChain.js";
+import { resolveSchemaChain } from "./resolveSchemaChain.js";
+import { typesFilePath, versionedTypeName, versionedWriteTypeName } from "./runtimeSchema.js";
 
 export interface VersionedTypesOutput {
   /** types_vN.ts files keyed by version number */
@@ -39,127 +36,14 @@ export interface VersionedTypesOutput {
   typesReExport: string;
 }
 
-function detectUsedRefTypes(schema: RuntimeSchema): Set<string> {
-  const refTypes = new Set<string>();
-
-  function scanField(field: SchemaField): void {
-    switch (field.type) {
-      case TypeKind.ARRAY:
-        if (field.items) scanField(field.items);
-        break;
-      case TypeKind.DOC_REF:
-        refTypes.add("DocumentRef");
-        break;
-      case TypeKind.MEDIA_REF:
-        refTypes.add("MediaRef");
-        break;
-      case TypeKind.OBJECT_REF:
-        refTypes.add("ObjectRef");
-        break;
-      case TypeKind.OPTIONAL:
-        if (field.item) scanField(field.item);
-        break;
-      case TypeKind.USER_REF:
-        refTypes.add("UserRef");
-        break;
-    }
-  }
-
-  for (const item of Object.values(schema)) {
-    if (isRecordSchema(item)) {
-      for (const f of Object.values(item.fields)) {
-        scanField(f);
-      }
-    } else if (isUnionSchema(item)) {
-      for (const v of Object.values(item.variants)) {
-        scanField(v);
-      }
-    }
-  }
-
-  return refTypes;
-}
-
-function collectReferencedTypes(
-  fieldType: SchemaField,
-  schema: RuntimeSchema,
-  version: number,
-  out: Set<string>,
-): void {
-  switch (fieldType.type) {
-    case TypeKind.ARRAY:
-      if (fieldType.items) collectReferencedTypes(fieldType.items, schema, version, out);
-      break;
-    case TypeKind.OPTIONAL:
-      if (fieldType.item) collectReferencedTypes(fieldType.item, schema, version, out);
-      break;
-    case TypeKind.REF: {
-      const name = fieldType.refType === "record"
-        ? findRecordExportName(fieldType.name!, schema) ?? fieldType.name
-        : fieldType.name;
-      if (name == null) {
-        throw new Error(`Could not find name for ref: ${fieldType.type}:${fieldType.refType}`);
-      }
-      out.add(versionedTypeName(name, version));
-      break;
-    }
-  }
-}
-
-function convertTypeToTypeScript(
-  fieldType: SchemaField,
-  schema?: RuntimeSchema,
-  version?: number,
-): string {
-  switch (fieldType.type) {
-    case TypeKind.ANY:
-      return "any";
-    case TypeKind.ARRAY:
-      if (fieldType.items == null) {
-        throw new Error("Array field is missing items type");
-      }
-      return `readonly ${convertTypeToTypeScript(fieldType.items, schema, version)}[]`;
-    case TypeKind.BOOLEAN:
-      return "boolean";
-    case TypeKind.DOC_REF:
-      return "DocumentRef";
-    case TypeKind.DOUBLE:
-      return "number";
-    case TypeKind.MEDIA_REF:
-      return "MediaRef";
-    case TypeKind.OBJECT_REF:
-      return "ObjectRef";
-    case TypeKind.OPTIONAL:
-      if (fieldType.item == null) {
-        throw new Error("Optional field is missing inner type");
-      }
-      return convertTypeToTypeScript(fieldType.item, schema, version);
-    case TypeKind.REF: {
-      const name = fieldType.refType === "record" && schema != null
-        ? findRecordExportName(fieldType.name!, schema) ?? fieldType.name
-        : fieldType.name;
-      if (name == null) {
-        throw new Error(`Could not find name for ref: ${fieldType.type}:${fieldType.refType}`);
-      }
-      return version != null ? versionedTypeName(name, version) : name;
-    }
-    case TypeKind.STRING:
-      return "string";
-    case TypeKind.USER_REF:
-      return "UserRef";
-    default:
-      throw new Error(`Unknown schema field type: ${fieldType.type}`);
-  }
-}
-
 /**
  * Generate read types for a specific schema version.
  */
 function generateReadTypesForVersion(
   version: number,
-  schema: RuntimeSchema,
+  ir: IRealTimeDocumentSchema,
 ): string {
-  const usedRefTypes = detectUsedRefTypes(schema);
+  const usedRefTypes = detectUsedRefTypes(ir);
 
   let output = GENERATED_FILE_HEADER;
 
@@ -172,55 +56,50 @@ function generateReadTypesForVersion(
   output += "\n";
 
   // Generate record interfaces
-  for (const [exportName, item] of Object.entries(schema)) {
-    if (!isRecordSchema(item)) continue;
+  for (const [modelKey, modelDef] of Object.entries(ir.models)) {
+    if (modelDef.type !== "record") continue;
 
-    const typeName = versionedTypeName(exportName, version);
+    const record = modelDef.record;
+    const typeName = versionedTypeName(modelKey, version);
 
-    if (item.docs) {
-      output += `/**\n * ${item.docs}\n */\n`;
+    if (record.description) {
+      output += `/**\n * ${record.description}\n */\n`;
     }
 
     output += `export interface ${typeName} {\n`;
 
-    for (const [fieldName, fieldType] of Object.entries(item.fields)) {
-      const tsType = convertTypeToTypeScript(fieldType, schema, version);
-      const optional = fieldType.type === TypeKind.OPTIONAL ? "?" : "";
-      output += `  readonly ${fieldName}${optional}: ${tsType};\n`;
+    for (const field of record.fields) {
+      const tsType = convertFieldTypeToTypeScript(field.fieldType, ir, version);
+      const optional = field.isOptional ? "?" : "";
+      output += `  readonly ${field.key}${optional}: ${tsType};\n`;
     }
 
     output += "}\n\n";
   }
 
   // Generate union types
-  const unionEntries = Object.entries(schema).filter(
-    ([_, item]) => isUnionSchema(item),
-  );
+  for (const [modelKey, modelDef] of Object.entries(ir.models)) {
+    if (modelDef.type !== "union") continue;
 
-  for (const [exportName, item] of unionEntries) {
-    if (!isUnionSchema(item)) continue;
-
-    const typeName = versionedTypeName(exportName, version);
-    const discriminantField = item.discriminant;
+    const union = modelDef.union;
+    const typeName = versionedTypeName(modelKey, version);
+    const discriminantField = union.discriminant;
     const variantInterfaces: Array<{ name: string; discriminatorValue: string }> = [];
 
-    for (const [variantName, variantType] of Object.entries(item.variants)) {
+    for (const [variantName, variantModelKey] of Object.entries(union.variants)) {
       const interfaceName = `${typeName}${formatVariantName(variantName)}`;
       variantInterfaces.push({ name: interfaceName, discriminatorValue: variantName });
 
-      if (variantType.type === TypeKind.REF && variantType.refType === "record") {
-        const recordExport = findRecordExportName(variantType.name!, schema);
-        const recordTypeName = recordExport
-          ? versionedTypeName(recordExport, version)
-          : variantType.name!;
+      // Look up the variant's model to check if it's a record
+      const variantModel = ir.models[variantModelKey];
+      if (variantModel != null && variantModel.type === "record") {
+        const recordTypeName = versionedTypeName(variantModelKey, version);
         output += `export interface ${interfaceName} extends ${recordTypeName} {\n`;
         output += `  readonly ${discriminantField}: "${variantName}";\n`;
         output += "}\n\n";
       } else {
-        const tsType = convertTypeToTypeScript(variantType, schema, version);
         output += `export interface ${interfaceName} {\n`;
         output += `  readonly ${discriminantField}: "${variantName}";\n`;
-        output += `  readonly value: ${tsType};\n`;
         output += "}\n\n";
       }
     }
@@ -244,16 +123,16 @@ function generateReadTypesForVersion(
  */
 function generateWriteTypesForVersion(
   version: number,
-  schema: RuntimeSchema,
+  ir: IRealTimeDocumentSchema,
 ): string {
-  const usedRefTypes = detectUsedRefTypes(schema);
+  const usedRefTypes = detectUsedRefTypes(ir);
 
   // Collect referenced schema-local types (refs to other records/unions)
   const referencedLocalTypes = new Set<string>();
-  for (const item of Object.values(schema)) {
-    if (!isRecordSchema(item)) continue;
-    for (const fieldType of Object.values(item.fields)) {
-      collectReferencedTypes(fieldType, schema, version, referencedLocalTypes);
+  for (const modelDef of Object.values(ir.models)) {
+    if (modelDef.type !== "record") continue;
+    for (const field of modelDef.record.fields) {
+      collectReferencedTypes(field.fieldType, version, referencedLocalTypes);
     }
   }
 
@@ -273,17 +152,17 @@ function generateWriteTypesForVersion(
   output += "\n";
 
   // Generate record write types
-  for (const [exportName, item] of Object.entries(schema)) {
-    if (!isRecordSchema(item)) continue;
+  for (const [modelKey, modelDef] of Object.entries(ir.models)) {
+    if (modelDef.type !== "record") continue;
 
-    const typeName = versionedWriteTypeName(exportName, version);
+    const typeName = versionedWriteTypeName(modelKey, version);
 
     output += `export type ${typeName} = {\n`;
 
-    for (const [fieldName, fieldType] of Object.entries(item.fields)) {
+    for (const field of modelDef.record.fields) {
       // All fields are optional in write types
-      const tsType = convertTypeToTypeScript(fieldType, schema, version);
-      output += `  readonly ${fieldName}?: ${tsType};\n`;
+      const tsType = convertFieldTypeToTypeScript(field.fieldType, ir, version);
+      output += `  readonly ${field.key}?: ${tsType};\n`;
     }
 
     output += "};\n\n";
@@ -295,25 +174,25 @@ function generateWriteTypesForVersion(
 /**
  * Generate the types.ts re-export file that maps unversioned names to the latest version.
  */
-function generateTypesReExport({ schema, version }: VersionedSchemaEntry): string {
+function generateTypesReExport({ ir, version }: VersionedIrEntry): string {
   const reExports: string[] = [];
-  for (const [exportName, item] of Object.entries(schema)) {
-    if (isRecordSchema(item)) {
-      const versioned = versionedTypeName(exportName, version);
+  for (const [modelKey, modelDef] of Object.entries(ir.models)) {
+    if (modelDef.type === "record") {
+      const versioned = versionedTypeName(modelKey, version);
       reExports.push(
-        `export type { ${versioned} as ${exportName} } from "${typesFilePath(version)}";`,
+        `export type { ${versioned} as ${modelKey} } from "${typesFilePath(version)}";`,
       );
-    } else if (isUnionSchema(item)) {
-      const versioned = versionedTypeName(exportName, version);
+    } else if (modelDef.type === "union") {
+      const versioned = versionedTypeName(modelKey, version);
       reExports.push(
-        `export type { ${versioned} as ${exportName} } from "${typesFilePath(version)}";`,
+        `export type { ${versioned} as ${modelKey} } from "${typesFilePath(version)}";`,
       );
 
       // Also re-export union variant types
-      for (const variantName of Object.keys(item.variants)) {
+      for (const variantName of Object.keys(modelDef.union.variants)) {
         const formattedVariant = formatVariantName(variantName);
-        const versionedVariant = `${versionedTypeName(exportName, version)}${formattedVariant}`;
-        const unversionedVariant = `${exportName}${formattedVariant}`;
+        const versionedVariant = `${versionedTypeName(modelKey, version)}${formattedVariant}`;
+        const unversionedVariant = `${modelKey}${formattedVariant}`;
         reExports.push(
           `export type { ${versionedVariant} as ${unversionedVariant} } from "${
             typesFilePath(version)
@@ -342,11 +221,11 @@ export function generateVersionedTypesFromSchema(
   const readTypes = new Map<number, string>();
   const writeTypes = new Map<number, string>();
 
-  for (const { version, schema: versionSchema } of chain) {
+  for (const { version, ir } of chain) {
     if (version < minVersion) continue;
 
-    readTypes.set(version, generateReadTypesForVersion(version, versionSchema));
-    writeTypes.set(version, generateWriteTypesForVersion(version, versionSchema));
+    readTypes.set(version, generateReadTypesForVersion(version, ir));
+    writeTypes.set(version, generateWriteTypesForVersion(version, ir));
   }
 
   const typesReExport = generateTypesReExport(chain[chain.length - 1]!);

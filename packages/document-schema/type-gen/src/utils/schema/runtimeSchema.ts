@@ -14,61 +14,6 @@
  * limitations under the License.
  */
 
-import { TypeKind as SchemaTypeKind } from "@palantir/pack.schema";
-
-export const TypeKind: typeof SchemaTypeKind & { readonly ANY: "any" } = {
-  ...SchemaTypeKind,
-  ANY: "any",
-};
-
-export const SchemaDefKind = {
-  RECORD: "record",
-  UNION: "union",
-} as const;
-
-// Runtime types mirroring the schema structure
-export interface SchemaField {
-  readonly type: string;
-  readonly items?: SchemaField;
-  readonly item?: SchemaField;
-  readonly refType?: "record" | "union";
-  readonly name?: string;
-}
-
-export interface RuntimeSchemaRecord {
-  readonly type: typeof SchemaDefKind.RECORD;
-  readonly name: string;
-  readonly docs?: string;
-  readonly fields: Readonly<Record<string, SchemaField>>;
-}
-
-export interface RuntimeSchemaUnion {
-  readonly type: typeof SchemaDefKind.UNION;
-  readonly name?: string;
-  readonly variants: Readonly<Record<string, SchemaField>>;
-  readonly discriminant: string;
-}
-
-export type RuntimeSchemaItem = RuntimeSchemaRecord | RuntimeSchemaUnion;
-export type RuntimeSchema = Record<string, RuntimeSchemaItem>;
-
-export function isRecordSchema(item: RuntimeSchemaItem): item is RuntimeSchemaRecord {
-  return item.type === SchemaDefKind.RECORD && "fields" in item;
-}
-
-export function isUnionSchema(item: RuntimeSchemaItem): item is RuntimeSchemaUnion {
-  return item.type === SchemaDefKind.UNION && "variants" in item;
-}
-
-export function findRecordExportName(recordName: string, schema: RuntimeSchema): string | null {
-  for (const [exportName, item] of Object.entries(schema)) {
-    if (isRecordSchema(item) && item.name === recordName) {
-      return exportName;
-    }
-  }
-  return null;
-}
-
 /** Versioned read type name: `RecordName_vN` */
 export function versionedTypeName(exportName: string, version: number): string {
   return `${exportName}_v${version}`;
