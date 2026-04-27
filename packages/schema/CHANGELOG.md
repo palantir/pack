@@ -1,5 +1,14 @@
 # @palantir/pack.schema
 
+## 0.4.0
+
+### Minor Changes
+
+- 2b00422: Add 'gen-types' command, along with scope, metadata and manifest generators
+- 222e157: Wire in lens upgrade registry to reads in the yjs layer
+- d6d49e3: Add new schema builder methods for schema updates
+- 792a1b0: Add new 'gen-types' command, direct from TS schema to Versioned SDK Types.
+
 ## 0.3.1
 
 ### Patch Changes

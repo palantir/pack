@@ -1,5 +1,14 @@
 # @palantir/pack.document-schema.model-types
 
+## 0.8.0
+
+### Minor Changes
+
+- 2b00422: Add 'gen-types' command, along with scope, metadata and manifest generators
+- 222e157: Wire in lens upgrade registry to reads in the yjs layer
+- ad7a355: Add UpgradeLens utilities
+- 792a1b0: Add new 'gen-types' command, direct from TS schema to Versioned SDK Types.
+
 ## 0.7.0
 
 ### Minor Changes
