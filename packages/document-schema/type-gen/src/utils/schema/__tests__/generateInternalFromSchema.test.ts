@@ -19,6 +19,7 @@ import { describe, expect, it } from "vitest";
 import { generateInternalFromSchema } from "../generateInternalFromSchema.js";
 import {
   nestedOptionalsSchema,
+  nestedUnionSchema,
   optionalToRequiredFieldSchema,
   singleVersionSchema,
   twoVersionDerivedFieldsSchema,
@@ -55,6 +56,15 @@ describe("generateInternalFromSchema", () => {
     await expect(await formatInternalTypesSnapshot(result)).toMatchFileSnapshot(
       path.join(snapshotDir, "two-version-derived-fields.snap"),
     );
+  });
+
+  it("nested union schema generates upgrade registries for all variant targets", async () => {
+    const result = generateInternalFromSchema(nestedUnionSchema);
+    // Entity's "livingBeing" variant points at the LivingBeing union.
+    // The upgrade registry must include this entry so runtime dispatch works.
+    expect(result.upgrades).toContain("EntityUpgrades");
+    expect(result.upgrades).toContain("\"livingBeing\": \"LivingBeing\"");
+    expect(result.upgrades).toContain("LivingBeingUpgrades");
   });
 
   it("field optional in v1 and required in v2 stays optional in internal schema", async () => {

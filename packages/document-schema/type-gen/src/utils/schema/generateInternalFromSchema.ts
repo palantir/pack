@@ -293,10 +293,7 @@ function generateUpgrades(
     output += `  discriminant: "${union.discriminant}",\n`;
     output += `  variants: {\n`;
     for (const [variantKey, variantModelKey] of Object.entries(union.variants)) {
-      const variantModel = latestIr.models[variantModelKey];
-      if (variantModel != null && variantModel.type === "record") {
-        output += `    "${variantKey}": "${variantModelKey}",\n`;
-      }
+      output += `    "${variantKey}": "${variantModelKey}",\n`;
     }
     output += `  },\n`;
     output += `};\n\n`;

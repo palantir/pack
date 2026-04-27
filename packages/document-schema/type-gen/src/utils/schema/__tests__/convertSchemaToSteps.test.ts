@@ -228,4 +228,17 @@ describe("convertSchemaToSteps", () => {
       await expect(yamlOutput).toMatchFileSnapshot(snapshotPath);
     });
   });
+
+  it("rejects aliased schemas where exportKey differs from declared name", () => {
+    const schema = P.defineMigration({}, () => {
+      return {
+        FooAlias: P.defineRecord("Foo", {
+          docs: "A foo",
+          fields: { x: P.String },
+        }),
+      };
+    });
+
+    expect(() => convertSchemaToSteps(schema)).toThrow(/cannot represent aliases/);
+  });
 });

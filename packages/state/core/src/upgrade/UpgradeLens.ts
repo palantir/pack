@@ -44,11 +44,24 @@ export function resolveAndApplyLens(
       const variantModelName = entry.variants[discriminantValue];
       if (variantModelName != null) {
         const variantRegistry = allRegistries[variantModelName];
-        if (
-          variantRegistry != null && !isUnionRegistry(variantRegistry)
-          && variantRegistry.steps.length > 0
-        ) {
-          return applyReadLens(rawData, variantRegistry, allRegistries);
+        if (variantRegistry != null) {
+          if (isUnionRegistry(variantRegistry)) {
+            // Union→union: the nested union payload lives in rawData.value
+            const nestedValue = rawData.value;
+            if (nestedValue != null && typeof nestedValue === "object") {
+              const upgradedValue = resolveAndApplyLens(
+                nestedValue as Record<string, unknown>,
+                variantRegistry,
+                allRegistries,
+              );
+              if (upgradedValue !== nestedValue) {
+                return { ...rawData, value: upgradedValue };
+              }
+            }
+          } else if (variantRegistry.steps.length > 0) {
+            // Union→record: the record payload is the outer object itself
+            return applyReadLens(rawData, variantRegistry, allRegistries);
+          }
         }
       }
     }

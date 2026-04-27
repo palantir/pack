@@ -66,10 +66,15 @@ export function convertSchemaToIr(
   inputSchema: P.Schema<P.ReturnedSchema>,
   metadata?: SchemaMetadata,
 ): IRealTimeDocumentSchema {
-  // Build a mapping from internal model name → export key so that union variant
-  // refs (which use internal model names) can be remapped to export keys.
+  // Build a mapping from declared model name → export key so that union variant
+  // refs (which use declared model names) can be remapped to export keys.
   const nameToExportKey = new Map<string, string>();
   for (const [exportKey, modelDef] of Object.entries(inputSchema)) {
+    const existing = nameToExportKey.get(modelDef.name);
+    invariant(
+      existing == null,
+      `Duplicate declared model name "${modelDef.name}": exported as both "${existing}" and "${exportKey}"`,
+    );
     nameToExportKey.set(modelDef.name, exportKey);
   }
 
@@ -139,7 +144,7 @@ export function convertRecordDefToIr(
 
   return {
     key,
-    name: key,
+    name: recordDef.name,
     description: recordDef.docs ?? undefined,
     fields,
   };
@@ -162,7 +167,7 @@ export function convertUnionDefToIr(
 
   return {
     key,
-    name: key,
+    name: unionDef.name,
     description: unionDef.docs,
     discriminant: unionDef.discriminant,
     variants: Object.fromEntries(variantEntries),

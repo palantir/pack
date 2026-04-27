@@ -259,6 +259,31 @@ describe("convertIrToWireSchema", () => {
     }
   });
 
+  it("should preserve declared name (not export key) for aliased models on the wire", () => {
+    const record: IRecordDef = {
+      key: "FooAlias",
+      name: "Foo",
+      description: "A foo",
+      fields: [],
+    };
+
+    const ir: IRealTimeDocumentSchema = {
+      name: "Test",
+      description: "Test",
+      version: 1,
+      primaryModelKeys: ["FooAlias"],
+      models: {
+        FooAlias: { type: "record", record } as IModelDef,
+      },
+    };
+
+    const wire = convertIrToWireSchema(ir);
+    const model = wire.models["FooAlias"] as { type: "record"; name: string; key: string };
+    // Wire format uses name for on-the-wire identity — must be declared name, not alias
+    expect(model.name).toBe("Foo");
+    expect(model.key).toBe("FooAlias");
+  });
+
   it("should strip name, description, version from output", () => {
     const ir: IRealTimeDocumentSchema = {
       name: "My Schema",
