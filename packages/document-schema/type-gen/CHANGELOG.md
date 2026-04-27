@@ -1,5 +1,25 @@
 # @palantir/pack.document-schema.type-gen
 
+## 0.9.0
+
+### Minor Changes
+
+- 2b00422: Add 'gen-types' command, along with scope, metadata and manifest generators
+- 222e157: Wire in lens upgrade registry to reads in the yjs layer
+- 792a1b0: Add new 'gen-types' command, direct from TS schema to Versioned SDK Types.
+- 2d23ccf: Add internal and Zod generators to the sdk-gen command
+- e576652: rm metadata field from record to match api shape
+
+### Patch Changes
+
+- Updated dependencies [2b00422]
+- Updated dependencies [222e157]
+- Updated dependencies [ad7a355]
+- Updated dependencies [d6d49e3]
+- Updated dependencies [792a1b0]
+  - @palantir/pack.document-schema.model-types@0.8.0
+  - @palantir/pack.schema@0.4.0
+
 ## 0.8.0
 
 ### Minor Changes
