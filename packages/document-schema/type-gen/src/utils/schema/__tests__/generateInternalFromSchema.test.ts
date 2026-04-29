@@ -60,11 +60,9 @@ describe("generateInternalFromSchema", () => {
 
   it("nested union schema generates upgrade registries for all variant targets", async () => {
     const result = generateInternalFromSchema(nestedUnionSchema);
-    // Entity's "livingBeing" variant points at the LivingBeing union.
-    // The upgrade registry must include this entry so runtime dispatch works.
-    expect(result.upgrades).toContain("EntityUpgrades");
-    expect(result.upgrades).toContain("\"livingBeing\": \"LivingBeing\"");
-    expect(result.upgrades).toContain("LivingBeingUpgrades");
+    await expect(await formatInternalTypesSnapshot(result)).toMatchFileSnapshot(
+      path.join(snapshotDir, "nested-union.snap"),
+    );
   });
 
   it("field optional in v1 and required in v2 stays optional in internal schema", async () => {

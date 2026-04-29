@@ -175,6 +175,7 @@ export function convertUnionDefToIr(
   };
 }
 
+// TODO: rename to convertSchemaTypeToFieldTypeUnion
 export function convertTypeToFieldTypeUnion(
   schemaType: P.Type,
   nameToExportKey?: Map<string, string>,
@@ -226,7 +227,9 @@ function convertTypeToFieldValueUnion(
       return IFieldValueUnion.boolean({});
 
     case "docRef":
-      return IFieldValueUnion.docRef({ documentTypeRids: [] });
+      return IFieldValueUnion.docRef({
+        documentTypeRids: [], // FIXME: confirm whether we will use rids in the deployed schema.
+      });
 
     case "double":
       return IFieldValueUnion.double({});
@@ -235,10 +238,15 @@ function convertTypeToFieldValueUnion(
       return IFieldValueUnion.mediaRef({});
 
     case "objectRef":
-      return IFieldValueUnion.object({ interfaceTypeRids: [], objectTypeRids: [] });
+      return IFieldValueUnion.object({
+        // FIXME: confirm whether we will use rids in the deployed schema.
+        interfaceTypeRids: [],
+        objectTypeRids: [],
+      });
 
     case "optional":
       // Nested optional — unwrap and continue
+      // TODO: probably warn? maybe throw
       return convertTypeToFieldValueUnion(schemaType.item as P.Type, nameToExportKey);
 
     case "ref": {
