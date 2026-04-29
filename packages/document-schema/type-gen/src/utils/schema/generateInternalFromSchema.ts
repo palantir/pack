@@ -248,7 +248,6 @@ function generateUpgrades(
       const typeDescriptor = convertFieldTypeToDescriptor(
         fieldInfo.fieldType,
         fieldInfo.isOptional,
-        latestIr,
       );
       output += `    ${fieldName}: { type: ${typeDescriptor} },\n`;
     }

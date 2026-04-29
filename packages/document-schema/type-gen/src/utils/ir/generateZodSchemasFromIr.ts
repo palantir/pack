@@ -393,9 +393,6 @@ class ZodSchemaGenerator {
       case "userRef":
         return "z.string()"; // Assume these are string IDs
 
-      case "array":
-        throw new Error("Nested arrays are not supported in IR Zod generation from wire schemas");
-
       default:
         assertNever(fieldValue);
     }

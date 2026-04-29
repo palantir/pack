@@ -122,16 +122,14 @@ export const unionTypesSchema: SchemaDefinition = defineSchema({
   }),
 });
 
-/** Schema with nested optionals: tests that optional inside array/nested structures is preserved */
+/** Schema with nested optionals: tests that optional inside array structures is preserved */
 export const nestedOptionalsSchema: SchemaDefinition = defineSchema({
   Config: defineRecord("Config", {
     docs: "A config with nested optional fields",
     fields: {
       tags: P.Array(P.Optional(P.String)),
-      matrix: P.Array(P.Array(P.Optional(P.Double))),
+      scores: P.Array(P.Optional(P.Double)),
       label: P.Optional(P.String),
-      // Sparse 3D point cloud: pages of rows where each row may omit coordinate triples
-      pointCloud: P.Array(P.Array(P.Optional(P.Array(P.Double)))),
     },
   }),
 });

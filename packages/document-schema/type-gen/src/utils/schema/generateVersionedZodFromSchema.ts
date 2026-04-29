@@ -73,7 +73,7 @@ function generateZodSchemasForVersion(
     const fieldLines: string[] = [];
 
     for (const field of modelDef.record.fields) {
-      let zodType = convertFieldTypeToZodSchema(field.fieldType, ir, version);
+      let zodType = convertFieldTypeToZodSchema(field.fieldType, version);
       if (field.isOptional) {
         zodType = `${zodType}.optional()`;
       }

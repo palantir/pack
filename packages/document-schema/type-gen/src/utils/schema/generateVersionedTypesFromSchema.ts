@@ -69,7 +69,7 @@ function generateReadTypesForVersion(
     output += `export interface ${typeName} {\n`;
 
     for (const field of record.fields) {
-      const tsType = convertFieldTypeToTypeScript(field.fieldType, ir, version);
+      const tsType = convertFieldTypeToTypeScript(field.fieldType, version);
       const optional = field.isOptional ? "?" : "";
       output += `  readonly ${field.key}${optional}: ${tsType};\n`;
     }
@@ -164,7 +164,7 @@ function generateWriteTypesForVersion(
 
     for (const field of modelDef.record.fields) {
       // All fields are optional in write types
-      const tsType = convertFieldTypeToTypeScript(field.fieldType, ir, version);
+      const tsType = convertFieldTypeToTypeScript(field.fieldType, version);
       output += `  readonly ${field.key}?: ${tsType};\n`;
     }
 

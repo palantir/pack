@@ -7,8 +7,7 @@
 /** Internal representation containing all fields across all schema versions. */
 export interface Config__Internal {
   readonly label?: string | undefined;
-  readonly matrix: readonly (readonly (number | undefined)[])[];
-  readonly pointCloud: readonly (readonly (readonly number[] | undefined)[])[];
+  readonly scores: readonly (number | undefined)[];
   readonly tags: readonly (string | undefined)[];
 }
 
@@ -24,25 +23,10 @@ export const ConfigUpgrades: UpgradeRegistry<'Config'> = {
   modelName: 'Config',
   allFields: {
     label: { type: { kind: 'optional', inner: { kind: 'primitive' } } },
-    matrix: {
+    scores: {
       type: {
         kind: 'array',
-        element: {
-          kind: 'array',
-          element: { kind: 'optional', inner: { kind: 'primitive' } },
-        },
-      },
-    },
-    pointCloud: {
-      type: {
-        kind: 'array',
-        element: {
-          kind: 'array',
-          element: {
-            kind: 'optional',
-            inner: { kind: 'array', element: { kind: 'primitive' } },
-          },
-        },
+        element: { kind: 'optional', inner: { kind: 'primitive' } },
       },
     },
     tags: {
@@ -66,8 +50,7 @@ import { z } from 'zod';
 export const ConfigInternalSchema = z
   .object({
     label: z.string().optional(),
-    matrix: z.array(z.array(z.number().optional())),
-    pointCloud: z.array(z.array(z.array(z.number()).optional())),
+    scores: z.array(z.number().optional()),
     tags: z.array(z.string().optional()),
   })
   .passthrough();

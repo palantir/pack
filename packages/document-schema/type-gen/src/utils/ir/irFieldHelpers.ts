@@ -29,37 +29,32 @@ import { versionedSchemaName, versionedTypeName } from "../schema/runtimeSchema.
  */
 export function convertFieldTypeToTypeScript(
   fieldType: IFieldTypeUnion,
-  ir: IRealTimeDocumentSchema,
   version?: number,
 ): string {
   switch (fieldType.type) {
     case "array":
-      return `readonly ${convertCollectionValueToTypeScript(fieldType.array, ir, version)}[]`;
+      return `readonly ${convertCollectionValueToTypeScript(fieldType.array, version)}[]`;
     case "map":
     case "set":
       throw new Error(`${fieldType.type} is not yet supported in TypeScript generation`);
     case "value":
-      return convertFieldValueToTypeScript(fieldType.value, ir, version);
+      return convertFieldValueToTypeScript(fieldType.value, version);
   }
 }
 
 function convertCollectionValueToTypeScript(
   collection: IFieldTypeCollection,
-  ir: IRealTimeDocumentSchema,
   version?: number,
 ): string {
   // allowNullValue is ignored in public read types (current behavior)
-  return convertFieldValueToTypeScript(collection.value, ir, version);
+  return convertFieldValueToTypeScript(collection.value, version);
 }
 
-export function convertFieldValueToTypeScript(
+function convertFieldValueToTypeScript(
   value: IFieldValueUnion,
-  ir: IRealTimeDocumentSchema,
   version?: number,
 ): string {
   switch (value.type) {
-    case "array":
-      return `readonly ${convertCollectionValueToTypeScript(value.array, ir, version)}[]`;
     case "boolean":
       return "boolean";
     case "datetime":
@@ -98,12 +93,11 @@ export function convertFieldValueToTypeScript(
  */
 export function convertFieldTypeToZodSchema(
   fieldType: IFieldTypeUnion,
-  ir: IRealTimeDocumentSchema,
   version?: number,
 ): string {
   switch (fieldType.type) {
     case "array": {
-      const inner = convertFieldValueToZodSchema(fieldType.array.value, ir, version);
+      const inner = convertFieldValueToZodSchema(fieldType.array.value, version);
       const optSuffix = fieldType.array.allowNullValue ? ".optional()" : "";
       return `z.array(${inner}${optSuffix})`;
     }
@@ -111,21 +105,15 @@ export function convertFieldTypeToZodSchema(
     case "set":
       throw new Error(`${fieldType.type} is not yet supported in Zod generation`);
     case "value":
-      return convertFieldValueToZodSchema(fieldType.value, ir, version);
+      return convertFieldValueToZodSchema(fieldType.value, version);
   }
 }
 
 function convertFieldValueToZodSchema(
   value: IFieldValueUnion,
-  ir: IRealTimeDocumentSchema,
   version?: number,
 ): string {
   switch (value.type) {
-    case "array": {
-      const inner = convertFieldValueToZodSchema(value.array.value, ir, version);
-      const optSuffix = value.array.allowNullValue ? ".optional()" : "";
-      return `z.array(${inner}${optSuffix})`;
-    }
     case "boolean":
       return "z.boolean()";
     case "datetime":
@@ -196,12 +184,6 @@ function convertCollectionValueToInternalTs(collection: IFieldTypeCollection): s
 
 function convertFieldValueToInternalTs(value: IFieldValueUnion): string {
   switch (value.type) {
-    case "array": {
-      const inner = convertCollectionValueToInternalTs(value.array);
-      const needsParens = inner.includes("|") || inner.startsWith("readonly ");
-      const wrapped = needsParens ? `(${inner})` : inner;
-      return `readonly ${wrapped}[]`;
-    }
     case "boolean":
       return "boolean";
     case "double":
@@ -216,7 +198,6 @@ function convertFieldValueToInternalTs(value: IFieldValueUnion): string {
     case "userRef":
       return "string";
     case "modelRef":
-      return "unknown";
     case "unmanagedJson":
       return "unknown";
   }
@@ -235,7 +216,6 @@ export function convertFieldTypeToInternalZod(
 ): string {
   const base = convertFieldTypeToInternalZodInner(fieldType);
   if (isOptional) {
-    // If already ends with .optional(), don't double-wrap
     if (base.endsWith(".optional()")) {
       return base;
     }
@@ -268,10 +248,6 @@ function convertCollectionValueToInternalZod(collection: IFieldTypeCollection): 
 
 function convertFieldValueToInternalZod(value: IFieldValueUnion): string {
   switch (value.type) {
-    case "array": {
-      const inner = convertCollectionValueToInternalZod(value.array);
-      return `z.array(${inner})`;
-    }
     case "boolean":
       return "z.boolean()";
     case "double":
@@ -301,52 +277,38 @@ function convertFieldValueToInternalZod(value: IFieldValueUnion): string {
 export function convertFieldTypeToDescriptor(
   fieldType: IFieldTypeUnion,
   isOptional: boolean,
-  ir: IRealTimeDocumentSchema,
 ): string {
-  const base = convertFieldTypeToDescriptorInner(fieldType, ir);
+  const base = convertFieldTypeToDescriptorInner(fieldType);
   if (isOptional) {
     return `{ kind: "optional", inner: ${base} }`;
   }
   return base;
 }
 
-function convertFieldTypeToDescriptorInner(
-  fieldType: IFieldTypeUnion,
-  ir: IRealTimeDocumentSchema,
-): string {
+function convertFieldTypeToDescriptorInner(fieldType: IFieldTypeUnion): string {
   switch (fieldType.type) {
     case "array": {
-      const inner = convertCollectionValueToDescriptor(fieldType.array, ir);
+      const inner = convertCollectionValueToDescriptor(fieldType.array);
       return `{ kind: "array", element: ${inner} }`;
     }
     case "map":
     case "set":
       throw new Error(`${fieldType.type} is not yet supported in descriptor generation`);
     case "value":
-      return convertFieldValueToDescriptor(fieldType.value, ir);
+      return convertFieldValueToDescriptor(fieldType.value);
   }
 }
 
-function convertCollectionValueToDescriptor(
-  collection: IFieldTypeCollection,
-  ir: IRealTimeDocumentSchema,
-): string {
-  const base = convertFieldValueToDescriptor(collection.value, ir);
+function convertCollectionValueToDescriptor(collection: IFieldTypeCollection): string {
+  const base = convertFieldValueToDescriptor(collection.value);
   if (collection.allowNullValue) {
     return `{ kind: "optional", inner: ${base} }`;
   }
   return base;
 }
 
-function convertFieldValueToDescriptor(
-  value: IFieldValueUnion,
-  ir: IRealTimeDocumentSchema,
-): string {
+function convertFieldValueToDescriptor(value: IFieldValueUnion): string {
   switch (value.type) {
-    case "array": {
-      const inner = convertCollectionValueToDescriptor(value.array, ir);
-      return `{ kind: "array", element: ${inner} }`;
-    }
     case "modelRef": {
       const modelKey = value.modelRef.modelTypes[0]!;
       return `{ kind: "modelRef", model: "${modelKey}" }`;
@@ -391,9 +353,6 @@ function scanFieldTypeForRefs(fieldType: IFieldTypeUnion, out: Set<string>): voi
 
 function scanFieldValueForRefs(value: IFieldValueUnion, out: Set<string>): void {
   switch (value.type) {
-    case "array":
-      scanFieldValueForRefs(value.array.value, out);
-      break;
     case "docRef":
       out.add("DocumentRef");
       break;
@@ -432,15 +391,9 @@ function collectReferencedValuesTypes(
   version: number,
   out: Set<string>,
 ): void {
-  switch (value.type) {
-    case "array":
-      collectReferencedValuesTypes(value.array.value, version, out);
-      break;
-    case "modelRef": {
-      const modelKey = value.modelRef.modelTypes[0]!;
-      out.add(versionedTypeName(modelKey, version));
-      break;
-    }
+  if (value.type === "modelRef") {
+    const modelKey = value.modelRef.modelTypes[0]!;
+    out.add(versionedTypeName(modelKey, version));
   }
 }
 
@@ -464,8 +417,6 @@ export function findExternalRefType(fieldType: IFieldTypeUnion): string | undefi
 
 function findExternalRefValueType(value: IFieldValueUnion): string | undefined {
   switch (value.type) {
-    case "array":
-      return findExternalRefValueType(value.array.value);
     case "docRef":
       return "docRef";
     case "mediaRef":

@@ -175,35 +175,25 @@ export function convertUnionDefToIr(
   };
 }
 
-/**
- * Unwraps a single layer of Optional, recording whether it was present.
- */
-function unwrapOptional(schemaType: P.Type): { allowNullValue: boolean; innerType: P.Type } {
-  if (schemaType.type === "optional") {
-    return { allowNullValue: true, innerType: (schemaType as P.Optional).item as P.Type };
-  }
-  return { allowNullValue: false, innerType: schemaType };
-}
-
 export function convertTypeToFieldTypeUnion(
   schemaType: P.Type,
   nameToExportKey?: Map<string, string>,
 ): IFieldTypeUnion {
   switch (schemaType.type) {
     case "array": {
-      const arrayType = schemaType as P.Array;
-      const { allowNullValue, innerType } = unwrapOptional(arrayType.items as P.Type);
+      // P.Array.items is typed as TypeBase due to the generic; narrow via type field
+      const items = schemaType.items as P.Type;
+      const allowNullValue = items.type === "optional";
+      const elementType: P.Type = allowNullValue ? (items as P.Optional).item as P.Type : items;
       return IFieldTypeUnion.array({
         allowNullValue,
-        value: convertTypeToFieldValueUnion(innerType, nameToExportKey),
+        value: convertTypeToFieldValueUnion(elementType, nameToExportKey),
       });
     }
 
-    case "optional": {
-      // Optional flag is handled at field level, but we need to unwrap the inner type
-      const optionalType = schemaType as P.Optional;
-      return convertTypeToFieldTypeUnion(optionalType.item as P.Type, nameToExportKey);
-    }
+    case "optional":
+      // Optional flag is handled at field level; unwrap and recurse on inner type
+      return convertTypeToFieldTypeUnion(schemaType.item as P.Type, nameToExportKey);
 
     case "boolean":
     case "docRef":
@@ -226,23 +216,17 @@ function convertTypeToFieldValueUnion(
   nameToExportKey?: Map<string, string>,
 ): IFieldValueUnion {
   switch (schemaType.type) {
-    case "array": {
-      // Nested array (e.g. Array(Array(String)))
-      const arrayType = schemaType as P.Array;
-      const { allowNullValue, innerType } = unwrapOptional(arrayType.items as P.Type);
-      return IFieldValueUnion.array({
-        allowNullValue,
-        value: convertTypeToFieldValueUnion(innerType, nameToExportKey),
-      });
-    }
+    case "array":
+      throw new Error(
+        "Nested arrays are not supported in the IR. "
+          + "Wrap the inner array in a record instead.",
+      );
 
     case "boolean":
       return IFieldValueUnion.boolean({});
 
     case "docRef":
-      return IFieldValueUnion.docRef({
-        documentTypeRids: [],
-      });
+      return IFieldValueUnion.docRef({ documentTypeRids: [] });
 
     case "double":
       return IFieldValueUnion.double({});
@@ -251,22 +235,15 @@ function convertTypeToFieldValueUnion(
       return IFieldValueUnion.mediaRef({});
 
     case "objectRef":
-      return IFieldValueUnion.object({
-        interfaceTypeRids: [],
-        objectTypeRids: [],
-      });
+      return IFieldValueUnion.object({ interfaceTypeRids: [], objectTypeRids: [] });
 
-    case "optional": {
+    case "optional":
       // Nested optional — unwrap and continue
-      const optionalType = schemaType as P.Optional;
-      return convertTypeToFieldValueUnion(optionalType.item as P.Type, nameToExportKey);
-    }
+      return convertTypeToFieldValueUnion(schemaType.item as P.Type, nameToExportKey);
 
     case "ref": {
       const modelKey = nameToExportKey?.get(schemaType.name) ?? schemaType.name;
-      return IFieldValueUnion.modelRef({
-        modelTypes: [modelKey as IModelTypeKey],
-      });
+      return IFieldValueUnion.modelRef({ modelTypes: [modelKey as IModelTypeKey] });
     }
 
     case "string":

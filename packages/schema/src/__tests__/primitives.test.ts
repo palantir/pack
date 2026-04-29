@@ -65,15 +65,8 @@ describe("primitives", () => {
       });
     });
 
-    it("should create nested arrays", () => {
-      const nestedArray = P.Array(P.Array(P.String));
-      expect(nestedArray).toEqual({
-        type: "array",
-        items: {
-          type: "array",
-          items: { type: "string" },
-        },
-      });
+    it("should reject nested arrays", () => {
+      expect(() => P.Array(P.Array(P.String))).toThrow(/Nested arrays/);
     });
 
     it("should create arrays of optional types", () => {
@@ -124,15 +117,8 @@ describe("primitives", () => {
       });
     });
 
-    it("should handle nested optional types", () => {
-      const doubleOptional = P.Optional(P.Optional(P.String));
-      expect(doubleOptional).toEqual({
-        type: "optional",
-        item: {
-          type: "optional",
-          item: { type: "string" },
-        },
-      });
+    it("should reject nested optionals", () => {
+      expect(() => P.Optional(P.Optional(P.String))).toThrow(/Nested optionals/);
     });
 
     it("should create an optional boolean", () => {
@@ -167,21 +153,22 @@ describe("primitives", () => {
   });
 
   describe("Type combinations", () => {
-    it("should create complex nested structures", () => {
-      const complexType = P.Optional(P.Array(P.Optional(P.Array(P.String))));
+    it("should create optional array of optional strings", () => {
+      const complexType = P.Optional(P.Array(P.Optional(P.String)));
       expect(complexType).toEqual({
         type: "optional",
         item: {
           type: "array",
           items: {
             type: "optional",
-            item: {
-              type: "array",
-              items: { type: "string" },
-            },
+            item: { type: "string" },
           },
         },
       });
+    });
+
+    it("should reject nested arrays even when inner array is wrapped in optional", () => {
+      expect(() => P.Array(P.Optional(P.Array(P.String)))).toThrow(/Nested arrays/);
     });
 
     it("should maintain immutability of primitive types", () => {

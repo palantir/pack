@@ -136,8 +136,6 @@ function convertFieldValueType(value: IFieldValueUnion): FieldValueType {
 
 function convertFieldValueUnion(value: IFieldValueUnion): FieldValueUnion {
   switch (value.type) {
-    case "array":
-      throw new Error("Nested arrays are not supported in wire schema format");
     case "boolean":
       return { type: "boolean", defaultValue: orUndefined(value.boolean.defaultValue) };
     case "datetime":
