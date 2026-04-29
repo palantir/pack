@@ -19,8 +19,6 @@ import { formatVariantName } from "../formatVariantName.js";
 import { GENERATED_FILE_HEADER } from "../generatedFileHeader.js";
 import { resolveSchemaChain } from "./resolveSchemaChain.js";
 import {
-  isRecordSchema,
-  isUnionSchema,
   MODELS_PATH,
   TYPES_REEXPORT_PATH,
   typesFilePath,
@@ -55,21 +53,21 @@ export function generateIndexFromSchema(
   output += `export * from "${VERSIONED_DOC_REF_PATH}";\n`;
 
   // Per-version explicit named type exports
-  for (const { version, schema: versionSchema } of chain) {
+  for (const { version, ir } of chain) {
     if (version < minVersion) continue;
 
     const typeNames: string[] = [];
 
-    for (const [exportName, item] of Object.entries(versionSchema)) {
-      if (isRecordSchema(item)) {
-        typeNames.push(versionedTypeName(exportName, version));
-      } else if (isUnionSchema(item)) {
-        typeNames.push(versionedTypeName(exportName, version));
+    for (const [modelKey, modelDef] of Object.entries(ir.models)) {
+      if (modelDef.type === "record") {
+        typeNames.push(versionedTypeName(modelKey, version));
+      } else if (modelDef.type === "union") {
+        typeNames.push(versionedTypeName(modelKey, version));
 
         // Union variant types
-        for (const variantName of Object.keys(item.variants)) {
+        for (const variantName of Object.keys(modelDef.union.variants)) {
           const formattedVariant = formatVariantName(variantName);
-          typeNames.push(`${versionedTypeName(exportName, version)}${formattedVariant}`);
+          typeNames.push(`${versionedTypeName(modelKey, version)}${formattedVariant}`);
         }
       }
     }

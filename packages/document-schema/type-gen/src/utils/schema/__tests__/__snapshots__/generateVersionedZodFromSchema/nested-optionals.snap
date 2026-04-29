@@ -11,9 +11,8 @@ import type { Config_v1 } from './types_v1.js';
 export const ConfigSchema_v1 = z
   .object({
     tags: z.array(z.string().optional()),
-    matrix: z.array(z.array(z.number().optional())),
+    scores: z.array(z.number().optional()),
     label: z.string().optional(),
-    pointCloud: z.array(z.array(z.array(z.number()).optional())),
   })
   .passthrough() satisfies ZodType<Config_v1>;
 

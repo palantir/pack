@@ -15,46 +15,51 @@
  */
 
 import type { SchemaDefinition, VersionMigrations } from "@palantir/pack.schema";
-import type { RuntimeSchema } from "./runtimeSchema.js";
+import type { IRealTimeDocumentSchema } from "../../lib/pack-docschema-api/pack-docschema-ir/index.js";
+import { convertSchemaToIr } from "../steps/convertStepsToIr.js";
 
-export interface VersionedSchemaEntry {
+export interface VersionedIrEntry {
   version: number;
-  schema: RuntimeSchema;
+  ir: IRealTimeDocumentSchema;
   migrations?: VersionMigrations;
 }
 
-export interface ResolvedSchemaChain {
-  chain: VersionedSchemaEntry[];
+export interface ResolvedIrChain {
+  chain: VersionedIrEntry[];
   latestVersion: number;
   minVersion: number;
 }
 
-function collectVersionedSchemaChain(input: SchemaDefinition): VersionedSchemaEntry[] {
-  const chain: VersionedSchemaEntry[] = [];
+function collectVersionedIrChain(input: SchemaDefinition): VersionedIrEntry[] {
+  const chain: VersionedIrEntry[] = [];
   let current: SchemaDefinition = input;
 
   while (current.type === "versioned") {
     chain.unshift({
       version: current.version,
-      schema: current.models as RuntimeSchema,
+      ir: convertSchemaToIr(current.models, { version: current.version }),
       migrations: current.migrations,
     });
     current = current.previous;
   }
-  chain.unshift({ version: current.version, schema: current.models as RuntimeSchema });
+  chain.unshift({
+    version: current.version,
+    ir: convertSchemaToIr(current.models, { version: current.version }),
+  });
 
   return chain;
 }
 
 /**
  * Collect the version chain and resolve min/latest versions.
+ * Each version's models are converted to IR (IRealTimeDocumentSchema).
  * Throws on empty chain or invalid minSupportedVersion.
  */
 export function resolveSchemaChain(
   schema: SchemaDefinition,
   minSupportedVersion?: number,
-): ResolvedSchemaChain {
-  const chain = collectVersionedSchemaChain(schema);
+): ResolvedIrChain {
+  const chain = collectVersionedIrChain(schema);
 
   if (chain.length === 0) {
     throw new Error("Schema version chain is empty");

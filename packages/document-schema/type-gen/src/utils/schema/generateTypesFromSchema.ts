@@ -15,9 +15,19 @@
  */
 
 import type { ReturnedSchema, Schema } from "@palantir/pack.schema";
+import { TypeKind as SchemaTypeKind } from "@palantir/pack.schema";
 import { formatVariantName } from "../formatVariantName.js";
 import { GENERATED_FILE_HEADER } from "../generatedFileHeader.js";
-import { SchemaDefKind, TypeKind } from "./runtimeSchema.js";
+
+const TypeKind: typeof SchemaTypeKind & { readonly ANY: "any" } = {
+  ...SchemaTypeKind,
+  ANY: "any",
+};
+
+const SchemaDefKind = {
+  RECORD: "record",
+  UNION: "union",
+} as const;
 
 // Base type definition for schema fields
 interface BaseSchemaField {

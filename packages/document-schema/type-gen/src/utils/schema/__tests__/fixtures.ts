@@ -122,16 +122,14 @@ export const unionTypesSchema: SchemaDefinition = defineSchema({
   }),
 });
 
-/** Schema with nested optionals: tests that optional inside array/nested structures is preserved */
+/** Schema with nested optionals: tests that optional inside array structures is preserved */
 export const nestedOptionalsSchema: SchemaDefinition = defineSchema({
   Config: defineRecord("Config", {
     docs: "A config with nested optional fields",
     fields: {
       tags: P.Array(P.Optional(P.String)),
-      matrix: P.Array(P.Array(P.Optional(P.Double))),
+      scores: P.Array(P.Optional(P.Double)),
       label: P.Optional(P.String),
-      // Sparse 3D point cloud: pages of rows where each row may omit coordinate triples
-      pointCloud: P.Array(P.Array(P.Optional(P.Array(P.Double)))),
     },
   }),
 });
@@ -168,6 +166,78 @@ export const twoVersionDerivedFieldsSchema: SchemaDefinition = {
     },
   },
 };
+
+/** Schema with aliased export key: export key "FooAlias" differs from model name "Foo" */
+export const aliasedEntryNameSchema: SchemaDefinition = defineSchema({
+  FooAlias: defineRecord("Foo", {
+    docs: "A record exported under an alias",
+    fields: {
+      name: P.String,
+    },
+  }),
+});
+
+/** Schema with nested union: Entity union has a variant that points to another union (LivingBeing) */
+const AnimalRecord = defineRecord("Animal", {
+  docs: "An animal",
+  fields: { species: P.String },
+});
+
+const PlantRecord = defineRecord("Plant", {
+  docs: "A plant",
+  fields: { genus: P.String },
+});
+
+const LivingBeingUnion = defineUnion("LivingBeing", {
+  docs: "A living being",
+  variants: {
+    animal: AnimalRecord,
+    plant: PlantRecord,
+  },
+});
+
+export const nestedUnionSchema: SchemaDefinition = defineSchema({
+  Animal: AnimalRecord,
+  Plant: PlantRecord,
+  LivingBeing: LivingBeingUnion,
+  Entity: defineUnion("Entity", {
+    docs: "An entity",
+    variants: {
+      livingBeing: LivingBeingUnion,
+    },
+  }),
+});
+
+/**
+ * Two-version schema where a field starts as Optional(String) in v1 and becomes
+ * required (String) in v2. The internal schema must remain optional because
+ * documents written under v1 may legitimately omit the field.
+ */
+export const optionalToRequiredFieldSchema: SchemaDefinition = (() => {
+  const v1 = defineSchema({
+    Item: defineRecord("Item", {
+      docs: "An item",
+      fields: {
+        name: P.String,
+        label: P.Optional(P.String),
+      },
+    }),
+  });
+  return {
+    type: "versioned" as const,
+    models: {
+      Item: defineRecord("Item", {
+        docs: "An item",
+        fields: {
+          name: P.String,
+          label: P.String,
+        },
+      }),
+    },
+    version: 2,
+    previous: v1,
+  };
+})();
 
 /** Three-version chain: Item (name, color -> name, hexColor -> name, hexColor, tags) */
 export const threeVersionChainSchema: SchemaDefinition = (() => {

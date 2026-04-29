@@ -86,6 +86,17 @@ function convertUnionToYaml(unionDef: P.UnionDef): UnionDefinition {
 }
 
 export function convertSchemaToSteps(schema: P.ReturnedSchema): MigrationStep[] {
+  // Reject aliased schemas: the YAML step format cannot represent exportKey !== declaredName
+  for (const [exportKey, def] of Object.entries(schema)) {
+    if (exportKey !== def.name) {
+      throw new Error(
+        `Schema entry "${exportKey}" has declared model name "${def.name}". `
+          + `The migration-step YAML format cannot represent aliases (exportKey !== declaredName). `
+          + `Use the same name for both, or use the IR pipeline instead.`,
+      );
+    }
+  }
+
   const steps: MigrationStep[] = [];
   const records: Record<string, { docs?: string; fields: Record<string, string> }> = {};
   const unions: Record<string, UnionDefinition> = {};

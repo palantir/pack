@@ -101,11 +101,22 @@ export const String: String = { type: TypeKind.STRING };
 export const Double: Double = { type: TypeKind.DOUBLE };
 export const Boolean: Boolean = { type: TypeKind.BOOLEAN };
 export const Unknown: Unknown = { type: TypeKind.UNKNOWN };
-export const Array = <T extends TypeBase>(item: T): Array<T> => ({
-  type: TypeKind.ARRAY,
-  items: item,
-});
-export const Optional = <T extends TypeBase>(item: T): Optional<T> => ({
-  type: TypeKind.OPTIONAL,
-  item,
-});
+function unwrapOneOptional(t: TypeBase): TypeBase {
+  return t.type === TypeKind.OPTIONAL && "item" in t ? (t as { item: TypeBase }).item : t;
+}
+
+export const Array = <T extends TypeBase>(item: T): Array<T> => {
+  if (unwrapOneOptional(item).type === TypeKind.ARRAY) {
+    throw new Error(
+      "Nested arrays (Array(Array(...)) or Array(Optional(Array(...)))) are not supported. "
+        + "Wrap the inner array in a record instead.",
+    );
+  }
+  return { type: TypeKind.ARRAY, items: item };
+};
+export const Optional = <T extends TypeBase>(item: T): Optional<T> => {
+  if (item.type === TypeKind.OPTIONAL) {
+    throw new Error("Nested optionals (Optional(Optional(...))) are not supported.");
+  }
+  return { type: TypeKind.OPTIONAL, item };
+};

@@ -569,4 +569,103 @@ describe("resolveAndApplyLens", () => {
 
     expect(result).toBe(rawData);
   });
+
+  describe("union → union recursion", () => {
+    // Entity { type: "livingBeing", value: LivingBeing }
+    // LivingBeing { kind: "animal", ...Animal fields }
+    const animalRegistry: UpgradeRegistry = {
+      modelName: "Animal",
+      allFields: {
+        species: { type: primitive },
+        latinName: { type: optionalPrimitive },
+      },
+      steps: [
+        {
+          name: "addLatinName",
+          addedInVersion: 2,
+          fields: {
+            latinName: {
+              derivedFrom: ["species"],
+              forward: ({ species }) => `Latinized(${species})`,
+            },
+          },
+        },
+      ],
+    };
+
+    const plantRegistry: UpgradeRegistry = {
+      modelName: "Plant",
+      allFields: {
+        genus: { type: primitive },
+      },
+      steps: [],
+    };
+
+    const livingBeingUnion: UnionUpgradeRegistry = {
+      modelName: "LivingBeing",
+      discriminant: "kind",
+      variants: { animal: "Animal", plant: "Plant" },
+    };
+
+    const entityUnion: UnionUpgradeRegistry = {
+      modelName: "Entity",
+      discriminant: "type",
+      variants: { livingBeing: "LivingBeing" },
+    };
+
+    const nestedRegistries: UpgradeRegistryMap = {
+      Entity: entityUnion,
+      LivingBeing: livingBeingUnion,
+      Animal: animalRegistry,
+      Plant: plantRegistry,
+    };
+
+    it("recursively upgrades union → union → record payloads", () => {
+      const rawData = {
+        type: "livingBeing",
+        value: { kind: "animal", species: "Cat" },
+      };
+      const result = resolveAndApplyLens(rawData, entityUnion, nestedRegistries);
+
+      // The Animal record should be upgraded with latinName
+      const inner = result.value as Record<string, unknown>;
+      expect(inner.latinName).toBe("Latinized(Cat)");
+      expect(inner.species).toBe("Cat");
+      // Outer discriminant preserved
+      expect(result.type).toBe("livingBeing");
+    });
+
+    it("returns raw data when nested value is missing", () => {
+      const rawData = { type: "livingBeing" };
+      const result = resolveAndApplyLens(rawData, entityUnion, nestedRegistries);
+
+      expect(result).toBe(rawData);
+    });
+
+    it("returns raw data when nested value is not an object", () => {
+      const rawData = { type: "livingBeing", value: "not-an-object" };
+      const result = resolveAndApplyLens(rawData, entityUnion, nestedRegistries);
+
+      expect(result).toBe(rawData);
+    });
+
+    it("returns raw data when nested union discriminant is unknown", () => {
+      const rawData = {
+        type: "livingBeing",
+        value: { kind: "fungus", name: "Mushroom" },
+      };
+      const result = resolveAndApplyLens(rawData, entityUnion, nestedRegistries);
+
+      // Unknown variant at LivingBeing level — returned unchanged
+      expect(result.type).toBe("livingBeing");
+      expect((result.value as Record<string, unknown>).kind).toBe("fungus");
+    });
+
+    it("union → record routing still works alongside union → union", () => {
+      const rawData = { kind: "animal", species: "Dog" };
+      const result = resolveAndApplyLens(rawData, livingBeingUnion, nestedRegistries);
+
+      expect(result.latinName).toBe("Latinized(Dog)");
+    });
+  });
 });

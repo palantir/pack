@@ -15,21 +15,13 @@
  */
 
 import type { SchemaDefinition } from "@palantir/pack.schema";
+import type { IRealTimeDocumentSchema } from "../../lib/pack-docschema-api/pack-docschema-ir/index.js";
 import { formatVariantName } from "../formatVariantName.js";
 import { GENERATED_FILE_HEADER } from "../generatedFileHeader.js";
-import type { VersionedSchemaEntry } from "./resolveSchemaChain.js";
+import { convertFieldTypeToZodSchema } from "../ir/irFieldHelpers.js";
+import type { VersionedIrEntry } from "./resolveSchemaChain.js";
 import { resolveSchemaChain } from "./resolveSchemaChain.js";
-import type { RuntimeSchema, SchemaField } from "./runtimeSchema.js";
-import {
-  findRecordExportName,
-  isRecordSchema,
-  isUnionSchema,
-  schemaName,
-  TypeKind,
-  typesFilePath,
-  versionedSchemaName,
-  versionedTypeName,
-} from "./runtimeSchema.js";
+import { typesFilePath, versionedSchemaName, versionedTypeName } from "./runtimeSchema.js";
 
 export interface VersionedZodOutput {
   /** schema_vN.ts files keyed by version number */
@@ -38,76 +30,26 @@ export interface VersionedZodOutput {
   schemaReExport: string;
 }
 
-function convertFieldTypeToZodSchema(
-  fieldType: SchemaField,
-  schema?: RuntimeSchema,
-  version?: number,
-): string {
-  switch (fieldType.type) {
-    case TypeKind.ANY:
-      return "z.unknown()";
-    case TypeKind.ARRAY:
-      if (fieldType.items == null) {
-        throw new Error("Array field is missing items type");
-      }
-      return `z.array(${convertFieldTypeToZodSchema(fieldType.items, schema, version)})`;
-    case TypeKind.BOOLEAN:
-      return "z.boolean()";
-    case TypeKind.DOC_REF:
-      return "z.string()";
-    case TypeKind.DOUBLE:
-      return "z.number()";
-    case TypeKind.MEDIA_REF:
-      return "z.string()";
-    case TypeKind.OBJECT_REF:
-      return "z.string()";
-    case TypeKind.OPTIONAL:
-      if (fieldType.item == null) {
-        throw new Error("Optional field is missing inner type");
-      }
-      return `${convertFieldTypeToZodSchema(fieldType.item, schema, version)}.optional()`;
-    case TypeKind.REF: {
-      if (fieldType.name == null) {
-        throw new Error("Ref field is missing a name");
-      }
-      const exportName = fieldType.refType === "record" && schema
-        ? findRecordExportName(fieldType.name, schema) ?? fieldType.name
-        : fieldType.name;
-      const refSchemaName = version != null
-        ? versionedSchemaName(exportName, version)
-        : `${exportName}Schema`;
-      const refTypeName = version != null ? versionedTypeName(exportName, version) : exportName;
-      return `z.lazy((): ZodType<${refTypeName}> => ${refSchemaName})`;
-    }
-    case TypeKind.STRING:
-      return "z.string()";
-    case TypeKind.USER_REF:
-      return "z.string()";
-    default:
-      throw new Error(`Unknown schema field type: ${fieldType.type}`);
-  }
-}
-
 /**
  * Generate Zod schemas for a specific schema version.
  * Uses `.passthrough()` to preserve unknown fields.
  */
 function generateZodSchemasForVersion(
   version: number,
-  schema: RuntimeSchema,
+  ir: IRealTimeDocumentSchema,
 ): string {
   let output = GENERATED_FILE_HEADER;
 
   // Collect type names for import
   const typeNames: string[] = [];
-  for (const [exportName, item] of Object.entries(schema)) {
-    if (isRecordSchema(item)) {
-      typeNames.push(versionedTypeName(exportName, version));
-    } else if (isUnionSchema(item)) {
-      typeNames.push(versionedTypeName(exportName, version));
-      for (const variantName of Object.keys(item.variants)) {
+  for (const [modelKey, modelDef] of Object.entries(ir.models)) {
+    if (modelDef.type === "record") {
+      typeNames.push(versionedTypeName(modelKey, version));
+    } else if (modelDef.type === "union") {
+      typeNames.push(versionedTypeName(modelKey, version));
+      for (const variantName of Object.keys(modelDef.union.variants)) {
         typeNames.push(
-          `${versionedTypeName(exportName, version)}${formatVariantName(variantName)}`,
+          `${versionedTypeName(modelKey, version)}${formatVariantName(variantName)}`,
         );
       }
     }
@@ -123,16 +65,19 @@ function generateZodSchemasForVersion(
   output += "\n";
 
   // Generate record schemas first (unions may depend on them)
-  for (const [exportName, item] of Object.entries(schema)) {
-    if (!isRecordSchema(item)) continue;
+  for (const [modelKey, modelDef] of Object.entries(ir.models)) {
+    if (modelDef.type !== "record") continue;
 
-    const zodSchemaName = versionedSchemaName(exportName, version);
-    const typeName = versionedTypeName(exportName, version);
+    const zodSchemaName = versionedSchemaName(modelKey, version);
+    const typeName = versionedTypeName(modelKey, version);
     const fieldLines: string[] = [];
 
-    for (const [fieldName, fieldType] of Object.entries(item.fields)) {
-      const zodType = convertFieldTypeToZodSchema(fieldType, schema, version);
-      fieldLines.push(`  ${fieldName}: ${zodType}`);
+    for (const field of modelDef.record.fields) {
+      let zodType = convertFieldTypeToZodSchema(field.fieldType, version);
+      if (field.isOptional) {
+        zodType = `${zodType}.optional()`;
+      }
+      fieldLines.push(`  ${field.key}: ${zodType}`);
     }
 
     output += `export const ${zodSchemaName} = z.object({\n${
@@ -141,37 +86,39 @@ function generateZodSchemasForVersion(
   }
 
   // Generate union schemas
-  for (const [exportName, item] of Object.entries(schema)) {
-    if (!isUnionSchema(item)) continue;
+  for (const [modelKey, modelDef] of Object.entries(ir.models)) {
+    if (modelDef.type !== "union") continue;
 
-    const discriminantField = item.discriminant;
+    const union = modelDef.union;
+    const discriminantField = union.discriminant;
     const variantSchemaNames: string[] = [];
 
-    for (const [variantName, variantType] of Object.entries(item.variants)) {
+    for (const [variantName, variantModelKey] of Object.entries(union.variants)) {
       const formattedVariant = formatVariantName(variantName);
-      const variantZodSchemaName = `${versionedSchemaName(exportName, version)}${formattedVariant}`;
-      const variantTypeName = `${versionedTypeName(exportName, version)}${formattedVariant}`;
+      const variantZodSchemaName = `${versionedSchemaName(modelKey, version)}${formattedVariant}`;
+      const variantTypeName = `${versionedTypeName(modelKey, version)}${formattedVariant}`;
       variantSchemaNames.push(variantZodSchemaName);
 
-      if (variantType.type === TypeKind.REF && variantType.refType === "record") {
-        const recordExport = findRecordExportName(variantType.name!, schema);
-        const recordZodSchemaName = recordExport
-          ? versionedSchemaName(recordExport, version)
-          : `${variantType.name!}Schema`;
+      // Look up the variant's model to check if it's a record
+      const variantModel = ir.models[variantModelKey];
+      if (variantModel != null && variantModel.type === "record") {
+        const recordZodSchemaName = versionedSchemaName(variantModelKey, version);
         output += `export const ${variantZodSchemaName} = ${recordZodSchemaName}.extend({\n`;
         output += `  ${discriminantField}: z.literal("${variantName}")\n`;
         output += `}) satisfies ZodType<${variantTypeName}>;\n\n`;
       } else {
-        const zodType = convertFieldTypeToZodSchema(variantType, schema, version);
+        // Non-record variant (e.g. another union): emit a value field referencing the schema
+        const refZodSchemaName = versionedSchemaName(variantModelKey, version);
+        const refTypeName = versionedTypeName(variantModelKey, version);
         output += `export const ${variantZodSchemaName} = z.object({\n`;
         output += `  ${discriminantField}: z.literal("${variantName}"),\n`;
-        output += `  value: ${zodType}\n`;
+        output += `  value: z.lazy((): ZodType<${refTypeName}> => ${refZodSchemaName})\n`;
         output += `}) satisfies ZodType<${variantTypeName}>;\n\n`;
       }
     }
 
-    const unionZodSchemaName = versionedSchemaName(exportName, version);
-    const typeName = versionedTypeName(exportName, version);
+    const unionZodSchemaName = versionedSchemaName(modelKey, version);
+    const typeName = versionedTypeName(modelKey, version);
     output +=
       `export const ${unionZodSchemaName} = z.discriminatedUnion("${discriminantField}", [\n  ${
         variantSchemaNames.join(",\n  ")
@@ -185,29 +132,29 @@ function generateZodSchemasForVersion(
  * Generate the schema.ts re-export file mapping unversioned names to latest version.
  */
 function generateSchemaReExport(
-  { schema, version }: VersionedSchemaEntry,
+  { ir, version }: VersionedIrEntry,
 ): string {
   let output = GENERATED_FILE_HEADER;
 
   const reExports: string[] = [];
 
-  for (const [exportName, item] of Object.entries(schema)) {
-    if (isRecordSchema(item)) {
-      const versioned = versionedSchemaName(exportName, version);
+  for (const [modelKey, modelDef] of Object.entries(ir.models)) {
+    if (modelDef.type === "record") {
+      const versioned = versionedSchemaName(modelKey, version);
       reExports.push(
-        `export { ${versioned} as ${schemaName(exportName)} } from "./schema_v${version}.js";`,
+        `export { ${versioned} as ${modelKey}Schema } from "./schema_v${version}.js";`,
       );
-    } else if (isUnionSchema(item)) {
-      const versioned = versionedSchemaName(exportName, version);
+    } else if (modelDef.type === "union") {
+      const versioned = versionedSchemaName(modelKey, version);
       reExports.push(
-        `export { ${versioned} as ${schemaName(exportName)} } from "./schema_v${version}.js";`,
+        `export { ${versioned} as ${modelKey}Schema } from "./schema_v${version}.js";`,
       );
 
       // Also re-export union variant schemas
-      for (const variantName of Object.keys(item.variants)) {
+      for (const variantName of Object.keys(modelDef.union.variants)) {
         const formattedVariant = formatVariantName(variantName);
-        const versionedVariant = `${versionedSchemaName(exportName, version)}${formattedVariant}`;
-        const unversionedVariant = `${exportName}${formattedVariant}Schema`;
+        const versionedVariant = `${versionedSchemaName(modelKey, version)}${formattedVariant}`;
+        const unversionedVariant = `${modelKey}${formattedVariant}Schema`;
         reExports.push(
           `export { ${versionedVariant} as ${unversionedVariant} } from "./schema_v${version}.js";`,
         );
@@ -235,10 +182,10 @@ export function generateVersionedZodFromSchema(
 
   const zodSchemas = new Map<number, string>();
 
-  for (const { version, schema: versionSchema } of chain) {
+  for (const { version, ir } of chain) {
     if (version < minVersion) continue;
 
-    zodSchemas.set(version, generateZodSchemasForVersion(version, versionSchema));
+    zodSchemas.set(version, generateZodSchemasForVersion(version, ir));
   }
 
   const schemaReExport = generateSchemaReExport(chain[chain.length - 1]!);

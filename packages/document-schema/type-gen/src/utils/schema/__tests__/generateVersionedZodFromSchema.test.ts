@@ -19,6 +19,7 @@ import { describe, expect, it } from "vitest";
 import { generateVersionedZodFromSchema } from "../generateVersionedZodFromSchema.js";
 import {
   nestedOptionalsSchema,
+  nestedUnionSchema,
   refFieldsSchema,
   singleVersionSchema,
   twoVersionAdditiveSchema,
@@ -69,6 +70,13 @@ describe("generateVersionedZodFromSchema", () => {
     const result = generateVersionedZodFromSchema(nestedOptionalsSchema);
     await expect(await formatVersionedZodSnapshot(result)).toMatchFileSnapshot(
       path.join(snapshotDir, "nested-optionals.snap"),
+    );
+  });
+
+  it("includes value field in Zod schema for union variants that reference another union", async () => {
+    const result = generateVersionedZodFromSchema(nestedUnionSchema);
+    await expect(await formatVersionedZodSnapshot(result)).toMatchFileSnapshot(
+      path.join(snapshotDir, "union-reference-union.snap"),
     );
   });
 

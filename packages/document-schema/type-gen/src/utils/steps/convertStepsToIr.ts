@@ -66,12 +66,24 @@ export function convertSchemaToIr(
   inputSchema: P.Schema<P.ReturnedSchema>,
   metadata?: SchemaMetadata,
 ): IRealTimeDocumentSchema {
+  // Build a mapping from declared model name → export key so that union variant
+  // refs (which use declared model names) can be remapped to export keys.
+  const nameToExportKey = new Map<string, string>();
+  for (const [exportKey, modelDef] of Object.entries(inputSchema)) {
+    const existing = nameToExportKey.get(modelDef.name);
+    invariant(
+      existing == null,
+      `Duplicate declared model name "${modelDef.name}": exported as both "${existing}" and "${exportKey}"`,
+    );
+    nameToExportKey.set(modelDef.name, exportKey);
+  }
+
   const primaryModelKeys: IModelTypeKey[] = [];
   const models = new Map<IModelTypeKey, IModelDef>();
 
-  for (const modelDef of Object.values(inputSchema)) {
-    if (collectModels(modelDef, models)) {
-      primaryModelKeys.push(modelDef.name);
+  for (const [exportKey, modelDef] of Object.entries(inputSchema)) {
+    if (collectModels(exportKey, modelDef, nameToExportKey, models)) {
+      primaryModelKeys.push(exportKey);
     }
   }
 
@@ -85,21 +97,29 @@ export function convertSchemaToIr(
 }
 
 function collectModels(
+  exportKey: string,
   modelDef: P.ModelDef,
+  nameToExportKey: Map<string, string>,
   outModels: Map<IModelTypeKey, IModelDef>,
 ): boolean {
   invariant(
-    !outModels.has(modelDef.name),
-    `Duplicate model definition: ${modelDef.name}`,
+    !outModels.has(exportKey),
+    `Duplicate model definition: ${exportKey}`,
   );
 
   switch (modelDef.type) {
     case "record": {
-      outModels.set(modelDef.name, IModelDef.record(convertRecordDefToIr(modelDef)));
+      outModels.set(
+        exportKey,
+        IModelDef.record(convertRecordDefToIr(modelDef, exportKey, nameToExportKey)),
+      );
       return true;
     }
     case "union": {
-      outModels.set(modelDef.name, IModelDef.union(convertUnionDefToIr(modelDef)));
+      outModels.set(
+        exportKey,
+        IModelDef.union(convertUnionDefToIr(modelDef, exportKey, nameToExportKey)),
+      );
       return true;
     }
     default:
@@ -107,36 +127,46 @@ function collectModels(
   }
 }
 
-export function convertRecordDefToIr(recordDef: P.RecordDef): IRecordDef {
+export function convertRecordDefToIr(
+  recordDef: P.RecordDef,
+  exportKey?: string,
+  nameToExportKey?: Map<string, string>,
+): IRecordDef {
+  const key = exportKey ?? recordDef.name;
   const fields = Object.entries(recordDef.fields).map(([fieldKey, fieldType]): IFieldDef => ({
     key: fieldKey,
     name: fieldKey,
     description: undefined,
-    fieldType: convertTypeToFieldTypeUnion(fieldType),
+    fieldType: convertTypeToFieldTypeUnion(fieldType, nameToExportKey),
     metadata: { addedInVersion: 1 },
     isOptional: fieldType.type === "optional" ? true : undefined,
   }));
 
   return {
-    key: recordDef.name,
+    key,
     name: recordDef.name,
     description: recordDef.docs ?? undefined,
     fields,
   };
 }
 
-export function convertUnionDefToIr(unionDef: P.UnionDef): IUnionDef {
+export function convertUnionDefToIr(
+  unionDef: P.UnionDef,
+  exportKey?: string,
+  nameToExportKey?: Map<string, string>,
+): IUnionDef {
+  const key = exportKey ?? unionDef.name;
   const variantEntries = Object.entries(unionDef.variants).map((
     [variantName, modelRef],
   ) =>
     [
       variantName as IUnionVariantKey,
-      modelRef.name as IModelTypeKey,
+      (nameToExportKey?.get(modelRef.name) ?? modelRef.name) as IModelTypeKey,
     ] as const
   );
 
   return {
-    key: unionDef.name,
+    key,
     name: unionDef.name,
     description: unionDef.docs,
     discriminant: unionDef.discriminant,
@@ -146,22 +176,25 @@ export function convertUnionDefToIr(unionDef: P.UnionDef): IUnionDef {
 }
 
 // TODO: rename to convertSchemaTypeToFieldTypeUnion
-export function convertTypeToFieldTypeUnion(schemaType: P.Type): IFieldTypeUnion {
+export function convertTypeToFieldTypeUnion(
+  schemaType: P.Type,
+  nameToExportKey?: Map<string, string>,
+): IFieldTypeUnion {
   switch (schemaType.type) {
     case "array": {
-      const arrayType = schemaType as P.Array;
+      // P.Array.items is typed as TypeBase due to the generic; narrow via type field
+      const items = schemaType.items as P.Type;
+      const allowNullValue = items.type === "optional";
+      const elementType: P.Type = allowNullValue ? (items as P.Optional).item as P.Type : items;
       return IFieldTypeUnion.array({
-        allowNullValue: false,
-        value: convertTypeToFieldValueUnion(arrayType.items as P.Type),
+        allowNullValue,
+        value: convertTypeToFieldValueUnion(elementType, nameToExportKey),
       });
     }
-    // TODO: have map/set types in document-schema-api
 
-    case "optional": {
-      // Optional flag is handled at field level, but we need to unwrap the inner type
-      const optionalType = schemaType as P.Optional;
-      return convertTypeToFieldTypeUnion(optionalType.item as P.Type);
-    }
+    case "optional":
+      // Optional flag is handled at field level; unwrap and recurse on inner type
+      return convertTypeToFieldTypeUnion(schemaType.item as P.Type, nameToExportKey);
 
     case "boolean":
     case "docRef":
@@ -172,20 +205,22 @@ export function convertTypeToFieldTypeUnion(schemaType: P.Type): IFieldTypeUnion
     case "string":
     case "unknown":
     case "userRef":
-      return IFieldTypeUnion.value(convertTypeToFieldValueUnion(schemaType));
+      return IFieldTypeUnion.value(convertTypeToFieldValueUnion(schemaType, nameToExportKey));
 
     default:
       assertNever(schemaType);
   }
 }
 
-function convertTypeToFieldValueUnion(schemaType: P.Type): IFieldValueUnion {
+function convertTypeToFieldValueUnion(
+  schemaType: P.Type,
+  nameToExportKey?: Map<string, string>,
+): IFieldValueUnion {
   switch (schemaType.type) {
     case "array":
-      // TODO: fix the argument types so these aren't possible
-      invariant(
-        false,
-        `Collection type passed to convertTypeToFieldValueUnion: ${schemaType.type}`,
+      throw new Error(
+        "Nested arrays are not supported in the IR. "
+          + "Wrap the inner array in a record instead.",
       );
 
     case "boolean":
@@ -209,17 +244,15 @@ function convertTypeToFieldValueUnion(schemaType: P.Type): IFieldValueUnion {
         objectTypeRids: [],
       });
 
-    case "optional": {
-      // If we get here, it means we have nested optionals - unwrap and continue
+    case "optional":
+      // Nested optional — unwrap and continue
       // TODO: probably warn? maybe throw
-      const optionalType = schemaType as P.Optional;
-      return convertTypeToFieldValueUnion(optionalType.item as P.Type);
-    }
+      return convertTypeToFieldValueUnion(schemaType.item as P.Type, nameToExportKey);
 
-    case "ref":
-      return IFieldValueUnion.modelRef({
-        modelTypes: [schemaType.name as IModelTypeKey],
-      });
+    case "ref": {
+      const modelKey = nameToExportKey?.get(schemaType.name) ?? schemaType.name;
+      return IFieldValueUnion.modelRef({ modelTypes: [modelKey as IModelTypeKey] });
+    }
 
     case "string":
       return IFieldValueUnion.string({});

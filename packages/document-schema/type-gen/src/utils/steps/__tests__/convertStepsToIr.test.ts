@@ -14,9 +14,11 @@
  * limitations under the License.
  */
 
+import { defineRecord, defineUnion } from "@palantir/pack.schema";
+import * as P from "@palantir/pack.schema";
 import { describe, expect, it } from "vitest";
 import type { IFieldTypeUnion } from "../../../lib/pack-docschema-api/pack-docschema-ir/index.js";
-import { convertStepsToIr } from "../convertStepsToIr.js";
+import { convertSchemaToIr, convertStepsToIr } from "../convertStepsToIr.js";
 import type { MigrationStep } from "../parseMigrationSteps.js";
 import { parseMigrationSteps } from "../parseMigrationSteps.js";
 
@@ -423,5 +425,76 @@ describe("parseMigrationSteps generic type validation", () => {
     "optional<map<string>>",
   ])("should accept valid generic type: %s", fieldType => {
     expect(() => parseMigrationSteps(stepsWithField(fieldType))).not.toThrow();
+  });
+});
+
+describe("convertSchemaToIr alias handling", () => {
+  it("preserves key = exportKey and name = declaredName for aliased records", () => {
+    const ir = convertSchemaToIr({
+      FooAlias: defineRecord("Foo", { docs: "A foo", fields: { x: P.String } }),
+    });
+
+    const model = ir.models["FooAlias"];
+    expect(model).toBeDefined();
+    expect(model!.type).toBe("record");
+    if (model!.type === "record") {
+      expect(model!.record.key).toBe("FooAlias");
+      expect(model!.record.name).toBe("Foo");
+    }
+  });
+
+  it("preserves key = exportKey and name = declaredName for aliased unions", () => {
+    const Circle = defineRecord("Circle", { docs: "c", fields: { r: P.Double } });
+    const ir = convertSchemaToIr({
+      Circle,
+      ShapeAlias: defineUnion("Shape", {
+        docs: "A shape",
+        variants: { circle: Circle },
+      }),
+    });
+
+    const model = ir.models["ShapeAlias"];
+    expect(model).toBeDefined();
+    expect(model!.type).toBe("union");
+    if (model!.type === "union") {
+      expect(model!.union.key).toBe("ShapeAlias");
+      expect(model!.union.name).toBe("Shape");
+    }
+  });
+
+  it("resolves field refs and union variants to export keys", () => {
+    const Inner = defineRecord("InnerModel", { docs: "i", fields: { v: P.String } });
+    const ir = convertSchemaToIr({
+      InnerAlias: Inner,
+      Outer: defineRecord("Outer", {
+        docs: "o",
+        fields: { nested: Inner },
+      }),
+    });
+
+    // The field ref should resolve to the export key "InnerAlias"
+    const outerModel = ir.models["Outer"]!;
+    expect(outerModel.type).toBe("record");
+    if (outerModel.type === "record") {
+      const nestedField = outerModel.record.fields.find((f: { key: string }) =>
+        f.key === "nested"
+      )!;
+      expect(nestedField.fieldType.type).toBe("value");
+      if (nestedField.fieldType.type === "value") {
+        expect(nestedField.fieldType.value.type).toBe("modelRef");
+        if (nestedField.fieldType.value.type === "modelRef") {
+          expect(nestedField.fieldType.value.modelRef.modelTypes).toEqual(["InnerAlias"]);
+        }
+      }
+    }
+  });
+
+  it("throws on duplicate declared model names", () => {
+    expect(() =>
+      convertSchemaToIr({
+        AliasA: defineRecord("Foo", { docs: "a", fields: { x: P.String } }),
+        AliasB: defineRecord("Foo", { docs: "b", fields: { y: P.String } }),
+      })
+    ).toThrow(/Duplicate declared model name "Foo"/);
   });
 });

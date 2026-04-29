@@ -18,8 +18,6 @@ import type { SchemaDefinition } from "@palantir/pack.schema";
 import { GENERATED_FILE_HEADER } from "../generatedFileHeader.js";
 import { resolveSchemaChain } from "./resolveSchemaChain.js";
 import {
-  isRecordSchema,
-  isUnionSchema,
   modelName,
   MODELS_PATH,
   typesFilePath,
@@ -47,13 +45,11 @@ export function generateScopeFromSchema(
   // Filter to supported versions
   const supportedVersions = chain.filter(v => v.version >= minVersion);
 
-  // Collect all model names from the latest schema
-  const latestSchema = chain[chain.length - 1]!.schema;
+  // Collect all model names from the latest IR
+  const latestIr = chain[chain.length - 1]!.ir;
   const allModelNames: string[] = [];
-  for (const [exportName, item] of Object.entries(latestSchema)) {
-    if (isRecordSchema(item) || isUnionSchema(item)) {
-      allModelNames.push(exportName);
-    }
+  for (const modelKey of Object.keys(latestIr.models)) {
+    allModelNames.push(modelKey);
   }
 
   // Build output
@@ -69,16 +65,16 @@ export function generateScopeFromSchema(
   output += `import type { ${typeImportsFromModels.join(", ")} } from "${MODELS_PATH}";\n`;
 
   // Import per-version types
-  for (const { version, schema: versionSchema } of supportedVersions) {
+  for (const { version, ir } of supportedVersions) {
     const readTypeImports: string[] = [];
     const writeTypeImports: string[] = [];
 
-    for (const [exportName, item] of Object.entries(versionSchema)) {
-      if (isRecordSchema(item)) {
-        readTypeImports.push(versionedTypeName(exportName, version));
-        writeTypeImports.push(versionedWriteTypeName(exportName, version));
-      } else if (isUnionSchema(item)) {
-        readTypeImports.push(versionedTypeName(exportName, version));
+    for (const [modelKey, modelDef] of Object.entries(ir.models)) {
+      if (modelDef.type === "record") {
+        readTypeImports.push(versionedTypeName(modelKey, version));
+        writeTypeImports.push(versionedWriteTypeName(modelKey, version));
+      } else if (modelDef.type === "union") {
+        readTypeImports.push(versionedTypeName(modelKey, version));
       }
     }
 
@@ -97,35 +93,31 @@ export function generateScopeFromSchema(
   output += "\n";
 
   // Generate per-version VersionedDocRef interfaces extending DocumentRef.
-  // Every model gets a version-specific overload on every version so that
-  // write data is always typed to the exact version, not the latest.
-  for (const { version, schema: versionSchema } of supportedVersions) {
+  for (const { version, ir } of supportedVersions) {
     output += `export interface VersionedDocRef_v${version} extends DocumentRef<DocumentModel> {\n`;
     output += `  readonly version: ${version};\n`;
 
     // updateRecord overloads — record models get write types, union models get Partial<read>
-    for (const [exportName, item] of Object.entries(versionSchema)) {
-      if (isRecordSchema(item)) {
-        const writeType = versionedWriteTypeName(exportName, version);
+    for (const [modelKey, modelDef] of Object.entries(ir.models)) {
+      if (modelDef.type === "record") {
+        const writeType = versionedWriteTypeName(modelKey, version);
         output += `  updateRecord(ref: RecordRef<typeof ${
-          modelName(exportName)
+          modelName(modelKey)
         }>, data: ${writeType}): Promise<void>;\n`;
-      } else if (isUnionSchema(item)) {
-        const readType = versionedTypeName(exportName, version);
+      } else if (modelDef.type === "union") {
+        const readType = versionedTypeName(modelKey, version);
         output += `  updateRecord(ref: RecordRef<typeof ${
-          modelName(exportName)
+          modelName(modelKey)
         }>, data: Partial<${readType}>): Promise<void>;\n`;
       }
     }
 
     // setCollectionRecord overloads
-    for (const [exportName, item] of Object.entries(versionSchema)) {
-      if (isRecordSchema(item) || isUnionSchema(item)) {
-        const readType = versionedTypeName(exportName, version);
-        output += `  setCollectionRecord(model: typeof ${
-          modelName(exportName)
-        }, id: RecordId, data: ${readType}): Promise<void>;\n`;
-      }
+    for (const [modelKey] of Object.entries(ir.models)) {
+      const readType = versionedTypeName(modelKey, version);
+      output += `  setCollectionRecord(model: typeof ${
+        modelName(modelKey)
+      }, id: RecordId, data: ${readType}): Promise<void>;\n`;
     }
 
     output += `}\n\n`;
