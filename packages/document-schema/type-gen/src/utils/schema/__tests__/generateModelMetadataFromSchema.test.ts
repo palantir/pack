@@ -16,7 +16,8 @@
 
 import path from "path";
 import { describe, expect, it } from "vitest";
-import { generateModelMetadataFromSchema } from "../generateModelMetadataFromSchema.js";
+import { generateModelMetadataFromChain } from "../generateModelMetadataFromSchema.js";
+import { resolveSchemaChain } from "../resolveSchemaChain.js";
 import {
   singleVersionSchema,
   threeVersionChainSchema,
@@ -25,32 +26,38 @@ import {
 } from "./fixtures.js";
 import { formatModelMetadataSnapshot } from "./snapshotUtils.js";
 
-describe("generateModelMetadataFromSchema", () => {
+describe("generateModelMetadataFromChain", () => {
   const snapshotDir = path.join(__dirname, "__snapshots__", "generateModelMetadataFromSchema");
 
   it("single-version schema", async () => {
-    const result = generateModelMetadataFromSchema(singleVersionSchema);
+    const result = generateModelMetadataFromChain(resolveSchemaChain(singleVersionSchema));
     await expect(await formatModelMetadataSnapshot(result)).toMatchFileSnapshot(
       path.join(snapshotDir, "single-version.snap"),
     );
   });
 
   it("two-version field removal", async () => {
-    const result = generateModelMetadataFromSchema(twoVersionFieldRemovalSchema, 1);
+    const result = generateModelMetadataFromChain(
+      resolveSchemaChain(twoVersionFieldRemovalSchema, 1),
+      1,
+    );
     await expect(await formatModelMetadataSnapshot(result)).toMatchFileSnapshot(
       path.join(snapshotDir, "two-version-field-removal.snap"),
     );
   });
 
   it("three-version chain", async () => {
-    const result = generateModelMetadataFromSchema(threeVersionChainSchema, 1);
+    const result = generateModelMetadataFromChain(
+      resolveSchemaChain(threeVersionChainSchema, 1),
+      1,
+    );
     await expect(await formatModelMetadataSnapshot(result)).toMatchFileSnapshot(
       path.join(snapshotDir, "three-version-chain.snap"),
     );
   });
 
   it("union types schema", async () => {
-    const result = generateModelMetadataFromSchema(unionTypesSchema);
+    const result = generateModelMetadataFromChain(resolveSchemaChain(unionTypesSchema));
     await expect(await formatModelMetadataSnapshot(result)).toMatchFileSnapshot(
       path.join(snapshotDir, "union-types.snap"),
     );

@@ -14,10 +14,9 @@
  * limitations under the License.
  */
 
-import type { SchemaDefinition } from "@palantir/pack.schema";
 import { GENERATED_FILE_HEADER } from "../generatedFileHeader.js";
 import type { ResolvedIrChain } from "./resolveSchemaChain.js";
-import { resolveMinVersion, resolveSchemaChain } from "./resolveSchemaChain.js";
+import { resolveMinVersion } from "./resolveSchemaChain.js";
 
 /**
  * Generate versions.ts from an already-resolved versioned IR chain.
@@ -49,14 +48,4 @@ export function generateVersionsFromChain(
   output += `export type MinSupportedVersion = ${minVersion};\n`;
 
   return output;
-}
-
-export function generateVersionsFromSchema(
-  schema: SchemaDefinition,
-  minSupportedVersion?: number,
-): string {
-  return generateVersionsFromChain(
-    resolveSchemaChain(schema, minSupportedVersion),
-    minSupportedVersion,
-  );
 }

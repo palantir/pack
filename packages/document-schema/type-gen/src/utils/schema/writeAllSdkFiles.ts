@@ -28,8 +28,7 @@ import type { ResolvedIrChain } from "./resolveSchemaChain.js";
 
 /**
  * Generate every versioned SDK output file from a resolved IR chain and write
- * them to `outputDir`. Shared between the in-process `schema gen-types`
- * command and the IR-driven `ir gen-types` command.
+ * them to `outputDir`.
  */
 export async function writeAllSdkFiles(
   resolved: ResolvedIrChain,
