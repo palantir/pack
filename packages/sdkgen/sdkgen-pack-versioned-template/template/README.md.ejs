@@ -1,0 +1,67 @@
+# <%= projectName %>
+
+<%= answers.description || 'Generated versioned SDK from TypeScript schema' %>
+
+## Usage
+
+```typescript
+import {
+  DocumentModel,
+  asVersioned,
+  matchVersion,
+  type VersionedDocRef,
+} from "<%= projectName %>";
+```
+
+## Generated Source
+
+This SDK was generated from a TypeScript schema module that uses
+`@palantir/pack.schema` builders (`defineSchema`, `defineSchemaUpdate`,
+`nextSchema`). The output covers every supported schema version:
+
+- Per-version read types: `types_v1.ts`, `types_v2.ts`, ...
+- Per-version write types: `writeTypes_v1.ts`, `writeTypes_v2.ts`, ...
+- Per-version Zod schemas: `schema_v1.ts`, `schema_v2.ts`, ...
+- Internal upgrade machinery: `_internal/types.ts`, `_internal/upgrades.ts`, `_internal/schema.ts`
+- `versions.ts` — `SupportedVersions`, `LatestVersion`, `MinSupportedVersion`
+- `versionedDocRef.ts` — `VersionedDocRef`, `asVersioned`, `matchVersion`
+- `models.ts` — runtime model constants and `DocumentModel`
+- `types.ts` / `schema.ts` — re-exports under unversioned names
+- `index.ts` — barrel
+
+It should be depended on as a package in your project, but not modified
+directly so it can be regenerated cleanly.
+
+## Development
+
+### Build
+
+```bash
+pnpm build
+```
+
+### Type Check
+
+```bash
+pnpm typecheck
+```
+
+## Regenerating
+
+```bash
+pnpm exec sdkgen create "./this-package" \
+  --template @palantir/pack.sdkgen.pack-versioned-template \
+  --schema ./path/to/schema.mjs \
+  --config pack-config.json \
+  --overwrite
+```
+
+<% if (answers.author) { %>
+## Author
+
+<%= answers.author %>
+<% } %>
+
+## License
+
+UNLICENSED

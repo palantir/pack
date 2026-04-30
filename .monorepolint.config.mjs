@@ -475,6 +475,7 @@ const packages = {
   // SDK generation templates
   "@palantir/pack.sdkgen.demo-template": { isSdkgenTemplate: true, isPrivate: true },
   "@palantir/pack.sdkgen.pack-template": { isSdkgenTemplate: true },
+  "@palantir/pack.sdkgen.pack-versioned-template": { isSdkgenTemplate: true },
 
   // Demo packages
   "@demo/canvas.app": { isDemo: true, isDemoApp: true },
