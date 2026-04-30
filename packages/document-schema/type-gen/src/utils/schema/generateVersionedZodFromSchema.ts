@@ -19,8 +19,8 @@ import type { IRealTimeDocumentSchema } from "../../lib/pack-docschema-api/pack-
 import { formatVariantName } from "../formatVariantName.js";
 import { GENERATED_FILE_HEADER } from "../generatedFileHeader.js";
 import { convertFieldTypeToZodSchema } from "../ir/irFieldHelpers.js";
-import type { VersionedIrEntry } from "./resolveSchemaChain.js";
-import { resolveSchemaChain } from "./resolveSchemaChain.js";
+import type { ResolvedIrChain, VersionedIrEntry } from "./resolveSchemaChain.js";
+import { resolveMinVersion, resolveSchemaChain } from "./resolveSchemaChain.js";
 import { typesFilePath, versionedSchemaName, versionedTypeName } from "./runtimeSchema.js";
 
 export interface VersionedZodOutput {
@@ -168,17 +168,14 @@ function generateSchemaReExport(
 }
 
 /**
- * Generate per-version Zod schemas from a schema definition with version chain.
- *
- * @param schema - The schema definition (initial or versioned)
- * @param minSupportedVersion - Minimum version to generate schemas for (defaults to latest)
- * @returns Object containing generated Zod schema code for each output file
+ * Generate per-version Zod schemas from an already-resolved versioned IR chain.
  */
-export function generateVersionedZodFromSchema(
-  schema: SchemaDefinition,
+export function generateVersionedZodFromChain(
+  resolved: ResolvedIrChain,
   minSupportedVersion?: number,
 ): VersionedZodOutput {
-  const { chain, minVersion } = resolveSchemaChain(schema, minSupportedVersion);
+  const { chain } = resolved;
+  const { minVersion } = resolveMinVersion(chain, minSupportedVersion);
 
   const zodSchemas = new Map<number, string>();
 
@@ -191,4 +188,21 @@ export function generateVersionedZodFromSchema(
   const schemaReExport = generateSchemaReExport(chain[chain.length - 1]!);
 
   return { zodSchemas, schemaReExport };
+}
+
+/**
+ * Generate per-version Zod schemas from a schema definition with version chain.
+ *
+ * @param schema - The schema definition (initial or versioned)
+ * @param minSupportedVersion - Minimum version to generate schemas for (defaults to latest)
+ * @returns Object containing generated Zod schema code for each output file
+ */
+export function generateVersionedZodFromSchema(
+  schema: SchemaDefinition,
+  minSupportedVersion?: number,
+): VersionedZodOutput {
+  return generateVersionedZodFromChain(
+    resolveSchemaChain(schema, minSupportedVersion),
+    minSupportedVersion,
+  );
 }

@@ -15,25 +15,35 @@
  */
 
 import { consola } from "consola";
+import fs from "fs-extra";
 import path from "path";
+import { GENERATED_JSON_COMMENT } from "../../utils/generatedFileHeader.js";
 import { loadSchemaModule } from "../../utils/schema/loadSchemaModule.js";
 import { resolveSchemaChain } from "../../utils/schema/resolveSchemaChain.js";
-import { parseMinVersion, writeAllSdkFiles } from "../../utils/schema/writeAllSdkFiles.js";
 
-interface SchemaGenTypesOptions {
+interface SchemaIrOptions {
   input: string;
   output: string;
-  minVersion?: string;
 }
 
-export async function schemaGenTypesHandler(options: SchemaGenTypesOptions): Promise<void> {
-  const { input, output: outputDir } = options;
+export async function schemaIrHandler(options: SchemaIrOptions): Promise<void> {
+  const { input, output } = options;
 
   consola.info(`Loading schema from: ${input}`);
   const schema = await loadSchemaModule(input);
 
-  const minSupportedVersion = parseMinVersion(options.minVersion);
-  const resolved = resolveSchemaChain(schema, minSupportedVersion);
+  consola.info("Resolving versioned IR chain...");
+  const { chain, latestVersion } = resolveSchemaChain(schema);
 
-  await writeAllSdkFiles(resolved, path.resolve(outputDir), minSupportedVersion);
+  const outputPath = path.resolve(output);
+  await fs.ensureDir(path.dirname(outputPath));
+
+  const payload = {
+    __comment: GENERATED_JSON_COMMENT,
+    latestVersion,
+    chain,
+  };
+  await fs.writeFile(outputPath, JSON.stringify(payload, null, 2) + "\n", "utf8");
+
+  consola.success(`Wrote IR chain (${chain.length} version(s)) to: ${outputPath}`);
 }

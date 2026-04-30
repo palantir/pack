@@ -17,7 +17,8 @@
 import type { SchemaDefinition } from "@palantir/pack.schema";
 import { formatVariantName } from "../formatVariantName.js";
 import { GENERATED_FILE_HEADER } from "../generatedFileHeader.js";
-import { resolveSchemaChain } from "./resolveSchemaChain.js";
+import type { ResolvedIrChain } from "./resolveSchemaChain.js";
+import { resolveMinVersion, resolveSchemaChain } from "./resolveSchemaChain.js";
 import {
   MODELS_PATH,
   TYPES_REEXPORT_PATH,
@@ -38,11 +39,12 @@ import {
  * - Per supported version: explicit named type exports from `types_vN.js`
  *   (not star exports, to avoid polluting autocomplete for read-only consumers)
  */
-export function generateIndexFromSchema(
-  schema: SchemaDefinition,
+export function generateIndexFromChain(
+  resolved: ResolvedIrChain,
   minSupportedVersion?: number,
 ): string {
-  const { chain, minVersion } = resolveSchemaChain(schema, minSupportedVersion);
+  const { chain } = resolved;
+  const { minVersion } = resolveMinVersion(chain, minSupportedVersion);
 
   let output = GENERATED_FILE_HEADER;
 
@@ -80,4 +82,14 @@ export function generateIndexFromSchema(
   }
 
   return output;
+}
+
+export function generateIndexFromSchema(
+  schema: SchemaDefinition,
+  minSupportedVersion?: number,
+): string {
+  return generateIndexFromChain(
+    resolveSchemaChain(schema, minSupportedVersion),
+    minSupportedVersion,
+  );
 }

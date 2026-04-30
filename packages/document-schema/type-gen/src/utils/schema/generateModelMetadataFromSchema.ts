@@ -19,7 +19,8 @@ import type { IRecordDef } from "../../lib/pack-docschema-api/pack-docschema-ir/
 import { formatVariantName } from "../formatVariantName.js";
 import { GENERATED_FILE_HEADER } from "../generatedFileHeader.js";
 import { findExternalRefType } from "../ir/irFieldHelpers.js";
-import { resolveSchemaChain } from "./resolveSchemaChain.js";
+import type { ResolvedIrChain } from "./resolveSchemaChain.js";
+import { resolveMinVersion, resolveSchemaChain } from "./resolveSchemaChain.js";
 import {
   INTERNAL_UPGRADES_PATH,
   modelName,
@@ -47,17 +48,14 @@ function extractExternalRefFieldTypes(
 }
 
 /**
- * Generate models.ts and schema manifest from a versioned schema chain.
- *
- * @param schema - The schema definition (initial or versioned)
- * @param minSupportedVersion - Minimum version this client supports (defaults to latest)
- * @returns Object containing generated models.ts content
+ * Generate models.ts from an already-resolved versioned IR chain.
  */
-export function generateModelMetadataFromSchema(
-  schema: SchemaDefinition,
+export function generateModelMetadataFromChain(
+  resolved: ResolvedIrChain,
   minSupportedVersion?: number,
 ): ModelMetadataOutput {
-  const { chain, latestVersion, minVersion } = resolveSchemaChain(schema, minSupportedVersion);
+  const { chain } = resolved;
+  const { latestVersion, minVersion } = resolveMinVersion(chain, minSupportedVersion);
   const latestIr = chain[chain.length - 1]!.ir;
 
   // --- Generate models.ts ---
@@ -204,4 +202,21 @@ export function generateModelMetadataFromSchema(
   output += `export type DocumentModel = typeof DocumentModel;\n`;
 
   return { modelsFile: output };
+}
+
+/**
+ * Generate models.ts and schema manifest from a versioned schema chain.
+ *
+ * @param schema - The schema definition (initial or versioned)
+ * @param minSupportedVersion - Minimum version this client supports (defaults to latest)
+ * @returns Object containing generated models.ts content
+ */
+export function generateModelMetadataFromSchema(
+  schema: SchemaDefinition,
+  minSupportedVersion?: number,
+): ModelMetadataOutput {
+  return generateModelMetadataFromChain(
+    resolveSchemaChain(schema, minSupportedVersion),
+    minSupportedVersion,
+  );
 }

@@ -23,8 +23,8 @@ import {
   convertFieldTypeToTypeScript,
   detectUsedRefTypes,
 } from "../ir/irFieldHelpers.js";
-import type { VersionedIrEntry } from "./resolveSchemaChain.js";
-import { resolveSchemaChain } from "./resolveSchemaChain.js";
+import type { ResolvedIrChain, VersionedIrEntry } from "./resolveSchemaChain.js";
+import { resolveMinVersion, resolveSchemaChain } from "./resolveSchemaChain.js";
 import { typesFilePath, versionedTypeName, versionedWriteTypeName } from "./runtimeSchema.js";
 
 export interface VersionedTypesOutput {
@@ -209,17 +209,15 @@ function generateTypesReExport({ ir, version }: VersionedIrEntry): string {
 }
 
 /**
- * Generate per-version public types and write types from a schema with version chain.
- *
- * @param schema - The schema, initial or versioned
- * @param minSupportedVersion - Minimum version to generate types for (defaults to latest)
- * @returns Object containing generated code for each output file
+ * Generate per-version public types and write types from an already-resolved
+ * versioned IR chain.
  */
-export function generateVersionedTypesFromSchema(
-  schema: SchemaDefinition,
+export function generateVersionedTypesFromChain(
+  resolved: ResolvedIrChain,
   minSupportedVersion?: number,
 ): VersionedTypesOutput {
-  const { chain, latestVersion, minVersion } = resolveSchemaChain(schema, minSupportedVersion);
+  const { chain } = resolved;
+  const { minVersion } = resolveMinVersion(chain, minSupportedVersion);
 
   const readTypes = new Map<number, string>();
   const writeTypes = new Map<number, string>();
@@ -234,4 +232,21 @@ export function generateVersionedTypesFromSchema(
   const typesReExport = generateTypesReExport(chain[chain.length - 1]!);
 
   return { readTypes, writeTypes, typesReExport };
+}
+
+/**
+ * Generate per-version public types and write types from a schema with version chain.
+ *
+ * @param schema - The schema, initial or versioned
+ * @param minSupportedVersion - Minimum version to generate types for (defaults to latest)
+ * @returns Object containing generated code for each output file
+ */
+export function generateVersionedTypesFromSchema(
+  schema: SchemaDefinition,
+  minSupportedVersion?: number,
+): VersionedTypesOutput {
+  return generateVersionedTypesFromChain(
+    resolveSchemaChain(schema, minSupportedVersion),
+    minSupportedVersion,
+  );
 }

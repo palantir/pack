@@ -25,7 +25,7 @@ import {
   convertFieldTypeToInternalTypeScript,
   convertFieldTypeToInternalZod,
 } from "../ir/irFieldHelpers.js";
-import type { VersionedIrEntry } from "./resolveSchemaChain.js";
+import type { ResolvedIrChain, VersionedIrEntry } from "./resolveSchemaChain.js";
 import { resolveSchemaChain } from "./resolveSchemaChain.js";
 
 export interface InternalTypesOutput {
@@ -145,7 +145,7 @@ function collectRecordModels(
           if (annotation != null) {
             addedFields.set(fieldKey, {
               derivedFrom: [...annotation.derivedFrom],
-              forwardSource: annotation.forward.toString(),
+              forwardSource: annotation.forwardSource,
             });
           } else {
             addedFields.set(fieldKey, {
@@ -331,15 +331,12 @@ function generateInternalSchemaContent(
 
 /**
  * Generate _internal/types.ts, _internal/upgrades.ts, and _internal/schema.ts
- * from a versioned schema chain.
- *
- * @param schema - The schema definition (initial or versioned)
- * @returns Object containing generated code for each internal file
+ * from an already-resolved versioned IR chain.
  */
-export function generateInternalFromSchema(
-  schema: SchemaDefinition,
+export function generateInternalFromChain(
+  resolved: ResolvedIrChain,
 ): InternalTypesOutput {
-  const { chain } = resolveSchemaChain(schema);
+  const { chain } = resolved;
   const latestIr = chain[chain.length - 1]!.ir;
 
   const allRecordModels = collectRecordModels(chain);
@@ -349,4 +346,17 @@ export function generateInternalFromSchema(
   const internalSchema = generateInternalSchemaContent(allRecordModels);
 
   return { internalTypes, upgrades, internalSchema };
+}
+
+/**
+ * Generate _internal/types.ts, _internal/upgrades.ts, and _internal/schema.ts
+ * from a versioned schema chain.
+ *
+ * @param schema - The schema definition (initial or versioned)
+ * @returns Object containing generated code for each internal file
+ */
+export function generateInternalFromSchema(
+  schema: SchemaDefinition,
+): InternalTypesOutput {
+  return generateInternalFromChain(resolveSchemaChain(schema));
 }
