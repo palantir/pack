@@ -14,11 +14,10 @@
  * limitations under the License.
  */
 
-import type { SchemaDefinition } from "@palantir/pack.schema";
 import { formatVariantName } from "../formatVariantName.js";
 import { GENERATED_FILE_HEADER } from "../generatedFileHeader.js";
 import type { ResolvedIrChain } from "./resolveSchemaChain.js";
-import { resolveMinVersion, resolveSchemaChain } from "./resolveSchemaChain.js";
+import { resolveMinVersion } from "./resolveSchemaChain.js";
 import {
   MODELS_PATH,
   TYPES_REEXPORT_PATH,
@@ -82,14 +81,4 @@ export function generateIndexFromChain(
   }
 
   return output;
-}
-
-export function generateIndexFromSchema(
-  schema: SchemaDefinition,
-  minSupportedVersion?: number,
-): string {
-  return generateIndexFromChain(
-    resolveSchemaChain(schema, minSupportedVersion),
-    minSupportedVersion,
-  );
 }

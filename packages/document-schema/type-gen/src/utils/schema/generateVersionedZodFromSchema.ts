@@ -14,13 +14,12 @@
  * limitations under the License.
  */
 
-import type { SchemaDefinition } from "@palantir/pack.schema";
 import type { IRealTimeDocumentSchema } from "../../lib/pack-docschema-api/pack-docschema-ir/index.js";
 import { formatVariantName } from "../formatVariantName.js";
 import { GENERATED_FILE_HEADER } from "../generatedFileHeader.js";
 import { convertFieldTypeToZodSchema } from "../ir/irFieldHelpers.js";
 import type { ResolvedIrChain, VersionedIrEntry } from "./resolveSchemaChain.js";
-import { resolveMinVersion, resolveSchemaChain } from "./resolveSchemaChain.js";
+import { resolveMinVersion } from "./resolveSchemaChain.js";
 import { typesFilePath, versionedSchemaName, versionedTypeName } from "./runtimeSchema.js";
 
 export interface VersionedZodOutput {
@@ -188,21 +187,4 @@ export function generateVersionedZodFromChain(
   const schemaReExport = generateSchemaReExport(chain[chain.length - 1]!);
 
   return { zodSchemas, schemaReExport };
-}
-
-/**
- * Generate per-version Zod schemas from a schema definition with version chain.
- *
- * @param schema - The schema definition (initial or versioned)
- * @param minSupportedVersion - Minimum version to generate schemas for (defaults to latest)
- * @returns Object containing generated Zod schema code for each output file
- */
-export function generateVersionedZodFromSchema(
-  schema: SchemaDefinition,
-  minSupportedVersion?: number,
-): VersionedZodOutput {
-  return generateVersionedZodFromChain(
-    resolveSchemaChain(schema, minSupportedVersion),
-    minSupportedVersion,
-  );
 }

@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-import type { SchemaDefinition } from "@palantir/pack.schema";
 import type { IRealTimeDocumentSchema } from "../../lib/pack-docschema-api/pack-docschema-ir/index.js";
 import { formatVariantName } from "../formatVariantName.js";
 import { GENERATED_FILE_HEADER } from "../generatedFileHeader.js";
@@ -24,7 +23,7 @@ import {
   detectUsedRefTypes,
 } from "../ir/irFieldHelpers.js";
 import type { ResolvedIrChain, VersionedIrEntry } from "./resolveSchemaChain.js";
-import { resolveMinVersion, resolveSchemaChain } from "./resolveSchemaChain.js";
+import { resolveMinVersion } from "./resolveSchemaChain.js";
 import { typesFilePath, versionedTypeName, versionedWriteTypeName } from "./runtimeSchema.js";
 
 export interface VersionedTypesOutput {
@@ -232,21 +231,4 @@ export function generateVersionedTypesFromChain(
   const typesReExport = generateTypesReExport(chain[chain.length - 1]!);
 
   return { readTypes, writeTypes, typesReExport };
-}
-
-/**
- * Generate per-version public types and write types from a schema with version chain.
- *
- * @param schema - The schema, initial or versioned
- * @param minSupportedVersion - Minimum version to generate types for (defaults to latest)
- * @returns Object containing generated code for each output file
- */
-export function generateVersionedTypesFromSchema(
-  schema: SchemaDefinition,
-  minSupportedVersion?: number,
-): VersionedTypesOutput {
-  return generateVersionedTypesFromChain(
-    resolveSchemaChain(schema, minSupportedVersion),
-    minSupportedVersion,
-  );
 }

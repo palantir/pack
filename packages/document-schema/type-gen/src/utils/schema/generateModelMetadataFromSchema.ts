@@ -14,13 +14,12 @@
  * limitations under the License.
  */
 
-import type { SchemaDefinition } from "@palantir/pack.schema";
 import type { IRecordDef } from "../../lib/pack-docschema-api/pack-docschema-ir/index.js";
 import { formatVariantName } from "../formatVariantName.js";
 import { GENERATED_FILE_HEADER } from "../generatedFileHeader.js";
 import { findExternalRefType } from "../ir/irFieldHelpers.js";
 import type { ResolvedIrChain } from "./resolveSchemaChain.js";
-import { resolveMinVersion, resolveSchemaChain } from "./resolveSchemaChain.js";
+import { resolveMinVersion } from "./resolveSchemaChain.js";
 import {
   INTERNAL_UPGRADES_PATH,
   modelName,
@@ -202,21 +201,4 @@ export function generateModelMetadataFromChain(
   output += `export type DocumentModel = typeof DocumentModel;\n`;
 
   return { modelsFile: output };
-}
-
-/**
- * Generate models.ts and schema manifest from a versioned schema chain.
- *
- * @param schema - The schema definition (initial or versioned)
- * @param minSupportedVersion - Minimum version this client supports (defaults to latest)
- * @returns Object containing generated models.ts content
- */
-export function generateModelMetadataFromSchema(
-  schema: SchemaDefinition,
-  minSupportedVersion?: number,
-): ModelMetadataOutput {
-  return generateModelMetadataFromChain(
-    resolveSchemaChain(schema, minSupportedVersion),
-    minSupportedVersion,
-  );
 }

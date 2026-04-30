@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-import type { SchemaDefinition } from "@palantir/pack.schema";
 import type {
   IFieldTypeUnion,
   IRealTimeDocumentSchema,
@@ -26,7 +25,6 @@ import {
   convertFieldTypeToInternalZod,
 } from "../ir/irFieldHelpers.js";
 import type { ResolvedIrChain, VersionedIrEntry } from "./resolveSchemaChain.js";
-import { resolveSchemaChain } from "./resolveSchemaChain.js";
 
 export interface InternalTypesOutput {
   /** _internal/types.ts content */
@@ -346,17 +344,4 @@ export function generateInternalFromChain(
   const internalSchema = generateInternalSchemaContent(allRecordModels);
 
   return { internalTypes, upgrades, internalSchema };
-}
-
-/**
- * Generate _internal/types.ts, _internal/upgrades.ts, and _internal/schema.ts
- * from a versioned schema chain.
- *
- * @param schema - The schema definition (initial or versioned)
- * @returns Object containing generated code for each internal file
- */
-export function generateInternalFromSchema(
-  schema: SchemaDefinition,
-): InternalTypesOutput {
-  return generateInternalFromChain(resolveSchemaChain(schema));
 }

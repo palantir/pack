@@ -26,6 +26,18 @@ interface SchemaIrOptions {
   output: string;
 }
 
+/**
+ * Resolve a TypeScript schema module to a versioned IR chain JSON file.
+ *
+ * The output is a `{ latestVersion, chain }` payload where each entry is
+ * `{ version, ir, migrations? }` and `ir` is a single-version
+ * `IRealTimeDocumentSchema`. This is the input format for `ir gen-types`.
+ *
+ * Note: this is distinct from the legacy single-version IR JSON consumed by
+ * `ir deploy` / `ir asset` / `ir zod`, which is a bare `IRealTimeDocumentSchema`
+ * (no chain, no migrations). Tools that previously read that format should
+ * pick the entry matching `latestVersion` from `chain` and use its `ir` field.
+ */
 export async function schemaIrHandler(options: SchemaIrOptions): Promise<void> {
   const { input, output } = options;
 

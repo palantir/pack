@@ -14,10 +14,9 @@
  * limitations under the License.
  */
 
-import type { SchemaDefinition } from "@palantir/pack.schema";
 import { GENERATED_FILE_HEADER } from "../generatedFileHeader.js";
 import type { ResolvedIrChain } from "./resolveSchemaChain.js";
-import { resolveMinVersion, resolveSchemaChain } from "./resolveSchemaChain.js";
+import { resolveMinVersion } from "./resolveSchemaChain.js";
 import {
   modelName,
   MODELS_PATH,
@@ -166,14 +165,4 @@ export function generateScopeFromChain(
   output += `}\n`;
 
   return output;
-}
-
-export function generateScopeFromSchema(
-  schema: SchemaDefinition,
-  minSupportedVersion?: number,
-): string {
-  return generateScopeFromChain(
-    resolveSchemaChain(schema, minSupportedVersion),
-    minSupportedVersion,
-  );
 }

@@ -16,29 +16,30 @@
 
 import path from "path";
 import { describe, expect, it } from "vitest";
-import { generateScopeFromSchema } from "../generateScopeFromSchema.js";
+import { generateScopeFromChain } from "../generateScopeFromSchema.js";
+import { resolveSchemaChain } from "../resolveSchemaChain.js";
 import { singleVersionSchema, twoVersionFieldRemovalSchema, unionTypesSchema } from "./fixtures.js";
 import { formatSingleSnapshot } from "./snapshotUtils.js";
 
-describe("generateScopeFromSchema", () => {
+describe("generateScopeFromChain", () => {
   const snapshotDir = path.join(__dirname, "__snapshots__", "generateScopeFromSchema");
 
   it("single-version schema", async () => {
-    const result = generateScopeFromSchema(singleVersionSchema);
+    const result = generateScopeFromChain(resolveSchemaChain(singleVersionSchema));
     await expect(await formatSingleSnapshot("versionedDocRef.ts", result)).toMatchFileSnapshot(
       path.join(snapshotDir, "single-version.snap"),
     );
   });
 
   it("two-version field removal", async () => {
-    const result = generateScopeFromSchema(twoVersionFieldRemovalSchema, 1);
+    const result = generateScopeFromChain(resolveSchemaChain(twoVersionFieldRemovalSchema, 1), 1);
     await expect(await formatSingleSnapshot("versionedDocRef.ts", result)).toMatchFileSnapshot(
       path.join(snapshotDir, "two-version-field-removal.snap"),
     );
   });
 
   it("union types schema", async () => {
-    const result = generateScopeFromSchema(unionTypesSchema);
+    const result = generateScopeFromChain(resolveSchemaChain(unionTypesSchema));
     await expect(await formatSingleSnapshot("versionedDocRef.ts", result)).toMatchFileSnapshot(
       path.join(snapshotDir, "union-types.snap"),
     );
