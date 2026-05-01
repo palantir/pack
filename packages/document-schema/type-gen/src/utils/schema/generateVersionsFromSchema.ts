@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-import type { SchemaDefinition } from "@palantir/pack.schema";
 import { GENERATED_FILE_HEADER } from "../generatedFileHeader.js";
-import { resolveSchemaChain } from "./resolveSchemaChain.js";
+import type { ResolvedIrChain } from "./resolveSchemaChain.js";
+import { resolveMinVersion } from "./resolveSchemaChain.js";
 
 /**
- * Generate versions.ts from a versioned schema chain.
+ * Generate versions.ts from an already-resolved versioned IR chain.
  *
  * Output:
  * ```
@@ -28,11 +28,12 @@ import { resolveSchemaChain } from "./resolveSchemaChain.js";
  * export type MinSupportedVersion = 1;
  * ```
  */
-export function generateVersionsFromSchema(
-  schema: SchemaDefinition,
+export function generateVersionsFromChain(
+  resolved: ResolvedIrChain,
   minSupportedVersion?: number,
 ): string {
-  const { chain, latestVersion, minVersion } = resolveSchemaChain(schema, minSupportedVersion);
+  const { chain } = resolved;
+  const { latestVersion, minVersion } = resolveMinVersion(chain, minSupportedVersion);
 
   const supportedVersions: number[] = [];
   for (const { version } of chain) {

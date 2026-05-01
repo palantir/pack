@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-import type { SchemaDefinition } from "@palantir/pack.schema";
 import { GENERATED_FILE_HEADER } from "../generatedFileHeader.js";
-import { resolveSchemaChain } from "./resolveSchemaChain.js";
+import type { ResolvedIrChain } from "./resolveSchemaChain.js";
+import { resolveMinVersion } from "./resolveSchemaChain.js";
 import {
   modelName,
   MODELS_PATH,
@@ -36,11 +36,12 @@ import {
  * Every model gets a version-specific overload on every version so that
  * write data is always typed to the exact version, not the latest.
  */
-export function generateScopeFromSchema(
-  schema: SchemaDefinition,
+export function generateScopeFromChain(
+  resolved: ResolvedIrChain,
   minSupportedVersion?: number,
 ): string {
-  const { chain, minVersion } = resolveSchemaChain(schema, minSupportedVersion);
+  const { chain } = resolved;
+  const { minVersion } = resolveMinVersion(chain, minSupportedVersion);
 
   // Filter to supported versions
   const supportedVersions = chain.filter(v => v.version >= minVersion);

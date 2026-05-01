@@ -16,7 +16,8 @@
 
 import path from "path";
 import { describe, expect, it } from "vitest";
-import { generateVersionedTypesFromSchema } from "../generateVersionedTypesFromSchema.js";
+import { generateVersionedTypesFromChain } from "../generateVersionedTypesFromSchema.js";
+import { resolveSchemaChain } from "../resolveSchemaChain.js";
 import {
   aliasedEntryNameSchema,
   nestedUnionSchema,
@@ -29,67 +30,76 @@ import {
 } from "./fixtures.js";
 import { formatVersionedTypesSnapshot } from "./snapshotUtils.js";
 
-describe("generateVersionedTypesFromSchema", () => {
+describe("generateVersionedTypesFromChain", () => {
   const snapshotDir = path.join(__dirname, "__snapshots__", "generateVersionedTypesFromSchema");
 
   it("single-version schema", async () => {
-    const result = generateVersionedTypesFromSchema(singleVersionSchema);
+    const result = generateVersionedTypesFromChain(resolveSchemaChain(singleVersionSchema));
     await expect(await formatVersionedTypesSnapshot(result)).toMatchFileSnapshot(
       path.join(snapshotDir, "single-version.snap"),
     );
   });
 
   it("two-version additive change", async () => {
-    const result = generateVersionedTypesFromSchema(twoVersionAdditiveSchema, 1);
+    const result = generateVersionedTypesFromChain(
+      resolveSchemaChain(twoVersionAdditiveSchema, 1),
+      1,
+    );
     await expect(await formatVersionedTypesSnapshot(result)).toMatchFileSnapshot(
       path.join(snapshotDir, "two-version-additive.snap"),
     );
   });
 
   it("two-version field removal", async () => {
-    const result = generateVersionedTypesFromSchema(twoVersionFieldRemovalSchema, 1);
+    const result = generateVersionedTypesFromChain(
+      resolveSchemaChain(twoVersionFieldRemovalSchema, 1),
+      1,
+    );
     await expect(await formatVersionedTypesSnapshot(result)).toMatchFileSnapshot(
       path.join(snapshotDir, "two-version-field-removal.snap"),
     );
   });
 
   it("three-version chain", async () => {
-    const result = generateVersionedTypesFromSchema(threeVersionChainSchema, 1);
+    const result = generateVersionedTypesFromChain(
+      resolveSchemaChain(threeVersionChainSchema, 1),
+      1,
+    );
     await expect(await formatVersionedTypesSnapshot(result)).toMatchFileSnapshot(
       path.join(snapshotDir, "three-version-chain.snap"),
     );
   });
 
   it("schema with ref fields", async () => {
-    const result = generateVersionedTypesFromSchema(refFieldsSchema);
+    const result = generateVersionedTypesFromChain(resolveSchemaChain(refFieldsSchema));
     await expect(await formatVersionedTypesSnapshot(result)).toMatchFileSnapshot(
       path.join(snapshotDir, "ref-fields.snap"),
     );
   });
 
   it("schema with union types", async () => {
-    const result = generateVersionedTypesFromSchema(unionTypesSchema);
+    const result = generateVersionedTypesFromChain(resolveSchemaChain(unionTypesSchema));
     await expect(await formatVersionedTypesSnapshot(result)).toMatchFileSnapshot(
       path.join(snapshotDir, "union-types.snap"),
     );
   });
 
   it("preserves aliased export name when export key differs from model name", async () => {
-    const result = generateVersionedTypesFromSchema(aliasedEntryNameSchema);
+    const result = generateVersionedTypesFromChain(resolveSchemaChain(aliasedEntryNameSchema));
     await expect(await formatVersionedTypesSnapshot(result)).toMatchFileSnapshot(
       path.join(snapshotDir, "alias-types.snap"),
     );
   });
 
   it("includes value field for union variants that reference another union", async () => {
-    const result = generateVersionedTypesFromSchema(nestedUnionSchema);
+    const result = generateVersionedTypesFromChain(resolveSchemaChain(nestedUnionSchema));
     await expect(await formatVersionedTypesSnapshot(result)).toMatchFileSnapshot(
       path.join(snapshotDir, "union-reference-union.snap"),
     );
   });
 
   it("respects minSupportedVersion default (latest only)", () => {
-    const result = generateVersionedTypesFromSchema(twoVersionAdditiveSchema);
+    const result = generateVersionedTypesFromChain(resolveSchemaChain(twoVersionAdditiveSchema));
     expect(result.readTypes.size).toBe(1);
     expect(result.readTypes.has(2)).toBe(true);
     expect(result.readTypes.has(1)).toBe(false);

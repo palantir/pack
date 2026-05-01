@@ -18,12 +18,23 @@ import type { Command } from "commander";
 import { irDeployHandler } from "./irDeployHandler.js";
 import { irGenAssetHandler } from "./irGenAssetHandler.js";
 import { irGenModelsHandler } from "./irGenModelsHandler.js";
+import { irGenTypesHandler } from "./irGenTypesHandler.js";
 import { irGenZodHandler } from "./irGenZodHandler.js";
 
 export function registerIrCommands(program: Command): void {
   const irCmd = program
     .command("ir")
     .description("IR (Intermediate Representation) based generation commands");
+
+  irCmd
+    .command("gen-types")
+    .description(
+      "Generate versioned SDK files (types, schemas, internal/, models.ts, versions.ts, versionedDocRef.ts, index.ts) from a versioned IR chain JSON",
+    )
+    .requiredOption("-s, --schema <file>", "Path to versioned IR chain JSON file")
+    .requiredOption("-o, --output <dir>", "Output directory for generated SDK files")
+    .option("--min-version <version>", "Minimum supported version")
+    .action(irGenTypesHandler);
 
   irCmd
     .command("zod")

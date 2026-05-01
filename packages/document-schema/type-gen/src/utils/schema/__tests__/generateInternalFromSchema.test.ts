@@ -16,7 +16,8 @@
 
 import path from "path";
 import { describe, expect, it } from "vitest";
-import { generateInternalFromSchema } from "../generateInternalFromSchema.js";
+import { generateInternalFromChain } from "../generateInternalFromSchema.js";
+import { resolveSchemaChain } from "../resolveSchemaChain.js";
 import {
   nestedOptionalsSchema,
   nestedUnionSchema,
@@ -27,46 +28,46 @@ import {
 } from "./fixtures.js";
 import { formatInternalTypesSnapshot } from "./snapshotUtils.js";
 
-describe("generateInternalFromSchema", () => {
+describe("generateInternalFromChain", () => {
   const snapshotDir = path.join(__dirname, "__snapshots__", "generateInternalFromSchema");
 
   it("single-version schema", async () => {
-    const result = generateInternalFromSchema(singleVersionSchema);
+    const result = generateInternalFromChain(resolveSchemaChain(singleVersionSchema));
     await expect(await formatInternalTypesSnapshot(result)).toMatchFileSnapshot(
       path.join(snapshotDir, "single-version.snap"),
     );
   });
 
   it("nested optionals inside arrays", async () => {
-    const result = generateInternalFromSchema(nestedOptionalsSchema);
+    const result = generateInternalFromChain(resolveSchemaChain(nestedOptionalsSchema));
     await expect(await formatInternalTypesSnapshot(result)).toMatchFileSnapshot(
       path.join(snapshotDir, "nested-optionals.snap"),
     );
   });
 
   it("two-version field removal", async () => {
-    const result = generateInternalFromSchema(twoVersionFieldRemovalSchema);
+    const result = generateInternalFromChain(resolveSchemaChain(twoVersionFieldRemovalSchema));
     await expect(await formatInternalTypesSnapshot(result)).toMatchFileSnapshot(
       path.join(snapshotDir, "two-version-field-removal.snap"),
     );
   });
 
   it("two-version derived fields", async () => {
-    const result = generateInternalFromSchema(twoVersionDerivedFieldsSchema);
+    const result = generateInternalFromChain(resolveSchemaChain(twoVersionDerivedFieldsSchema));
     await expect(await formatInternalTypesSnapshot(result)).toMatchFileSnapshot(
       path.join(snapshotDir, "two-version-derived-fields.snap"),
     );
   });
 
   it("nested union schema generates upgrade registries for all variant targets", async () => {
-    const result = generateInternalFromSchema(nestedUnionSchema);
+    const result = generateInternalFromChain(resolveSchemaChain(nestedUnionSchema));
     await expect(await formatInternalTypesSnapshot(result)).toMatchFileSnapshot(
       path.join(snapshotDir, "nested-union.snap"),
     );
   });
 
   it("field optional in v1 and required in v2 stays optional in internal schema", async () => {
-    const result = generateInternalFromSchema(optionalToRequiredFieldSchema);
+    const result = generateInternalFromChain(resolveSchemaChain(optionalToRequiredFieldSchema));
     // "label" is Optional(String) in v1 but String in v2.
     // The internal Zod schema must keep it optional because v1 documents
     // may legitimately omit the field.

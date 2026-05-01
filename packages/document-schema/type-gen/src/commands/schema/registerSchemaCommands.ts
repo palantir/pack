@@ -15,7 +15,7 @@
  */
 
 import type { Command } from "commander";
-import { schemaGenTypesHandler } from "./schemaGenTypesHandler.js";
+import { schemaIrHandler } from "./schemaIrHandler.js";
 import { schemaToYamlHandler } from "./schemaToYamlHandler.js";
 
 export function registerSchemaCommands(program: Command): void {
@@ -31,10 +31,9 @@ export function registerSchemaCommands(program: Command): void {
     .action(schemaToYamlHandler);
 
   schemaCmd
-    .command("gen-types")
-    .description("Generate versioned TypeScript types from a schema module")
+    .command("ir")
+    .description("Resolve a TypeScript schema module to a versioned IR chain JSON file")
     .requiredOption("-i, --input <file>", "Input TypeScript/JavaScript schema module")
-    .requiredOption("-o, --output <dir>", "Output directory")
-    .option("--min-version <version>", "Minimum supported version")
-    .action(schemaGenTypesHandler);
+    .requiredOption("-o, --output <file>", "Output IR chain JSON file")
+    .action(schemaIrHandler);
 }

@@ -16,7 +16,8 @@
 
 import path from "path";
 import { describe, expect, it } from "vitest";
-import { generateVersionsFromSchema } from "../generateVersionsFromSchema.js";
+import { generateVersionsFromChain } from "../generateVersionsFromSchema.js";
+import { resolveSchemaChain } from "../resolveSchemaChain.js";
 import {
   singleVersionSchema,
   threeVersionChainSchema,
@@ -24,25 +25,25 @@ import {
 } from "./fixtures.js";
 import { formatSingleSnapshot } from "./snapshotUtils.js";
 
-describe("generateVersionsFromSchema", () => {
+describe("generateVersionsFromChain", () => {
   const snapshotDir = path.join(__dirname, "__snapshots__", "generateVersionsFromSchema");
 
   it("single-version schema", async () => {
-    const result = generateVersionsFromSchema(singleVersionSchema);
+    const result = generateVersionsFromChain(resolveSchemaChain(singleVersionSchema));
     await expect(await formatSingleSnapshot("versions.ts", result)).toMatchFileSnapshot(
       path.join(snapshotDir, "single-version.ts"),
     );
   });
 
   it("two-version with minSupportedVersion", async () => {
-    const result = generateVersionsFromSchema(twoVersionAdditiveSchema, 1);
+    const result = generateVersionsFromChain(resolveSchemaChain(twoVersionAdditiveSchema, 1), 1);
     await expect(await formatSingleSnapshot("versions.ts", result)).toMatchFileSnapshot(
       path.join(snapshotDir, "two-version.ts"),
     );
   });
 
   it("three-version chain", async () => {
-    const result = generateVersionsFromSchema(threeVersionChainSchema, 1);
+    const result = generateVersionsFromChain(resolveSchemaChain(threeVersionChainSchema, 1), 1);
     await expect(await formatSingleSnapshot("versions.ts", result)).toMatchFileSnapshot(
       path.join(snapshotDir, "three-version-chain.ts"),
     );
