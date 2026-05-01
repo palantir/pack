@@ -93,24 +93,15 @@ export default async function afterGenerate(context: HookContext): Promise<void>
     consola.warn("No --schema provided; skipping versioned SDK generation");
     return;
   }
-
-  const resolvedSchema = path.resolve(schemaPath);
-  const { cli: typeGenCli, packageJsonPath: typeGenPackageJsonPath } = resolveTypeGenCli();
-
-  const irPath = path.join(outputPath, "build", "ir.json");
-  await fs.ensureDir(path.dirname(irPath));
-
-  consola.log("Resolving schema to versioned IR...");
-  const irResult = spawnSync(
-    typeGenCli,
-    ["schema", "ir", "-i", resolvedSchema, "-o", irPath],
-    { stdio: "inherit", cwd: outputPath },
-  );
-  if (irResult.status !== 0) {
+  if (!schemaPath.endsWith(".json")) {
     throw new Error(
-      `'schema ir' failed with exit code ${irResult.status ?? "unknown"}`,
+      `pack-versioned-template expects --schema to point to a versioned IR JSON `
+        + `(produced by 'type-gen schema ir'); got: ${schemaPath}`,
     );
   }
+
+  const resolvedIr = path.resolve(schemaPath);
+  const { cli: typeGenCli, packageJsonPath: typeGenPackageJsonPath } = resolveTypeGenCli();
 
   const minVersion = readMinVersion(answers);
 
@@ -119,7 +110,7 @@ export default async function afterGenerate(context: HookContext): Promise<void>
     "ir",
     "gen-types",
     "-s",
-    irPath,
+    resolvedIr,
     "-o",
     path.join(outputPath, "src"),
   ];

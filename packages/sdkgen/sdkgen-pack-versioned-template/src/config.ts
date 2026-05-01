@@ -17,7 +17,7 @@
 export const config = {
   name: "@palantir/pack.sdkgen.pack-versioned-template",
   description:
-    "PACK SDK template for generating versioned types and Zod schemas from a TypeScript schema module",
+    "PACK SDK template for generating versioned types and Zod schemas from a versioned IR JSON file",
   templateFiles: ["**/*.ejs"] as const,
   staticFiles: [
     "**/*",
@@ -29,7 +29,7 @@ export const config = {
       type: "input",
       name: "description",
       message: "SDK description:",
-      default: "Generated versioned SDK from TypeScript schema",
+      default: "Generated versioned SDK from IR",
     },
     {
       type: "input",

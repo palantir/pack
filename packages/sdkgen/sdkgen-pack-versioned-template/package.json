@@ -1,7 +1,7 @@
 {
   "name": "@palantir/pack.sdkgen.pack-versioned-template",
   "version": "0.0.1",
-  "description": "PACK SDK template for generating versioned types and Zod schemas from a TypeScript schema module",
+  "description": "PACK SDK template for generating versioned types and Zod schemas from a versioned IR JSON file",
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
