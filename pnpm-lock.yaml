@@ -297,6 +297,9 @@ importers:
       '@vitejs/plugin-react':
         specifier: ^5.1.2
         version: 5.1.2(vite@7.2.6(@types/node@20.19.19)(yaml@2.8.2))
+      perfect-freehand:
+        specifier: ^1.2.3
+        version: 1.2.3
       rimraf:
         specifier: 'catalog:'
         version: 6.1.2
@@ -327,9 +330,9 @@ importers:
       '@palantir/pack.sdkgen':
         specifier: workspace:*
         version: link:../../../packages/sdkgen/sdkgen-cli
-      '@palantir/pack.sdkgen.pack-template':
+      '@palantir/pack.sdkgen.pack-versioned-template':
         specifier: workspace:*
-        version: link:../../../packages/sdkgen/sdkgen-pack-template
+        version: link:../../../packages/sdkgen/sdkgen-pack-versioned-template
       rimraf:
         specifier: 'catalog:'
         version: 6.1.2
@@ -4863,6 +4866,9 @@ packages:
 
   pathe@2.0.3:
     resolution: {integrity: sha512-WUjGcAqP1gQacoQe+OBJsFA7Ld4DyXuUIjZ5cc75cLHvJ7dtNsTugphxIADwspS+AraAUePCKrSVtPLFj/F88w==}
+
+  perfect-freehand@1.2.3:
+    resolution: {integrity: sha512-bHZSfqDHGNlPpgH2yxXgPHlQSPpEbo+qg7li0M78J9vNAi2yjwLeA4x79BEQhX44lEWpCLSFCeRZwpw0niiXPA==}
 
   picocolors@1.1.1:
     resolution: {integrity: sha512-xceH2snhtb5M9liqDsmEw56le376mTZkEX/jEb/RxNFyegNul7eNslCXP9FDj/Lcu0X8KEyMceP2ntpaHrDEVA==}
@@ -9833,6 +9839,8 @@ snapshots:
   path-type@6.0.0: {}
 
   pathe@2.0.3: {}
+
+  perfect-freehand@1.2.3: {}
 
   picocolors@1.1.1: {}
 

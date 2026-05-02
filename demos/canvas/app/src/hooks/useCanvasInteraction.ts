@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-import type { DocumentModel, NodeShape, NodeShapeModel } from "@demo/canvas.sdk";
-import { ActivityEventModel } from "@demo/canvas.sdk";
-import type { DocumentRef, RecordRef } from "@palantir/pack.document-schema.model-types";
+import type { FreehandStrokeModel, NodeShapeModel, VersionedDocRef } from "@demo/canvas.sdk";
+import { ActivityEventModel, matchVersion } from "@demo/canvas.sdk";
+import type { RecordRef } from "@palantir/pack.document-schema.model-types";
 import { ActivityEvents } from "@palantir/pack.document-schema.model-types";
 import type { MouseEvent } from "react";
 import { useCallback, useRef, useState } from "react";
@@ -24,11 +24,12 @@ import { centerToBounds } from "../utils/centerToBounds.js";
 import { getDefaultColor } from "../utils/getDefaultColor.js";
 import { getDefaultShapeSize } from "../utils/getDefaultShapeSize.js";
 import { useCanvasShapes } from "./useCanvasShapes.js";
+import { useFreehandStrokes } from "./useFreehandStrokes.js";
 import { useShapeDrag } from "./useShapeDrag.js";
 import { useShapeIndex } from "./useShapeIndex.js";
 import { useShapeSelection } from "./useShapeSelection.js";
 
-export type ToolMode = "select" | "addBox" | "addCircle";
+export type ToolMode = "select" | "addBox" | "addCircle" | "pen";
 
 export interface UseCanvasInteractionResult {
   broadcastSelection: (nodeIds: readonly string[]) => void;
@@ -40,23 +41,27 @@ export interface UseCanvasInteractionResult {
   readonly currentColor: string;
   readonly currentTool: ToolMode;
   deleteSelected: () => void;
+  readonly penPoints: readonly [number, number, number][] | undefined;
   readonly selectedShapeId: string | undefined;
   setColor: (color: string) => void;
   setTool: (tool: ToolMode) => void;
   readonly shapeRefs: readonly RecordRef<typeof NodeShapeModel>[];
+  readonly strokeRefs: readonly RecordRef<typeof FreehandStrokeModel>[];
 }
 
 export function useCanvasInteraction(
-  doc: DocumentRef<DocumentModel>,
+  doc: VersionedDocRef,
   broadcastSelection: (nodeIds: readonly string[]) => void,
 ): UseCanvasInteractionResult {
   const { addShape, shapeRefs } = useCanvasShapes(doc);
+  const { addStroke, strokeRefs } = useFreehandStrokes(doc);
   const shapeIndex = useShapeIndex(doc);
   const { clearSelection, selectedShapeRef, selectShape } = useShapeSelection();
   const [currentTool, setCurrentTool] = useState<ToolMode>("select");
   const [currentColor, setCurrentColor] = useState<string>(getDefaultColor());
 
   const creationStateRef = useRef<{ startX: number; startY: number } | undefined>(undefined);
+  const [penPoints, setPenPoints] = useState<[number, number, number][] | undefined>(undefined);
 
   const selectShapeWithBroadcast = useCallback(
     (ref: RecordRef<typeof NodeShapeModel> | undefined) => {
@@ -78,7 +83,7 @@ export function useCanvasInteraction(
       const nodeId = selectedShapeRef.id;
       doc.withTransaction(
         () => {
-          selectedShapeRef.delete();
+          doc.deleteRecord(selectedShapeRef);
         },
         ActivityEvents.describeEdit(ActivityEventModel, {
           eventType: "shapeDelete",
@@ -97,15 +102,25 @@ export function useCanvasInteraction(
         const oldShape = await selectedShapeRef.getSnapshot();
         if (oldShape == null) return;
 
-        await doc.withTransaction(
+        const newShape = oldShape.shapeType === "box"
+          ? { ...oldShape, fillColor: color, strokeColor: color }
+          : { ...oldShape, fillColor: color, strokeColor: color };
+
+        doc.withTransaction(
           () => {
-            return selectedShapeRef.update({ color });
+            matchVersion(doc, {
+              1: doc => doc.updateRecord(selectedShapeRef, { color }),
+              2: doc =>
+                doc.updateRecord(selectedShapeRef, { fillColor: color, strokeColor: color }),
+              3: doc =>
+                doc.updateRecord(selectedShapeRef, { fillColor: color, strokeColor: color }),
+            });
           },
           ActivityEvents.describeEdit(ActivityEventModel, {
             eventType: "shapeUpdate",
-            newShape: { ...oldShape, color },
             nodeId: selectedShapeRef.id,
             oldShape,
+            newShape,
           }),
         );
       }
@@ -116,12 +131,22 @@ export function useCanvasInteraction(
   const setTool = useCallback((tool: ToolMode) => {
     setCurrentTool(tool);
     creationStateRef.current = undefined;
+    setPenPoints(undefined);
   }, []);
 
   const onMouseDown = useCallback(
     (e: MouseEvent<SVGSVGElement>) => {
       if (currentTool === "select") {
         shapeDragHandlers.onMouseDown(e);
+      } else if (currentTool === "pen") {
+        const svg = e.currentTarget;
+        const rect = svg.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        const pressure = ("pressure" in e.nativeEvent)
+          ? (e.nativeEvent as PointerEvent).pressure || 0.5
+          : 0.5;
+        setPenPoints([[x, y, pressure]]);
       } else {
         const svg = e.currentTarget;
         const rect = svg.getBoundingClientRect();
@@ -138,6 +163,15 @@ export function useCanvasInteraction(
     (e: MouseEvent<SVGSVGElement>) => {
       if (currentTool === "select") {
         shapeDragHandlers.onMouseMove(e);
+      } else if (currentTool === "pen") {
+        const svg = e.currentTarget;
+        const rect = svg.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        const pressure = ("pressure" in e.nativeEvent)
+          ? (e.nativeEvent as PointerEvent).pressure || 0.5
+          : 0.5;
+        setPenPoints(prev => prev == null ? prev : [...prev, [x, y, pressure]]);
       }
     },
     [currentTool, shapeDragHandlers],
@@ -147,6 +181,14 @@ export function useCanvasInteraction(
     (e: MouseEvent<SVGSVGElement>) => {
       if (currentTool === "select") {
         shapeDragHandlers.onMouseUp();
+        return;
+      }
+
+      if (currentTool === "pen") {
+        if (penPoints != null && penPoints.length > 1) {
+          addStroke(penPoints, currentColor);
+        }
+        setPenPoints(undefined);
         return;
       }
 
@@ -176,13 +218,8 @@ export function useCanvasInteraction(
         });
 
         const shapeType = currentTool === "addBox" ? "box" : "circle";
-        const newShape: NodeShape = {
-          ...bounds,
-          color: currentColor,
-          shapeType,
-        };
 
-        addShape(newShape).then(recordRef => {
+        addShape(shapeType, bounds, currentColor).then(recordRef => {
           selectShapeWithBroadcast(recordRef);
         });
 
@@ -190,7 +227,15 @@ export function useCanvasInteraction(
         setCurrentTool("select");
       }
     },
-    [addShape, currentColor, currentTool, selectShapeWithBroadcast, shapeDragHandlers],
+    [
+      addShape,
+      addStroke,
+      currentColor,
+      currentTool,
+      penPoints,
+      selectShapeWithBroadcast,
+      shapeDragHandlers,
+    ],
   );
 
   return {
@@ -203,9 +248,11 @@ export function useCanvasInteraction(
     currentColor,
     currentTool,
     deleteSelected,
+    penPoints,
     selectedShapeId: selectedShapeRef?.id,
     setColor,
     setTool,
     shapeRefs,
+    strokeRefs,
   };
 }

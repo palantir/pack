@@ -9,7 +9,7 @@
     "url": "https://github.com/palantir/pack.git"
   },
   "scripts": {
-    "build:yaml": "type-gen schema yaml -i src/schema.mjs -o build/migrations/schema.yaml",
+    "build:ir": "type-gen schema ir -i src/schema.mjs -o build/ir.json",
     "clean": "rimraf .turbo build dist lib test-output *.tgz tsconfig.tsbuildinfo",
     "lint": "eslint ./src && dprint check --config $(find-up dprint.json) --allow-no-files",
     "lint:fix": "eslint ./src --fix && dprint fmt --config $(find-up dprint.json) --allow-no-files",
@@ -23,7 +23,7 @@
     "@palantir/pack.monorepo.tsconfig": "workspace:~",
     "@palantir/pack.schema": "workspace:*",
     "@palantir/pack.sdkgen": "workspace:*",
-    "@palantir/pack.sdkgen.pack-template": "workspace:*",
+    "@palantir/pack.sdkgen.pack-versioned-template": "workspace:*",
     "rimraf": "catalog:",
     "tslib": "catalog:",
     "typescript": "catalog:"
