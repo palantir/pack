@@ -105,6 +105,54 @@ export class DemoDocumentService extends BaseYjsDocumentService<DemoInternalDoc>
     this.metadataStore = new MetadataStore(this.dbPrefix);
   }
 
+  private static readonly SCHEMA_VERSION_KEY_PREFIX = "pack-demo-schema-version:";
+
+  /**
+   * Checks localStorage for a synchronously-available schema version
+   * before falling back to metadata / minSupportedVersion.
+   *
+   * localStorage is used because the metadata from IndexedDB is loaded
+   * asynchronously and not available on first render.
+   */
+  override readonly getDocumentSchemaVersion = (
+    docRef: DocumentRef,
+  ): number => {
+    try {
+      const stored = localStorage.getItem(
+        DemoDocumentService.SCHEMA_VERSION_KEY_PREFIX + docRef.id,
+      );
+      if (stored != null) return parseInt(stored, 10);
+    } catch {
+      // localStorage may be unavailable
+    }
+    // Inline the base class logic — class fields can't call `super`.
+    const internalDoc = this.documents.get(docRef.id);
+    if (internalDoc?.metadata?.schemaVersion != null) {
+      return internalDoc.metadata.schemaVersion;
+    }
+    const schemaMeta = getMetadata(docRef.schema);
+    return schemaMeta.minSupportedVersion ?? schemaMeta.version;
+  };
+
+  /**
+   * Persist a schema version for a document to localStorage (synchronous)
+   * and metadata (async). Used by demo apps to simulate backend version bumps.
+   */
+  readonly setDocumentSchemaVersion = (
+    docRef: DocumentRef,
+    version: number,
+  ): void => {
+    try {
+      localStorage.setItem(
+        DemoDocumentService.SCHEMA_VERSION_KEY_PREFIX + docRef.id,
+        String(version),
+      );
+    } catch {
+      // localStorage may be unavailable
+    }
+    void this.updateDocument(docRef, { schemaVersion: version });
+  };
+
   override createInternalDoc(
     ref: DocumentRef,
     metadata?: DocumentMetadata,
@@ -191,10 +239,14 @@ export class DemoDocumentService extends BaseYjsDocumentService<DemoInternalDoc>
     const id = generateDocumentId();
     const docRef = createDocRef(this.app, id, schema);
 
+    const schemaMeta = getMetadata(schema);
+    const schemaVersion = schemaMeta.minSupportedVersion ?? schemaMeta.version;
+
     const metadata: DocumentMetadata = {
       documentTypeName,
       name,
       ontologyRid,
+      schemaVersion,
       security, // TODO: may want to add in auth.getUserId() as owner here
     };
 
@@ -233,6 +285,13 @@ export class DemoDocumentService extends BaseYjsDocumentService<DemoInternalDoc>
       ...existing,
       ...update,
     };
+
+    this.logger.debug("updateDocument", {
+      docId: docRef.id,
+      existingSchemaVersion: existing.schemaVersion,
+      newSchemaVersion: metadata.schemaVersion,
+      updateKeys: Object.keys(update),
+    });
 
     this.metadataStore.setDocument(docRef.id, metadata);
     this.updateMetadata(docRef.id, metadata);

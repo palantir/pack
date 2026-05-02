@@ -29,6 +29,8 @@ import type {
   PresencePublishOptions,
   PresenceSubscriptionOptions,
   RecordCollectionRef,
+  RecordId,
+  RecordRef,
   Unsubscribe,
 } from "@palantir/pack.document-schema.model-types";
 import { DocumentRefBrand } from "@palantir/pack.document-schema.model-types";
@@ -51,6 +53,16 @@ const INVALID_DOC_REF: DocumentRef = Object.freeze(
     onStateChange: () => () => {},
     updateCustomPresence: () => {},
     withTransaction: () => {
+      throw new Error("Invalid document reference");
+    },
+    version: 0,
+    updateRecord: () => {
+      throw new Error("Invalid document reference");
+    },
+    setCollectionRecord: () => {
+      throw new Error("Invalid document reference");
+    },
+    deleteRecord: () => {
       throw new Error("Invalid document reference");
     },
   } as const,
@@ -154,5 +166,22 @@ class DocumentRefImpl<T extends DocumentSchema> implements DocumentRef<T> {
     description?: EditDescription,
   ): void {
     this.#stateModule.withTransaction(this, fn, description);
+  }
+
+  get version(): number {
+    return this.#stateModule.getDocumentSchemaVersion(this);
+  }
+
+  updateRecord(ref: RecordRef, data: unknown): Promise<void> {
+    return ref.update(data as Partial<ModelData<Model>>);
+  }
+
+  setCollectionRecord(model: Model, id: RecordId, data: unknown): Promise<void> {
+    const collection: RecordCollectionRef = this.getRecords(model);
+    return collection.set(id, data as ModelData<Model>);
+  }
+
+  deleteRecord(ref: RecordRef): Promise<void> {
+    return ref.delete();
   }
 }

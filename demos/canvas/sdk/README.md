@@ -5,15 +5,33 @@ Generated SDK from canvas schema
 ## Usage
 
 ```typescript
-import { /* types */ } from "../sdk";
-import { /* schemas */ } from "../sdk";
+import {
+  DocumentModel,
+  asVersioned,
+  matchVersion,
+  type VersionedDocRef,
+} from "../sdk";
 ```
 
 ## Generated Source
 
-This SDK was generated from PACK document schema definitions.
-It should be depended on as a package in your project, but not modified directly
-so that it is easily updatable.
+This SDK was generated from a versioned IR JSON file (produced by
+`type-gen schema ir` from a TypeScript schema module that uses
+`@palantir/pack.schema` builders). The output covers every supported schema
+version:
+
+- Per-version read types: `types_v1.ts`, `types_v2.ts`, ...
+- Per-version write types: `writeTypes_v1.ts`, `writeTypes_v2.ts`, ...
+- Per-version Zod schemas: `schema_v1.ts`, `schema_v2.ts`, ...
+- Internal upgrade machinery: `_internal/types.ts`, `_internal/upgrades.ts`, `_internal/schema.ts`
+- `versions.ts` — `SupportedVersions`, `LatestVersion`, `MinSupportedVersion`
+- `versionedDocRef.ts` — `VersionedDocRef`, `asVersioned`, `matchVersion`
+- `models.ts` — runtime model constants and `DocumentModel`
+- `types.ts` / `schema.ts` — re-exports under unversioned names
+- `index.ts` — barrel
+
+It should be depended on as a package in your project, but not modified
+directly so it can be regenerated cleanly.
 
 ## Development
 
@@ -29,31 +47,23 @@ pnpm build
 pnpm typecheck
 ```
 
-## Schema Format
+## Regenerating
 
-The types in this SDK were generated from YAML schema files using the following format:
+First emit the IR from your schema package:
 
-- `local-fragment`: Define reusable field groups
-- `add-records`: Add new record types
-- `add-union`: Add discriminated unions
-- `modify-records`: Modify existing records
-
-Example schema:
-
-```yaml
-- local-fragment:
-    position:
-      x: double
-      y: double
-
-- add-records:
-    Point:
-      extends: [position]
-      fields:
-        label: optional<string>
+```bash
+type-gen schema ir -i ./path/to/schema.mjs -o build/ir.json
 ```
 
-Note: To regenerate the SDK with updated schemas, use the `sdkgen` CLI with new schema files.
+Then regenerate this SDK from the IR:
+
+```bash
+pnpm exec sdkgen create "./this-package" \
+  --template @palantir/pack.sdkgen.pack-versioned-template \
+  --schema ./path/to/build/ir.json \
+  --config pack-config.json \
+  --overwrite
+```
 
 
 

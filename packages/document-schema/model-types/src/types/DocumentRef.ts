@@ -21,6 +21,7 @@ import type { DocumentSchema, DocumentState } from "./DocumentSchema.js";
 import type { EditDescription, Model, ModelData } from "./Model.js";
 import type { PresenceEvent } from "./PresenceEvent.js";
 import type { RecordCollectionRef } from "./RecordCollectionRef.js";
+import type { RecordId, RecordRef } from "./RecordRef.js";
 import type { Unsubscribe } from "./Unsubscribe.js";
 
 export type DocumentId = Flavored<"DocumentId">;
@@ -260,4 +261,32 @@ export interface DocumentRef<D extends DocumentSchema = DocumentSchema> {
    * ```
    */
   withTransaction(fn: () => void, description?: EditDescription): void;
+
+  /**
+   * The document's current operating schema version.
+   *
+   * All connected clients operate at this version. The version is determined
+   * by the backend and may change during a session (version bump).
+   */
+  readonly version: number;
+
+  /**
+   * Update fields on an existing record.
+   *
+   * The data parameter is `never` on the base interface — narrow the ref to a
+   * version-specific type (via the generated SDK's `asVersioned` +
+   * `switch (doc.version)`) before calling this method.
+   */
+  updateRecord(ref: RecordRef, data: never): Promise<void>;
+
+  /**
+   * Create or replace a record in a collection.
+   *
+   * The data parameter is `never` on the base interface — narrow to a
+   * version-specific type before calling this method.
+   */
+  setCollectionRecord(model: Model, id: RecordId, data: never): Promise<void>;
+
+  /** Delete a record. Version-agnostic — callable without narrowing. */
+  deleteRecord<M extends Model>(ref: RecordRef<M>): Promise<void>;
 }

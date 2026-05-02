@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import type { NodeShape, NodeShapeModel } from "@demo/canvas.sdk";
+import type { FreehandStrokeModel, NodeShape, NodeShapeModel } from "@demo/canvas.sdk";
 import type { RecordRef, UserId } from "@palantir/pack.document-schema.model-types";
 import { useRecord } from "@palantir/pack.state.react";
 import type { MouseEvent } from "react";
@@ -23,6 +23,7 @@ import { getUserColor } from "../../hooks/useRemotePresence.js";
 import { boundsToCenter } from "../../utils/boundsToCenter.js";
 import { getResizeHandles } from "../../utils/getResizeHandles.js";
 import styles from "./CanvasContent.module.css";
+import { FreehandStrokeRenderer, PenPreview } from "./FreehandStrokeRenderer.js";
 import { RemoteCursor } from "./RemoteCursor.js";
 
 const PRIMARY_COLOR = "#0066cc";
@@ -38,9 +39,12 @@ export interface CanvasContentProps {
     onMouseMove: (e: MouseEvent<SVGSVGElement>) => void;
     onMouseUp: (e: MouseEvent<SVGSVGElement>) => void;
   };
+  readonly penColor?: string;
+  readonly penPoints?: readonly [number, number, number][];
   readonly remoteUsersByUserId: ReadonlyMap<UserId, UserPresence>;
   readonly selectedShapeId: string | undefined;
   readonly shapeRefs: readonly RecordRef<typeof NodeShapeModel>[];
+  readonly strokeRefs: readonly RecordRef<typeof FreehandStrokeModel>[];
   readonly userIdsBySelectedNodeId: ReadonlyMap<string, ReadonlySet<UserId>>;
 }
 
@@ -81,8 +85,13 @@ const ConnectedShapeRenderer = memo(function ShapeRenderer({
   shape: NodeShape;
 }) {
   const isSelected = shapeRef.id === selectedShapeId;
-  const color = shape.color ?? DEFAULT_SHAPE_COLOR;
-  const fillColor = `${color}4D`;
+
+  // fillColor/strokeColor are optional in v2 — default when absent.
+  // For migrated v1 records, the lens derives them from `color`.
+  const fill = shape.fillColor ?? DEFAULT_SHAPE_COLOR;
+  const strokeColor = shape.strokeColor ?? DEFAULT_SHAPE_COLOR;
+  const opacity = shape.opacity ?? 1.0;
+  const svgFill = `${fill}4D`;
 
   const remoteSelectingUserIds = useMemo(
     () => userIdsBySelectedNodeId.get(shapeRef.id) ?? new Set<UserId>(),
@@ -96,11 +105,11 @@ const ConnectedShapeRenderer = memo(function ShapeRenderer({
 
   if (shape.shapeType === "box") {
     return (
-      <g key={shapeRef.id}>
+      <g key={shapeRef.id} opacity={opacity}>
         <rect
-          fill={fillColor}
+          fill={svgFill}
           height={shape.bottom - shape.top}
-          stroke={color}
+          stroke={strokeColor}
           strokeWidth={2}
           width={shape.right - shape.left}
           x={shape.left}
@@ -150,14 +159,14 @@ const ConnectedShapeRenderer = memo(function ShapeRenderer({
   const ry = height / 2;
 
   return (
-    <g key={shapeRef.id}>
+    <g key={shapeRef.id} opacity={opacity}>
       <ellipse
         cx={centerX}
         cy={centerY}
-        fill={fillColor}
+        fill={svgFill}
         rx={rx}
         ry={ry}
-        stroke={color}
+        stroke={strokeColor}
         strokeWidth={2}
       />
       {isSelected && (
@@ -201,13 +210,19 @@ const ConnectedShapeRenderer = memo(function ShapeRenderer({
 
 export const CanvasContent = memo(function CanvasContent({
   canvasProps,
+  penColor,
+  penPoints,
   remoteUsersByUserId,
   selectedShapeId,
   shapeRefs,
+  strokeRefs,
   userIdsBySelectedNodeId,
 }: CanvasContentProps) {
   return (
     <svg className={styles.canvas} {...canvasProps}>
+      {strokeRefs.map(strokeRef => (
+        <FreehandStrokeRenderer key={strokeRef.id} strokeRef={strokeRef} />
+      ))}
       {shapeRefs.map(shapeRef => (
         <ShapeRenderer
           key={shapeRef.id}
@@ -216,6 +231,7 @@ export const CanvasContent = memo(function CanvasContent({
           userIdsBySelectedNodeId={userIdsBySelectedNodeId}
         />
       ))}
+      {penPoints != null && penColor != null && <PenPreview color={penColor} points={penPoints} />}
       {Array.from(remoteUsersByUserId.entries()).map(([userId, presence]) => {
         if (presence.cursor == null) return null;
         return (

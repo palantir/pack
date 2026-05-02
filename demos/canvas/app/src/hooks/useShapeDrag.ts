@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-import type { DocumentModel, NodeShape, NodeShapeModel } from "@demo/canvas.sdk";
+import type { NodeShape, NodeShapeModel, VersionedDocRef } from "@demo/canvas.sdk";
 import { ActivityEventModel } from "@demo/canvas.sdk";
-import type { DocumentRef, RecordRef } from "@palantir/pack.document-schema.model-types";
+import type { RecordRef } from "@palantir/pack.document-schema.model-types";
 import { ActivityEvents } from "@palantir/pack.document-schema.model-types";
 import type { MouseEvent } from "react";
 import { useCallback, useState } from "react";
@@ -46,7 +46,7 @@ interface UseShapeDragResult {
 const HANDLE_INTERACTION_RADIUS_PX = 10;
 
 export function useShapeDrag(
-  docRef: DocumentRef<DocumentModel>,
+  doc: VersionedDocRef,
   shapeIndex: ShapeIndex,
   selectedShapeRef: RecordRef<typeof NodeShapeModel> | undefined,
   onShapeSelect: (ref: RecordRef<typeof NodeShapeModel> | undefined) => void,
@@ -195,7 +195,7 @@ export function useShapeDrag(
           right: finalShape.right,
           top: finalShape.top,
         };
-        docRef.withTransaction(
+        doc.withTransaction(
           () => {
             dragState.shapeRef.update(finalBounds);
           },
@@ -210,7 +210,7 @@ export function useShapeDrag(
     }
 
     setDragState(undefined);
-  }, [docRef, dragState]);
+  }, [doc, dragState]);
 
   return {
     onMouseDown,
