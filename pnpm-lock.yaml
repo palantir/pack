@@ -906,6 +906,46 @@ importers:
         specifier: 'catalog:'
         version: 4.0.14(@types/node@20.19.19)(happy-dom@20.0.11)(yaml@2.8.2)
 
+  packages/sdkgen/sdkgen-pack-versioned-template:
+    dependencies:
+      '@palantir/pack.document-schema.model-types':
+        specifier: workspace:*
+        version: link:../../document-schema/model-types
+      '@palantir/pack.document-schema.type-gen':
+        specifier: workspace:*
+        version: link:../../document-schema/type-gen
+      fs-extra:
+        specifier: 'catalog:'
+        version: 11.3.2
+    devDependencies:
+      '@palantir/pack.monorepo.tsconfig':
+        specifier: workspace:~
+        version: link:../../monorepo/tsconfig
+      '@palantir/pack.sdkgen':
+        specifier: workspace:*
+        version: link:../sdkgen-cli
+      '@types/fs-extra':
+        specifier: 'catalog:'
+        version: 11.0.4
+      '@types/node':
+        specifier: 'catalog:'
+        version: 20.19.19
+      consola:
+        specifier: 'catalog:'
+        version: 3.4.2
+      rimraf:
+        specifier: 'catalog:'
+        version: 6.1.2
+      tslib:
+        specifier: 'catalog:'
+        version: 2.8.1
+      typescript:
+        specifier: 'catalog:'
+        version: 5.9.3
+      vitest:
+        specifier: 'catalog:'
+        version: 4.0.14(@types/node@20.19.19)(happy-dom@20.0.11)(yaml@2.8.2)
+
   packages/state/core:
     dependencies:
       '@osdk/api':
