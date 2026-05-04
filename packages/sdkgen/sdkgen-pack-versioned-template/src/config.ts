@@ -43,9 +43,6 @@ export const config = {
       message: "Minimum supported schema version (leave blank to track latest):",
     },
   ] as const,
-  transformers: {
-    default: "./build/esm/transformer.js",
-  },
   hooks: {
     afterGenerate: "./build/esm/hooks/afterGenerate.js",
   },
