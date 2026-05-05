@@ -28,6 +28,31 @@ interface AssetDeployOptions {
   readonly baseUrl: string;
   readonly auth: string;
   readonly ontologyRid: string;
+  readonly firstPartyPrefix?: string;
+}
+
+const DEFAULT_API_PREFIX = "/api";
+
+/**
+ * Builds a fetch wrapper that rewrites the OSDK client's `/api/...` requests
+ * to a different prefix (e.g. `/api/gotham`). Used for stacks where the
+ * endpoint is served behind a different gateway path instead
+ * of the default `/api` route.
+ */
+function buildPrefixRewriteFetch(prefix: string): typeof globalThis.fetch {
+  const normalized = prefix.replace(/\/+$/, "");
+  return (input, init) => {
+    const req = new Request(input, init);
+    const url = new URL(req.url);
+    if (
+      url.pathname !== DEFAULT_API_PREFIX
+      && !url.pathname.startsWith(`${DEFAULT_API_PREFIX}/`)
+    ) {
+      return globalThis.fetch(req);
+    }
+    url.pathname = normalized + url.pathname.slice(DEFAULT_API_PREFIX.length);
+    return globalThis.fetch(new Request(url, req));
+  };
 }
 
 /** Useful for manually deploying a document type during development to test schema changes. */
@@ -40,9 +65,18 @@ export async function assetDeployHandler(options: AssetDeployOptions): Promise<v
     const assetContent = readFileSync(assetPath, "utf8");
     const asset = JSON.parse(assetContent) as DocumentTypeAsset;
 
+    const fetchFn = options.firstPartyPrefix != null
+      ? buildPrefixRewriteFetch(options.firstPartyPrefix)
+      : undefined;
+    if (fetchFn != null) {
+      consola.info(`Rewriting OSDK '${DEFAULT_API_PREFIX}' -> '${options.firstPartyPrefix}'`);
+    }
+
     const osdkClient = createPlatformClient(
       options.baseUrl,
       () => Promise.resolve(options.auth),
+      undefined,
+      fetchFn,
     );
 
     const request: CreateFirstPartyDocumentTypeRequest = {

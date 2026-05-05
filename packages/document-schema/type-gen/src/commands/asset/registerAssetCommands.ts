@@ -29,5 +29,9 @@ export function registerAssetCommands(program: Command): void {
     .requiredOption("-b, --base-url <url>", "Base URL for Foundry API")
     .requiredOption("-a, --auth <token>", "Authentication token for Foundry API")
     .requiredOption("-o, --ontology-rid <rid>", "Target ontology RID")
+    .option(
+      "--first-party-prefix <path>",
+      "Override the API prefix used for first-party deploy (e.g. /api/gotham). Defaults to /api.",
+    )
     .action(assetDeployHandler);
 }
