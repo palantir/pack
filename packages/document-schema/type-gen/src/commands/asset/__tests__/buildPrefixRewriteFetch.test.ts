@@ -22,7 +22,7 @@ describe("buildPrefixRewriteFetch", () => {
   let fetchSpy: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
-    fetchSpy = vi.fn(async () => new Response(null, { status: 204 }));
+    fetchSpy = vi.fn(() => Promise.resolve(new Response(null, { status: 204 })));
     globalThis.fetch = fetchSpy as unknown as typeof globalThis.fetch;
   });
 
