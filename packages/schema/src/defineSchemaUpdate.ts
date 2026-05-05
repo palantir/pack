@@ -15,7 +15,7 @@
  */
 
 import type { SchemaBuilder } from "./defineMigration.js";
-import { defineMigration } from "./defineMigration.js";
+import { defineMigration, harvestFieldUpgrades, stripFieldUpgradeMeta } from "./defineMigration.js";
 import type { ModelDefs } from "./defs.js";
 
 export interface InitialSchema<T extends ModelDefs = ModelDefs> {
@@ -67,6 +67,25 @@ export interface SchemaVersionBuilder<T extends ModelDefs> {
   build(): VersionedSchema<T>;
 }
 
+/**
+ * Merge two `VersionMigrations` records. Per-model field migrations from
+ * `override` take precedence over `base` for the same field, but the maps are
+ * combined at both the model and field level so explicit `withMigrations`
+ * calls can supplement (not just replace) the sugar from `addField` options.
+ */
+function mergeMigrations(
+  base: VersionMigrations | undefined,
+  override: VersionMigrations | undefined,
+): VersionMigrations | undefined {
+  if (base == null) return override;
+  if (override == null) return base;
+  const result: VersionMigrations = { ...base };
+  for (const [modelKey, fields] of Object.entries(override)) {
+    result[modelKey] = { ...result[modelKey], ...fields };
+  }
+  return result;
+}
+
 class SchemaVersionBuilderImpl<T extends ModelDefs> implements SchemaVersionBuilder<T> {
   private readonly models: T;
   private readonly version: number;
@@ -89,11 +108,23 @@ class SchemaVersionBuilderImpl<T extends ModelDefs> implements SchemaVersionBuil
     update: SchemaUpdate<T, S>,
   ): SchemaVersionBuilder<T & S> {
     const merged = defineMigration(this.models, update.migration);
-    return new SchemaVersionBuilderImpl(merged, this.version, this.previous, this._migrations);
+    // Harvest sugar-form upgrades attached via `addField(name, type, options)`
+    // and fold them into the running upgrades accumulator.
+    const harvested = harvestFieldUpgrades(merged) as VersionMigrations | undefined;
+    const nextMigrations = mergeMigrations(this._migrations, harvested);
+    // Strip the side-channel metadata so subsequent updates (or downstream
+    // versions instantiated via `nextSchema`) don't re-harvest the same options.
+    const cleaned = stripFieldUpgradeMeta(merged);
+    return new SchemaVersionBuilderImpl(cleaned, this.version, this.previous, nextMigrations);
   }
 
   withMigrations(migrations: VersionMigrations): SchemaVersionBuilder<T> {
-    return new SchemaVersionBuilderImpl(this.models, this.version, this.previous, migrations);
+    return new SchemaVersionBuilderImpl(
+      this.models,
+      this.version,
+      this.previous,
+      mergeMigrations(this._migrations, migrations),
+    );
   }
 
   build(): VersionedSchema<T> {
