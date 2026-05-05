@@ -34,13 +34,27 @@ interface AssetDeployOptions {
 const DEFAULT_API_PREFIX = "/api";
 
 /**
+ * The set of API prefixes that `--first-party-prefix` is allowed to rewrite to.
+ * Only `/api/gotham` is supported today; expand this list as new gateways are added.
+ */
+export const ALLOWED_FIRST_PARTY_PREFIXES = ["/api/gotham"] as const;
+
+/**
  * Builds a fetch wrapper that rewrites the OSDK client's `/api/...` requests
  * to a different prefix (e.g. `/api/gotham`). Used for stacks where the
  * endpoint is served behind a different gateway path instead
  * of the default `/api` route.
+ *
+ * Throws if `prefix` is not one of {@link ALLOWED_FIRST_PARTY_PREFIXES}.
  */
-function buildPrefixRewriteFetch(prefix: string): typeof globalThis.fetch {
-  const normalized = prefix.replace(/\/+$/, "");
+export function buildPrefixRewriteFetch(prefix: string): typeof globalThis.fetch {
+  if (!(ALLOWED_FIRST_PARTY_PREFIXES as readonly string[]).includes(prefix)) {
+    throw new Error(
+      `Unsupported first-party prefix '${prefix}'. Allowed values: ${
+        ALLOWED_FIRST_PARTY_PREFIXES.join(", ")
+      }`,
+    );
+  }
   return (input, init) => {
     const req = new Request(input, init);
     const url = new URL(req.url);
@@ -50,7 +64,7 @@ function buildPrefixRewriteFetch(prefix: string): typeof globalThis.fetch {
     ) {
       return globalThis.fetch(req);
     }
-    url.pathname = normalized + url.pathname.slice(DEFAULT_API_PREFIX.length);
+    url.pathname = prefix + url.pathname.slice(DEFAULT_API_PREFIX.length);
     return globalThis.fetch(new Request(url, req));
   };
 }
