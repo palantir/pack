@@ -32,7 +32,7 @@ import { app, DOCUMENT_TYPE_NAME, FILE_SYSTEM_TYPE, PARENT_FOLDER_RID } from "..
 const isCompassFileSystem = FILE_SYSTEM_TYPE === FileSystemType.COMPASS;
 
 // TODO: Set your organization's classification (e.g. ["MU"])
-const DEFAULT_CLASSIFICATION: readonly string[] = [];
+const DEFAULT_CLASSIFICATION: readonly string[] = ["MU"];
 
 const DEFAULT_DOCUMENT_SECURITY = Object.freeze({
   discretionary: {},
@@ -81,13 +81,13 @@ export function CreateFileDialog({ isOpen, setIsOpen }: CreateFileDialogProps) {
     setCreatingCanvas(true);
 
     try {
-      const response = await app.state.createDocument({
+      const docRef = await app.state.createDocument({
         name: trimmedName,
         documentTypeName: DOCUMENT_TYPE_NAME,
         security: DEFAULT_DOCUMENT_SECURITY,
         parentFolderRid: isCompassFileSystem ? PARENT_FOLDER_RID! : undefined,
       }, DocumentModel);
-      navigate(`/canvas/${response.id}`);
+      navigate(`/canvas/${docRef.id}`);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to create canvas");
     } finally {

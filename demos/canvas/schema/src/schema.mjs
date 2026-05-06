@@ -118,4 +118,71 @@ const migration000 = S.defineMigration({}, () => {
   };
 });
 
-export default migration000;
+const schemaV1 = S.defineSchema(migration000);
+
+// --- Schema change: color split ---
+const addColorSplit = S.defineSchemaUpdate("addColorSplit", schema => {
+  const ShapeBox = schema.ShapeBox
+    .addField("fillColor", S.Optional(S.String), {
+      derivedFrom: ["color"],
+      forward: ({ color }) => color,
+    })
+    .addField("strokeColor", S.Optional(S.String), {
+      derivedFrom: ["color"],
+      forward: ({ color }) => color,
+    })
+    .removeField("color")
+    .build();
+
+  const ShapeCircle = schema.ShapeCircle
+    .addField("fillColor", S.Optional(S.String), {
+      derivedFrom: ["color"],
+      forward: ({ color }) => color,
+    })
+    .addField("strokeColor", S.Optional(S.String), {
+      derivedFrom: ["color"],
+      forward: ({ color }) => color,
+    })
+    .removeField("color")
+    .build();
+
+  return { ShapeBox, ShapeCircle };
+});
+
+// --- Schema change: add opacity (additive) ---
+const addOpacity = S.defineSchemaUpdate("addOpacity", schema => {
+  const ShapeBox = schema.ShapeBox
+    .addField("opacity", S.Optional(S.Double), { default: 1.0 })
+    .build();
+
+  const ShapeCircle = schema.ShapeCircle
+    .addField("opacity", S.Optional(S.Double), { default: 1.0 })
+    .build();
+
+  return { ShapeBox, ShapeCircle };
+});
+
+// --- Schema v2: apply both changes ---
+const schemaV2 = S.nextSchema(schemaV1)
+  .addSchemaUpdate(addColorSplit)
+  .addSchemaUpdate(addOpacity)
+  .build();
+
+// --- Schema change: add freehand strokes (purely additive) ---
+const addFreehandStroke = S.defineSchemaUpdate("addFreehandStroke", () => {
+  const FreehandStroke = S.defineRecord("FreehandStroke", {
+    docs: "A freehand pen stroke stored as a JSON-encoded array of [x, y, pressure] tuples.",
+    fields: {
+      points: S.String,
+      color: S.Optional(S.String),
+    },
+  });
+  return { FreehandStroke };
+});
+
+// --- Schema v3: add pen tool support ---
+const schemaV3 = S.nextSchema(schemaV2)
+  .addSchemaUpdate(addFreehandStroke)
+  .build();
+
+export default schemaV3;
