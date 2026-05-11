@@ -16,13 +16,7 @@
 
 import { describe, expect, it } from "vitest";
 import type { SchemaBuilder } from "../defineMigration.js";
-import {
-  __fieldUpgradeMeta,
-  defineMigration,
-  getFieldUpgradeMeta,
-  harvestFieldUpgrades,
-  stripFieldUpgradeMeta,
-} from "../defineMigration.js";
+import { applyMigration, defineMigration } from "../defineMigration.js";
 import { defineRecord } from "../defineRecord.js";
 import { defineSchema, defineSchemaUpdate, nextSchema } from "../defineSchemaUpdate.js";
 import * as P from "../primitives.js";
@@ -181,68 +175,7 @@ describe("addField with upgrade options", () => {
     expect((v2.models.ShapeBox.fields as Record<string, unknown>).temp).toBeUndefined();
   });
 
-  it("metadata symbol does not leak through JSON.stringify or enumerable spread", () => {
-    const merged = defineMigration(v1.models, schema => ({
-      ShapeBox: schema.ShapeBox
-        .addField("fillColor", P.Optional(P.String), {
-          derivedFrom: ["color"],
-          forward: ({ color }: { color?: string }) => color,
-        })
-        .build(),
-    }));
-
-    const meta = getFieldUpgradeMeta(merged.ShapeBox);
-    expect(meta).toBeDefined();
-    expect(meta?.has("fillColor")).toBe(true);
-
-    const enumerableSymbols = Object.getOwnPropertySymbols(merged.ShapeBox)
-      .filter(sym => Object.getOwnPropertyDescriptor(merged.ShapeBox, sym)?.enumerable);
-    expect(enumerableSymbols).not.toContain(__fieldUpgradeMeta);
-
-    const json = JSON.parse(JSON.stringify(merged.ShapeBox)) as Record<string, unknown>;
-    expect(Object.keys(json).sort()).toEqual(["docs", "fields", "name", "type"]);
-  });
-
-  it("stripFieldUpgradeMeta removes the side-channel symbol", () => {
-    const merged = defineMigration(v1.models, schema => ({
-      ShapeBox: schema.ShapeBox
-        .addField("fillColor", P.Optional(P.String), {
-          derivedFrom: ["color"],
-          forward: ({ color }: { color?: string }) => color,
-        })
-        .build(),
-    }));
-
-    expect(getFieldUpgradeMeta(merged.ShapeBox)).toBeDefined();
-
-    const cleaned = stripFieldUpgradeMeta(merged);
-    expect(getFieldUpgradeMeta(cleaned.ShapeBox)).toBeUndefined();
-    expect(cleaned.ShapeBox.fields).toEqual(merged.ShapeBox.fields);
-  });
-
-  it("harvestFieldUpgrades returns undefined when no upgrades are present", () => {
-    const merged = defineMigration(v1.models, schema => ({
-      ShapeBox: schema.ShapeBox.addField("z", P.Double).build(),
-    }));
-
-    expect(harvestFieldUpgrades(merged)).toBeUndefined();
-  });
-
-  it("harvestFieldUpgrades collapses to undefined when only AdditiveFieldOptions are present", () => {
-    const merged = defineMigration(v1.models, schema => ({
-      ShapeBox: schema.ShapeBox
-        .addField("opacity", P.Optional(P.Double), { default: 0.5 })
-        .build(),
-    }));
-
-    // Side-channel metadata exists for `opacity`, but harvestFieldUpgrades
-    // filters out non-Upgrade options, so the resulting map collapses to
-    // undefined.
-    expect(getFieldUpgradeMeta(merged.ShapeBox)?.has("opacity")).toBe(true);
-    expect(harvestFieldUpgrades(merged)).toBeUndefined();
-  });
-
-  it("subsequent addSchemaUpdate does not re-harvest options from the prior step", () => {
+  it("subsequent addSchemaUpdate does not re-collect options from the prior step", () => {
     const step1 = defineSchemaUpdate(
       "step1",
       (schema: SchemaBuilder<typeof v1.models>) => ({
@@ -262,18 +195,14 @@ describe("addField with upgrade options", () => {
           typeof v1.models & { ShapeBox: typeof v1.models.ShapeBox }
         >,
       ) => ({
-        // No new sugar — just touching the schema. The prior step's metadata
-        // must not bleed into this step's migrations.
         ShapeBox: schema.ShapeBox.addField("z", P.Double).build(),
       }),
     );
 
     const v2 = nextSchema(v1).addSchemaUpdate(step1).addSchemaUpdate(step2).build();
 
-    // The fillColor migration is recorded exactly once.
     expect(v2.migrations?.ShapeBox?.fillColor?.derivedFrom).toEqual(["color"]);
     expect(Object.keys(v2.migrations?.ShapeBox ?? {})).toEqual(["fillColor"]);
-    // The newly added field has no migration (no options were supplied).
     expect((v2.migrations?.ShapeBox as Record<string, unknown> | undefined)?.z).toBeUndefined();
   });
 
@@ -293,8 +222,6 @@ describe("addField with upgrade options", () => {
     const v2 = nextSchema(v1).addSchemaUpdate(step1).build();
     expect(v2.migrations?.ShapeBox?.fillColor).toBeDefined();
 
-    // Another version on top of v2 — touching ShapeBox without supplying new
-    // upgrade options should produce no migrations for v3.
     const step2 = defineSchemaUpdate(
       "step2",
       (schema: SchemaBuilder<typeof v2.models>) => ({
@@ -304,5 +231,74 @@ describe("addField with upgrade options", () => {
     const v3 = nextSchema(v2).addSchemaUpdate(step2).build();
 
     expect(v3.migrations).toBeUndefined();
+  });
+
+  it("a migration that renames a model keys the upgrade by the output name", () => {
+    const rename = defineSchemaUpdate(
+      "rename",
+      (schema: SchemaBuilder<typeof v1.models>) => ({
+        // The user reassigns the built def to a different output key.
+        Box: schema.ShapeBox
+          .addField("fillColor", P.Optional(P.String), {
+            derivedFrom: ["color"],
+            forward: ({ color }: { color?: string }) => color,
+          })
+          .build(),
+      }),
+    );
+
+    const v2 = nextSchema(v1).addSchemaUpdate(rename).build();
+    expect(v2.migrations?.Box?.fillColor?.derivedFrom).toEqual(["color"]);
+    expect(v2.migrations?.ShapeBox).toBeUndefined();
+  });
+
+  it("RecordDef carries no symbol-keyed metadata after a migration", () => {
+    const { models } = applyMigration(v1.models, schema => ({
+      ShapeBox: schema.ShapeBox
+        .addField("fillColor", P.Optional(P.String), {
+          derivedFrom: ["color"],
+          forward: ({ color }: { color?: string }) => color,
+        })
+        .build(),
+    }));
+
+    expect(Object.getOwnPropertySymbols(models.ShapeBox)).toEqual([]);
+    const json = JSON.parse(JSON.stringify(models.ShapeBox)) as Record<string, unknown>;
+    expect(Object.keys(json).sort()).toEqual(["docs", "fields", "name", "type"]);
+  });
+
+  it("applyMigration returns undefined upgrades when none are collected", () => {
+    const result = applyMigration(v1.models, schema => ({
+      ShapeBox: schema.ShapeBox.addField("z", P.Double).build(),
+    }));
+    expect(result.upgrades).toBeUndefined();
+  });
+
+  it("applyMigration filters out AdditiveFieldOptions from upgrades", () => {
+    const result = applyMigration(v1.models, schema => ({
+      ShapeBox: schema.ShapeBox
+        .addField("opacity", P.Optional(P.Double), { default: 0.5 })
+        .build(),
+    }));
+    expect(result.upgrades).toBeUndefined();
+  });
+
+  it("defineMigration drops upgrade options silently (lower-level entry point)", () => {
+    // The public defineMigration returns just T & S; it does not surface
+    // upgrades. Callers that need upgrades use applyMigration or addSchemaUpdate.
+    const merged = defineMigration(v1.models, schema => ({
+      ShapeBox: schema.ShapeBox
+        .addField("fillColor", P.Optional(P.String), {
+          derivedFrom: ["color"],
+          forward: ({ color }: { color?: string }) => color,
+        })
+        .build(),
+    }));
+
+    expect(merged.ShapeBox.fields.fillColor).toEqual({
+      type: "optional",
+      item: { type: "string" },
+    });
+    expect(Object.getOwnPropertySymbols(merged.ShapeBox)).toEqual([]);
   });
 });

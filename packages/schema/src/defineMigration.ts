@@ -35,7 +35,8 @@ export type SchemaBuilder<T extends ModelDefs> = {
 
 /**
  * Upgrade options for a field whose value is derived from prior-version fields.
- * Supplied as the third argument to `addField`; harvested by `addSchemaUpdate`.
+ * Supplied as the third argument to `addField`; surfaced by `applyMigration`
+ * as part of `MigrationResult.upgrades`.
  *
  * Field upgrades are read-time lens transformations — old records are upgraded
  * on the fly when read, and only persisted in the new shape on subsequent
@@ -59,34 +60,10 @@ export type FieldOptions =
   | UpgradeFieldOptions<unknown, Record<string, unknown>>
   | AdditiveFieldOptions<unknown>;
 
-/**
- * Symbol-keyed side channel on `RecordDef`. Set by `RecordBuilderImpl.build()`
- * when the builder collected `UpgradeFieldOptions` via `addField(...)`. The
- * `SchemaVersionBuilder` harvests this map during `addSchemaUpdate` and merges
- * it into the schema's per-version upgrade map.
- *
- * Stored as a non-enumerable property so it does not leak through object
- * spreads or JSON serialization.
- */
-export const __fieldUpgradeMeta: unique symbol = Symbol.for(
-  "@palantir/pack.schema/__fieldUpgradeMeta",
-);
-
 function isUpgradeFieldOptions(
   options: FieldOptions,
 ): options is UpgradeFieldOptions<unknown, Record<string, unknown>> {
   return "forward" in options && typeof options.forward === "function";
-}
-
-/**
- * Read the side-channel upgrade metadata from a `RecordDef`, if any was
- * attached at build time.
- */
-export function getFieldUpgradeMeta(
-  def: RecordDef,
-): Map<string, FieldOptions> | undefined {
-  const value = (def as unknown as Record<symbol, unknown>)[__fieldUpgradeMeta];
-  return value instanceof Map ? value as Map<string, FieldOptions> : undefined;
 }
 
 export interface RecordBuilder<T extends Record<string, Type>> {
@@ -144,20 +121,35 @@ class UnionBuilderImpl<S extends UnionVariants> implements UnionBuilder<S> {
   }
 }
 
+/**
+ * Callback invoked at `RecordBuilder.build()` time when the builder has
+ * collected one or more `FieldOptions` via `addField(...)`. The flusher is
+ * responsible for associating the produced `RecordDef` with its options
+ * (typically by identity in a `WeakMap`) so that a later harvest pass can
+ * key results by the user's chosen output key.
+ */
+type UpgradeFlusher = (
+  def: RecordDef,
+  options: ReadonlyMap<string, FieldOptions>,
+) => void;
+
 class RecordBuilderImpl<T extends RecordFields> implements RecordBuilder<T> {
   private readonly name: string;
   private readonly fields: T;
   private readonly upgradeOptions: ReadonlyMap<string, FieldOptions>;
+  private readonly flush: UpgradeFlusher | undefined;
 
   constructor(
     initialRecordDef: RecordDef<T>,
+    flush: UpgradeFlusher | undefined,
     upgradeOptions?: ReadonlyMap<string, FieldOptions>,
   ) {
     this.name = initialRecordDef.name;
     this.fields = { ...initialRecordDef.fields };
-    // Upgrade options only flow forward within a single defineMigration
-    // callback — they are NOT inherited from the prior version's RecordDef,
-    // because each version's upgrades describe a specific version transition.
+    this.flush = flush;
+    // Upgrade options only flow forward within a single migration callback —
+    // they are NOT inherited from the prior version's RecordDef, because each
+    // version's upgrades describe a specific version transition.
     this.upgradeOptions = new Map<string, FieldOptions>(upgradeOptions ?? []);
   }
 
@@ -178,6 +170,7 @@ class RecordBuilderImpl<T extends RecordFields> implements RecordBuilder<T> {
         fields: { ...this.fields, [name]: value },
         docs: "",
       },
+      this.flush,
       next,
     );
   }
@@ -195,6 +188,7 @@ class RecordBuilderImpl<T extends RecordFields> implements RecordBuilder<T> {
         fields: rest as RecordFields,
         docs: "",
       },
+      this.flush,
       next,
     ) as unknown as RecordBuilder<Omit<T, K>>;
   }
@@ -206,16 +200,87 @@ class RecordBuilderImpl<T extends RecordFields> implements RecordBuilder<T> {
       fields: this.fields,
       docs: "",
     };
-    if (this.upgradeOptions.size > 0) {
-      Object.defineProperty(result, __fieldUpgradeMeta, {
-        value: new Map(this.upgradeOptions),
-        enumerable: false,
-        writable: false,
-        configurable: false,
-      });
+    if (this.flush != null && this.upgradeOptions.size > 0) {
+      this.flush(result, this.upgradeOptions);
     }
     return result;
   }
+}
+
+function makeBuilders<T extends ModelDefs>(
+  models: T,
+  flush: UpgradeFlusher | undefined,
+): SchemaBuilder<T> {
+  const builders = {} as SchemaBuilder<T>;
+  for (const key in models) {
+    const v = models[key];
+    if (isRecordDef(v)) {
+      builders[key] = new RecordBuilderImpl(v, flush) as unknown as SchemaBuilder<T>[typeof key];
+    } else if (isUnionDef(v)) {
+      builders[key] = new UnionBuilderImpl(v) as unknown as SchemaBuilder<T>[typeof key];
+    }
+  }
+  return builders;
+}
+
+/** Per-model field migrations: `[modelKey][fieldName]` → upgrade options. */
+export type FieldUpgrades = Record<
+  string,
+  Record<string, UpgradeFieldOptions<unknown, Record<string, unknown>>>
+>;
+
+export interface MigrationResult<M extends ModelDefs> {
+  readonly models: M;
+  readonly upgrades?: FieldUpgrades;
+}
+
+/**
+ * Lower-level entry point that returns both the merged models AND any
+ * `UpgradeFieldOptions` collected via `addField(name, type, options)` during
+ * the migration callback. Used by `addSchemaUpdate` to fold sugar-form
+ * upgrades into a `VersionedSchema`'s migrations map.
+ *
+ * Upgrade options are tracked by built-`RecordDef` identity in a closure-
+ * scoped `WeakMap`, so harvesting uses the user's chosen output key (i.e.,
+ * a record renamed in the migration callback gets its upgrade keyed under
+ * the new name).
+ */
+export function applyMigration<
+  const T extends ModelDefs,
+  const S extends ModelDefs,
+>(
+  models: T,
+  migration: (schema: SchemaBuilder<T>) => S,
+): MigrationResult<T & S> {
+  const optionsByDef = new WeakMap<RecordDef, ReadonlyMap<string, FieldOptions>>();
+  const builders = makeBuilders(models, (def, options) => {
+    optionsByDef.set(def, options);
+  });
+  const merged = { ...models, ...migration(builders) } as T & S;
+
+  const upgrades: FieldUpgrades = {};
+  for (const [modelKey, def] of Object.entries(merged)) {
+    if (!isRecordDef(def)) continue;
+    const opts = optionsByDef.get(def);
+    if (opts == null) continue;
+    const fieldEntries: Record<
+      string,
+      UpgradeFieldOptions<unknown, Record<string, unknown>>
+    > = {};
+    for (const [fieldName, options] of opts) {
+      if (isUpgradeFieldOptions(options)) {
+        fieldEntries[fieldName] = options;
+      }
+    }
+    if (Object.keys(fieldEntries).length > 0) {
+      upgrades[modelKey] = fieldEntries;
+    }
+  }
+
+  return {
+    models: merged,
+    upgrades: Object.keys(upgrades).length > 0 ? upgrades : undefined,
+  };
 }
 
 export function defineMigration<
@@ -225,82 +290,5 @@ export function defineMigration<
   models: T,
   migration: (schema: SchemaBuilder<T>) => S,
 ): T & S {
-  const builders = {} as SchemaBuilder<T>;
-
-  for (const key in models) {
-    const v = models[key];
-
-    if (isRecordDef(v)) {
-      const recordBuilder = new RecordBuilderImpl(v);
-      builders[key] = recordBuilder as unknown as SchemaBuilder<T>[typeof key];
-    } else if (isUnionDef(v)) {
-      const unionBuilder = new UnionBuilderImpl(v);
-      builders[key] = unionBuilder as unknown as SchemaBuilder<T>[typeof key];
-    }
-  }
-
-  return {
-    ...models,
-    ...migration(builders),
-  };
-}
-
-/**
- * Walk a `ModelDefs` and harvest any side-channel upgrade metadata into a
- * nested map keyed by `[modelName][fieldName]`. Records without metadata are
- * skipped. Used by `SchemaVersionBuilder` to fold sugar from
- * `addField(name, type, { derivedFrom, forward })` into the resulting schema's
- * per-version upgrades.
- */
-export function harvestFieldUpgrades(
-  models: ModelDefs,
-):
-  | Record<string, Record<string, UpgradeFieldOptions<unknown, Record<string, unknown>>>>
-  | undefined
-{
-  const result: Record<
-    string,
-    Record<string, UpgradeFieldOptions<unknown, Record<string, unknown>>>
-  > = {};
-  for (const [modelKey, modelDef] of Object.entries(models)) {
-    if (!isRecordDef(modelDef)) continue;
-    const meta = getFieldUpgradeMeta(modelDef);
-    if (meta == null) continue;
-    const fieldEntries: Record<
-      string,
-      UpgradeFieldOptions<unknown, Record<string, unknown>>
-    > = {};
-    for (const [fieldName, options] of meta) {
-      if (isUpgradeFieldOptions(options)) {
-        fieldEntries[fieldName] = options;
-      }
-    }
-    if (Object.keys(fieldEntries).length > 0) {
-      result[modelKey] = fieldEntries;
-    }
-  }
-  return Object.keys(result).length > 0 ? result : undefined;
-}
-
-/**
- * Return a copy of `models` where every `RecordDef`'s side-channel upgrade
- * metadata has been dropped. Used by `SchemaVersionBuilder` after harvesting
- * options into the per-version upgrade map, so that a subsequent
- * `addSchemaUpdate` does not re-harvest the same options.
- *
- * Records without metadata are returned by reference (preserves identity for
- * unchanged models across versions).
- */
-export function stripFieldUpgradeMeta<T extends ModelDefs>(models: T): T {
-  const result = {} as { [K in keyof T]: T[K] };
-  for (const key in models) {
-    const def = models[key];
-    if (isRecordDef(def) && getFieldUpgradeMeta(def) != null) {
-      // Spread strips the non-enumerable metadata symbol.
-      result[key] = { ...def } as T[typeof key];
-    } else {
-      result[key] = def;
-    }
-  }
-  return result;
+  return applyMigration(models, migration).models;
 }

@@ -15,7 +15,7 @@
  */
 
 import type { SchemaBuilder } from "./defineMigration.js";
-import { defineMigration, harvestFieldUpgrades, stripFieldUpgradeMeta } from "./defineMigration.js";
+import { applyMigration } from "./defineMigration.js";
 import type { ModelDefs } from "./defs.js";
 
 export interface InitialSchema<T extends ModelDefs = ModelDefs> {
@@ -107,15 +107,14 @@ class SchemaVersionBuilderImpl<T extends ModelDefs> implements SchemaVersionBuil
   addSchemaUpdate<S extends ModelDefs>(
     update: SchemaUpdate<T, S>,
   ): SchemaVersionBuilder<T & S> {
-    const merged = defineMigration(this.models, update.migration);
-    // Harvest sugar-form upgrades attached via `addField(name, type, options)`
-    // and fold them into the running upgrades accumulator.
-    const harvested = harvestFieldUpgrades(merged) as VersionMigrations | undefined;
-    const nextMigrations = mergeMigrations(this._migrations, harvested);
-    // Strip the side-channel metadata so subsequent updates (or downstream
-    // versions instantiated via `nextSchema`) don't re-harvest the same options.
-    const cleaned = stripFieldUpgradeMeta(merged);
-    return new SchemaVersionBuilderImpl(cleaned, this.version, this.previous, nextMigrations);
+    // applyMigration returns both the merged models and any sugar-form
+    // upgrades collected via `addField(name, type, { derivedFrom, forward })`.
+    const { models, upgrades } = applyMigration(this.models, update.migration);
+    const nextMigrations = mergeMigrations(
+      this._migrations,
+      upgrades as VersionMigrations | undefined,
+    );
+    return new SchemaVersionBuilderImpl(models, this.version, this.previous, nextMigrations);
   }
 
   withMigrations(migrations: VersionMigrations): SchemaVersionBuilder<T> {
