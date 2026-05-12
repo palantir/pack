@@ -19,6 +19,8 @@ import type { SchemaBuilder } from "../defineMigration.js";
 import { applyMigration, defineMigration } from "../defineMigration.js";
 import { defineRecord } from "../defineRecord.js";
 import { defineSchema, defineSchemaUpdate, nextSchema } from "../defineSchemaUpdate.js";
+import { defineUnion } from "../defineUnion.js";
+import type { RecordDef } from "../defs.js";
 import * as P from "../primitives.js";
 
 describe("addField with upgrade options", () => {
@@ -300,5 +302,167 @@ describe("addField with upgrade options", () => {
       item: { type: "string" },
     });
     expect(Object.getOwnPropertySymbols(merged.ShapeBox)).toEqual([]);
+  });
+
+  // Type of v1.models after a prior step adds an optional-string `temp` field
+  // to ShapeBox. Used to type the input of a later step that calls
+  // `removeField("temp")` — without this, `temp` is not statically known to
+  // be in the field set and the call would fail to type-check.
+  type V1WithTemp = typeof v1.models & {
+    ShapeBox: RecordDef<
+      typeof v1.models.ShapeBox["fields"] & { readonly temp: P.Optional<P.String> }
+    >;
+  };
+
+  it("a later addSchemaUpdate that removes a field also drops its migration", () => {
+    const addTemp = defineSchemaUpdate(
+      "addTemp",
+      (schema: SchemaBuilder<typeof v1.models>) => ({
+        ShapeBox: schema.ShapeBox
+          .addField("temp", P.Optional(P.String), {
+            derivedFrom: ["color"],
+            forward: ({ color }: { color?: string }) => color,
+          })
+          .build(),
+      }),
+    );
+
+    const removeTemp = defineSchemaUpdate(
+      "removeTemp",
+      (schema: SchemaBuilder<V1WithTemp>) => ({
+        ShapeBox: schema.ShapeBox.removeField("temp").build(),
+      }),
+    );
+
+    const v2 = nextSchema(v1).addSchemaUpdate(addTemp).addSchemaUpdate(removeTemp).build();
+
+    expect((v2.models.ShapeBox.fields as Record<string, unknown>).temp).toBeUndefined();
+    expect(v2.migrations).toBeUndefined();
+  });
+
+  it("a later update may remove one upgraded field while adding another", () => {
+    const addTwo = defineSchemaUpdate(
+      "addTwo",
+      (schema: SchemaBuilder<typeof v1.models>) => ({
+        ShapeBox: schema.ShapeBox
+          .addField("temp", P.Optional(P.String), {
+            derivedFrom: ["color"],
+            forward: ({ color }: { color?: string }) => color,
+          })
+          .addField("fillColor", P.Optional(P.String), {
+            derivedFrom: ["color"],
+            forward: ({ color }: { color?: string }) => color,
+          })
+          .build(),
+      }),
+    );
+
+    const removeTemp = defineSchemaUpdate(
+      "removeTemp",
+      (schema: SchemaBuilder<V1WithTemp>) => ({
+        ShapeBox: schema.ShapeBox.removeField("temp").build(),
+      }),
+    );
+
+    const v2 = nextSchema(v1).addSchemaUpdate(addTwo).addSchemaUpdate(removeTemp).build();
+
+    expect(Object.keys(v2.migrations?.ShapeBox ?? {})).toEqual(["fillColor"]);
+    expect((v2.migrations?.ShapeBox as Record<string, unknown> | undefined)?.temp).toBeUndefined();
+  });
+
+  it("withMigrations entries are pruned when a later update removes the field", () => {
+    const noop = defineSchemaUpdate(
+      "noop",
+      (schema: SchemaBuilder<typeof v1.models>) => ({
+        ShapeBox: schema.ShapeBox
+          .addField("temp", P.Optional(P.String))
+          .build(),
+      }),
+    );
+
+    const removeTemp = defineSchemaUpdate(
+      "removeTemp",
+      (schema: SchemaBuilder<V1WithTemp>) => ({
+        ShapeBox: schema.ShapeBox.removeField("temp").build(),
+      }),
+    );
+
+    const v2 = nextSchema(v1)
+      .addSchemaUpdate(noop)
+      .withMigrations({
+        ShapeBox: {
+          temp: {
+            derivedFrom: ["color"],
+            forward: ({ color }: { color?: string }) => color,
+          },
+        },
+      })
+      .addSchemaUpdate(removeTemp)
+      .build();
+
+    expect((v2.models.ShapeBox.fields as Record<string, unknown>).temp).toBeUndefined();
+    expect(v2.migrations).toBeUndefined();
+  });
+
+  it("withMigrations silently drops entries for fields the model no longer has", () => {
+    const v2 = nextSchema(v1)
+      .withMigrations({
+        ShapeBox: {
+          ghost: {
+            derivedFrom: ["color"],
+            forward: () => "x",
+          },
+        },
+      })
+      .build();
+
+    expect(v2.migrations).toBeUndefined();
+  });
+
+  it("retyping a record into a union drops the prior step's migrations", () => {
+    const Circle = defineRecord("Circle", {
+      docs: "circle",
+      fields: { radius: P.Double },
+    });
+    const Square = defineRecord("Square", {
+      docs: "square",
+      fields: { side: P.Double },
+    });
+
+    const addSugar = defineSchemaUpdate(
+      "addSugar",
+      (schema: SchemaBuilder<typeof v1.models>) => ({
+        ShapeBox: schema.ShapeBox
+          .addField("fillColor", P.Optional(P.String), {
+            derivedFrom: ["color"],
+            forward: ({ color }: { color?: string }) => color,
+          })
+          .build(),
+      }),
+    );
+
+    const retype = defineSchemaUpdate(
+      "retype",
+      (
+        _schema: SchemaBuilder<
+          typeof v1.models & { ShapeBox: typeof v1.models.ShapeBox }
+        >,
+      ) => ({
+        Circle,
+        Square,
+        ShapeBox: defineUnion("ShapeBox", {
+          docs: "now a union",
+          variants: { Circle, Square },
+        }),
+      }),
+    );
+
+    const v2 = nextSchema(v1).addSchemaUpdate(addSugar).addSchemaUpdate(retype).build();
+
+    // The merged TS type for the `ShapeBox` key intersects a `RecordDef` with
+    // a `UnionDef`, which collapses to `never` at the type level even though
+    // the runtime override produces the union. Cast for the runtime check.
+    expect((v2.models.ShapeBox as unknown as { type: string }).type).toBe("union");
+    expect(v2.migrations).toBeUndefined();
   });
 });

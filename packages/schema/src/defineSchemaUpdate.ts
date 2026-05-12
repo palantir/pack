@@ -86,6 +86,38 @@ function mergeMigrations(
   return result;
 }
 
+/**
+ * Drop migration entries that no longer correspond to a field on a record in
+ * `models`. Required because `mergeMigrations` is monotonic — a later
+ * `addSchemaUpdate` that removes or retypes a field would otherwise leave a
+ * stale entry in the accumulator. Entries are dropped when:
+ *   - the model key is no longer present,
+ *   - the model is no longer a record (e.g. replaced by a union), or
+ *   - the field name is no longer one of the record's fields.
+ */
+function pruneMigrations(
+  migrations: VersionMigrations | undefined,
+  models: ModelDefs,
+): VersionMigrations | undefined {
+  if (migrations == null) return undefined;
+  const result: VersionMigrations = {};
+  for (const [modelKey, fields] of Object.entries(migrations)) {
+    const def = models[modelKey];
+    if (def == null || def.type !== "record") continue;
+    const recordFields = def.fields;
+    const kept: Record<string, FieldMigration> = {};
+    for (const [fieldName, migration] of Object.entries(fields)) {
+      if (fieldName in recordFields) {
+        kept[fieldName] = migration;
+      }
+    }
+    if (Object.keys(kept).length > 0) {
+      result[modelKey] = kept;
+    }
+  }
+  return Object.keys(result).length > 0 ? result : undefined;
+}
+
 class SchemaVersionBuilderImpl<T extends ModelDefs> implements SchemaVersionBuilder<T> {
   private readonly models: T;
   private readonly version: number;
@@ -110,20 +142,20 @@ class SchemaVersionBuilderImpl<T extends ModelDefs> implements SchemaVersionBuil
     // applyMigration returns both the merged models and any sugar-form
     // upgrades collected via `addField(name, type, { derivedFrom, forward })`.
     const { models, upgrades } = applyMigration(this.models, update.migration);
-    const nextMigrations = mergeMigrations(
+    const merged = mergeMigrations(
       this._migrations,
       upgrades as VersionMigrations | undefined,
     );
-    return new SchemaVersionBuilderImpl(models, this.version, this.previous, nextMigrations);
+    // Reconcile against the new models: a later update that removes or
+    // retypes a field must drop the prior step's stale migration entry.
+    const pruned = pruneMigrations(merged, models);
+    return new SchemaVersionBuilderImpl(models, this.version, this.previous, pruned);
   }
 
   withMigrations(migrations: VersionMigrations): SchemaVersionBuilder<T> {
-    return new SchemaVersionBuilderImpl(
-      this.models,
-      this.version,
-      this.previous,
-      mergeMigrations(this._migrations, migrations),
-    );
+    const merged = mergeMigrations(this._migrations, migrations);
+    const pruned = pruneMigrations(merged, this.models);
+    return new SchemaVersionBuilderImpl(this.models, this.version, this.previous, pruned);
   }
 
   build(): VersionedSchema<T> {
