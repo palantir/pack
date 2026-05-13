@@ -13,7 +13,7 @@ import { Metadata } from '@palantir/pack.document-schema.model-types';
 import type { ShapeBox } from './types.js';
 import { ShapeBoxSchema } from './schema.js';
 import { ShapeBoxUpgrades } from './_internal/upgrades.js';
-import type { DocumentUpgraders } from './_internal/upgraders.js';
+import type { DocumentUpgradeFns } from './_internal/upgradeFns.js';
 
 export interface ShapeBoxModel extends RecordModel<
   ShapeBox,
@@ -31,7 +31,7 @@ export const ShapeBoxModel: ShapeBoxModel = {
  * Construct the DocumentModel for this SDK, wiring in the typed forward
  * functions the runtime needs to materialize derived fields.
  */
-export function DocumentModel(upgradeFns: DocumentUpgraders): DocumentSchema {
+export function DocumentModel(upgradeFns: DocumentUpgradeFns): DocumentSchema {
   return {
     ShapeBox: ShapeBoxModel,
     [Metadata]: {
