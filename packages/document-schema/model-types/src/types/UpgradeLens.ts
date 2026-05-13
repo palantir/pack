@@ -27,7 +27,7 @@ export type FieldTypeDescriptor =
 export interface FieldLensDef {
   /**
    * Source field names. When empty, the field is additive — only `default` applies and no
-   * upgrader is invoked.
+   * forward function is invoked.
    */
   derivedFrom: string[];
   /** Literal JSON only — validated at schema build time. Used when no source data exists. */
@@ -72,16 +72,19 @@ export type UpgradeRegistryEntry = UpgradeRegistry | UnionUpgradeRegistry;
 export type UpgradeRegistryMap = Record<string, UpgradeRegistryEntry>;
 
 /**
- * Runtime-supplied registry of typed upgrader functions, supplied by the
- * application at boot via the generated `withUpgraders` helper. Structural
- * shape: `registry[modelName][stepName][fieldName] -> forward fn`.
+ * Runtime-supplied collection of forward upgrade functions. The application
+ * passes a `DocumentUpgradeFns` value to the generated `DocumentModel(...)`
+ * factory at boot; the factory installs it on the schema's metadata under
+ * this loose shape: `fns[modelName][stepName][fieldName] -> forward fn`.
  *
- * The generated `DocumentUpgraders` interface is a precisely-typed refinement
+ * The generated `DocumentUpgradeFns` interface is a precisely-typed refinement
  * of this shape; both `BaseYjsDocumentService` and `applyReadLens` read from
  * it via this loose type.
+ *
+ * Paired with `UpgradeRegistry`: the registry is the structural spec (WHEN to
+ * upgrade and from which fields), `UpgradeFns` provides the implementations.
  */
-
-export type UpgraderRegistry = Record<
+export type UpgradeFns = Record<
   string,
   Record<string, Record<string, (oldFields: any) => any>>
 >;

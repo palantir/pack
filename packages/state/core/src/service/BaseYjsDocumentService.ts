@@ -34,8 +34,8 @@ import {
   type RecordCollectionRef,
   type RecordId,
   type RecordRef,
+  type UpgradeFns,
   type UpgradeRegistryMap,
-  type UpgraderRegistry,
 } from "@palantir/pack.document-schema.model-types";
 import { isDeepEqual } from "remeda";
 import invariant from "tiny-invariant";
@@ -112,12 +112,12 @@ export interface InternalYjsDoc {
 
   readonly upgrades?: UpgradeRegistryMap;
   /**
-   * Runtime-supplied typed forward callbacks. Populated by the app via
-   * `withUpgraders` and read by `applyReadLens` when materializing fields
-   * derived from prior schema versions. Separate from `upgrades`, which is
-   * the structural metadata that drives WHEN to call them.
+   * Runtime-supplied typed forward functions. Populated by the app via the
+   * generated `DocumentModel(...)` factory and read by `applyReadLens` when
+   * materializing fields derived from prior schema versions. Separate from
+   * `upgrades`, which is the structural metadata that drives WHEN to call them.
    */
-  readonly upgraders?: UpgraderRegistry;
+  readonly upgradeFns?: UpgradeFns;
 }
 
 export interface BaseYjsDocumentServiceOptions {
@@ -314,7 +314,7 @@ export abstract class BaseYjsDocumentService<TDoc extends InternalYjsDoc = Inter
       yDocUpdateHandler: undefined,
       yjsCollectionHandlers: new Map(),
       upgrades: schemaMeta.upgrades,
-      upgraders: schemaMeta.upgraders,
+      upgradeFns: schemaMeta.upgradeFns,
     };
   };
 
@@ -502,7 +502,7 @@ export abstract class BaseYjsDocumentService<TDoc extends InternalYjsDoc = Inter
       getMetadata(recordRef.model).name,
       recordRef.id,
       internalDoc.upgrades,
-      internalDoc.upgraders,
+      internalDoc.upgradeFns,
     ) as ModelData<M>;
   }
 

@@ -15,8 +15,8 @@
  */
 
 // NOTE: `forward` closures are no longer authored anywhere in the schema
-// builder. Upgrader callbacks are supplied at runtime via a typed registry
-// (see pack-oss-3s3, design doc docs/design/runtime-upgrader-registry.md).
+// builder. Upgrade functions are supplied at runtime via a typed table
+// (see pack-oss-3s3, design doc docs/design/runtime-upgrade-fns.md).
 // `FieldMigration` carries only `derivedFrom`; assertions exercise the
 // structural portion of each migration and the builder's pruning/merging
 // behavior. Runtime invocation is covered by `applyReadLens` tests in
@@ -64,7 +64,7 @@ describe("addField with upgrade options", () => {
     expect(v2.migrations?.ShapeBox?.fillColor?.derivedFrom).toEqual(["color"]);
     expect(v2.migrations?.ShapeBox?.strokeColor?.derivedFrom).toEqual(["color"]);
     // Forward callbacks are no longer authored here — they are supplied at
-    // runtime via `withUpgraders` (see pack-oss-3s3 design doc).
+    // runtime via the generated `DocumentModel(...)` factory (see pack-oss-3s3).
     expect(Object.keys(v2.migrations?.ShapeBox?.fillColor ?? {})).toEqual(["derivedFrom"]);
   });
 
@@ -455,7 +455,7 @@ describe("addField with upgrade options", () => {
 
   it("UpgradeFieldOptions { derivedFrom, default } captures default in upgrades", () => {
     // When a derived field also supplies a literal-JSON `default`, the option
-    // object flows into `upgrades` verbatim — the registry's typed upgrader
+    // object flows into `upgrades` verbatim — the runtime upgrade function
     // may consult `default` when no source data is present.
     const update = defineSchemaUpdate("update", (schema: SchemaBuilder<typeof v1.models>) => ({
       ShapeBox: schema.ShapeBox

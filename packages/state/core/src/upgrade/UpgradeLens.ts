@@ -17,10 +17,10 @@
 import type {
   FieldTypeDescriptor,
   UnionUpgradeRegistry,
+  UpgradeFns,
   UpgradeRegistry,
   UpgradeRegistryEntry,
   UpgradeRegistryMap,
-  UpgraderRegistry,
 } from "@palantir/pack.document-schema.model-types";
 
 function isUnionRegistry(entry: UpgradeRegistryEntry): entry is UnionUpgradeRegistry {
@@ -34,15 +34,16 @@ function isUnionRegistry(entry: UpgradeRegistryEntry): entry is UnionUpgradeRegi
  * For union registries, reads the discriminant from the data to determine the
  * variant, then applies that variant's lens.
  *
- * `upgraders` is the runtime-supplied typed registry of forward callbacks
- * (from `withUpgraders`). May be `undefined` for schemas with no `derivedFrom`
- * fields; required when any field needs forward-derivation.
+ * `upgradeFns` are the runtime-supplied typed forward callbacks (passed to the
+ * generated `DocumentModel({...})` factory at boot). May be `undefined` for
+ * schemas with no `derivedFrom` fields; required when any field needs
+ * forward-derivation.
  */
 export function resolveAndApplyLens(
   rawData: Record<string, unknown>,
   entry: UpgradeRegistryEntry,
   allRegistries: UpgradeRegistryMap,
-  upgraders: UpgraderRegistry | undefined,
+  upgradeFns: UpgradeFns | undefined,
 ): Record<string, unknown> {
   if (isUnionRegistry(entry)) {
     const discriminantValue = rawData[entry.discriminant];
@@ -59,7 +60,7 @@ export function resolveAndApplyLens(
                 nestedValue as Record<string, unknown>,
                 variantRegistry,
                 allRegistries,
-                upgraders,
+                upgradeFns,
               );
               if (upgradedValue !== nestedValue) {
                 return { ...rawData, value: upgradedValue };
@@ -67,7 +68,7 @@ export function resolveAndApplyLens(
             }
           } else if (variantRegistry.steps.length > 0) {
             // Union→record: the record payload is the outer object itself
-            return applyReadLens(rawData, variantRegistry, allRegistries, upgraders);
+            return applyReadLens(rawData, variantRegistry, allRegistries, upgradeFns);
           }
         }
       }
@@ -76,7 +77,7 @@ export function resolveAndApplyLens(
   }
 
   if (entry.steps.length > 0) {
-    return applyReadLens(rawData, entry, allRegistries, upgraders);
+    return applyReadLens(rawData, entry, allRegistries, upgradeFns);
   }
 
   return rawData;
@@ -111,7 +112,7 @@ export function applyReadLens(
   rawData: Record<string, unknown>,
   registry: UpgradeRegistry,
   allRegistries: UpgradeRegistryMap,
-  upgraders: UpgraderRegistry | undefined,
+  upgradeFns: UpgradeFns | undefined,
 ): Record<string, unknown> {
   const data = { ...rawData };
 
@@ -133,11 +134,12 @@ export function applyReadLens(
       }
 
       if (canDerive) {
-        const forward = upgraders?.[registry.modelName]?.[step.name]?.[fieldName];
+        const forward = upgradeFns?.[registry.modelName]?.[step.name]?.[fieldName];
         if (forward == null) {
           throw new Error(
-            `Missing upgrader for ${registry.modelName}.${step.name}.${fieldName}. `
-              + `Pass the result of withUpgraders(...) to your document service at boot.`,
+            `Missing upgrade function for ${registry.modelName}.${step.name}.${fieldName}. `
+              + `Construct the document model with \`DocumentModel({...})\` and `
+              + `pass the result to your document service at boot.`,
           );
         }
         data[fieldName] = forward(sourceFields);
@@ -157,7 +159,7 @@ export function applyReadLens(
   // 3. Recursively apply lens to nested model refs
   for (const [fieldName, fieldDef] of Object.entries(registry.allFields)) {
     if (data[fieldName] === undefined) continue;
-    data[fieldName] = applyLensToValue(data[fieldName], fieldDef.type, allRegistries, upgraders);
+    data[fieldName] = applyLensToValue(data[fieldName], fieldDef.type, allRegistries, upgradeFns);
   }
 
   // Full data returned. TypeScript types govern field visibility — no runtime key deletion.
@@ -169,7 +171,7 @@ export function applyLensToValue(
   value: unknown,
   type: FieldTypeDescriptor,
   allRegistries: UpgradeRegistryMap,
-  upgraders: UpgraderRegistry | undefined,
+  upgradeFns: UpgradeFns | undefined,
 ): unknown {
   switch (type.kind) {
     case "primitive":
@@ -181,22 +183,22 @@ export function applyLensToValue(
         value as Record<string, unknown>,
         subEntry,
         allRegistries,
-        upgraders,
+        upgradeFns,
       );
     }
     case "array":
       return (value as unknown[]).map(item =>
-        applyLensToValue(item, type.element, allRegistries, upgraders)
+        applyLensToValue(item, type.element, allRegistries, upgradeFns)
       );
     case "map":
       return Object.fromEntries(
         Object.entries(value as Record<string, unknown>).map((
           [k, v],
-        ) => [k, applyLensToValue(v, type.value, allRegistries, upgraders)]),
+        ) => [k, applyLensToValue(v, type.value, allRegistries, upgradeFns)]),
       );
     case "optional":
       return value === undefined
         ? undefined
-        : applyLensToValue(value, type.inner, allRegistries, upgraders);
+        : applyLensToValue(value, type.inner, allRegistries, upgradeFns);
   }
 }

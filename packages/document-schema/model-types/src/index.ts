@@ -85,10 +85,10 @@ export type {
   FieldLensDef,
   FieldTypeDescriptor,
   UnionUpgradeRegistry,
+  UpgradeFns,
   UpgradeRegistry,
   UpgradeRegistryEntry,
   UpgradeRegistryMap,
-  UpgraderRegistry,
   UpgradeStepDef,
 } from "./types/UpgradeLens.js";
 export { UserRefBrand } from "./types/UserRef.js";

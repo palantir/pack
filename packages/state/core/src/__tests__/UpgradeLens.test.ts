@@ -17,9 +17,9 @@
 import type {
   FieldTypeDescriptor,
   UnionUpgradeRegistry,
+  UpgradeFns,
   UpgradeRegistry,
   UpgradeRegistryMap,
-  UpgraderRegistry,
 } from "@palantir/pack.document-schema.model-types";
 import { describe, expect, it } from "vitest";
 import { applyLensToValue, applyReadLens, resolveAndApplyLens } from "../upgrade/UpgradeLens.js";
@@ -49,7 +49,7 @@ describe("applyReadLens", () => {
         },
       ],
     };
-    const upgraders: UpgraderRegistry = {
+    const upgradeFns: UpgradeFns = {
       ShapeBox: {
         addColorSplit: {
           fillColor: ({ color }) => color,
@@ -59,7 +59,7 @@ describe("applyReadLens", () => {
     };
 
     const rawData = { left: 10, color: "blue" };
-    const result = applyReadLens(rawData, registry, { ShapeBox: registry }, upgraders);
+    const result = applyReadLens(rawData, registry, { ShapeBox: registry }, upgradeFns);
 
     expect(result.fillColor).toBe("blue");
     expect(result.strokeColor).toBe("blue");
@@ -89,7 +89,7 @@ describe("applyReadLens", () => {
     };
 
     const rawData = { left: 10 };
-    // No upgrader needed — purely additive, no forward derivation.
+    // No upgrade function needed — purely additive, no forward derivation.
     const result = applyReadLens(rawData, registry, { ShapeBox: registry }, undefined);
 
     expect(result.opacity).toBe(1.0);
@@ -113,8 +113,8 @@ describe("applyReadLens", () => {
         },
       ],
     };
-    // No upgrader: the lens must NOT invoke a forward when the target is
-    // already present, so a missing-upgrader is acceptable here.
+    // No upgrade function: the lens must NOT invoke a forward when the target
+    // is already present, so a missing entry is acceptable here.
     const rawData = { color: "blue", fillColor: "red" };
     const result = applyReadLens(rawData, registry, { ShapeBox: registry }, undefined);
 
@@ -139,7 +139,7 @@ describe("applyReadLens", () => {
     };
 
     const rawData = { left: 10 }; // no 'color' field
-    // No upgrader: derivation should be skipped because source is missing.
+    // No upgrade function: derivation should be skipped because source is missing.
     const result = applyReadLens(rawData, registry, { ShapeBox: registry }, undefined);
 
     expect(result.fillColor).toBeUndefined();
@@ -170,7 +170,7 @@ describe("applyReadLens", () => {
         },
       ],
     };
-    const upgraders: UpgraderRegistry = {
+    const upgradeFns: UpgradeFns = {
       ShapeBox: {
         addHexColor: {
           hexColor: ({ color }) => `#${color}`,
@@ -182,7 +182,7 @@ describe("applyReadLens", () => {
     };
 
     const rawData = { color: "FF0000" };
-    const result = applyReadLens(rawData, registry, { ShapeBox: registry }, upgraders);
+    const result = applyReadLens(rawData, registry, { ShapeBox: registry }, upgradeFns);
 
     expect(result.hexColor).toBe("#FF0000");
     expect(result.rgbaColor).toBe("rgba(#FF0000)");
@@ -236,7 +236,7 @@ describe("applyReadLens", () => {
       Color: innerRegistry,
     };
 
-    const upgraders: UpgraderRegistry = {
+    const upgradeFns: UpgradeFns = {
       Color: {
         addRgba: {
           rgba: ({ hex }) => `rgba(${hex})`,
@@ -245,7 +245,7 @@ describe("applyReadLens", () => {
     };
 
     const rawData = { left: 10, color: { hex: "#FF0000" } };
-    const result = applyReadLens(rawData, outerRegistry, allRegistries, upgraders);
+    const result = applyReadLens(rawData, outerRegistry, allRegistries, upgradeFns);
 
     expect(result.left).toBe(10);
     expect((result.color as Record<string, unknown>).rgba).toBe("rgba(#FF0000)");
@@ -283,7 +283,7 @@ describe("applyReadLens", () => {
       Item: itemRegistry,
     };
 
-    const upgraders: UpgraderRegistry = {
+    const upgradeFns: UpgradeFns = {
       Item: {
         addLabel: {
           label: ({ name }) => `Label: ${name}`,
@@ -297,7 +297,7 @@ describe("applyReadLens", () => {
         { name: "second" },
       ],
     };
-    const result = applyReadLens(rawData, parentRegistry, allRegistries, upgraders);
+    const result = applyReadLens(rawData, parentRegistry, allRegistries, upgradeFns);
     const items = result.items as Array<Record<string, unknown>>;
 
     expect(items[0]!.label).toBe("Label: first");
@@ -335,7 +335,7 @@ describe("applyReadLens", () => {
       Config: valueRegistry,
     };
 
-    const upgraders: UpgraderRegistry = {
+    const upgradeFns: UpgradeFns = {
       Config: {
         addDisplayValue: {
           displayValue: ({ value }) => `[${value}]`,
@@ -349,14 +349,14 @@ describe("applyReadLens", () => {
         lang: { value: "en" },
       },
     };
-    const result = applyReadLens(rawData, parentRegistry, allRegistries, upgraders);
+    const result = applyReadLens(rawData, parentRegistry, allRegistries, upgradeFns);
     const configs = result.configs as Record<string, Record<string, unknown>>;
 
     expect(configs.theme!.displayValue).toBe("[dark]");
     expect(configs.lang!.displayValue).toBe("[en]");
   });
 
-  it("throws a clear error when a required upgrader is missing", () => {
+  it("throws a clear error when a required upgrade function is missing", () => {
     const registry: UpgradeRegistry = {
       modelName: "ShapeBox",
       allFields: {
@@ -373,9 +373,9 @@ describe("applyReadLens", () => {
         },
       ],
     };
-    // Derivation IS triggered (color present, fillColor absent) but no upgraders provided.
+    // Derivation IS triggered (color present, fillColor absent) but no upgradeFns provided.
     expect(() => applyReadLens({ color: "blue" }, registry, { ShapeBox: registry }, undefined))
-      .toThrow(/Missing upgrader for ShapeBox\.addColorSplit\.fillColor/);
+      .toThrow(/Missing upgrade function for ShapeBox\.addColorSplit\.fillColor/);
   });
 });
 
@@ -414,7 +414,7 @@ describe("null / undefined / missing-key semantics", () => {
     ],
   };
   const allRegistries: UpgradeRegistryMap = { Item: registry };
-  const upgraders: UpgraderRegistry = {
+  const upgradeFns: UpgradeFns = {
     Item: {
       addLabel: {
         label: ({ name }) => `derived:${name}`,
@@ -424,7 +424,7 @@ describe("null / undefined / missing-key semantics", () => {
 
   describe("target field presence", () => {
     it("missing key — derives from source", () => {
-      const result = applyReadLens({ name: "hello" }, registry, allRegistries, upgraders);
+      const result = applyReadLens({ name: "hello" }, registry, allRegistries, upgradeFns);
       expect(result.label).toBe("derived:hello");
     });
 
@@ -433,7 +433,7 @@ describe("null / undefined / missing-key semantics", () => {
         { name: "hello", label: undefined },
         registry,
         allRegistries,
-        upgraders,
+        upgradeFns,
       );
       expect(result.label).toBe("derived:hello");
     });
@@ -443,7 +443,7 @@ describe("null / undefined / missing-key semantics", () => {
         { name: "hello", label: null },
         registry,
         allRegistries,
-        upgraders,
+        upgradeFns,
       );
       expect(result.label).toBeNull();
     });
@@ -451,7 +451,7 @@ describe("null / undefined / missing-key semantics", () => {
 
   describe("source field presence for derivation", () => {
     it("source missing — cannot derive, falls back to default", () => {
-      const result = applyReadLens({}, registry, allRegistries, upgraders);
+      const result = applyReadLens({}, registry, allRegistries, upgradeFns);
       expect(result.label).toBe("untitled");
     });
 
@@ -460,25 +460,25 @@ describe("null / undefined / missing-key semantics", () => {
         { name: undefined },
         registry,
         allRegistries,
-        upgraders,
+        upgradeFns,
       );
       expect(result.label).toBe("untitled");
     });
 
     it("source null — can derive (null is a present value)", () => {
-      const result = applyReadLens({ name: null }, registry, allRegistries, upgraders);
+      const result = applyReadLens({ name: null }, registry, allRegistries, upgradeFns);
       expect(result.label).toBe("derived:null");
     });
   });
 
   describe("default application", () => {
     it("applies default only when field is undefined after derivation", () => {
-      const result = applyReadLens({}, registry, allRegistries, upgraders);
+      const result = applyReadLens({}, registry, allRegistries, upgradeFns);
       expect(result.label).toBe("untitled");
     });
 
     it("does not apply default when field is null", () => {
-      const result = applyReadLens({ label: null }, registry, allRegistries, upgraders);
+      const result = applyReadLens({ label: null }, registry, allRegistries, upgradeFns);
       expect(result.label).toBeNull();
     });
   });
@@ -597,7 +597,7 @@ describe("resolveAndApplyLens", () => {
     Rect: rectRegistry,
   };
 
-  const upgraders: UpgraderRegistry = {
+  const upgradeFns: UpgradeFns = {
     Circle: {
       addDiameter: {
         diameter: ({ radius }) => (radius as number) * 2,
@@ -607,7 +607,7 @@ describe("resolveAndApplyLens", () => {
 
   it("routes to the correct variant lens based on discriminant", () => {
     const rawData = { kind: "circle", radius: 5 };
-    const result = resolveAndApplyLens(rawData, shapeUnion, allRegistries, upgraders);
+    const result = resolveAndApplyLens(rawData, shapeUnion, allRegistries, upgradeFns);
 
     expect(result.diameter).toBe(10);
     expect(result.radius).toBe(5);
@@ -615,35 +615,35 @@ describe("resolveAndApplyLens", () => {
 
   it("returns raw data when discriminant value is not a known variant", () => {
     const rawData = { kind: "triangle", base: 3 };
-    const result = resolveAndApplyLens(rawData, shapeUnion, allRegistries, upgraders);
+    const result = resolveAndApplyLens(rawData, shapeUnion, allRegistries, upgradeFns);
 
     expect(result).toBe(rawData);
   });
 
   it("returns raw data when discriminant field is missing", () => {
     const rawData = { radius: 5 };
-    const result = resolveAndApplyLens(rawData, shapeUnion, allRegistries, upgraders);
+    const result = resolveAndApplyLens(rawData, shapeUnion, allRegistries, upgradeFns);
 
     expect(result).toBe(rawData);
   });
 
   it("returns raw data when variant has no upgrade steps", () => {
     const rawData = { kind: "rect", width: 10, height: 20 };
-    const result = resolveAndApplyLens(rawData, shapeUnion, allRegistries, upgraders);
+    const result = resolveAndApplyLens(rawData, shapeUnion, allRegistries, upgradeFns);
 
     expect(result).toBe(rawData);
   });
 
   it("delegates to applyReadLens for record registries with steps", () => {
     const rawData = { radius: 5 };
-    const result = resolveAndApplyLens(rawData, circleRegistry, allRegistries, upgraders);
+    const result = resolveAndApplyLens(rawData, circleRegistry, allRegistries, upgradeFns);
 
     expect(result.diameter).toBe(10);
   });
 
   it("returns raw data for record registries with no steps", () => {
     const rawData = { width: 10, height: 20 };
-    const result = resolveAndApplyLens(rawData, rectRegistry, allRegistries, upgraders);
+    const result = resolveAndApplyLens(rawData, rectRegistry, allRegistries, upgradeFns);
 
     expect(result).toBe(rawData);
   });
@@ -695,7 +695,7 @@ describe("resolveAndApplyLens", () => {
       Plant: plantRegistry,
     };
 
-    const nestedUpgraders: UpgraderRegistry = {
+    const nestedUpgradeFns: UpgradeFns = {
       Animal: {
         addLatinName: {
           latinName: ({ species }) => `Latinized(${species})`,
@@ -708,7 +708,7 @@ describe("resolveAndApplyLens", () => {
         type: "livingBeing",
         value: { kind: "animal", species: "Cat" },
       };
-      const result = resolveAndApplyLens(rawData, entityUnion, nestedRegistries, nestedUpgraders);
+      const result = resolveAndApplyLens(rawData, entityUnion, nestedRegistries, nestedUpgradeFns);
 
       // The Animal record should be upgraded with latinName
       const inner = result.value as Record<string, unknown>;
@@ -720,14 +720,14 @@ describe("resolveAndApplyLens", () => {
 
     it("returns raw data when nested value is missing", () => {
       const rawData = { type: "livingBeing" };
-      const result = resolveAndApplyLens(rawData, entityUnion, nestedRegistries, nestedUpgraders);
+      const result = resolveAndApplyLens(rawData, entityUnion, nestedRegistries, nestedUpgradeFns);
 
       expect(result).toBe(rawData);
     });
 
     it("returns raw data when nested value is not an object", () => {
       const rawData = { type: "livingBeing", value: "not-an-object" };
-      const result = resolveAndApplyLens(rawData, entityUnion, nestedRegistries, nestedUpgraders);
+      const result = resolveAndApplyLens(rawData, entityUnion, nestedRegistries, nestedUpgradeFns);
 
       expect(result).toBe(rawData);
     });
@@ -737,7 +737,7 @@ describe("resolveAndApplyLens", () => {
         type: "livingBeing",
         value: { kind: "fungus", name: "Mushroom" },
       };
-      const result = resolveAndApplyLens(rawData, entityUnion, nestedRegistries, nestedUpgraders);
+      const result = resolveAndApplyLens(rawData, entityUnion, nestedRegistries, nestedUpgradeFns);
 
       // Unknown variant at LivingBeing level — returned unchanged
       expect(result.type).toBe("livingBeing");
@@ -750,7 +750,7 @@ describe("resolveAndApplyLens", () => {
         rawData,
         livingBeingUnion,
         nestedRegistries,
-        nestedUpgraders,
+        nestedUpgradeFns,
       );
 
       expect(result.latinName).toBe("Latinized(Dog)");

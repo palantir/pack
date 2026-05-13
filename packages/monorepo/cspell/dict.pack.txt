@@ -1,3 +1,5 @@
+footgun
+minifiers
 osdk
 sdkgen
 upgrader

@@ -34,8 +34,8 @@ export interface InternalTypesOutput {
   upgrades: string;
   /** _internal/schema.ts content */
   internalSchema: string;
-  /** _internal/upgraders.ts content */
-  internalUpgraders: string;
+  /** _internal/upgradeFns.ts content */
+  internalUpgradeFns: string;
 }
 
 /** Collected info about all fields for a model across all versions. */
@@ -220,9 +220,9 @@ function generateInternalTypes(
  *
  * Each interface contains only the fields present in that version, with their
  * actual optionality taken straight from that version's IR. The downstream
- * typed upgrader registry generator uses these so an upgrader's parameter can
- * `Pick` the prior version's fields and its return type can index the current
- * version's field type precisely.
+ * `DocumentUpgradeFns` generator uses these so each upgrade function's
+ * parameter can `Pick` the prior version's fields and its return type can
+ * index the current version's field type precisely.
  */
 function generatePerVersionInternalTypes(
   chain: VersionedIrEntry[],
@@ -381,20 +381,25 @@ function generateInternalSchemaContent(
 }
 
 /**
- * Generate _internal/upgraders.ts content: a typed `DocumentUpgraders`
- * interface plus a `withUpgraders` helper that wires it onto the DocumentModel.
+ * Generate _internal/upgradeFns.ts content: a typed `DocumentUpgradeFns`
+ * interface enumerating every upgrade function the app must supply at boot.
  *
  * For every `(modelName, stepName, fieldName)` triple where `derivedFrom` is
  * non-empty, emit a property typed
  * `(oldFields: Pick<<Model>__v<prior>, derivedFrom[number]>) => <Model>__v<current>[fieldName]`.
  * Additive fields (empty `derivedFrom`) are intentionally absent — they are
  * handled by the structural `default` in `_internal/upgrades.ts`.
+ *
+ * The interface is consumed by the generated `DocumentModel` factory in
+ * `models.ts`, which requires it as a parameter when the schema has any
+ * derived fields. Schemas without derived fields emit an empty interface
+ * (still exported for type-uniformity in downstream code).
  */
-function generateUpgraders(
+function generateUpgradeFns(
   chain: VersionedIrEntry[],
   allRecordModels: Map<string, RecordModelInfo>,
 ): string {
-  interface UpgraderEntry {
+  interface UpgradeFnEntry {
     fieldName: string;
     derivedFrom: readonly string[];
   }
@@ -402,7 +407,7 @@ function generateUpgraders(
     stepName: string;
     currentVersion: number;
     priorVersion: number;
-    fields: UpgraderEntry[];
+    fields: UpgradeFnEntry[];
   }
 
   const perModel = new Map<string, StepEntry[]>();
@@ -414,7 +419,7 @@ function generateUpgraders(
       if (currentIdx <= 0) continue;
       const priorVersion = chain[currentIdx - 1]!.version;
 
-      const fields: UpgraderEntry[] = [];
+      const fields: UpgradeFnEntry[] = [];
       for (const [fieldName, fieldMeta] of step.fields) {
         if (fieldMeta.derivedFrom.length === 0) continue;
         fields.push({ fieldName, derivedFrom: [...fieldMeta.derivedFrom] });
@@ -442,25 +447,20 @@ function generateUpgraders(
 
   if (neededTypes.size > 0) {
     const sorted = Array.from(neededTypes).sort();
-    output += `import type { ${sorted.join(", ")} } from "./types.js";\n`;
+    output += `import type { ${sorted.join(", ")} } from "./types.js";\n\n`;
   }
-  output += `import type {\n`;
-  output += `  DocumentSchema,\n`;
-  output += `  UpgraderRegistry,\n`;
-  output += `} from "@palantir/pack.document-schema.model-types";\n`;
-  output += `import { Metadata } from "@palantir/pack.document-schema.model-types";\n`;
-  output += `import { DocumentModel } from "../models.js";\n\n`;
 
   output += `/**\n`;
-  output += ` * Typed upgrader functions the application must supply at boot. Coverage is\n`;
-  output += ` * exhaustive: missing or extra entries fail type-check at the \`withUpgraders\`\n`;
+  output += ` * Typed upgrade functions the application must supply at boot. Coverage is\n`;
+  output +=
+    ` * exhaustive: missing or extra entries fail type-check at the \`DocumentModel(...)\`\n`;
   output += ` * call site. Additive fields (empty \`derivedFrom\`) are intentionally absent.\n`;
   output += ` */\n`;
   if (perModel.size === 0) {
     output += `// eslint-disable-next-line @typescript-eslint/no-empty-object-type\n`;
-    output += `export interface DocumentUpgraders {}\n\n`;
+    output += `export interface DocumentUpgradeFns {}\n`;
   } else {
-    output += `export interface DocumentUpgraders {\n`;
+    output += `export interface DocumentUpgradeFns {\n`;
     for (
       const [modelKey, steps] of Array.from(perModel.entries()).sort(([a], [b]) =>
         a.localeCompare(b)
@@ -478,29 +478,15 @@ function generateUpgraders(
       }
       output += `  };\n`;
     }
-    output += `}\n\n`;
+    output += `}\n`;
   }
-
-  output += `/**\n`;
-  output += ` * Wire the typed upgraders into the DocumentModel. App code should call this\n`;
-  output += ` * once at boot and pass the result to \`BaseYjsDocumentService\`.\n`;
-  output += ` */\n`;
-  output += `export function withUpgraders(upgraders: DocumentUpgraders): DocumentSchema {\n`;
-  output += `  return {\n`;
-  output += `    ...DocumentModel,\n`;
-  output += `    [Metadata]: {\n`;
-  output += `      ...DocumentModel[Metadata],\n`;
-  output += `      upgraders: upgraders as unknown as UpgraderRegistry,\n`;
-  output += `    },\n`;
-  output += `  };\n`;
-  output += `}\n`;
 
   return output;
 }
 
 /**
  * Generate _internal/types.ts, _internal/upgrades.ts, _internal/schema.ts and
- * _internal/upgraders.ts from an already-resolved versioned IR chain.
+ * _internal/upgradeFns.ts from an already-resolved versioned IR chain.
  */
 export function generateInternalFromChain(
   resolved: ResolvedIrChain,
@@ -514,7 +500,7 @@ export function generateInternalFromChain(
     + generatePerVersionInternalTypes(chain);
   const upgrades = generateUpgrades(allRecordModels, latestIr);
   const internalSchema = generateInternalSchemaContent(allRecordModels);
-  const internalUpgraders = generateUpgraders(chain, allRecordModels);
+  const internalUpgradeFns = generateUpgradeFns(chain, allRecordModels);
 
-  return { internalTypes, upgrades, internalSchema, internalUpgraders };
+  return { internalTypes, upgrades, internalSchema, internalUpgradeFns };
 }

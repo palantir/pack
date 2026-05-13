@@ -54,7 +54,7 @@ type JsonValue =
  * as part of `MigrationResult.upgrades`.
  *
  * Forward functions are no longer authored at schema time — they are supplied
- * by the application at runtime via a typed upgrader registry. The schema only
+ * by the application at runtime via a typed `UpgradeFns` table. The schema only
  * declares the structural dependency (`derivedFrom`) and an optional literal
  * JSON `default` used when no source data exists.
  */

@@ -20,7 +20,7 @@ import { convertSchemaToIr } from "../steps/convertStepsToIr.js";
 
 /**
  * JSON-serializable form of a single field migration. Carries only structural
- * metadata; the runtime-supplied `UpgraderRegistry` provides the typed forward
+ * metadata; the runtime-supplied `UpgradeFns` provides the typed forward
  * callbacks at boot.
  */
 export interface SerializedFieldMigration {
@@ -67,8 +67,8 @@ function collectVersionedIrChain(input: SchemaDefinition): VersionedIrEntry[] {
 
 /**
  * Strip the schema-builder migrations down to their JSON-serializable structural
- * metadata. The `forward` callback is discarded — runtime supplies a typed
- * `UpgraderRegistry` at boot instead.
+ * metadata. The `forward` callback is discarded — runtime supplies typed
+ * `UpgradeFns` at boot instead.
  */
 function serializeMigrations(
   migrations: VersionMigrations | undefined,
@@ -126,4 +126,21 @@ export function resolveSchemaChain(
   const chain = collectVersionedIrChain(schema);
   const { latestVersion, minVersion } = resolveMinVersion(chain, minSupportedVersion);
   return { chain, latestVersion, minVersion };
+}
+
+/**
+ * True if any migration in the chain declares a non-empty `derivedFrom`. Drives
+ * whether the generated SDK emits `DocumentModel` as a factory (requires the
+ * app to supply typed upgrade functions) or as a const (no upgrade functions needed).
+ */
+export function chainHasDerivedFields(chain: VersionedIrEntry[]): boolean {
+  for (const entry of chain) {
+    if (entry.migrations == null) continue;
+    for (const recordMigrations of Object.values(entry.migrations)) {
+      for (const fieldMigration of Object.values(recordMigrations)) {
+        if (fieldMigration.derivedFrom.length > 0) return true;
+      }
+    }
+  }
+  return false;
 }

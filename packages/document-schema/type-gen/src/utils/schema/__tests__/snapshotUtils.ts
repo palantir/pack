@@ -117,7 +117,7 @@ export async function formatVersionedZodSnapshot(
  *   ...
  *   // === _internal/schema.ts ===
  *   ...
- *   // === _internal/upgraders.ts ===
+ *   // === _internal/upgradeFns.ts ===
  *   ...
  */
 export async function formatInternalTypesSnapshot(
@@ -128,7 +128,7 @@ export async function formatInternalTypesSnapshot(
   sections.push(section("_internal/types.ts", await fmt(result.internalTypes)));
   sections.push(section("_internal/upgrades.ts", await fmt(result.upgrades)));
   sections.push(section("_internal/schema.ts", await fmt(result.internalSchema)));
-  sections.push(section("_internal/upgraders.ts", await fmt(result.internalUpgraders)));
+  sections.push(section("_internal/upgradeFns.ts", await fmt(result.internalUpgradeFns)));
 
   return sections.join("\n");
 }
