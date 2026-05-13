@@ -1,5 +1,20 @@
 # @palantir/pack.document-schema.type-gen
 
+## 0.10.0
+
+### Minor Changes
+
+- 2153788: create flag for asset deploy to override api context path
+- 3c7a9f3: Split IR Versioned Tasks
+- 1ebb677: Always use the IR as intermediary between builders and SDK/Zod/Wire
+
+### Patch Changes
+
+- Updated dependencies [3c7a9f3]
+- Updated dependencies [1ebb677]
+  - @palantir/pack.document-schema.model-types@0.9.0
+  - @palantir/pack.schema@0.5.0
+
 ## 0.9.0
 
 ### Minor Changes
