@@ -16,7 +16,7 @@
 
 import type { WithMetadata } from "./Metadata.js";
 import type { Model, ModelData } from "./Model.js";
-import type { UpgradeRegistryMap } from "./UpgradeLens.js";
+import type { UpgradeRegistryMap, UpgraderRegistry } from "./UpgradeLens.js";
 
 /**
  * The base type for an application sdk's generated document schema.
@@ -36,4 +36,10 @@ export interface DocumentSchemaMetadata {
   readonly version: number;
   readonly minSupportedVersion?: number;
   readonly upgrades?: UpgradeRegistryMap;
+  /**
+   * Typed registry of upgrader forward functions, supplied by the app at boot
+   * via the generated `withUpgraders` helper. Absent when no migration data is
+   * required (single-version schema or all upgraders additive).
+   */
+  readonly upgraders?: UpgraderRegistry;
 }

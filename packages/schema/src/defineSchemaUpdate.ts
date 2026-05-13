@@ -26,7 +26,6 @@ export interface InitialSchema<T extends ModelDefs = ModelDefs> {
 
 export interface FieldMigration {
   readonly derivedFrom: readonly string[];
-  readonly forward: (oldFields: Record<string, unknown>) => unknown;
 }
 
 export type VersionMigrations = Record<string, Record<string, FieldMigration>>;

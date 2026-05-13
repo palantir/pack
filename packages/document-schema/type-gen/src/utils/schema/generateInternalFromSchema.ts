@@ -15,6 +15,7 @@
  */
 
 import type {
+  IFieldDef,
   IFieldTypeUnion,
   IRealTimeDocumentSchema,
 } from "../../lib/pack-docschema-api/pack-docschema-ir/index.js";
@@ -33,6 +34,8 @@ export interface InternalTypesOutput {
   upgrades: string;
   /** _internal/schema.ts content */
   internalSchema: string;
+  /** _internal/upgraders.ts content */
+  internalUpgraders: string;
 }
 
 /** Collected info about all fields for a model across all versions. */
@@ -53,7 +56,7 @@ interface AllFieldInfo {
 interface UpgradeStep {
   name: string;
   addedInVersion: number;
-  fields: Map<string, { derivedFrom: string[]; forwardSource: string; default?: unknown }>;
+  fields: Map<string, { derivedFrom: string[]; default?: unknown }>;
   removedFields: string[];
 }
 
@@ -134,7 +137,7 @@ function collectRecordModels(
       // Fields added in this version
       const addedFields = new Map<
         string,
-        { derivedFrom: string[]; forwardSource: string; default?: unknown }
+        { derivedFrom: string[]; default?: unknown }
       >();
       const recordUpgrades = currEntry.migrations?.[modelKey];
       for (const fieldKey of currFields) {
@@ -143,12 +146,10 @@ function collectRecordModels(
           if (annotation != null) {
             addedFields.set(fieldKey, {
               derivedFrom: [...annotation.derivedFrom],
-              forwardSource: annotation.forwardSource,
             });
           } else {
             addedFields.set(fieldKey, {
               derivedFrom: [],
-              forwardSource: "() => undefined",
             });
           }
         }
@@ -215,6 +216,59 @@ function generateInternalTypes(
 }
 
 /**
+ * Generate per-version internal interfaces (e.g. `ShapeBox__v1`, `ShapeBox__v2`).
+ *
+ * Each interface contains only the fields present in that version, with their
+ * actual optionality taken straight from that version's IR. The downstream
+ * typed upgrader registry generator uses these so an upgrader's parameter can
+ * `Pick` the prior version's fields and its return type can index the current
+ * version's field type precisely.
+ */
+function generatePerVersionInternalTypes(
+  chain: VersionedIrEntry[],
+): string {
+  // Group by model so each model's versions appear together in ascending order.
+  const perModelVersions = new Map<
+    string,
+    { version: number; fields: readonly IFieldDef[] }[]
+  >();
+
+  for (const { version, ir } of chain) {
+    for (const [modelKey, modelDef] of Object.entries(ir.models)) {
+      if (modelDef.type !== "record") continue;
+      let list = perModelVersions.get(modelKey);
+      if (list == null) {
+        list = [];
+        perModelVersions.set(modelKey, list);
+      }
+      list.push({ version, fields: modelDef.record.fields });
+    }
+  }
+
+  let output = "";
+  const sortedModels = Array.from(perModelVersions.entries()).sort(([a], [b]) =>
+    a.localeCompare(b)
+  );
+  for (const [modelKey, versions] of sortedModels) {
+    for (const { version, fields } of versions) {
+      output += `/** Internal representation of ${modelKey} at schema version ${version}. */\n`;
+      output += `export interface ${modelKey}__v${version} {\n`;
+      const sortedFields = [...fields].sort((a, b) => a.key.localeCompare(b.key));
+      for (const field of sortedFields) {
+        const tsType = convertFieldTypeToInternalTypeScript(
+          field.fieldType,
+          field.isOptional === true,
+        );
+        const optional = field.isOptional === true ? "?" : "";
+        output += `  readonly ${field.key}${optional}: ${tsType};\n`;
+      }
+      output += "}\n\n";
+    }
+  }
+  return output;
+}
+
+/**
  * Generate _internal/upgrades.ts content.
  */
 function generateUpgrades(
@@ -263,7 +317,6 @@ function generateUpgrades(
         output += `          derivedFrom: [${
           fieldMeta.derivedFrom.map(d => `"${d}"`).join(", ")
         }],\n`;
-        output += `          forward: ${fieldMeta.forwardSource},\n`;
         if (fieldMeta.default !== undefined) {
           output += `          default: ${JSON.stringify(fieldMeta.default)},\n`;
         }
@@ -328,8 +381,126 @@ function generateInternalSchemaContent(
 }
 
 /**
- * Generate _internal/types.ts, _internal/upgrades.ts, and _internal/schema.ts
- * from an already-resolved versioned IR chain.
+ * Generate _internal/upgraders.ts content: a typed `DocumentUpgraders`
+ * interface plus a `withUpgraders` helper that wires it onto the DocumentModel.
+ *
+ * For every `(modelName, stepName, fieldName)` triple where `derivedFrom` is
+ * non-empty, emit a property typed
+ * `(oldFields: Pick<<Model>__v<prior>, derivedFrom[number]>) => <Model>__v<current>[fieldName]`.
+ * Additive fields (empty `derivedFrom`) are intentionally absent — they are
+ * handled by the structural `default` in `_internal/upgrades.ts`.
+ */
+function generateUpgraders(
+  chain: VersionedIrEntry[],
+  allRecordModels: Map<string, RecordModelInfo>,
+): string {
+  interface UpgraderEntry {
+    fieldName: string;
+    derivedFrom: readonly string[];
+  }
+  interface StepEntry {
+    stepName: string;
+    currentVersion: number;
+    priorVersion: number;
+    fields: UpgraderEntry[];
+  }
+
+  const perModel = new Map<string, StepEntry[]>();
+  const neededTypes = new Set<string>();
+
+  for (const [modelKey, model] of sortedEntries(allRecordModels)) {
+    for (const step of model.steps) {
+      const currentIdx = chain.findIndex(c => c.version === step.addedInVersion);
+      if (currentIdx <= 0) continue;
+      const priorVersion = chain[currentIdx - 1]!.version;
+
+      const fields: UpgraderEntry[] = [];
+      for (const [fieldName, fieldMeta] of step.fields) {
+        if (fieldMeta.derivedFrom.length === 0) continue;
+        fields.push({ fieldName, derivedFrom: [...fieldMeta.derivedFrom] });
+      }
+      if (fields.length === 0) continue;
+
+      let list = perModel.get(modelKey);
+      if (list == null) {
+        list = [];
+        perModel.set(modelKey, list);
+      }
+      list.push({
+        stepName: step.name,
+        currentVersion: step.addedInVersion,
+        priorVersion,
+        fields,
+      });
+      neededTypes.add(`${modelKey}__v${priorVersion}`);
+      neededTypes.add(`${modelKey}__v${step.addedInVersion}`);
+    }
+  }
+
+  let output = GENERATED_FILE_HEADER;
+  output += `\n`;
+
+  if (neededTypes.size > 0) {
+    const sorted = Array.from(neededTypes).sort();
+    output += `import type { ${sorted.join(", ")} } from "./types.js";\n`;
+  }
+  output += `import type {\n`;
+  output += `  DocumentSchema,\n`;
+  output += `  UpgraderRegistry,\n`;
+  output += `} from "@palantir/pack.document-schema.model-types";\n`;
+  output += `import { Metadata } from "@palantir/pack.document-schema.model-types";\n`;
+  output += `import { DocumentModel } from "../models.js";\n\n`;
+
+  output += `/**\n`;
+  output += ` * Typed upgrader functions the application must supply at boot. Coverage is\n`;
+  output += ` * exhaustive: missing or extra entries fail type-check at the \`withUpgraders\`\n`;
+  output += ` * call site. Additive fields (empty \`derivedFrom\`) are intentionally absent.\n`;
+  output += ` */\n`;
+  if (perModel.size === 0) {
+    output += `// eslint-disable-next-line @typescript-eslint/no-empty-object-type\n`;
+    output += `export interface DocumentUpgraders {}\n\n`;
+  } else {
+    output += `export interface DocumentUpgraders {\n`;
+    for (
+      const [modelKey, steps] of Array.from(perModel.entries()).sort(([a], [b]) =>
+        a.localeCompare(b)
+      )
+    ) {
+      output += `  ${modelKey}: {\n`;
+      for (const step of steps) {
+        output += `    ${step.stepName}: {\n`;
+        for (const f of step.fields) {
+          const pickKeys = f.derivedFrom.map(d => `"${d}"`).join(" | ");
+          output +=
+            `      ${f.fieldName}: (oldFields: Pick<${modelKey}__v${step.priorVersion}, ${pickKeys}>) => ${modelKey}__v${step.currentVersion}["${f.fieldName}"];\n`;
+        }
+        output += `    };\n`;
+      }
+      output += `  };\n`;
+    }
+    output += `}\n\n`;
+  }
+
+  output += `/**\n`;
+  output += ` * Wire the typed upgraders into the DocumentModel. App code should call this\n`;
+  output += ` * once at boot and pass the result to \`BaseYjsDocumentService\`.\n`;
+  output += ` */\n`;
+  output += `export function withUpgraders(upgraders: DocumentUpgraders): DocumentSchema {\n`;
+  output += `  return {\n`;
+  output += `    ...DocumentModel,\n`;
+  output += `    [Metadata]: {\n`;
+  output += `      ...DocumentModel[Metadata],\n`;
+  output += `      upgraders: upgraders as unknown as UpgraderRegistry,\n`;
+  output += `    },\n`;
+  output += `  };\n`;
+  output += `}\n`;
+
+  return output;
+}
+
+/**
+ * Generate _internal/types.ts, _internal/upgrades.ts, _internal/schema.ts and
+ * _internal/upgraders.ts from an already-resolved versioned IR chain.
  */
 export function generateInternalFromChain(
   resolved: ResolvedIrChain,
@@ -339,9 +510,11 @@ export function generateInternalFromChain(
 
   const allRecordModels = collectRecordModels(chain);
 
-  const internalTypes = generateInternalTypes(allRecordModels);
+  const internalTypes = generateInternalTypes(allRecordModels)
+    + generatePerVersionInternalTypes(chain);
   const upgrades = generateUpgrades(allRecordModels, latestIr);
   const internalSchema = generateInternalSchemaContent(allRecordModels);
+  const internalUpgraders = generateUpgraders(chain, allRecordModels);
 
-  return { internalTypes, upgrades, internalSchema };
+  return { internalTypes, upgrades, internalSchema, internalUpgraders };
 }

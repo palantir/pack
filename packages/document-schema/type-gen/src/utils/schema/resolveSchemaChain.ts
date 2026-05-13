@@ -19,14 +19,12 @@ import type { IRealTimeDocumentSchema } from "../../lib/pack-docschema-api/pack-
 import { convertSchemaToIr } from "../steps/convertStepsToIr.js";
 
 /**
- * JSON-serializable form of a single field migration. The `forward` callback
- * from the schema builder is captured as its source string so the entry can be
- * round-tripped through a JSON IR file.
+ * JSON-serializable form of a single field migration. Carries only structural
+ * metadata; the runtime-supplied `UpgraderRegistry` provides the typed forward
+ * callbacks at boot.
  */
 export interface SerializedFieldMigration {
   readonly derivedFrom: readonly string[];
-  /** `Function.toString()` output of the original `forward` callback. */
-  readonly forwardSource: string;
 }
 
 /** Serialized migrations keyed by `[recordModelName][fieldName]`. */
@@ -68,8 +66,9 @@ function collectVersionedIrChain(input: SchemaDefinition): VersionedIrEntry[] {
 }
 
 /**
- * Capture each `forward` callback as its source string so the migrations object
- * is plain JSON-serializable data.
+ * Strip the schema-builder migrations down to their JSON-serializable structural
+ * metadata. The `forward` callback is discarded — runtime supplies a typed
+ * `UpgraderRegistry` at boot instead.
  */
 function serializeMigrations(
   migrations: VersionMigrations | undefined,
@@ -81,7 +80,6 @@ function serializeMigrations(
     for (const [fieldName, migration] of Object.entries(fields)) {
       fieldEntries[fieldName] = {
         derivedFrom: [...migration.derivedFrom],
-        forwardSource: migration.forward.toString(),
       };
     }
     result[modelKey] = fieldEntries;

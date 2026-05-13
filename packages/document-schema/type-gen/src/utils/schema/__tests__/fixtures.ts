@@ -157,11 +157,9 @@ export const twoVersionDerivedFieldsSchema: SchemaDefinition = {
     ShapeBox: {
       fillColor: {
         derivedFrom: ["color"],
-        forward: ({ color }: Record<string, unknown>) => color,
       },
       strokeColor: {
         derivedFrom: ["color"],
-        forward: ({ color }: Record<string, unknown>) => color,
       },
     },
   },

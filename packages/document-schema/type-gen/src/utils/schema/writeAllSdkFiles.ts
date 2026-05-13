@@ -77,6 +77,8 @@ export async function writeAllSdkFiles(
   consola.success(`Generated upgrades: ${path.join(internalDir, "upgrades.ts")}`);
   await fs.writeFile(path.join(internalDir, "schema.ts"), internal.internalSchema, "utf8");
   consola.success(`Generated internal schema: ${path.join(internalDir, "schema.ts")}`);
+  await fs.writeFile(path.join(internalDir, "upgraders.ts"), internal.internalUpgraders, "utf8");
+  consola.success(`Generated upgraders: ${path.join(internalDir, "upgraders.ts")}`);
 
   // versions.ts
   consola.info("Generating version types...");

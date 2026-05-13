@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+import type { JsonValue } from "./JsonValue.js";
+
 /** Type descriptor for a field, enabling recursive lens application. */
 export type FieldTypeDescriptor =
   | { kind: "primitive" }
@@ -24,12 +26,12 @@ export type FieldTypeDescriptor =
 
 export interface FieldLensDef {
   /**
-   * Source field names. `forward` receives only these fields, not the full record.
-   * When empty, the field is additive — only `default` applies and `forward` is never called.
+   * Source field names. When empty, the field is additive — only `default` applies and no
+   * upgrader is invoked.
    */
   derivedFrom: string[];
-  forward: (oldFields: Record<string, unknown>) => unknown;
-  default?: unknown;
+  /** Literal JSON only — validated at schema build time. Used when no source data exists. */
+  default?: JsonValue;
 }
 
 export interface FieldDef {
@@ -68,3 +70,18 @@ export interface UnionUpgradeRegistry<ModelName extends string = string> {
 export type UpgradeRegistryEntry = UpgradeRegistry | UnionUpgradeRegistry;
 
 export type UpgradeRegistryMap = Record<string, UpgradeRegistryEntry>;
+
+/**
+ * Runtime-supplied registry of typed upgrader functions, supplied by the
+ * application at boot via the generated `withUpgraders` helper. Structural
+ * shape: `registry[modelName][stepName][fieldName] -> forward fn`.
+ *
+ * The generated `DocumentUpgraders` interface is a precisely-typed refinement
+ * of this shape; both `BaseYjsDocumentService` and `applyReadLens` read from
+ * it via this loose type.
+ */
+
+export type UpgraderRegistry = Record<
+  string,
+  Record<string, Record<string, (oldFields: any) => any>>
+>;

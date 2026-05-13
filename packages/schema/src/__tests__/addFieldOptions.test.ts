@@ -14,6 +14,13 @@
  * limitations under the License.
  */
 
+// NOTE: `forward` closures are no longer authored anywhere in the schema
+// builder. Upgrader callbacks are supplied at runtime via a typed registry
+// (see pack-oss-3s3, design doc docs/design/runtime-upgrader-registry.md).
+// `FieldMigration` carries only `derivedFrom`; assertions exercise the
+// structural portion of each migration and the builder's pruning/merging
+// behavior. Runtime invocation is covered by `applyReadLens` tests in
+// `@palantir/pack.state.core` and SDK generator snapshots in `type-gen`.
 import { describe, expect, it } from "vitest";
 import type { SchemaBuilder } from "../defineMigration.js";
 import { applyMigration, defineMigration } from "../defineMigration.js";
@@ -35,18 +42,16 @@ describe("addField with upgrade options", () => {
     }),
   });
 
-  it("propagates derivedFrom + forward to versioned upgrades", () => {
+  it("propagates derivedFrom to versioned upgrades", () => {
     const colorSplit = defineSchemaUpdate(
       "colorSplit",
       (schema: SchemaBuilder<typeof v1.models>) => ({
         ShapeBox: schema.ShapeBox
           .addField("fillColor", P.Optional(P.String), {
             derivedFrom: ["color"],
-            forward: ({ color }: { color?: string }) => color,
           })
           .addField("strokeColor", P.Optional(P.String), {
             derivedFrom: ["color"],
-            forward: ({ color }: { color?: string }) => color,
           })
           .removeField("color")
           .build(),
@@ -58,10 +63,9 @@ describe("addField with upgrade options", () => {
     expect(v2.migrations).toBeDefined();
     expect(v2.migrations?.ShapeBox?.fillColor?.derivedFrom).toEqual(["color"]);
     expect(v2.migrations?.ShapeBox?.strokeColor?.derivedFrom).toEqual(["color"]);
-
-    const fillForward = v2.migrations?.ShapeBox?.fillColor?.forward;
-    expect(typeof fillForward).toBe("function");
-    expect(fillForward?.({ color: "red" })).toBe("red");
+    // Forward callbacks are no longer authored here — they are supplied at
+    // runtime via `withUpgraders` (see pack-oss-3s3 design doc).
+    expect(Object.keys(v2.migrations?.ShapeBox?.fillColor ?? {})).toEqual(["derivedFrom"]);
   });
 
   it("removeField strips the field from the resulting record fields", () => {
@@ -71,7 +75,6 @@ describe("addField with upgrade options", () => {
         ShapeBox: schema.ShapeBox
           .addField("fillColor", P.Optional(P.String), {
             derivedFrom: ["color"],
-            forward: ({ color }: { color?: string }) => color,
           })
           .removeField("color")
           .build(),
@@ -92,7 +95,6 @@ describe("addField with upgrade options", () => {
       ShapeBox: schema.ShapeBox
         .addField("fillColor", P.Optional(P.String), {
           derivedFrom: ["color"],
-          forward: ({ color }: { color?: string }) => color,
         })
         .build(),
     }));
@@ -103,13 +105,12 @@ describe("addField with upgrade options", () => {
         ShapeBox: {
           fillColor: {
             derivedFrom: ["color"],
-            forward: () => "explicit-default",
           },
         },
       })
       .build();
 
-    expect(v2.migrations?.ShapeBox?.fillColor?.forward({})).toBe("explicit-default");
+    expect(v2.migrations?.ShapeBox?.fillColor?.derivedFrom).toEqual(["color"]);
   });
 
   it("withMigrations supplements (does not erase) sugar from a different field", () => {
@@ -117,7 +118,6 @@ describe("addField with upgrade options", () => {
       ShapeBox: schema.ShapeBox
         .addField("fillColor", P.Optional(P.String), {
           derivedFrom: ["color"],
-          forward: ({ color }: { color?: string }) => color,
         })
         .addField("opacity", P.Optional(P.Double))
         .build(),
@@ -129,14 +129,13 @@ describe("addField with upgrade options", () => {
         ShapeBox: {
           opacity: {
             derivedFrom: [],
-            forward: () => 1.0,
           },
         },
       })
       .build();
 
-    expect(v2.migrations?.ShapeBox?.fillColor?.forward({ color: "red" })).toBe("red");
-    expect(v2.migrations?.ShapeBox?.opacity?.forward({})).toBe(1.0);
+    expect(v2.migrations?.ShapeBox?.fillColor?.derivedFrom).toEqual(["color"]);
+    expect(v2.migrations?.ShapeBox?.opacity?.derivedFrom).toEqual([]);
   });
 
   it("AdditiveFieldOptions { default } is accepted but not added to upgrades", () => {
@@ -166,7 +165,6 @@ describe("addField with upgrade options", () => {
       ShapeBox: schema.ShapeBox
         .addField("temp", P.Optional(P.String), {
           derivedFrom: ["color"],
-          forward: ({ color }: { color?: string }) => color,
         })
         .removeField("temp")
         .build(),
@@ -184,7 +182,6 @@ describe("addField with upgrade options", () => {
         ShapeBox: schema.ShapeBox
           .addField("fillColor", P.Optional(P.String), {
             derivedFrom: ["color"],
-            forward: ({ color }: { color?: string }) => color,
           })
           .build(),
       }),
@@ -215,7 +212,6 @@ describe("addField with upgrade options", () => {
         ShapeBox: schema.ShapeBox
           .addField("fillColor", P.Optional(P.String), {
             derivedFrom: ["color"],
-            forward: ({ color }: { color?: string }) => color,
           })
           .build(),
       }),
@@ -243,7 +239,6 @@ describe("addField with upgrade options", () => {
         Box: schema.ShapeBox
           .addField("fillColor", P.Optional(P.String), {
             derivedFrom: ["color"],
-            forward: ({ color }: { color?: string }) => color,
           })
           .build(),
       }),
@@ -259,7 +254,6 @@ describe("addField with upgrade options", () => {
       ShapeBox: schema.ShapeBox
         .addField("fillColor", P.Optional(P.String), {
           derivedFrom: ["color"],
-          forward: ({ color }: { color?: string }) => color,
         })
         .build(),
     }));
@@ -292,7 +286,6 @@ describe("addField with upgrade options", () => {
       ShapeBox: schema.ShapeBox
         .addField("fillColor", P.Optional(P.String), {
           derivedFrom: ["color"],
-          forward: ({ color }: { color?: string }) => color,
         })
         .build(),
     }));
@@ -321,7 +314,6 @@ describe("addField with upgrade options", () => {
         ShapeBox: schema.ShapeBox
           .addField("temp", P.Optional(P.String), {
             derivedFrom: ["color"],
-            forward: ({ color }: { color?: string }) => color,
           })
           .build(),
       }),
@@ -347,11 +339,9 @@ describe("addField with upgrade options", () => {
         ShapeBox: schema.ShapeBox
           .addField("temp", P.Optional(P.String), {
             derivedFrom: ["color"],
-            forward: ({ color }: { color?: string }) => color,
           })
           .addField("fillColor", P.Optional(P.String), {
             derivedFrom: ["color"],
-            forward: ({ color }: { color?: string }) => color,
           })
           .build(),
       }),
@@ -393,7 +383,6 @@ describe("addField with upgrade options", () => {
         ShapeBox: {
           temp: {
             derivedFrom: ["color"],
-            forward: ({ color }: { color?: string }) => color,
           },
         },
       })
@@ -410,7 +399,6 @@ describe("addField with upgrade options", () => {
         ShapeBox: {
           ghost: {
             derivedFrom: ["color"],
-            forward: () => "x",
           },
         },
       })
@@ -435,7 +423,6 @@ describe("addField with upgrade options", () => {
         ShapeBox: schema.ShapeBox
           .addField("fillColor", P.Optional(P.String), {
             derivedFrom: ["color"],
-            forward: ({ color }: { color?: string }) => color,
           })
           .build(),
       }),
@@ -464,5 +451,136 @@ describe("addField with upgrade options", () => {
     // the runtime override produces the union. Cast for the runtime check.
     expect((v2.models.ShapeBox as unknown as { type: string }).type).toBe("union");
     expect(v2.migrations).toBeUndefined();
+  });
+
+  it("UpgradeFieldOptions { derivedFrom, default } captures default in upgrades", () => {
+    // When a derived field also supplies a literal-JSON `default`, the option
+    // object flows into `upgrades` verbatim — the registry's typed upgrader
+    // may consult `default` when no source data is present.
+    const update = defineSchemaUpdate("update", (schema: SchemaBuilder<typeof v1.models>) => ({
+      ShapeBox: schema.ShapeBox
+        .addField("fillColor", P.Optional(P.String), {
+          derivedFrom: ["color"],
+          default: "transparent",
+        })
+        .build(),
+    }));
+
+    const v2 = nextSchema(v1).addSchemaUpdate(update).build();
+    expect(v2.migrations?.ShapeBox?.fillColor).toEqual({
+      derivedFrom: ["color"],
+      default: "transparent",
+    });
+  });
+});
+
+// Exercises `assertJsonDefault` via the public `addField()` entry point.
+// `assertJsonDefault` is not exported, so we drive it through the builder.
+// Each rejection case asserts both that the call throws and that the path
+// reported in the error message includes the field name (and, where
+// applicable, a nested key/index) — that path is the user-facing breadcrumb
+// when a default value is malformed.
+describe("addField default value validation (assertJsonDefault)", () => {
+  const v1 = defineSchema({
+    R: defineRecord("R", { docs: "r", fields: { x: P.Double } }),
+  });
+
+  /**
+   * Helper that builds a one-field migration adding `extra` with the given
+   * `default`. Returns the `addField` invocation as a thunk so callers can
+   * either invoke it (success case) or assert it throws (rejection case).
+   */
+  function withDefault(value: unknown): () => unknown {
+    return () =>
+      defineMigration(v1.models, schema => ({
+        R: schema.R
+          .addField("extra", P.Optional(P.String), { default: value as never })
+          .build(),
+      }));
+  }
+
+  describe("accepts literal JSON", () => {
+    it.each([
+      ["string", "hello"],
+      ["number", 42],
+      ["zero", 0],
+      ["negative number", -1.5],
+      ["true", true],
+      ["false", false],
+      ["null", null],
+      ["empty object", {}],
+      ["empty array", []],
+      ["nested plain object", { a: 1, b: { c: "x", d: [1, 2, null] } }],
+      ["nested array of plain objects", [{ x: 1 }, { x: 2 }]],
+    ])("%s", (_label, value) => {
+      expect(withDefault(value)).not.toThrow();
+    });
+  });
+
+  describe("rejects non-JSON values", () => {
+    it("undefined at the top level", () => {
+      // Note: `{ default: undefined }` is structurally the same as `{}` so
+      // it bypasses validation; the real top-level case is `default: NaN`
+      // surfacing as undefined-after-stringify. We test undefined-via-nesting
+      // below where it actually triggers the validator.
+      expect(withDefault(() => undefined)).toThrow(/function is not valid JSON/);
+    });
+
+    it("nested undefined inside an object", () => {
+      expect(withDefault({ a: 1, b: undefined })).toThrow(
+        /addField\("extra"\)\.default\.b: undefined is not valid JSON/,
+      );
+    });
+
+    it("nested undefined inside an array", () => {
+      expect(withDefault([1, undefined, 3])).toThrow(
+        /addField\("extra"\)\.default\[1\]: undefined is not valid JSON/,
+      );
+    });
+
+    it("function", () => {
+      expect(withDefault(() => 1)).toThrow(/function is not valid JSON/);
+    });
+
+    it("symbol", () => {
+      expect(withDefault(Symbol("s"))).toThrow(/symbol is not valid JSON/);
+    });
+
+    it("bigint", () => {
+      expect(withDefault(BigInt(1))).toThrow(/bigint is not valid JSON/);
+    });
+
+    it("Date instance (non-plain object)", () => {
+      expect(withDefault(new Date(0))).toThrow(/Date is not valid JSON/);
+    });
+
+    it("RegExp instance (non-plain object)", () => {
+      expect(withDefault(/foo/)).toThrow(/RegExp is not valid JSON/);
+    });
+
+    it("class instance (non-plain object)", () => {
+      class Widget {
+        readonly id = 1;
+      }
+      expect(withDefault(new Widget())).toThrow(/Widget is not valid JSON/);
+    });
+
+    it("Map (non-plain object)", () => {
+      expect(withDefault(new Map())).toThrow(/Map is not valid JSON/);
+    });
+
+    it("symbol-keyed property on a plain object", () => {
+      const obj: Record<string | symbol, unknown> = { a: 1 };
+      obj[Symbol("k")] = 2;
+      expect(withDefault(obj)).toThrow(
+        /symbol-keyed properties are not valid JSON/,
+      );
+    });
+
+    it("nested non-plain object reports the path", () => {
+      expect(withDefault({ inner: { date: new Date(0) } })).toThrow(
+        /addField\("extra"\)\.default\.inner\.date: Date is not valid JSON/,
+      );
+    });
   });
 });

@@ -19,6 +19,7 @@ import { GENERATED_FILE_HEADER } from "../generatedFileHeader.js";
 import type { ResolvedIrChain } from "./resolveSchemaChain.js";
 import { resolveMinVersion } from "./resolveSchemaChain.js";
 import {
+  INTERNAL_UPGRADERS_PATH,
   MODELS_PATH,
   TYPES_REEXPORT_PATH,
   typesFilePath,
@@ -35,6 +36,8 @@ import {
  * - `types.js` (star export — latest-version type aliases)
  * - `versions.js` (star export — SupportedVersions, LatestVersion, MinSupportedVersion)
  * - `versionedDocRef.js` (star export — VersionedDocRef types and factory)
+ * - `_internal/upgraders.js` (named: `withUpgraders` + `DocumentUpgraders` —
+ *   the boot-time typed upgrader registry)
  * - Per supported version: explicit named type exports from `types_vN.js`
  *   (not star exports, to avoid polluting autocomplete for read-only consumers)
  */
@@ -52,6 +55,8 @@ export function generateIndexFromChain(
   output += `export * from "${TYPES_REEXPORT_PATH}";\n`;
   output += `export * from "${VERSIONS_PATH}";\n`;
   output += `export * from "${VERSIONED_DOC_REF_PATH}";\n`;
+  // Boot-time upgrader wiring helper (typed registry, supplied by the app).
+  output += `export { withUpgraders, type DocumentUpgraders } from "${INTERNAL_UPGRADERS_PATH}";\n`;
 
   // Per-version explicit named type exports
   for (const { version, ir } of chain) {
