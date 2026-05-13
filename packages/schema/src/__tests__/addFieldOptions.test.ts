@@ -14,13 +14,6 @@
  * limitations under the License.
  */
 
-// NOTE: `forward` closures are no longer authored anywhere in the schema
-// builder. Upgrade functions are supplied at runtime via a typed table
-// (see pack-oss-3s3, design doc docs/design/runtime-upgrade-fns.md).
-// `FieldMigration` carries only `derivedFrom`; assertions exercise the
-// structural portion of each migration and the builder's pruning/merging
-// behavior. Runtime invocation is covered by `applyReadLens` tests in
-// `@palantir/pack.state.core` and SDK generator snapshots in `type-gen`.
 import { describe, expect, it } from "vitest";
 import type { SchemaBuilder } from "../defineMigration.js";
 import { applyMigration, defineMigration } from "../defineMigration.js";
@@ -63,8 +56,6 @@ describe("addField with upgrade options", () => {
     expect(v2.migrations).toBeDefined();
     expect(v2.migrations?.ShapeBox?.fillColor?.derivedFrom).toEqual(["color"]);
     expect(v2.migrations?.ShapeBox?.strokeColor?.derivedFrom).toEqual(["color"]);
-    // Forward callbacks are no longer authored here — they are supplied at
-    // runtime via the generated `DocumentModel(...)` factory (see pack-oss-3s3).
     expect(Object.keys(v2.migrations?.ShapeBox?.fillColor ?? {})).toEqual(["derivedFrom"]);
   });
 

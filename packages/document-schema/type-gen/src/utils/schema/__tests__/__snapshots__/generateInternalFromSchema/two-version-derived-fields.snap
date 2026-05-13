@@ -58,7 +58,6 @@ export const ShapeBoxUpgrades: UpgradeRegistry<'ShapeBox'> = {
   },
   steps: [
     {
-      name: 'v2',
       addedInVersion: 2,
       fields: {
         fillColor: {

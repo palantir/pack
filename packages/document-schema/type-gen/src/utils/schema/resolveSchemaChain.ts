@@ -18,11 +18,7 @@ import type { SchemaDefinition, VersionMigrations } from "@palantir/pack.schema"
 import type { IRealTimeDocumentSchema } from "../../lib/pack-docschema-api/pack-docschema-ir/index.js";
 import { convertSchemaToIr } from "../steps/convertStepsToIr.js";
 
-/**
- * JSON-serializable form of a single field migration. Carries only structural
- * metadata; the runtime-supplied `UpgradeFns` provides the typed forward
- * callbacks at boot.
- */
+/** JSON-serializable form of a single field migration. */
 export interface SerializedFieldMigration {
   readonly derivedFrom: readonly string[];
 }
@@ -65,11 +61,7 @@ function collectVersionedIrChain(input: SchemaDefinition): VersionedIrEntry[] {
   return chain;
 }
 
-/**
- * Strip the schema-builder migrations down to their JSON-serializable structural
- * metadata. The `forward` callback is discarded — runtime supplies typed
- * `UpgradeFns` at boot instead.
- */
+/** Convert schema-builder migrations to their JSON-serializable form. */
 function serializeMigrations(
   migrations: VersionMigrations | undefined,
 ): SerializedVersionMigrations | undefined {

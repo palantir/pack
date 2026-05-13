@@ -134,10 +134,11 @@ export function applyReadLens(
       }
 
       if (canDerive) {
-        const forward = upgradeFns?.[registry.modelName]?.[step.name]?.[fieldName];
+        const stepKey = `v${step.addedInVersion}`;
+        const forward = upgradeFns?.[registry.modelName]?.[stepKey]?.[fieldName];
         if (forward == null) {
           throw new Error(
-            `Missing upgrade function for ${registry.modelName}.${step.name}.${fieldName}. `
+            `Missing upgrade function for ${registry.modelName}.${stepKey}.${fieldName}. `
               + `Construct the document model with \`DocumentModel({...})\` and `
               + `pass the result to your document service at boot.`,
           );

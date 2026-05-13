@@ -39,7 +39,6 @@ describe("applyReadLens", () => {
       },
       steps: [
         {
-          name: "addColorSplit",
           addedInVersion: 2,
           fields: {
             fillColor: { derivedFrom: ["color"] },
@@ -51,7 +50,7 @@ describe("applyReadLens", () => {
     };
     const upgradeFns: UpgradeFns = {
       ShapeBox: {
-        addColorSplit: {
+        v2: {
           fillColor: ({ color }) => color,
           strokeColor: ({ color }) => color,
         },
@@ -76,7 +75,6 @@ describe("applyReadLens", () => {
       },
       steps: [
         {
-          name: "addOpacity",
           addedInVersion: 2,
           fields: {
             opacity: {
@@ -105,7 +103,6 @@ describe("applyReadLens", () => {
       },
       steps: [
         {
-          name: "addColorSplit",
           addedInVersion: 2,
           fields: {
             fillColor: { derivedFrom: ["color"] },
@@ -129,7 +126,6 @@ describe("applyReadLens", () => {
       },
       steps: [
         {
-          name: "addColorSplit",
           addedInVersion: 2,
           fields: {
             fillColor: { derivedFrom: ["color"] },
@@ -155,14 +151,12 @@ describe("applyReadLens", () => {
       },
       steps: [
         {
-          name: "addHexColor",
           addedInVersion: 2,
           fields: {
             hexColor: { derivedFrom: ["color"] },
           },
         },
         {
-          name: "addRgbaColor",
           addedInVersion: 3,
           fields: {
             rgbaColor: { derivedFrom: ["hexColor"] },
@@ -172,10 +166,10 @@ describe("applyReadLens", () => {
     };
     const upgradeFns: UpgradeFns = {
       ShapeBox: {
-        addHexColor: {
+        v2: {
           hexColor: ({ color }) => `#${color}`,
         },
-        addRgbaColor: {
+        v3: {
           rgbaColor: ({ hexColor }) => `rgba(${hexColor})`,
         },
       },
@@ -213,7 +207,6 @@ describe("applyReadLens", () => {
       },
       steps: [
         {
-          name: "addRgba",
           addedInVersion: 2,
           fields: {
             rgba: { derivedFrom: ["hex"] },
@@ -238,7 +231,7 @@ describe("applyReadLens", () => {
 
     const upgradeFns: UpgradeFns = {
       Color: {
-        addRgba: {
+        v2: {
           rgba: ({ hex }) => `rgba(${hex})`,
         },
       },
@@ -261,7 +254,6 @@ describe("applyReadLens", () => {
       },
       steps: [
         {
-          name: "addLabel",
           addedInVersion: 2,
           fields: {
             label: { derivedFrom: ["name"] },
@@ -285,7 +277,7 @@ describe("applyReadLens", () => {
 
     const upgradeFns: UpgradeFns = {
       Item: {
-        addLabel: {
+        v2: {
           label: ({ name }) => `Label: ${name}`,
         },
       },
@@ -313,7 +305,6 @@ describe("applyReadLens", () => {
       },
       steps: [
         {
-          name: "addDisplayValue",
           addedInVersion: 2,
           fields: {
             displayValue: { derivedFrom: ["value"] },
@@ -337,7 +328,7 @@ describe("applyReadLens", () => {
 
     const upgradeFns: UpgradeFns = {
       Config: {
-        addDisplayValue: {
+        v2: {
           displayValue: ({ value }) => `[${value}]`,
         },
       },
@@ -365,7 +356,6 @@ describe("applyReadLens", () => {
       },
       steps: [
         {
-          name: "addColorSplit",
           addedInVersion: 2,
           fields: {
             fillColor: { derivedFrom: ["color"] },
@@ -375,7 +365,7 @@ describe("applyReadLens", () => {
     };
     // Derivation IS triggered (color present, fillColor absent) but no upgradeFns provided.
     expect(() => applyReadLens({ color: "blue" }, registry, { ShapeBox: registry }, undefined))
-      .toThrow(/Missing upgrade function for ShapeBox\.addColorSplit\.fillColor/);
+      .toThrow(/Missing upgrade function for ShapeBox\.v2\.fillColor/);
   });
 });
 
@@ -402,7 +392,6 @@ describe("null / undefined / missing-key semantics", () => {
     },
     steps: [
       {
-        name: "addLabel",
         addedInVersion: 2,
         fields: {
           label: {
@@ -416,7 +405,7 @@ describe("null / undefined / missing-key semantics", () => {
   const allRegistries: UpgradeRegistryMap = { Item: registry };
   const upgradeFns: UpgradeFns = {
     Item: {
-      addLabel: {
+      v2: {
         label: ({ name }) => `derived:${name}`,
       },
     },
@@ -567,7 +556,6 @@ describe("resolveAndApplyLens", () => {
     },
     steps: [
       {
-        name: "addDiameter",
         addedInVersion: 2,
         fields: {
           diameter: { derivedFrom: ["radius"] },
@@ -599,7 +587,7 @@ describe("resolveAndApplyLens", () => {
 
   const upgradeFns: UpgradeFns = {
     Circle: {
-      addDiameter: {
+      v2: {
         diameter: ({ radius }) => (radius as number) * 2,
       },
     },
@@ -659,7 +647,6 @@ describe("resolveAndApplyLens", () => {
       },
       steps: [
         {
-          name: "addLatinName",
           addedInVersion: 2,
           fields: {
             latinName: { derivedFrom: ["species"] },
@@ -697,7 +684,7 @@ describe("resolveAndApplyLens", () => {
 
     const nestedUpgradeFns: UpgradeFns = {
       Animal: {
-        addLatinName: {
+        v2: {
           latinName: ({ species }) => `Latinized(${species})`,
         },
       },

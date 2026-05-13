@@ -51,12 +51,10 @@ type JsonValue =
 /**
  * Upgrade options for a field whose value is derived from prior-version fields.
  * Supplied as the third argument to `addField`; surfaced by `applyMigration`
- * as part of `MigrationResult.upgrades`.
- *
- * Forward functions are no longer authored at schema time — they are supplied
- * by the application at runtime via a typed `UpgradeFns` table. The schema only
- * declares the structural dependency (`derivedFrom`) and an optional literal
- * JSON `default` used when no source data exists.
+ * as part of `MigrationResult.upgrades`. Declares the structural dependency
+ * (`derivedFrom`) and an optional literal JSON `default` used when no source
+ * data exists. The runtime forward function is supplied separately via the
+ * generated `DocumentModel(...)` factory's `UpgradeFns` parameter.
  */
 export interface UpgradeFieldOptions<TOld extends Record<string, unknown>> {
   readonly derivedFrom: ReadonlyArray<keyof TOld & string>;
@@ -82,15 +80,12 @@ export type FieldOptions =
  * first offending value, naming the path for debuggability.
  */
 function assertJsonDefault(value: unknown, path: string): void {
+  // eslint-disable-next-line eqeqeq -- need to distinguish null (valid JSON) from undefined (not).
+  if (value === null) return;
   const t = typeof value;
-  // Reject `undefined` before the null fast-path so that the `value == null`
-  // shorthand below cannot accidentally accept it. (eslint's `eqeqeq` rule
-  // bans `=== null` in this repo, but we still need to distinguish null from
-  // undefined: null is valid JSON, undefined is not.)
   if (t === "undefined") {
     throw new Error(`Invalid JSON default at ${path}: undefined is not valid JSON`);
   }
-  if (value == null) return;
   if (t === "string" || t === "number" || t === "boolean") return;
   if (t === "function" || t === "symbol" || t === "bigint") {
     throw new Error(`Invalid JSON default at ${path}: ${t} is not valid JSON`);
@@ -175,8 +170,7 @@ class UnionBuilderImpl<S extends UnionVariants> implements UnionBuilder<S> {
  * `RecordBuilderImpl.build()` when the builder has collected one or more
  * `FieldOptions`. `applyMigration` reads this and then deletes the property,
  * so the `RecordDef` it returns is structurally clean (no extra keys, no
- * symbol-keyed metadata). Replaces the prior `WeakMap` indirection now that
- * options are pure JSON data rather than closures.
+ * symbol-keyed metadata).
  */
 const UPGRADE_OPTIONS_CARRIER = "__pack_upgrade_options__";
 

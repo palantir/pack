@@ -54,7 +54,6 @@ interface AllFieldInfo {
  * Represents an upgrade step for a model between version transitions.
  */
 interface UpgradeStep {
-  name: string;
   addedInVersion: number;
   fields: Map<string, { derivedFrom: string[]; default?: unknown }>;
   removedFields: string[];
@@ -165,7 +164,6 @@ function collectRecordModels(
 
       if (addedFields.size > 0 || removedFields.length > 0) {
         model.steps.push({
-          name: `v${currEntry.version}`,
           addedInVersion: currEntry.version,
           fields: addedFields,
           removedFields,
@@ -309,7 +307,6 @@ function generateUpgrades(
     output += `  steps: [\n`;
     for (const step of model.steps) {
       output += `    {\n`;
-      output += `      name: "${step.name}",\n`;
       output += `      addedInVersion: ${step.addedInVersion},\n`;
       output += `      fields: {\n`;
       for (const [fieldName, fieldMeta] of step.fields) {
@@ -384,7 +381,7 @@ function generateInternalSchemaContent(
  * Generate _internal/upgradeFns.ts content: a typed `DocumentUpgradeFns`
  * interface enumerating every upgrade function the app must supply at boot.
  *
- * For every `(modelName, stepName, fieldName)` triple where `derivedFrom` is
+ * For every `(modelName, v${version}, fieldName)` triple where `derivedFrom` is
  * non-empty, emit a property typed
  * `(oldFields: Pick<<Model>__v<prior>, derivedFrom[number]>) => <Model>__v<current>[fieldName]`.
  * Additive fields (empty `derivedFrom`) are intentionally absent — they are
@@ -404,7 +401,6 @@ function generateUpgradeFns(
     derivedFrom: readonly string[];
   }
   interface StepEntry {
-    stepName: string;
     currentVersion: number;
     priorVersion: number;
     fields: UpgradeFnEntry[];
@@ -432,7 +428,6 @@ function generateUpgradeFns(
         perModel.set(modelKey, list);
       }
       list.push({
-        stepName: step.name,
         currentVersion: step.addedInVersion,
         priorVersion,
         fields,
@@ -468,7 +463,7 @@ function generateUpgradeFns(
     ) {
       output += `  ${modelKey}: {\n`;
       for (const step of steps) {
-        output += `    ${step.stepName}: {\n`;
+        output += `    v${step.currentVersion}: {\n`;
         for (const f of step.fields) {
           const pickKeys = f.derivedFrom.map(d => `"${d}"`).join(" | ");
           output +=
