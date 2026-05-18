@@ -294,13 +294,13 @@ export class EventServiceCometD implements EventService {
 }
 
 function getCometDWebsocketUrl(appConfig: AppConfig) {
-  const httpUrl = new URL(
-    `${appConfig.remote.packWsPath}/cometd`,
-    appConfig.remote.baseUrl,
-  );
-  httpUrl.protocol.replace(/https?/, "ws");
-  // TODO: likely need a specific port for ingest - all of this should be in in appConfig
-  return httpUrl.href;
+  const url = new URL(appConfig.remote.packWebsocketUrl, appConfig.remote.baseUrl);
+  if (url.protocol === "https:") {
+    url.protocol = "wss:";
+  } else if (url.protocol === "http:") {
+    url.protocol = "ws:";
+  }
+  return url.href;
 }
 
 class TokenExtension {

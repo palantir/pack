@@ -61,7 +61,7 @@ const mockApp = {
     logger: mockLogger,
     osdkClient: mockOsdkClient,
     remote: {
-      packWsPath: "/ws",
+      packWebsocketUrl: "https://test.example.com/ws/cometd",
       baseUrl: "https://test.example.com",
     },
   },

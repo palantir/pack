@@ -51,7 +51,7 @@ describe("StaticTokenService", () => {
         ontologyRid: Promise.resolve("ri.ontology...test"),
         osdkClient: mockOsdkClient,
         remote: {
-          packWsPath: "/api/v2/packSubscriptions",
+          packWebsocketUrl: "https://test.example.com/api/v2/packSubscriptions/cometd",
           baseUrl: "https://test.example.com",
           fetchFn: globalThis.fetch,
         },
