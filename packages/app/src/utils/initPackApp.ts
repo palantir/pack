@@ -357,7 +357,7 @@ function resolvePackWebsocketUrl(options: AppOptions, baseUrl: string | undefine
   if (baseUrl == null || baseUrl === "") {
     return `${path}/cometd`;
   }
-  return new URL(`${path}/cometd`, baseUrl).toString();
+  return new URL(`${path}/cometd`, baseUrl).href;
 }
 
 function isPublicOauthClient(auth: AppOptions["auth"]): auth is PublicOauthClient {
