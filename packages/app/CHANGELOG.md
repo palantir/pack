@@ -1,5 +1,21 @@
 # @palantir/pack.app
 
+## 0.14.0
+
+### Minor Changes
+
+- 597bb0c: rewrite websocket url
+
+### Patch Changes
+
+- Updated dependencies [597bb0c]
+  - @palantir/pack.core@0.3.0
+  - @palantir/pack.state.foundry@0.16.0
+  - @palantir/pack.auth@0.2.0
+  - @palantir/pack.auth.foundry@0.2.0
+  - @palantir/pack.state.core@0.13.0
+  - @palantir/pack.state.demo@0.11.0
+
 ## 0.13.0
 
 ### Minor Changes

@@ -1,5 +1,11 @@
 # @palantir/pack.schema
 
+## 0.6.0
+
+### Minor Changes
+
+- b114b1a: Propagate lenses explicitly
+
 ## 0.5.0
 
 ### Minor Changes
