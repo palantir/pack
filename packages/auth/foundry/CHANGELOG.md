@@ -1,5 +1,13 @@
 # @palantir/pack.auth.foundry
 
+## 0.2.0
+
+### Patch Changes
+
+- Updated dependencies [597bb0c]
+  - @palantir/pack.core@0.3.0
+  - @palantir/pack.auth@0.2.0
+
 ## 0.1.2
 
 ### Patch Changes

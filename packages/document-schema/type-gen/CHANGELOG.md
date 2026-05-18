@@ -1,5 +1,13 @@
 # @palantir/pack.document-schema.type-gen
 
+## 0.11.0
+
+### Patch Changes
+
+- Updated dependencies [b114b1a]
+  - @palantir/pack.schema@0.6.0
+  - @palantir/pack.document-schema.model-types@0.10.0
+
 ## 0.10.0
 
 ### Minor Changes

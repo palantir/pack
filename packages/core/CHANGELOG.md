@@ -1,5 +1,11 @@
 # @palantir/pack.core
 
+## 0.3.0
+
+### Minor Changes
+
+- 597bb0c: rewrite websocket url
+
 ## 0.2.2
 
 ### Patch Changes
