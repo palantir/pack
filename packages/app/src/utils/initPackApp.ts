@@ -344,14 +344,14 @@ function getAppConfig(
     remote: {
       baseUrl,
       fetchFn,
-      packWebsocketUrl: resolvePackWebsocketUrl(options, baseUrl),
+      packEventsUrl: resolvePackEventsUrl(options, baseUrl),
     },
   };
 }
 
-function resolvePackWebsocketUrl(options: AppOptions, baseUrl: string | undefined): string {
-  if (options.remote?.packWebsocketUrl != null) {
-    return options.remote.packWebsocketUrl;
+function resolvePackEventsUrl(options: AppOptions, baseUrl: string | undefined): string {
+  if (options.remote?.packEventsUrl != null) {
+    return options.remote.packEventsUrl;
   }
   const path = "/api/v2/packSubscriptions";
   if (baseUrl == null || baseUrl === "") {

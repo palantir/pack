@@ -294,7 +294,7 @@ export class EventServiceCometD implements EventService {
 }
 
 function getCometDWebsocketUrl(appConfig: AppConfig) {
-  const url = new URL(appConfig.remote.packWebsocketUrl, appConfig.remote.baseUrl);
+  const url = new URL(appConfig.remote.packEventsUrl, appConfig.remote.baseUrl);
   if (url.protocol === "https:") {
     url.protocol = "wss:";
   } else if (url.protocol === "http:") {

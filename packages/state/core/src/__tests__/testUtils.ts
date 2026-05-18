@@ -47,7 +47,7 @@ export function createTestApp(
       ontologyRid: config.ontologyRid ?? Promise.resolve("ri.ontology...test"),
       osdkClient: mockClient,
       remote: {
-        packWebsocketUrl: "http://localhost/api/v2/packSubscriptions/cometd",
+        packEventsUrl: "http://localhost/api/v2/packSubscriptions/cometd",
         baseUrl: "http://localhost",
         fetchFn: fetch,
         ...config.remote,

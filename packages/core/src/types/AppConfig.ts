@@ -40,7 +40,7 @@ export interface AppConfig {
   readonly osdkClient: Client;
 
   readonly remote: {
-    readonly packWebsocketUrl: string;
+    readonly packEventsUrl: string;
     readonly baseUrl: string;
     readonly fetchFn: typeof globalThis.fetch;
   };
@@ -96,7 +96,7 @@ export interface AppOptions {
      * Absolute URL of the backpack cometD endpoint. Typically supplied by host
      * environments.
      */
-    readonly packWebsocketUrl?: string;
+    readonly packEventsUrl?: string;
 
     /**
      * Override the base URL from the OSDK client.

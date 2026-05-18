@@ -54,7 +54,7 @@ describe("PublicOauthService", () => {
         ontologyRid: Promise.resolve("ri.ontology...test"),
         osdkClient: mockOsdkClient,
         remote: {
-          packWebsocketUrl: "https://test.example.com/api/v2/packSubscriptions/cometd",
+          packEventsUrl: "https://test.example.com/api/v2/packSubscriptions/cometd",
           baseUrl: "https://test.example.com",
           fetchFn: globalThis.fetch,
         },
