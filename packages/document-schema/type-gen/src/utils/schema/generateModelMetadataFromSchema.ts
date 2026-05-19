@@ -19,8 +19,9 @@ import { formatVariantName } from "../formatVariantName.js";
 import { GENERATED_FILE_HEADER } from "../generatedFileHeader.js";
 import { findExternalRefType } from "../ir/irFieldHelpers.js";
 import type { ResolvedIrChain } from "./resolveSchemaChain.js";
-import { resolveMinVersion } from "./resolveSchemaChain.js";
+import { chainHasDerivedFields, resolveMinVersion } from "./resolveSchemaChain.js";
 import {
+  INTERNAL_UPGRADE_FNS_PATH,
   INTERNAL_UPGRADES_PATH,
   modelName,
   SCHEMA_REEXPORT_PATH,
@@ -56,6 +57,7 @@ export function generateModelMetadataFromChain(
   const { chain } = resolved;
   const { latestVersion, minVersion } = resolveMinVersion(chain, minSupportedVersion);
   const latestIr = chain[chain.length - 1]!.ir;
+  const hasDerivedFields = chainHasDerivedFields(chain);
 
   // --- Generate models.ts ---
   let output = GENERATED_FILE_HEADER;
@@ -82,6 +84,7 @@ export function generateModelMetadataFromChain(
   const modelTypesImports: string[] = ["DocumentSchema"];
   if (recordNames.length > 0) modelTypesImports.push("RecordModel");
   if (unionNames.length > 0) modelTypesImports.push("UnionModel");
+  if (hasDerivedFields) modelTypesImports.push("UpgradeFns");
 
   output += `import type { ${
     modelTypesImports.sort().join(", ")
@@ -102,6 +105,11 @@ export function generateModelMetadataFromChain(
   const upgradeNames = [...recordNames, ...unionNames].map(n => `${n}Upgrades`);
   if (chain.length > 1 && upgradeNames.length > 0) {
     output += `import { ${upgradeNames.join(", ")} } from "${INTERNAL_UPGRADES_PATH}";\n`;
+  }
+
+  // DocumentUpgradeFns type is needed by the factory's parameter signature.
+  if (hasDerivedFields) {
+    output += `import type { DocumentUpgradeFns } from "${INTERNAL_UPGRADE_FNS_PATH}";\n`;
   }
 
   output += "\n";
@@ -182,23 +190,49 @@ export function generateModelMetadataFromChain(
   let upgradesBlock: string;
   const allUpgradeNames = [...recordNames, ...unionNames];
   if (chain.length > 1 && allUpgradeNames.length > 0) {
-    const upgradeEntries = allUpgradeNames.map(n => `      ${n}: ${n}Upgrades,`).join("\n");
-    upgradesBlock = `    upgrades: {\n${upgradeEntries}\n    },\n`;
+    const upgradeEntries = allUpgradeNames.map(n => `        ${n}: ${n}Upgrades,`).join("\n");
+    upgradesBlock = `      upgrades: {\n${upgradeEntries}\n      },\n`;
   } else {
     upgradesBlock = "";
   }
 
-  output += `export const DocumentModel = {\n`;
-  output += `${modelEntries.join(",\n")},\n`;
-  output += `  [Metadata]: {\n`;
-  output += `    version: ${latestVersion},\n`;
+  // Common metadata literal: shared between the const and factory forms.
+  let metadataBody = `    [Metadata]: {\n`;
+  metadataBody += `      version: ${latestVersion},\n`;
   if (minVersion !== latestVersion) {
-    output += `    minSupportedVersion: ${minVersion},\n`;
+    metadataBody += `      minSupportedVersion: ${minVersion},\n`;
   }
-  output += upgradesBlock;
-  output += `  },\n`;
-  output += `} as const satisfies DocumentSchema;\n\n`;
-  output += `export type DocumentModel = typeof DocumentModel;\n`;
+  metadataBody += upgradesBlock;
+
+  const modelEntriesBody = modelEntries.map(e => `  ${e}`).join(",\n");
+
+  if (hasDerivedFields) {
+    // Factory form: schema has derived fields, so the runtime requires the app
+    // to supply typed upgrade functions. The factory makes this a compile-time
+    // requirement — apps can't get a DocumentSchema value without passing them.
+    output += `/**\n`;
+    output += ` * Construct the DocumentModel for this SDK, wiring in the typed forward\n`;
+    output += ` * functions the runtime needs to materialize derived fields.\n`;
+    output += ` */\n`;
+    output += `export function DocumentModel(upgradeFns: DocumentUpgradeFns): DocumentSchema {\n`;
+    output += `  return {\n`;
+    output += `${modelEntriesBody},\n`;
+    output += metadataBody;
+    output += `      upgradeFns: upgradeFns as unknown as UpgradeFns,\n`;
+    output += `    },\n`;
+    output += `  };\n`;
+    output += `}\n\n`;
+    output += `export type DocumentModel = ReturnType<typeof DocumentModel>;\n`;
+  } else {
+    // Const form: no derived fields means no upgrade functions are required.
+    output += `export const DocumentModel = {\n`;
+    output += `${modelEntriesBody},\n`;
+    // Const form indents one level less than the factory body.
+    output += metadataBody.replace(/^ {4}/gm, "  ");
+    output += `  },\n`;
+    output += `} as const satisfies DocumentSchema;\n\n`;
+    output += `export type DocumentModel = typeof DocumentModel;\n`;
+  }
 
   return { modelsFile: output };
 }

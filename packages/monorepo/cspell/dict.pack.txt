@@ -1,2 +1,4 @@
+footgun
+minifiers
 osdk
 sdkgen

@@ -18,15 +18,9 @@ import type { SchemaDefinition, VersionMigrations } from "@palantir/pack.schema"
 import type { IRealTimeDocumentSchema } from "../../lib/pack-docschema-api/pack-docschema-ir/index.js";
 import { convertSchemaToIr } from "../steps/convertStepsToIr.js";
 
-/**
- * JSON-serializable form of a single field migration. The `forward` callback
- * from the schema builder is captured as its source string so the entry can be
- * round-tripped through a JSON IR file.
- */
+/** JSON-serializable form of a single field migration. */
 export interface SerializedFieldMigration {
   readonly derivedFrom: readonly string[];
-  /** `Function.toString()` output of the original `forward` callback. */
-  readonly forwardSource: string;
 }
 
 /** Serialized migrations keyed by `[recordModelName][fieldName]`. */
@@ -67,10 +61,7 @@ function collectVersionedIrChain(input: SchemaDefinition): VersionedIrEntry[] {
   return chain;
 }
 
-/**
- * Capture each `forward` callback as its source string so the migrations object
- * is plain JSON-serializable data.
- */
+/** Convert schema-builder migrations to their JSON-serializable form. */
 function serializeMigrations(
   migrations: VersionMigrations | undefined,
 ): SerializedVersionMigrations | undefined {
@@ -81,7 +72,6 @@ function serializeMigrations(
     for (const [fieldName, migration] of Object.entries(fields)) {
       fieldEntries[fieldName] = {
         derivedFrom: [...migration.derivedFrom],
-        forwardSource: migration.forward.toString(),
       };
     }
     result[modelKey] = fieldEntries;
@@ -128,4 +118,21 @@ export function resolveSchemaChain(
   const chain = collectVersionedIrChain(schema);
   const { latestVersion, minVersion } = resolveMinVersion(chain, minSupportedVersion);
   return { chain, latestVersion, minVersion };
+}
+
+/**
+ * True if any migration in the chain declares a non-empty `derivedFrom`. Drives
+ * whether the generated SDK emits `DocumentModel` as a factory (requires the
+ * app to supply typed upgrade functions) or as a const (no upgrade functions needed).
+ */
+export function chainHasDerivedFields(chain: VersionedIrEntry[]): boolean {
+  for (const entry of chain) {
+    if (entry.migrations == null) continue;
+    for (const recordMigrations of Object.values(entry.migrations)) {
+      for (const fieldMigration of Object.values(recordMigrations)) {
+        if (fieldMigration.derivedFrom.length > 0) return true;
+      }
+    }
+  }
+  return false;
 }

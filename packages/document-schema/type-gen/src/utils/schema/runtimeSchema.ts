@@ -61,6 +61,9 @@ export const MODELS_PATH = "./models.js";
 /** Internal upgrades file path: `./_internal/upgrades.js` */
 export const INTERNAL_UPGRADES_PATH = "./_internal/upgrades.js";
 
+/** Internal upgrade-functions file path: `./_internal/upgradeFns.js` */
+export const INTERNAL_UPGRADE_FNS_PATH = "./_internal/upgradeFns.js";
+
 /** Versions file path: `./versions.js` */
 export const VERSIONS_PATH = "./versions.js";
 
