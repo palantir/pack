@@ -17,8 +17,8 @@
 import { Button, Callout, Dialog, DialogBody, DialogFooter } from "@blueprintjs/core";
 import React, { useCallback, useState } from "react";
 import { app } from "../../app.js";
-import { CanvasSchema } from "../../pack.js";
 import type { CanvasDocument } from "../../hooks/useCanvasDocuments.js";
+import { CanvasSchema } from "../../pack.js";
 
 interface DeleteCanvasDialogProps {
   readonly document: CanvasDocument | undefined;
