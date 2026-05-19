@@ -11,13 +11,6 @@ export interface Config__Internal {
   readonly tags: readonly (string | undefined)[];
 }
 
-/** Internal representation of Config at schema version 1. */
-export interface Config__v1 {
-  readonly label?: string | undefined;
-  readonly scores: readonly (number | undefined)[];
-  readonly tags: readonly (string | undefined)[];
-}
-
 // ============================================================
 // _internal/upgrades.ts
 // ============================================================

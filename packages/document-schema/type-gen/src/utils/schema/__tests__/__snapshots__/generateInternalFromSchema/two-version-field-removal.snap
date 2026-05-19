@@ -16,26 +16,6 @@ export interface ShapeBox__Internal {
   readonly top: number;
 }
 
-/** Internal representation of ShapeBox at schema version 1. */
-export interface ShapeBox__v1 {
-  readonly bottom: number;
-  readonly color?: string | undefined;
-  readonly left: number;
-  readonly right: number;
-  readonly top: number;
-}
-
-/** Internal representation of ShapeBox at schema version 2. */
-export interface ShapeBox__v2 {
-  readonly bottom: number;
-  readonly fillColor?: string | undefined;
-  readonly left: number;
-  readonly opacity?: number | undefined;
-  readonly right: number;
-  readonly strokeColor?: string | undefined;
-  readonly top: number;
-}
-
 // ============================================================
 // _internal/upgrades.ts
 // ============================================================

@@ -140,7 +140,7 @@ export function applyReadLens(
           throw new Error(
             `Missing upgrade function for ${registry.modelName}.${stepKey}.${fieldName}. `
               + `Construct the document model with \`DocumentModel({...})\` and `
-              + `pass the result to your document service at boot.`,
+              + `pass the result to your document service at boot, or regenerate your SDK.`,
           );
         }
         data[fieldName] = forward(sourceFields);

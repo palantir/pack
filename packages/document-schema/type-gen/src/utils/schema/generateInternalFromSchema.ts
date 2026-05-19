@@ -25,7 +25,11 @@ import {
   convertFieldTypeToInternalTypeScript,
   convertFieldTypeToInternalZod,
 } from "../ir/irFieldHelpers.js";
-import type { ResolvedIrChain, VersionedIrEntry } from "./resolveSchemaChain.js";
+import {
+  chainHasDerivedFields,
+  type ResolvedIrChain,
+  type VersionedIrEntry,
+} from "./resolveSchemaChain.js";
 
 export interface InternalTypesOutput {
   /** _internal/types.ts content */
@@ -492,7 +496,7 @@ export function generateInternalFromChain(
   const allRecordModels = collectRecordModels(chain);
 
   const internalTypes = generateInternalTypes(allRecordModels)
-    + generatePerVersionInternalTypes(chain);
+    + (chainHasDerivedFields(chain) ? generatePerVersionInternalTypes(chain) : "");
   const upgrades = generateUpgrades(allRecordModels, latestIr);
   const internalSchema = generateInternalSchemaContent(allRecordModels);
   const internalUpgradeFns = generateUpgradeFns(chain, allRecordModels);

@@ -10,18 +10,6 @@ export interface Item__Internal {
   readonly name: string;
 }
 
-/** Internal representation of Item at schema version 1. */
-export interface Item__v1 {
-  readonly label?: string | undefined;
-  readonly name: string;
-}
-
-/** Internal representation of Item at schema version 2. */
-export interface Item__v2 {
-  readonly label: string;
-  readonly name: string;
-}
-
 // ============================================================
 // _internal/upgrades.ts
 // ============================================================

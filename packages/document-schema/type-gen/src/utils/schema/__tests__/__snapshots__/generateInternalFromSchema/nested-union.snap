@@ -14,16 +14,6 @@ export interface Plant__Internal {
   readonly genus: string;
 }
 
-/** Internal representation of Animal at schema version 1. */
-export interface Animal__v1 {
-  readonly species: string;
-}
-
-/** Internal representation of Plant at schema version 1. */
-export interface Plant__v1 {
-  readonly genus: string;
-}
-
 // ============================================================
 // _internal/upgrades.ts
 // ============================================================
