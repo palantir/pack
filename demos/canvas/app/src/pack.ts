@@ -24,7 +24,7 @@ import { useDocRef } from "@palantir/pack.state.react";
 /**
  * Single, shared `DocumentSchema` instance for the canvas demo. Built by
  * passing the typed upgrade functions to the generated `DocumentModel`
- * factory; reused by every callsite that needs to address a canvas document.
+ * factory; reused by every call site that needs to address a canvas document.
  */
 export const CanvasSchema = DocumentModel({
   ShapeBox: {
