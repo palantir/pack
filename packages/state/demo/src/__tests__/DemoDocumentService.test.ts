@@ -72,7 +72,7 @@ function createTestApp(
       remote: {
         baseUrl: "http://localhost",
         fetchFn: fetch,
-        packWsPath: "/api/v2/packSubscriptions",
+        packEventsUrl: "http://localhost/api/v2/packSubscriptions/cometd",
         ...config.remote,
       },
     } satisfies AppConfig,

@@ -344,9 +344,20 @@ function getAppConfig(
     remote: {
       baseUrl,
       fetchFn,
-      packWsPath: options.remote?.packWsPath ?? "/api/v2/packSubscriptions",
+      packEventsUrl: resolvePackEventsUrl(options, baseUrl),
     },
   };
+}
+
+function resolvePackEventsUrl(options: AppOptions, baseUrl: string | undefined): string {
+  if (options.remote?.packEventsUrl != null) {
+    return options.remote.packEventsUrl;
+  }
+  const path = "/api/v2/packSubscriptions";
+  if (baseUrl == null || baseUrl === "") {
+    return `${path}/cometd`;
+  }
+  return new URL(`${path}/cometd`, baseUrl).href;
 }
 
 function isPublicOauthClient(auth: AppOptions["auth"]): auth is PublicOauthClient {
