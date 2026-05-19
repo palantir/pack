@@ -23,11 +23,11 @@ import {
   FormGroup,
   InputGroup,
 } from "@blueprintjs/core";
-import { DocumentModel } from "@demo/canvas.sdk";
 import { FileSystemType } from "@palantir/pack.state.core";
 import React, { useCallback, useState } from "react";
 import { useNavigate } from "react-router";
 import { app, DOCUMENT_TYPE_NAME, FILE_SYSTEM_TYPE, PARENT_FOLDER_RID } from "../../app.js";
+import { CanvasSchema } from "../../pack.js";
 
 const isCompassFileSystem = FILE_SYSTEM_TYPE === FileSystemType.COMPASS;
 
@@ -86,7 +86,7 @@ export function CreateFileDialog({ isOpen, setIsOpen }: CreateFileDialogProps) {
         documentTypeName: DOCUMENT_TYPE_NAME,
         security: DEFAULT_DOCUMENT_SECURITY,
         parentFolderRid: isCompassFileSystem ? PARENT_FOLDER_RID! : undefined,
-      }, DocumentModel);
+      }, CanvasSchema);
       navigate(`/canvas/${docRef.id}`);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to create canvas");

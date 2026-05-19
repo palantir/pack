@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+import type { JsonValue } from "./JsonValue.js";
+
 /** Type descriptor for a field, enabling recursive lens application. */
 export type FieldTypeDescriptor =
   | { kind: "primitive" }
@@ -24,12 +26,12 @@ export type FieldTypeDescriptor =
 
 export interface FieldLensDef {
   /**
-   * Source field names. `forward` receives only these fields, not the full record.
-   * When empty, the field is additive — only `default` applies and `forward` is never called.
+   * Source field names. When empty, the field is additive — only `default` applies and no
+   * forward function is invoked.
    */
   derivedFrom: string[];
-  forward: (oldFields: Record<string, unknown>) => unknown;
-  default?: unknown;
+  /** Literal JSON only — validated at schema build time. Used when no source data exists. */
+  default?: JsonValue;
 }
 
 export interface FieldDef {
@@ -38,7 +40,7 @@ export interface FieldDef {
 }
 
 export interface UpgradeStepDef {
-  name: string;
+  /** Schema version this step upgrades to. Unique within a model's chain. */
   addedInVersion: number;
   fields: Record<string, FieldLensDef>;
   removedFields?: string[];
@@ -68,3 +70,21 @@ export interface UnionUpgradeRegistry<ModelName extends string = string> {
 export type UpgradeRegistryEntry = UpgradeRegistry | UnionUpgradeRegistry;
 
 export type UpgradeRegistryMap = Record<string, UpgradeRegistryEntry>;
+
+/**
+ * Runtime-supplied collection of forward upgrade functions. The application
+ * passes a `DocumentUpgradeFns` value to the generated `DocumentModel(...)`
+ * factory at boot; the factory installs it on the schema's metadata under
+ * this loose shape: `fns[modelName][\`v${addedInVersion}\`][fieldName] -> fn`.
+ *
+ * The generated `DocumentUpgradeFns` interface is a precisely-typed refinement
+ * of this shape; both `BaseYjsDocumentService` and `applyReadLens` read from
+ * it via this loose type.
+ *
+ * Paired with `UpgradeRegistry`: the registry is the structural spec (WHEN to
+ * upgrade and from which fields), `UpgradeFns` provides the implementations.
+ */
+export type UpgradeFns = Record<
+  string,
+  Record<string, Record<string, (oldFields: any) => any>>
+>;

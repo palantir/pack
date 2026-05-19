@@ -50,6 +50,7 @@ export type {
   DocumentSchemaMetadata,
   DocumentState,
 } from "./types/DocumentSchema.js";
+export type { JsonValue } from "./types/JsonValue.js";
 export { MediaRefBrand } from "./types/MediaRef.js";
 export type { MediaId, MediaRef } from "./types/MediaRef.js";
 export { getMetadata, hasMetadata, Metadata } from "./types/Metadata.js";
@@ -84,6 +85,7 @@ export type {
   FieldLensDef,
   FieldTypeDescriptor,
   UnionUpgradeRegistry,
+  UpgradeFns,
   UpgradeRegistry,
   UpgradeRegistryEntry,
   UpgradeRegistryMap,

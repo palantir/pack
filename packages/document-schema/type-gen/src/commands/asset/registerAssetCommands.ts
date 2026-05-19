@@ -16,6 +16,7 @@
 
 import type { Command } from "commander";
 import { assetDeployHandler } from "./assetDeployHandler.js";
+import { assetUpdateSchemaHandler } from "./assetUpdateSchemaHandler.js";
 
 export function registerAssetCommands(program: Command): void {
   const assetCmd = program
@@ -29,5 +30,29 @@ export function registerAssetCommands(program: Command): void {
     .requiredOption("-b, --base-url <url>", "Base URL for Foundry API")
     .requiredOption("-a, --auth <token>", "Authentication token for Foundry API")
     .requiredOption("-o, --ontology-rid <rid>", "Target ontology RID")
+    .option(
+      "--first-party-prefix <path>",
+      "Override the API prefix used for first-party deploy (e.g. /api/gotham). Defaults to /api.",
+    )
     .action(assetDeployHandler);
+
+  assetCmd
+    .command("update-schema")
+    .description(
+      "Update the schema of an existing document type using an asset JSON file",
+    )
+    .requiredOption("-i, --input <file>", "Path to asset JSON file (output of 'ir asset')")
+    .requiredOption("-b, --base-url <url>", "Base URL for Foundry API")
+    .requiredOption("-a, --auth <token>", "Authentication token for Foundry API")
+    .requiredOption("-o, --ontology-rid <rid>", "Target ontology RID")
+    .option(
+      "--force-overwrite",
+      "Skip backwards-compatibility validation when updating the schema",
+      false,
+    )
+    .option(
+      "--first-party-prefix <path>",
+      "Override the API prefix used for first-party requests (e.g. /api/gotham). Defaults to /api.",
+    )
+    .action(assetUpdateSchemaHandler);
 }

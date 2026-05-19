@@ -21,6 +21,7 @@ import { resolveSchemaChain } from "../resolveSchemaChain.js";
 import {
   singleVersionSchema,
   threeVersionChainSchema,
+  twoVersionDerivedFieldsSchema,
   twoVersionFieldRemovalSchema,
   unionTypesSchema,
 } from "./fixtures.js";
@@ -60,6 +61,16 @@ describe("generateModelMetadataFromChain", () => {
     const result = generateModelMetadataFromChain(resolveSchemaChain(unionTypesSchema));
     await expect(await formatModelMetadataSnapshot(result)).toMatchFileSnapshot(
       path.join(snapshotDir, "union-types.snap"),
+    );
+  });
+
+  it("two-version schema with derived fields emits DocumentModel as a factory", async () => {
+    const result = generateModelMetadataFromChain(
+      resolveSchemaChain(twoVersionDerivedFieldsSchema, 1),
+      1,
+    );
+    await expect(await formatModelMetadataSnapshot(result)).toMatchFileSnapshot(
+      path.join(snapshotDir, "two-version-derived-fields.snap"),
     );
   });
 });

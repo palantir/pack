@@ -1,5 +1,33 @@
 # @palantir/pack.state.foundry-event
 
+## 0.15.0
+
+### Minor Changes
+
+- 597bb0c: rewrite websocket url
+
+### Patch Changes
+
+- Updated dependencies [597bb0c]
+  - @palantir/pack.core@0.3.0
+  - @palantir/pack.auth@0.2.0
+  - @palantir/pack.document-schema.model-types@0.10.0
+  - @palantir/pack.state.core@0.13.0
+
+## 0.14.0
+
+### Minor Changes
+
+- 3c7a9f3: Split IR Versioned Tasks
+- 1ebb677: Always use the IR as intermediary between builders and SDK/Zod/Wire
+
+### Patch Changes
+
+- Updated dependencies [3c7a9f3]
+- Updated dependencies [1ebb677]
+  - @palantir/pack.document-schema.model-types@0.9.0
+  - @palantir/pack.state.core@0.12.0
+
 ## 0.13.0
 
 ### Patch Changes

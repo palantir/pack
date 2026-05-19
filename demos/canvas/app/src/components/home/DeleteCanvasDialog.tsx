@@ -15,9 +15,9 @@
  */
 
 import { Button, Callout, Dialog, DialogBody, DialogFooter } from "@blueprintjs/core";
-import { DocumentModel } from "@demo/canvas.sdk";
 import React, { useCallback, useState } from "react";
 import { app } from "../../app.js";
+import { CanvasSchema } from "../../pack.js";
 import type { CanvasDocument } from "../../hooks/useCanvasDocuments.js";
 
 interface DeleteCanvasDialogProps {
@@ -44,7 +44,7 @@ export function DeleteCanvasDialog(
     setDeleting(true);
 
     try {
-      const docRef = app.state.createDocRef(document.id, DocumentModel);
+      const docRef = app.state.createDocRef(document.id, CanvasSchema);
       await app.state.deleteDocument(docRef);
       removeDocument(document.id);
       setDocument(undefined);

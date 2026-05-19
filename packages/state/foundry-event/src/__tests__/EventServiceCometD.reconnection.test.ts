@@ -50,7 +50,7 @@ const mockApp = {
   config: {
     logger: mockLogger,
     remote: {
-      packWsPath: "/ws",
+      packEventsUrl: "https://test.example.com/ws/cometd",
       baseUrl: "https://test.example.com",
     },
   },

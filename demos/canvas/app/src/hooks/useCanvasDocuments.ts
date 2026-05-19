@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-import { DocumentModel } from "@demo/canvas.sdk";
 import type { DocumentId } from "@palantir/pack.document-schema.model-types";
 import { useSearchDocuments } from "@palantir/pack.state.react";
 import { useCallback } from "react";
 import { DOCUMENT_TYPE_NAME } from "../app.js";
+import { CanvasSchema } from "../pack.js";
 import { usePackApp } from "./usePackApp.js";
 
 export interface CanvasDocument {
@@ -55,7 +55,7 @@ export function useCanvasDocuments(): UseCanvasDocumentsResult {
     goToFirstPage,
     currentPage,
     removeResult,
-  } = useSearchDocuments(app, DOCUMENT_TYPE_NAME, DocumentModel, undefined, PAGE_SIZE);
+  } = useSearchDocuments(app, DOCUMENT_TYPE_NAME, CanvasSchema, undefined, PAGE_SIZE);
 
   const documents = results?.map(r => ({ createdTime: r.createdTime, id: r.id, name: r.name }))
     ?? [];

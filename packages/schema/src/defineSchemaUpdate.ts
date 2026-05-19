@@ -15,7 +15,7 @@
  */
 
 import type { SchemaBuilder } from "./defineMigration.js";
-import { defineMigration, harvestFieldUpgrades, stripFieldUpgradeMeta } from "./defineMigration.js";
+import { applyMigration } from "./defineMigration.js";
 import type { ModelDefs } from "./defs.js";
 
 export interface InitialSchema<T extends ModelDefs = ModelDefs> {
@@ -26,7 +26,6 @@ export interface InitialSchema<T extends ModelDefs = ModelDefs> {
 
 export interface FieldMigration {
   readonly derivedFrom: readonly string[];
-  readonly forward: (oldFields: Record<string, unknown>) => unknown;
 }
 
 export type VersionMigrations = Record<string, Record<string, FieldMigration>>;
@@ -86,6 +85,38 @@ function mergeMigrations(
   return result;
 }
 
+/**
+ * Drop migration entries that no longer correspond to a field on a record in
+ * `models`. Required because `mergeMigrations` is monotonic — a later
+ * `addSchemaUpdate` that removes or retypes a field would otherwise leave a
+ * stale entry in the accumulator. Entries are dropped when:
+ *   - the model key is no longer present,
+ *   - the model is no longer a record (e.g. replaced by a union), or
+ *   - the field name is no longer one of the record's fields.
+ */
+function pruneMigrations(
+  migrations: VersionMigrations | undefined,
+  models: ModelDefs,
+): VersionMigrations | undefined {
+  if (migrations == null) return undefined;
+  const result: VersionMigrations = {};
+  for (const [modelKey, fields] of Object.entries(migrations)) {
+    const def = models[modelKey];
+    if (def == null || def.type !== "record") continue;
+    const recordFields = def.fields;
+    const kept: Record<string, FieldMigration> = {};
+    for (const [fieldName, migration] of Object.entries(fields)) {
+      if (fieldName in recordFields) {
+        kept[fieldName] = migration;
+      }
+    }
+    if (Object.keys(kept).length > 0) {
+      result[modelKey] = kept;
+    }
+  }
+  return Object.keys(result).length > 0 ? result : undefined;
+}
+
 class SchemaVersionBuilderImpl<T extends ModelDefs> implements SchemaVersionBuilder<T> {
   private readonly models: T;
   private readonly version: number;
@@ -107,24 +138,23 @@ class SchemaVersionBuilderImpl<T extends ModelDefs> implements SchemaVersionBuil
   addSchemaUpdate<S extends ModelDefs>(
     update: SchemaUpdate<T, S>,
   ): SchemaVersionBuilder<T & S> {
-    const merged = defineMigration(this.models, update.migration);
-    // Harvest sugar-form upgrades attached via `addField(name, type, options)`
-    // and fold them into the running upgrades accumulator.
-    const harvested = harvestFieldUpgrades(merged) as VersionMigrations | undefined;
-    const nextMigrations = mergeMigrations(this._migrations, harvested);
-    // Strip the side-channel metadata so subsequent updates (or downstream
-    // versions instantiated via `nextSchema`) don't re-harvest the same options.
-    const cleaned = stripFieldUpgradeMeta(merged);
-    return new SchemaVersionBuilderImpl(cleaned, this.version, this.previous, nextMigrations);
+    // applyMigration returns both the merged models and any sugar-form
+    // upgrades collected via `addField(name, type, { derivedFrom, forward })`.
+    const { models, upgrades } = applyMigration(this.models, update.migration);
+    const merged = mergeMigrations(
+      this._migrations,
+      upgrades as VersionMigrations | undefined,
+    );
+    // Reconcile against the new models: a later update that removes or
+    // retypes a field must drop the prior step's stale migration entry.
+    const pruned = pruneMigrations(merged, models);
+    return new SchemaVersionBuilderImpl(models, this.version, this.previous, pruned);
   }
 
   withMigrations(migrations: VersionMigrations): SchemaVersionBuilder<T> {
-    return new SchemaVersionBuilderImpl(
-      this.models,
-      this.version,
-      this.previous,
-      mergeMigrations(this._migrations, migrations),
-    );
+    const merged = mergeMigrations(this._migrations, migrations);
+    const pruned = pruneMigrations(merged, this.models);
+    return new SchemaVersionBuilderImpl(this.models, this.version, this.previous, pruned);
   }
 
   build(): VersionedSchema<T> {

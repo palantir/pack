@@ -22,6 +22,26 @@ import type { WithStateModule } from "@palantir/pack.state.core";
 import { useDocRef } from "@palantir/pack.state.react";
 
 /**
+ * Single, shared `DocumentSchema` instance for the canvas demo. Built by
+ * passing the typed upgrade functions to the generated `DocumentModel`
+ * factory; reused by every callsite that needs to address a canvas document.
+ */
+export const CanvasSchema = DocumentModel({
+  ShapeBox: {
+    v2: {
+      fillColor: ({ color }) => color,
+      strokeColor: ({ color }) => color,
+    },
+  },
+  ShapeCircle: {
+    v2: {
+      fillColor: ({ color }) => color,
+      strokeColor: ({ color }) => color,
+    },
+  },
+});
+
+/**
  * Shared key prefix with DemoDocumentService for synchronous schema version
  * reads. The demo service reads from localStorage to get the version before
  * IndexedDB metadata loads; the app writes to localStorage when a ?schema
@@ -57,7 +77,7 @@ export function useCanvasDocRef(
   canvasId: DocumentId | undefined,
   versionOverride?: SupportedVersions,
 ): UseCanvasDocRefResult {
-  const docRef = useDocRef(app, DocumentModel, canvasId);
+  const docRef = useDocRef(app, CanvasSchema, canvasId);
 
   // Read the persisted version (from localStorage, synchronous).
   const persistedVersion = (canvasId != null ? getPersistedSchemaVersion(canvasId) : undefined)

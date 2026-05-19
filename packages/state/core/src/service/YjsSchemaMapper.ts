@@ -20,6 +20,7 @@ import {
   type Model,
   type ModelData,
   type RecordId,
+  type UpgradeFns,
   type UpgradeRegistryMap,
 } from "@palantir/pack.document-schema.model-types";
 import * as Y from "yjs";
@@ -83,6 +84,7 @@ export function getRecordSnapshot(
   storageName: string,
   recordId: RecordId,
   upgrades?: UpgradeRegistryMap,
+  upgradeFns?: UpgradeFns,
 ): unknown {
   const data = getRecordData(yDoc, storageName, recordId);
   if (!data) {
@@ -94,7 +96,7 @@ export function getRecordSnapshot(
   // Apply read lens if upgrades exist for this model
   const entry = upgrades?.[storageName];
   if (entry != null) {
-    return resolveAndApplyLens(rawState as Record<string, unknown>, entry, upgrades!);
+    return resolveAndApplyLens(rawState as Record<string, unknown>, entry, upgrades!, upgradeFns);
   }
 
   return rawState;

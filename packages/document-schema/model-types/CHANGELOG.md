@@ -1,5 +1,19 @@
 # @palantir/pack.document-schema.model-types
 
+## 0.10.0
+
+### Patch Changes
+
+- Updated dependencies [597bb0c]
+  - @palantir/pack.core@0.3.0
+
+## 0.9.0
+
+### Minor Changes
+
+- 3c7a9f3: Split IR Versioned Tasks
+- 1ebb677: Always use the IR as intermediary between builders and SDK/Zod/Wire
+
 ## 0.8.0
 
 ### Minor Changes
