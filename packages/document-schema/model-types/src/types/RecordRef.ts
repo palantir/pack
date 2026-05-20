@@ -39,9 +39,10 @@ export const RecordRefBrand: unique symbol = Symbol("pack:RecordRef");
  *
  * const docRef = app.getDocRef<DocumentSchema>(someDocumentId);
  *
- * const recordRef = docRef.getRecords(MyModel).set("my-record-id", { myFieldName: "some value", foo: 42 });
+ * // Create a record via the version-narrowed setCollectionRecord on DocumentRef.
+ * await docRef.setCollectionRecord(MyModel, "my-record-id", { myFieldName: "some value", foo: 42 });
  *
- * // Or get a specific record.
+ * // Then get the ref back.
  * const recordRef = docRef.getRecords(MyModel).get("my-record-id");
  */
 export interface RecordRef<M extends Model = Model> {
@@ -69,8 +70,8 @@ export interface RecordRef<M extends Model = Model> {
    *   console.log("Record changed:", newSnapshot);
    * });
    *
-   * // Submit a change
-   * recordRef.set({ myFieldName: "new value" });
+   * // Submit a change via the version-narrowed updateRecord on DocumentRef.
+   * await docRef.updateRecord(recordRef, { myFieldName: "new value" });
    * ```
    */
   onChange(callback: (snapshot: ModelData<M>, recordRef: RecordRef<M>) => void): Unsubscribe;
@@ -96,6 +97,9 @@ export interface RecordRef<M extends Model = Model> {
   /**
    * Delete the record from the document.
    *
+   * Version-agnostic: deletion needs only the record's identity, not its
+   * payload shape, so this is safe to call without narrowing to a version.
+   *
    * @returns An ignorable promise that resolves when the record is deleted.
    *
    * @example
@@ -104,34 +108,4 @@ export interface RecordRef<M extends Model = Model> {
    * ```
    */
   delete(): Promise<void>;
-
-  /**
-   * Set the data for the record (creating it if it doesn't exist).
-   *
-   * @see {onChange} to subscribe to changes to the record.
-   *
-   * @param record - The plain object data to set for the record, corresponding to the model's schema.
-   * @returns An ignorable promise that resolves when the record is published.
-   *
-   * @example
-   * ```ts
-   * await recordRef.set({ field: "value" });
-   * ```
-   */
-  set(record: ModelData<M>): Promise<void>;
-
-  /**
-   * Update specific fields of the record.
-   *
-   * @see {onChange} to subscribe to changes to the record.
-   *
-   * @param partialRecord - A partial plain object with the fields to update.
-   * @returns An ignorable promise that resolves when the record is published.
-   *
-   * @example
-   * ```ts
-   * await recordRef.update({ field: "new value" });
-   * ```
-   */
-  update(record: Partial<ModelData<M>>): Promise<void>;
 }

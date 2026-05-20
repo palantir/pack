@@ -15,7 +15,7 @@
  */
 
 import type { DocumentRef } from "./DocumentRef.js";
-import type { Model, ModelData } from "./Model.js";
+import type { Model } from "./Model.js";
 import type { RecordId, RecordRef } from "./RecordRef.js";
 
 export const RecordCollectionRefBrand: unique symbol = Symbol(
@@ -32,6 +32,9 @@ export interface RecordCollectionRef<M extends Model = Model> {
 
   /**
    * Delete a record from the collection (and the document).
+   *
+   * Version-agnostic: deletion needs only the record's identity, not its
+   * payload shape, so this is safe to call without narrowing to a version.
    *
    * @param id - The ID of the record to delete.
    * @returns A promise that resolves when the record is deleted.
@@ -53,20 +56,6 @@ export interface RecordCollectionRef<M extends Model = Model> {
    * @returns True if the record exists, false otherwise.
    */
   has(id: RecordId): boolean;
-  /**
-   * Set the data for a record in the collection (creating it if it doesn't exist).
-   *
-   * @param id - The ID of the record to set.
-   * @param state - The data to set for the record.
-   * @returns A promise that resolves when the record is set.
-   *
-   * @example
-   * ```ts
-   * const recordCollection = docRef.getRecords(MyModel);
-   * await recordCollection.set("record-id", { field: "value" });
-   * ```
-   */
-  set(id: RecordId, state: ModelData<M>): Promise<void>;
   readonly size: number;
 
   [Symbol.iterator](): Iterator<RecordRef<M>>;

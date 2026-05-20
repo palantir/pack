@@ -214,7 +214,6 @@ describe("Ref Stability Tests", () => {
       expect(invalidRef.size).toBe(0);
 
       // Async methods should reject
-      await expect(invalidRef.set("id" as RecordId, {})).rejects.toThrow();
       await expect(invalidRef.delete("id" as RecordId)).rejects.toThrow();
 
       // Iterator should be empty
@@ -239,7 +238,7 @@ describe("Ref Stability Tests", () => {
       const userId = "user-1" as RecordId;
 
       // Create the record first
-      await userCollection.set(userId, {
+      await stateModule.setCollectionRecord(userCollection, userId, {
         id: "user-1",
         name: "Test User",
         email: "test@example.com",
@@ -291,12 +290,12 @@ describe("Ref Stability Tests", () => {
       const userId2 = "user-2" as RecordId;
 
       // Create both records
-      await userCollection.set(userId1, {
+      await stateModule.setCollectionRecord(userCollection, userId1, {
         id: "user-1",
         name: "User 1",
         email: "user1@example.com",
       });
-      await userCollection.set(userId2, {
+      await stateModule.setCollectionRecord(userCollection, userId2, {
         id: "user-2",
         name: "User 2",
         email: "user2@example.com",
@@ -328,12 +327,12 @@ describe("Ref Stability Tests", () => {
       const recordId = "same-id" as RecordId;
 
       // Create records with same ID but different models
-      await userCollection.set(recordId, {
+      await stateModule.setCollectionRecord(userCollection, recordId, {
         id: "same-id",
         name: "Test User",
         email: "test@example.com",
       });
-      await postCollection.set(recordId, {
+      await stateModule.setCollectionRecord(postCollection, recordId, {
         id: "same-id",
         title: "Test Post",
         content: "Test content",
@@ -355,7 +354,6 @@ describe("Ref Stability Tests", () => {
 
       // Async methods should reject
       await expect(invalidRef.getSnapshot()).rejects.toThrow();
-      await expect(invalidRef.set({})).rejects.toThrow();
 
       // Subscription methods should be safe
       const unsubscribe1 = invalidRef.onChange(() => {});
@@ -386,7 +384,7 @@ describe("Ref Stability Tests", () => {
       // Create multiple users
       const userIds = ["user-1", "user-2", "user-3"] as RecordId[];
       for (const userId of userIds) {
-        await userCollection.set(userId, {
+        await stateModule.setCollectionRecord(userCollection, userId, {
           id: userId,
           name: `User ${userId}`,
           email: `${userId}@example.com`,

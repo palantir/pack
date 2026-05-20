@@ -17,9 +17,6 @@
 import type {
   DocumentRef,
   EditDescription,
-  ModelData,
-  RecordCollectionRef,
-  RecordId,
   RecordRef,
 } from "@palantir/pack.document-schema.model-types";
 import { getMetadata } from "@palantir/pack.document-schema.model-types";
@@ -85,18 +82,12 @@ export function createDocumentScope<
           updateRecord: (
             ref: RecordRef,
             data: unknown,
-          ): Promise<void> => ref.update(data as Partial<ModelData<typeof ref.model>>),
+          ): Promise<void> => docRef.updateRecord(ref, data as never),
           setCollectionRecord: (
             ref: RecordRef,
             data: unknown,
-          ): Promise<void> => {
-            const collection: RecordCollectionRef = docRef.getRecords(ref.model);
-            return collection.set(
-              ref.id as RecordId,
-              data as ModelData<typeof ref.model>,
-            );
-          },
-          deleteRecord: (ref: RecordRef): Promise<void> => ref.delete(),
+          ): Promise<void> => docRef.setCollectionRecord(ref.model, ref.id, data as never),
+          deleteRecord: (ref: RecordRef): Promise<void> => docRef.deleteRecord(ref),
           withTransaction: (
             fn: () => void,
             description?: EditDescription,

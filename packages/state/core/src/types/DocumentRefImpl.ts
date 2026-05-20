@@ -173,15 +173,15 @@ class DocumentRefImpl<T extends DocumentSchema> implements DocumentRef<T> {
   }
 
   updateRecord(ref: RecordRef, data: unknown): Promise<void> {
-    return ref.update(data as Partial<ModelData<Model>>);
+    return this.#stateModule.updateRecord(ref, data as Partial<ModelData<Model>>);
   }
 
   setCollectionRecord(model: Model, id: RecordId, data: unknown): Promise<void> {
     const collection: RecordCollectionRef = this.getRecords(model);
-    return collection.set(id, data as ModelData<Model>);
+    return this.#stateModule.setCollectionRecord(collection, id, data as ModelData<Model>);
   }
 
   deleteRecord(ref: RecordRef): Promise<void> {
-    return ref.delete();
+    return this.#stateModule.deleteRecord(ref);
   }
 }

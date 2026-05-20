@@ -224,7 +224,7 @@ describe("State Module Integration", () => {
     };
 
     // Set a record
-    await recordsCollection.set(userId, userData);
+    await stateModule.setCollectionRecord(recordsCollection, userId, userData);
 
     // Get the record back
     const recordRef = recordsCollection.get(userId);
@@ -269,7 +269,7 @@ describe("State Module Integration", () => {
     };
 
     // Setting a record should trigger state change
-    await recordsCollection.set(userId, userData);
+    await stateModule.setCollectionRecord(recordsCollection, userId, userData);
 
     // Verify the data was actually stored
     const recordRef = recordsCollection.get(userId);
@@ -286,7 +286,7 @@ describe("State Module Integration", () => {
 
     // Update the record
     const updatedData = { ...userData, age: 29 };
-    await recordsCollection.set(userId, updatedData);
+    await stateModule.setCollectionRecord(recordsCollection, userId, updatedData);
 
     // Verify the update was stored
     const updatedSnapshot = await recordRef!.getSnapshot();
@@ -335,8 +335,8 @@ describe("State Module Integration", () => {
       age: 32,
     };
 
-    await usersCollection.set(user1Id, user1Data);
-    await usersCollection.set(user2Id, user2Data);
+    await stateModule.setCollectionRecord(usersCollection, user1Id, user1Data);
+    await stateModule.setCollectionRecord(usersCollection, user2Id, user2Data);
 
     // Add an address
     const addressId = "addr_1" as RecordId;
@@ -345,7 +345,7 @@ describe("State Module Integration", () => {
       city: "New York",
       zipCode: "10001",
     };
-    await addressesCollection.set(addressId, addressData);
+    await stateModule.setCollectionRecord(addressesCollection, addressId, addressData);
 
     // Verify collections maintain separate data
     expect(usersCollection.size).toBe(2);
@@ -447,6 +447,7 @@ describe("Lazy Document Creation", () => {
     const schema = createSchemaWithRecords();
     const documentId = "lazy-collection-doc" as DocumentId;
     const testDocRef = createDocRef(app, documentId, schema);
+    const stateModule = getStateModule(app);
 
     const usersCollection = testDocRef.getRecords(schema.User);
 
@@ -480,7 +481,7 @@ describe("Lazy Document Creation", () => {
       age: 30,
     };
 
-    await usersCollection.set(userId, userData);
+    await stateModule.setCollectionRecord(usersCollection, userId, userData);
 
     // Wait for async operations
     await new Promise(resolve => setTimeout(resolve, 10));
@@ -488,7 +489,7 @@ describe("Lazy Document Creation", () => {
     expect(addedCallbackCalled).toBe(true);
 
     // Update the record
-    await usersCollection.set(userId, { ...userData, age: 31 });
+    await stateModule.setCollectionRecord(usersCollection, userId, { ...userData, age: 31 });
     await new Promise(resolve => setTimeout(resolve, 10));
 
     expect(changedCallbackCalled).toBe(true);
@@ -610,7 +611,7 @@ describe("Lazy Document Creation", () => {
       age: 40,
     };
 
-    await usersCollection.set(userId, userData);
+    await stateModule.setCollectionRecord(usersCollection, userId, userData);
 
     // Wait for async operations
     await new Promise(resolve => setTimeout(resolve, 10));
@@ -680,7 +681,7 @@ describe("Lazy Document Creation", () => {
     };
 
     // Set initial record
-    await usersCollection.set(userId, initialData);
+    await stateModule.setCollectionRecord(usersCollection, userId, initialData);
 
     const recordRef = usersCollection.get(userId)!;
     let changeNotifications = 0;
@@ -770,7 +771,7 @@ describe("Lazy Document Creation", () => {
     };
 
     // Create record
-    await usersCollection.set(userId, userData);
+    await stateModule.setCollectionRecord(usersCollection, userId, userData);
     expect(usersCollection.has(userId)).toBe(true);
     expect(usersCollection.size).toBe(1);
 
@@ -847,7 +848,7 @@ describe("Lazy Document Creation", () => {
     };
 
     // Set initial record with all fields
-    await usersCollection.set(userId, initialData);
+    await stateModule.setCollectionRecord(usersCollection, userId, initialData);
 
     let snapshot = await usersCollection.get(userId)!.getSnapshot();
     expect(snapshot).toEqual(initialData);
@@ -860,7 +861,7 @@ describe("Lazy Document Creation", () => {
       // age and bio are missing - should be cleared by setRecord
     };
 
-    await usersCollection.set(userId, replacementData);
+    await stateModule.setCollectionRecord(usersCollection, userId, replacementData);
 
     snapshot = await usersCollection.get(userId)!.getSnapshot();
     expect(snapshot).toEqual({
@@ -1000,7 +1001,7 @@ describe("InMemoryDocumentService with autoCreateDocuments", () => {
       age: 30,
     };
 
-    await userRecord.set(userData);
+    await stateModule.setRecord(userRecord, userData);
     await new Promise(resolve => setTimeout(resolve, 10));
     expect(changeCallbackCount).toBe(1);
     expect(lastReceivedData).toMatchObject(userData);
@@ -1010,7 +1011,7 @@ describe("InMemoryDocumentService with autoCreateDocuments", () => {
       age: 31,
     };
 
-    await userRecord.set(updatedData);
+    await stateModule.setRecord(userRecord, updatedData);
     await new Promise(resolve => setTimeout(resolve, 10));
     expect(changeCallbackCount).toBe(2);
     expect(lastReceivedData).toMatchObject(updatedData);
@@ -1051,7 +1052,7 @@ describe("Remote Y.js Updates", () => {
     const userId = "user-1" as RecordId;
     const userRecord = stateModule.createRecordRef(testDocRef, userId, schema.User);
 
-    await userRecord.set({
+    await stateModule.setRecord(userRecord, {
       id: userId,
       name: "Alice",
       email: "alice@example.com",
@@ -1121,7 +1122,7 @@ describe("Remote Y.js Updates", () => {
     const userId = "user-to-delete" as RecordId;
     const userRecord = stateModule.createRecordRef(testDocRef, userId, schema.User);
 
-    await userRecord.set({
+    await stateModule.setRecord(userRecord, {
       id: userId,
       name: "Charlie",
       email: "charlie@example.com",
@@ -1155,7 +1156,7 @@ describe("Remote Y.js Updates", () => {
     const userId = "user-multi" as RecordId;
     const userRecord = stateModule.createRecordRef(testDocRef, userId, schema.User);
 
-    await userRecord.set({
+    await stateModule.setRecord(userRecord, {
       id: userId,
       name: "Diana",
       email: "diana@example.com",

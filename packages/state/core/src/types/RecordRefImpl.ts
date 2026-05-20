@@ -35,10 +35,8 @@ const INVALID_RECORD_REF: RecordRef = Object.freeze(
     [RecordRefBrand]: RecordRefBrand,
     delete: () => Promise.reject(new Error("Invalid record reference")),
     getSnapshot: () => Promise.reject(new Error("Invalid record reference")),
-    set: () => Promise.reject(new Error("Invalid record reference")),
     onChange: () => () => {},
     onDeleted: () => () => {},
-    update: () => Promise.reject(new Error("Invalid record reference")),
   } as const,
 );
 
@@ -121,13 +119,5 @@ class RecordRefImpl<M extends Model> implements RecordRef<M> {
 
   delete(): Promise<void> {
     return this.#documentService.deleteRecord(this);
-  }
-
-  set(record: ModelData<M>): Promise<void> {
-    return this.#documentService.setRecord(this, record);
-  }
-
-  update(partialRecord: Partial<ModelData<M>>): Promise<void> {
-    return this.#documentService.updateRecord(this, partialRecord);
   }
 }

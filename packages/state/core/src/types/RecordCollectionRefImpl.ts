@@ -17,7 +17,6 @@
 import type {
   DocumentRef,
   Model,
-  ModelData,
   RecordCollectionRef,
   RecordId,
   RecordRef,
@@ -34,7 +33,6 @@ const INVALID_RECORD_COLLECTION_REF: RecordCollectionRef = Object.freeze(
     [RecordCollectionRefBrand]: RecordCollectionRefBrand,
     get: () => undefined,
     has: () => false,
-    set: () => Promise.reject(new Error("Invalid record collection reference")),
     delete: () => Promise.reject(new Error("Invalid record collection reference")),
     size: 0,
     [Symbol.iterator]: () => ({
@@ -105,10 +103,6 @@ class RecordCollectionRefImpl<M extends Model> implements RecordCollectionRef<M>
 
   has(id: RecordId): boolean {
     return this.#documentService.hasRecord(this, id);
-  }
-
-  async set(id: RecordId, state: ModelData<M>): Promise<void> {
-    return this.#documentService.setCollectionRecord(this, id, state);
   }
 
   delete(id: RecordId): Promise<void> {

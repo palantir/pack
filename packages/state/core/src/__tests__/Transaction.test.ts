@@ -110,9 +110,21 @@ describe("Transaction Batching", () => {
     const userId3 = "user3" as RecordId;
 
     docRef.withTransaction(() => {
-      void collection.set(userId1, { email: "alice@example.com", id: "user1", name: "Alice" });
-      void collection.set(userId2, { email: "bob@example.com", id: "user2", name: "Bob" });
-      void collection.set(userId3, { email: "charlie@example.com", id: "user3", name: "Charlie" });
+      void stateModule.setCollectionRecord(collection, userId1, {
+        email: "alice@example.com",
+        id: "user1",
+        name: "Alice",
+      });
+      void stateModule.setCollectionRecord(collection, userId2, {
+        email: "bob@example.com",
+        id: "user2",
+        name: "Bob",
+      });
+      void stateModule.setCollectionRecord(collection, userId3, {
+        email: "charlie@example.com",
+        id: "user3",
+        name: "Charlie",
+      });
     });
 
     await new Promise(resolve => setTimeout(resolve, 10));
@@ -141,8 +153,16 @@ describe("Transaction Batching", () => {
     const userId2 = "user2" as RecordId;
     const userId3 = "user3" as RecordId;
 
-    await collection.set(userId1, { email: "alice@example.com", id: "user1", name: "Alice" });
-    await collection.set(userId2, { email: "bob@example.com", id: "user2", name: "Bob" });
+    await stateModule.setCollectionRecord(collection, userId1, {
+      email: "alice@example.com",
+      id: "user1",
+      name: "Alice",
+    });
+    await stateModule.setCollectionRecord(collection, userId2, {
+      email: "bob@example.com",
+      id: "user2",
+      name: "Bob",
+    });
 
     let stateChangeCount = 0;
     const unsubscribe = stateModule.onStateChange(docRef, () => {
@@ -157,7 +177,11 @@ describe("Transaction Batching", () => {
     docRef.withTransaction(() => {
       void stateModule.updateRecord(record1, { name: "Alice Updated" });
       void collection.delete(userId2);
-      void collection.set(userId3, { email: "charlie@example.com", id: "user3", name: "Charlie" });
+      void stateModule.setCollectionRecord(collection, userId3, {
+        email: "charlie@example.com",
+        id: "user3",
+        name: "Charlie",
+      });
     });
 
     await new Promise(resolve => setTimeout(resolve, 10));
@@ -185,9 +209,21 @@ describe("Transaction Batching", () => {
     const userId3 = "user3" as RecordId;
 
     docRef.withTransaction(() => {
-      void collection.set(userId1, { email: "alice@example.com", id: "user1", name: "Alice" });
-      void collection.set(userId2, { email: "bob@example.com", id: "user2", name: "Bob" });
-      void collection.set(userId3, { email: "charlie@example.com", id: "user3", name: "Charlie" });
+      void stateModule.setCollectionRecord(collection, userId1, {
+        email: "alice@example.com",
+        id: "user1",
+        name: "Alice",
+      });
+      void stateModule.setCollectionRecord(collection, userId2, {
+        email: "bob@example.com",
+        id: "user2",
+        name: "Bob",
+      });
+      void stateModule.setCollectionRecord(collection, userId3, {
+        email: "charlie@example.com",
+        id: "user3",
+        name: "Charlie",
+      });
     });
 
     await new Promise(resolve => setTimeout(resolve, 10));
@@ -216,10 +252,18 @@ describe("Transaction Batching", () => {
     const userId2 = "user2" as RecordId;
 
     docRef.withTransaction(() => {
-      void collection.set(userId1, { email: "alice@example.com", id: "user1", name: "Alice" });
+      void stateModule.setCollectionRecord(collection, userId1, {
+        email: "alice@example.com",
+        id: "user1",
+        name: "Alice",
+      });
 
       docRef.withTransaction(() => {
-        void collection.set(userId2, { email: "bob@example.com", id: "user2", name: "Bob" });
+        void stateModule.setCollectionRecord(collection, userId2, {
+          email: "bob@example.com",
+          id: "user2",
+          name: "Bob",
+        });
       });
     });
 
@@ -253,8 +297,16 @@ describe("Transaction Batching", () => {
     const userId1 = "user1" as RecordId;
     const userId2 = "user2" as RecordId;
 
-    await collection.set(userId1, { email: "alice@example.com", id: "user1", name: "Alice" });
-    await collection.set(userId2, { email: "bob@example.com", id: "user2", name: "Bob" });
+    await stateModule.setCollectionRecord(collection, userId1, {
+      email: "alice@example.com",
+      id: "user1",
+      name: "Alice",
+    });
+    await stateModule.setCollectionRecord(collection, userId2, {
+      email: "bob@example.com",
+      id: "user2",
+      name: "Bob",
+    });
 
     await new Promise(resolve => setTimeout(resolve, 10));
     expect(stateChangeCount - initialCount).toBe(2);
@@ -283,6 +335,7 @@ describe("Transaction Batching", () => {
 
   it("should pass description as origin to Y.js transaction", async () => {
     const collection = docRef.getRecords(schema.User);
+    const stateModule = getStateModule(app);
     const documentService = app.getModule(DOCUMENT_SERVICE_MODULE_KEY);
 
     const userId1 = "user1" as RecordId;
@@ -309,7 +362,7 @@ describe("Transaction Batching", () => {
     yDoc.on("update", updateHandler);
 
     docRef.withTransaction(() => {
-      void collection.set(userId1, userData);
+      void stateModule.setCollectionRecord(collection, userId1, userData);
     }, description);
 
     await new Promise(resolve => setTimeout(resolve, 10));

@@ -15,7 +15,7 @@
  */
 
 import type { NodeShape, NodeShapeModel, VersionedDocRef } from "@demo/canvas.sdk";
-import { ActivityEventModel } from "@demo/canvas.sdk";
+import { ActivityEventModel, matchVersion } from "@demo/canvas.sdk";
 import type { RecordRef } from "@palantir/pack.document-schema.model-types";
 import { ActivityEvents } from "@palantir/pack.document-schema.model-types";
 import type { MouseEvent } from "react";
@@ -121,7 +121,11 @@ export function useShapeDrag(
           right: initial.right + dx,
           top: initial.top + dy,
         };
-        dragState.shapeRef.update(newBounds);
+        matchVersion(doc, {
+          1: doc => doc.updateRecord(dragState.shapeRef, newBounds),
+          2: doc => doc.updateRecord(dragState.shapeRef, newBounds),
+          3: doc => doc.updateRecord(dragState.shapeRef, newBounds),
+        });
       } else if (dragState.dragMode === "resize" && dragState.handle != null) {
         const initial = dragState.initialShape;
         const centerSize = boundsToCenter(initial);
@@ -168,7 +172,11 @@ export function useShapeDrag(
           width: newWidth,
         });
 
-        dragState.shapeRef.update(newBounds);
+        matchVersion(doc, {
+          1: doc => doc.updateRecord(dragState.shapeRef, newBounds),
+          2: doc => doc.updateRecord(dragState.shapeRef, newBounds),
+          3: doc => doc.updateRecord(dragState.shapeRef, newBounds),
+        });
       }
     },
     [dragState],
@@ -197,7 +205,11 @@ export function useShapeDrag(
         };
         doc.withTransaction(
           () => {
-            dragState.shapeRef.update(finalBounds);
+            matchVersion(doc, {
+              1: doc => doc.updateRecord(dragState.shapeRef, finalBounds),
+              2: doc => doc.updateRecord(dragState.shapeRef, finalBounds),
+              3: doc => doc.updateRecord(dragState.shapeRef, finalBounds),
+            });
           },
           ActivityEvents.describeEdit(ActivityEventModel, {
             eventType: "shapeUpdate",

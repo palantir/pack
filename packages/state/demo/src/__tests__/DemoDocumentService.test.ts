@@ -23,6 +23,7 @@ import type {
   DocumentSchema,
   Model,
   PresenceEvent,
+  RecordId,
 } from "@palantir/pack.document-schema.model-types";
 import { getMetadata, Metadata } from "@palantir/pack.document-schema.model-types";
 import { DocumentLiveStatus, DocumentLoadStatus, getStateModule } from "@palantir/pack.state.core";
@@ -194,7 +195,7 @@ describe("DemoDocumentService", () => {
     const docRef = await stateModule1.createDocument(metadata, schema);
 
     const userCollection = docRef.getRecords(schema.User);
-    await userCollection.set("user1", {
+    await stateModule1.setCollectionRecord(userCollection, "user1" as RecordId, {
       age: 30,
       email: "test@example.com",
       id: "user1",
@@ -349,7 +350,7 @@ describe("DemoDocumentService", () => {
 
     const userCollection = docRef.getRecords(schema.User);
     void docRef.withTransaction(() => {
-      return userCollection.set("activity-user", {
+      return stateModule.setCollectionRecord(userCollection, "activity-user" as RecordId, {
         age: 25,
         email: "activity@example.com",
         id: "activity-user",
@@ -396,7 +397,7 @@ describe("DemoDocumentService", () => {
 
     const userCollection = docRef.getRecords(schema.User);
 
-    await userCollection.set("user1", {
+    await stateModule.setCollectionRecord(userCollection, "user1" as RecordId, {
       age: 30,
       email: "user1@example.com",
       id: "user1",
