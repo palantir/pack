@@ -67,8 +67,8 @@ catalogs:
       specifier: ^11.3.2
       version: 11.3.2
     happy-dom:
-      specifier: ^20.0.11
-      version: 20.0.11
+      specifier: ^20.9.0
+      version: 20.9.0
     prettier:
       specifier: ^3.7.3
       version: 3.7.3
@@ -151,7 +151,7 @@ importers:
         version: 8.48.0(eslint@9.39.1)(typescript@5.9.3)
       '@vitest/coverage-v8':
         specifier: ^4.0.14
-        version: 4.0.14(vitest@4.0.14(@types/node@22.19.1)(happy-dom@20.0.11)(yaml@2.8.2))
+        version: 4.0.14(vitest@4.0.14(@types/node@22.19.1)(happy-dom@20.9.0)(yaml@2.8.2))
       chokidar:
         specifier: ^5.0.0
         version: 5.0.0
@@ -217,7 +217,7 @@ importers:
         version: 8.48.0(eslint@9.39.1)(typescript@5.9.3)
       vitest:
         specifier: 'catalog:'
-        version: 4.0.14(@types/node@22.19.1)(happy-dom@20.0.11)(yaml@2.8.2)
+        version: 4.0.14(@types/node@22.19.1)(happy-dom@20.9.0)(yaml@2.8.2)
       yaml:
         specifier: ^2.8.1
         version: 2.8.2
@@ -311,7 +311,7 @@ importers:
         version: 7.2.6(@types/node@20.19.19)(yaml@2.8.2)
       vitest:
         specifier: 'catalog:'
-        version: 4.0.14(@types/node@20.19.19)(happy-dom@20.0.11)(yaml@2.8.2)
+        version: 4.0.14(@types/node@20.19.19)(happy-dom@20.9.0)(yaml@2.8.2)
 
   demos/canvas/schema:
     devDependencies:
@@ -400,7 +400,7 @@ importers:
         version: link:../monorepo/tsconfig
       happy-dom:
         specifier: 'catalog:'
-        version: 20.0.11
+        version: 20.9.0
       rimraf:
         specifier: 'catalog:'
         version: 6.1.2
@@ -412,7 +412,7 @@ importers:
         version: 5.9.3
       vitest-mock-extended:
         specifier: 'catalog:'
-        version: 3.1.0(typescript@5.9.3)(vitest@4.1.7(@types/node@22.19.1)(@vitest/coverage-v8@4.0.14(vitest@4.0.14(@types/node@22.19.1)(happy-dom@20.0.11)(yaml@2.8.2)))(happy-dom@20.0.11)(vite@7.2.6(@types/node@22.19.1)(yaml@2.8.2)))
+        version: 3.1.0(typescript@5.9.3)(vitest@4.1.7(@types/node@22.19.1)(@vitest/coverage-v8@4.0.14(vitest@4.0.14(@types/node@22.19.1)(happy-dom@20.9.0)(yaml@2.8.2)))(happy-dom@20.9.0)(vite@7.2.6(@types/node@22.19.1)(yaml@2.8.2)))
 
   packages/auth/core:
     dependencies:
@@ -440,7 +440,7 @@ importers:
         version: 5.9.3
       vitest-mock-extended:
         specifier: 'catalog:'
-        version: 3.1.0(typescript@5.9.3)(vitest@4.1.7(@types/node@22.19.1)(@vitest/coverage-v8@4.0.14(vitest@4.0.14(@types/node@22.19.1)(happy-dom@20.0.11)(yaml@2.8.2)))(happy-dom@20.0.11)(vite@7.2.6(@types/node@22.19.1)(yaml@2.8.2)))
+        version: 3.1.0(typescript@5.9.3)(vitest@4.1.7(@types/node@22.19.1)(@vitest/coverage-v8@4.0.14(vitest@4.0.14(@types/node@22.19.1)(happy-dom@20.9.0)(yaml@2.8.2)))(happy-dom@20.9.0)(vite@7.2.6(@types/node@22.19.1)(yaml@2.8.2)))
 
   packages/auth/foundry:
     dependencies:
@@ -483,7 +483,7 @@ importers:
         version: 5.9.3
       vitest-mock-extended:
         specifier: 'catalog:'
-        version: 3.1.0(typescript@5.9.3)(vitest@4.1.7(@types/node@22.19.1)(@vitest/coverage-v8@4.0.14(vitest@4.0.14(@types/node@22.19.1)(happy-dom@20.0.11)(yaml@2.8.2)))(happy-dom@20.0.11)(vite@7.2.6(@types/node@22.19.1)(yaml@2.8.2)))
+        version: 3.1.0(typescript@5.9.3)(vitest@4.1.7(@types/node@22.19.1)(@vitest/coverage-v8@4.0.14(vitest@4.0.14(@types/node@22.19.1)(happy-dom@20.9.0)(yaml@2.8.2)))(happy-dom@20.9.0)(vite@7.2.6(@types/node@22.19.1)(yaml@2.8.2)))
 
   packages/core:
     dependencies:
@@ -721,7 +721,7 @@ importers:
         version: 5.9.3
       vitest:
         specifier: 'catalog:'
-        version: 4.0.14(@types/node@20.19.19)(happy-dom@20.0.11)(yaml@2.8.2)
+        version: 4.0.14(@types/node@20.19.19)(happy-dom@20.9.0)(yaml@2.8.2)
 
   packages/monorepo/transpile:
     dependencies:
@@ -904,7 +904,7 @@ importers:
         version: 5.9.3
       vitest:
         specifier: 'catalog:'
-        version: 4.0.14(@types/node@20.19.19)(happy-dom@20.0.11)(yaml@2.8.2)
+        version: 4.0.14(@types/node@20.19.19)(happy-dom@20.9.0)(yaml@2.8.2)
 
   packages/sdkgen/sdkgen-pack-versioned-template:
     dependencies:
@@ -944,7 +944,7 @@ importers:
         version: 5.9.3
       vitest:
         specifier: 'catalog:'
-        version: 4.0.14(@types/node@20.19.19)(happy-dom@20.0.11)(yaml@2.8.2)
+        version: 4.0.14(@types/node@20.19.19)(happy-dom@20.9.0)(yaml@2.8.2)
 
   packages/state/core:
     dependencies:
@@ -987,7 +987,7 @@ importers:
         version: 5.9.3
       vitest-mock-extended:
         specifier: 'catalog:'
-        version: 3.1.0(typescript@5.9.3)(vitest@4.1.7(@types/node@22.19.1)(@vitest/coverage-v8@4.0.14(vitest@4.0.14(@types/node@22.19.1)(happy-dom@20.0.11)(yaml@2.8.2)))(happy-dom@20.0.11)(vite@7.2.6(@types/node@22.19.1)(yaml@2.8.2)))
+        version: 3.1.0(typescript@5.9.3)(vitest@4.1.7(@types/node@22.19.1)(@vitest/coverage-v8@4.0.14(vitest@4.0.14(@types/node@22.19.1)(happy-dom@20.9.0)(yaml@2.8.2)))(happy-dom@20.9.0)(vite@7.2.6(@types/node@22.19.1)(yaml@2.8.2)))
 
   packages/state/demo:
     dependencies:
@@ -1033,7 +1033,7 @@ importers:
         version: 6.2.5
       happy-dom:
         specifier: 'catalog:'
-        version: 20.0.11
+        version: 20.9.0
       rimraf:
         specifier: 'catalog:'
         version: 6.1.2
@@ -1045,7 +1045,7 @@ importers:
         version: 5.9.3
       vitest-mock-extended:
         specifier: 'catalog:'
-        version: 3.1.0(typescript@5.9.3)(vitest@4.1.7(@types/node@20.19.19)(@vitest/coverage-v8@4.0.14(vitest@4.0.14(@types/node@22.19.1)(happy-dom@20.0.11)(yaml@2.8.2)))(happy-dom@20.0.11)(vite@7.2.6(@types/node@20.19.19)(yaml@2.8.2)))
+        version: 3.1.0(typescript@5.9.3)(vitest@4.1.7(@types/node@20.19.19)(@vitest/coverage-v8@4.0.14(vitest@4.0.14(@types/node@22.19.1)(happy-dom@20.9.0)(yaml@2.8.2)))(happy-dom@20.9.0)(vite@7.2.6(@types/node@20.19.19)(yaml@2.8.2)))
       zod:
         specifier: 'catalog:'
         version: 4.1.13
@@ -1100,7 +1100,7 @@ importers:
         version: 5.9.3
       vitest-mock-extended:
         specifier: 'catalog:'
-        version: 3.1.0(typescript@5.9.3)(vitest@4.1.7(@types/node@20.19.19)(@vitest/coverage-v8@4.0.14(vitest@4.0.14(@types/node@22.19.1)(happy-dom@20.0.11)(yaml@2.8.2)))(happy-dom@20.0.11)(vite@7.2.6(@types/node@20.19.19)(yaml@2.8.2)))
+        version: 3.1.0(typescript@5.9.3)(vitest@4.1.7(@types/node@20.19.19)(@vitest/coverage-v8@4.0.14(vitest@4.0.14(@types/node@22.19.1)(happy-dom@20.9.0)(yaml@2.8.2)))(happy-dom@20.9.0)(vite@7.2.6(@types/node@20.19.19)(yaml@2.8.2)))
 
   packages/state/foundry-event:
     dependencies:
@@ -1149,7 +1149,7 @@ importers:
         version: 5.9.3
       vitest-mock-extended:
         specifier: 'catalog:'
-        version: 3.1.0(typescript@5.9.3)(vitest@4.1.7(@types/node@20.19.19)(@vitest/coverage-v8@4.0.14(vitest@4.0.14(@types/node@22.19.1)(happy-dom@20.0.11)(yaml@2.8.2)))(happy-dom@20.0.11)(vite@7.2.6(@types/node@20.19.19)(yaml@2.8.2)))
+        version: 3.1.0(typescript@5.9.3)(vitest@4.1.7(@types/node@20.19.19)(@vitest/coverage-v8@4.0.14(vitest@4.0.14(@types/node@22.19.1)(happy-dom@20.9.0)(yaml@2.8.2)))(happy-dom@20.9.0)(vite@7.2.6(@types/node@20.19.19)(yaml@2.8.2)))
 
   packages/state/react:
     dependencies:
@@ -1183,7 +1183,7 @@ importers:
         version: 18.3.7(@types/react@18.3.27)
       happy-dom:
         specifier: 'catalog:'
-        version: 20.0.11
+        version: 20.9.0
       rimraf:
         specifier: 'catalog:'
         version: 6.1.2
@@ -1195,7 +1195,7 @@ importers:
         version: 5.9.3
       vitest-mock-extended:
         specifier: 'catalog:'
-        version: 3.1.0(typescript@5.9.3)(vitest@4.1.7(@types/node@22.19.1)(@vitest/coverage-v8@4.0.14(vitest@4.0.14(@types/node@22.19.1)(happy-dom@20.0.11)(yaml@2.8.2)))(happy-dom@20.0.11)(vite@7.2.6(@types/node@22.19.1)(yaml@2.8.2)))
+        version: 3.1.0(typescript@5.9.3)(vitest@4.1.7(@types/node@22.19.1)(@vitest/coverage-v8@4.0.14(vitest@4.0.14(@types/node@22.19.1)(happy-dom@20.9.0)(yaml@2.8.2)))(happy-dom@20.9.0)(vite@7.2.6(@types/node@22.19.1)(yaml@2.8.2)))
 
 packages:
 
@@ -2993,6 +2993,9 @@ packages:
   '@types/whatwg-mimetype@3.0.2':
     resolution: {integrity: sha512-c2AKvDT8ToxLIOUlN51gTiHXflsfIFisS4pO7pDPoKouJCESkhZnEy623gwP9laCy5lnLDAw1vAzu2vM2YLOrA==}
 
+  '@types/ws@8.18.1':
+    resolution: {integrity: sha512-ThVF6DCVhA8kUGy+aazFQ4kXQ7E1Ty7A3ypFOe0IcJV8O/M511G99AW24irKrW56Wt44yG9+ij8FaqoBGkuBXg==}
+
   '@types/yargs-parser@21.0.3':
     resolution: {integrity: sha512-I4q9QU9MQv4oEOz4tAHJtNz1cwuLxn2F3xcc2iV5WdqLPpUnj30aUuxt1mAxYTG+oe8CZMV/+6rU4S4gRDzqtQ==}
 
@@ -3776,6 +3779,10 @@ packages:
     resolution: {integrity: sha512-rRqJg/6gd538VHvR3PSrdRBb/1Vy2YfzHqzvbhGIQpDRKIa4FgV/54b5Q1xYSxOOwKvjXweS26E0Q+nAMwp2pQ==}
     engines: {node: '>=8.6'}
 
+  entities@7.0.1:
+    resolution: {integrity: sha512-TWrgLOFUQTH994YUyl1yT4uyavY5nNB5muff+RtWaqNVCAK408b5ZnnbNAUEWLTCpum9w6arT70i1XdQ4UeOPA==}
+    engines: {node: '>=0.12'}
+
   env-paths@3.0.0:
     resolution: {integrity: sha512-dtJUTepzMW3Lm/NPxRf3wP4642UWhjL2sQxc+ym2YMj1m/H2zDNQOlezafzkHwn6sMstjHTwG6iQQsctDW/b1A==}
     engines: {node: ^12.20.0 || ^14.13.1 || >=16.0.0}
@@ -4243,8 +4250,8 @@ packages:
   graphemer@1.4.0:
     resolution: {integrity: sha512-EtKwoO6kxCL9WO5xipiHTZlSzBm7WLT627TqC/uVRd0HKmq8NXyebnNYxDoBi7wt8eTWrUrKXCOVaFq9x1kgag==}
 
-  happy-dom@20.0.11:
-    resolution: {integrity: sha512-QsCdAUHAmiDeKeaNojb1OHOPF7NjcWPBR7obdu3NwH2a/oyQaLg5d0aaCy/9My6CdPChYF07dvz5chaXBGaD4g==}
+  happy-dom@20.9.0:
+    resolution: {integrity: sha512-GZZ9mKe8r646NUAf/zemnGbjYh4Bt8/MqASJY+pSm5ZDtc3YQox+4gsLI7yi1hba6o+eCsGxpHn5+iEVn31/FQ==}
     engines: {node: '>=20.0.0'}
 
   has-bigints@1.1.0:
@@ -8078,6 +8085,10 @@ snapshots:
 
   '@types/whatwg-mimetype@3.0.2': {}
 
+  '@types/ws@8.18.1':
+    dependencies:
+      '@types/node': 22.19.1
+
   '@types/yargs-parser@21.0.3': {}
 
   '@types/yargs@17.0.35':
@@ -8251,7 +8262,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@vitest/coverage-v8@4.0.14(vitest@4.0.14(@types/node@22.19.1)(happy-dom@20.0.11)(yaml@2.8.2))':
+  '@vitest/coverage-v8@4.0.14(vitest@4.0.14(@types/node@22.19.1)(happy-dom@20.9.0)(yaml@2.8.2))':
     dependencies:
       '@bcoe/v8-coverage': 1.0.2
       '@vitest/utils': 4.0.14
@@ -8264,7 +8275,7 @@ snapshots:
       obug: 2.1.1
       std-env: 3.10.0
       tinyrainbow: 3.0.3
-      vitest: 4.0.14(@types/node@22.19.1)(happy-dom@20.0.11)(yaml@2.8.2)
+      vitest: 4.0.14(@types/node@22.19.1)(happy-dom@20.9.0)(yaml@2.8.2)
     transitivePeerDependencies:
       - supports-color
 
@@ -8965,6 +8976,8 @@ snapshots:
       ansi-colors: 4.1.3
       strip-ansi: 6.0.1
 
+  entities@7.0.1: {}
+
   env-paths@3.0.0: {}
 
   environment@1.1.0: {}
@@ -9591,11 +9604,17 @@ snapshots:
 
   graphemer@1.4.0: {}
 
-  happy-dom@20.0.11:
+  happy-dom@20.9.0:
     dependencies:
-      '@types/node': 20.19.19
+      '@types/node': 22.19.1
       '@types/whatwg-mimetype': 3.0.2
+      '@types/ws': 8.18.1
+      entities: 7.0.1
       whatwg-mimetype: 3.0.0
+      ws: 8.18.3
+    transitivePeerDependencies:
+      - bufferutil
+      - utf-8-validate
 
   has-bigints@1.1.0: {}
 
@@ -11251,19 +11270,19 @@ snapshots:
       fsevents: 2.3.3
       yaml: 2.8.2
 
-  vitest-mock-extended@3.1.0(typescript@5.9.3)(vitest@4.1.7(@types/node@20.19.19)(@vitest/coverage-v8@4.0.14(vitest@4.0.14(@types/node@22.19.1)(happy-dom@20.0.11)(yaml@2.8.2)))(happy-dom@20.0.11)(vite@7.2.6(@types/node@20.19.19)(yaml@2.8.2))):
+  vitest-mock-extended@3.1.0(typescript@5.9.3)(vitest@4.1.7(@types/node@20.19.19)(@vitest/coverage-v8@4.0.14(vitest@4.0.14(@types/node@22.19.1)(happy-dom@20.9.0)(yaml@2.8.2)))(happy-dom@20.9.0)(vite@7.2.6(@types/node@20.19.19)(yaml@2.8.2))):
     dependencies:
       ts-essentials: 10.1.1(typescript@5.9.3)
       typescript: 5.9.3
-      vitest: 4.1.7(@types/node@20.19.19)(@vitest/coverage-v8@4.0.14(vitest@4.0.14(@types/node@22.19.1)(happy-dom@20.0.11)(yaml@2.8.2)))(happy-dom@20.0.11)(vite@7.2.6(@types/node@20.19.19)(yaml@2.8.2))
+      vitest: 4.1.7(@types/node@20.19.19)(@vitest/coverage-v8@4.0.14(vitest@4.0.14(@types/node@22.19.1)(happy-dom@20.9.0)(yaml@2.8.2)))(happy-dom@20.9.0)(vite@7.2.6(@types/node@20.19.19)(yaml@2.8.2))
 
-  vitest-mock-extended@3.1.0(typescript@5.9.3)(vitest@4.1.7(@types/node@22.19.1)(@vitest/coverage-v8@4.0.14(vitest@4.0.14(@types/node@22.19.1)(happy-dom@20.0.11)(yaml@2.8.2)))(happy-dom@20.0.11)(vite@7.2.6(@types/node@22.19.1)(yaml@2.8.2))):
+  vitest-mock-extended@3.1.0(typescript@5.9.3)(vitest@4.1.7(@types/node@22.19.1)(@vitest/coverage-v8@4.0.14(vitest@4.0.14(@types/node@22.19.1)(happy-dom@20.9.0)(yaml@2.8.2)))(happy-dom@20.9.0)(vite@7.2.6(@types/node@22.19.1)(yaml@2.8.2))):
     dependencies:
       ts-essentials: 10.1.1(typescript@5.9.3)
       typescript: 5.9.3
-      vitest: 4.1.7(@types/node@22.19.1)(@vitest/coverage-v8@4.0.14(vitest@4.0.14(@types/node@22.19.1)(happy-dom@20.0.11)(yaml@2.8.2)))(happy-dom@20.0.11)(vite@7.2.6(@types/node@22.19.1)(yaml@2.8.2))
+      vitest: 4.1.7(@types/node@22.19.1)(@vitest/coverage-v8@4.0.14(vitest@4.0.14(@types/node@22.19.1)(happy-dom@20.9.0)(yaml@2.8.2)))(happy-dom@20.9.0)(vite@7.2.6(@types/node@22.19.1)(yaml@2.8.2))
 
-  vitest@4.0.14(@types/node@20.19.19)(happy-dom@20.0.11)(yaml@2.8.2):
+  vitest@4.0.14(@types/node@20.19.19)(happy-dom@20.9.0)(yaml@2.8.2):
     dependencies:
       '@vitest/expect': 4.0.14
       '@vitest/mocker': 4.0.14(vite@7.2.6(@types/node@20.19.19)(yaml@2.8.2))
@@ -11287,7 +11306,7 @@ snapshots:
       why-is-node-running: 2.3.0
     optionalDependencies:
       '@types/node': 20.19.19
-      happy-dom: 20.0.11
+      happy-dom: 20.9.0
     transitivePeerDependencies:
       - jiti
       - less
@@ -11301,7 +11320,7 @@ snapshots:
       - tsx
       - yaml
 
-  vitest@4.0.14(@types/node@22.19.1)(happy-dom@20.0.11)(yaml@2.8.2):
+  vitest@4.0.14(@types/node@22.19.1)(happy-dom@20.9.0)(yaml@2.8.2):
     dependencies:
       '@vitest/expect': 4.0.14
       '@vitest/mocker': 4.0.14(vite@7.2.6(@types/node@22.19.1)(yaml@2.8.2))
@@ -11325,7 +11344,7 @@ snapshots:
       why-is-node-running: 2.3.0
     optionalDependencies:
       '@types/node': 22.19.1
-      happy-dom: 20.0.11
+      happy-dom: 20.9.0
     transitivePeerDependencies:
       - jiti
       - less
@@ -11339,7 +11358,7 @@ snapshots:
       - tsx
       - yaml
 
-  vitest@4.1.7(@types/node@20.19.19)(@vitest/coverage-v8@4.0.14(vitest@4.0.14(@types/node@22.19.1)(happy-dom@20.0.11)(yaml@2.8.2)))(happy-dom@20.0.11)(vite@7.2.6(@types/node@20.19.19)(yaml@2.8.2)):
+  vitest@4.1.7(@types/node@20.19.19)(@vitest/coverage-v8@4.0.14(vitest@4.0.14(@types/node@22.19.1)(happy-dom@20.9.0)(yaml@2.8.2)))(happy-dom@20.9.0)(vite@7.2.6(@types/node@20.19.19)(yaml@2.8.2)):
     dependencies:
       '@vitest/expect': 4.1.7
       '@vitest/mocker': 4.1.7(vite@7.2.6(@types/node@20.19.19)(yaml@2.8.2))
@@ -11363,12 +11382,12 @@ snapshots:
       why-is-node-running: 2.3.0
     optionalDependencies:
       '@types/node': 20.19.19
-      '@vitest/coverage-v8': 4.0.14(vitest@4.0.14(@types/node@22.19.1)(happy-dom@20.0.11)(yaml@2.8.2))
-      happy-dom: 20.0.11
+      '@vitest/coverage-v8': 4.0.14(vitest@4.0.14(@types/node@22.19.1)(happy-dom@20.9.0)(yaml@2.8.2))
+      happy-dom: 20.9.0
     transitivePeerDependencies:
       - msw
 
-  vitest@4.1.7(@types/node@22.19.1)(@vitest/coverage-v8@4.0.14(vitest@4.0.14(@types/node@22.19.1)(happy-dom@20.0.11)(yaml@2.8.2)))(happy-dom@20.0.11)(vite@7.2.6(@types/node@22.19.1)(yaml@2.8.2)):
+  vitest@4.1.7(@types/node@22.19.1)(@vitest/coverage-v8@4.0.14(vitest@4.0.14(@types/node@22.19.1)(happy-dom@20.9.0)(yaml@2.8.2)))(happy-dom@20.9.0)(vite@7.2.6(@types/node@22.19.1)(yaml@2.8.2)):
     dependencies:
       '@vitest/expect': 4.1.7
       '@vitest/mocker': 4.1.7(vite@7.2.6(@types/node@22.19.1)(yaml@2.8.2))
@@ -11392,8 +11411,8 @@ snapshots:
       why-is-node-running: 2.3.0
     optionalDependencies:
       '@types/node': 22.19.1
-      '@vitest/coverage-v8': 4.0.14(vitest@4.0.14(@types/node@22.19.1)(happy-dom@20.0.11)(yaml@2.8.2))
-      happy-dom: 20.0.11
+      '@vitest/coverage-v8': 4.0.14(vitest@4.0.14(@types/node@22.19.1)(happy-dom@20.9.0)(yaml@2.8.2))
+      happy-dom: 20.9.0
     transitivePeerDependencies:
       - msw
 
