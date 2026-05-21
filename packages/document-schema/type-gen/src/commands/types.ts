@@ -22,7 +22,9 @@ export interface DocumentTypeAsset {
   readonly documentTypeName: string;
   readonly documentStorageType: {
     readonly type: "yjs";
-    readonly yjs: DocumentTypeSchema;
+    readonly yjs: {
+      readonly schema: DocumentTypeSchema;
+    };
   };
   readonly fileSystemType: FileSystemType;
   readonly schemaVersion: number;
