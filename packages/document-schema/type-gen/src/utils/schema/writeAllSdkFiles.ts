@@ -108,12 +108,3 @@ export async function writeAllSdkFiles(
   await fs.writeFile(versionedDocRefPath, versionedDocRefContent, "utf8");
   consola.success(`Generated versioned doc ref: ${versionedDocRefPath}`);
 }
-
-export function parseMinVersion(minVersion: string | undefined): number | undefined {
-  if (minVersion == null) return undefined;
-  const parsed = parseInt(minVersion, 10);
-  if (isNaN(parsed)) {
-    throw new Error(`--min-version must be a valid integer, got: "${minVersion}"`);
-  }
-  return parsed;
-}

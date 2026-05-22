@@ -37,11 +37,6 @@ export const config = {
       message: "Author:",
       default: "",
     },
-    {
-      type: "number",
-      name: "minVersion",
-      message: "Minimum supported schema version (leave blank to track latest):",
-    },
   ] as const,
   hooks: {
     afterGenerate: "./build/esm/hooks/afterGenerate.js",
