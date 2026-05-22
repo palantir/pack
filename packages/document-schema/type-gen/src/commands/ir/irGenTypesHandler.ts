@@ -17,19 +17,12 @@
 import { consola } from "consola";
 import fs from "fs-extra";
 import path from "path";
-import { resolveMinVersion, type VersionedIrEntry } from "../../utils/schema/resolveSchemaChain.js";
+import { type IrChainPayload, resolveMinVersion } from "../../utils/schema/resolveSchemaChain.js";
 import { writeAllSdkFiles } from "../../utils/schema/writeAllSdkFiles.js";
 
 interface IrGenTypesOptions {
   schema: string;
   output: string;
-}
-
-interface IrChainPayload {
-  __comment?: string;
-  latestVersion: number;
-  minSupportedVersion?: number;
-  chain: VersionedIrEntry[];
 }
 
 export async function irGenTypesHandler(options: IrGenTypesOptions): Promise<void> {

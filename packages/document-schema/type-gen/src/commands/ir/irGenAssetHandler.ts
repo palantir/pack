@@ -21,7 +21,7 @@ import { basename, dirname, extname, join, resolve } from "path";
 import type { IRealTimeDocumentSchema } from "../../lib/pack-docschema-api/pack-docschema-ir/index.js";
 import { GENERATED_JSON_COMMENT } from "../../utils/generatedFileHeader.js";
 import { convertIrToWireSchema } from "../../utils/ir/convertIrToWireSchema.js";
-import { resolveMinVersion, type VersionedIrEntry } from "../../utils/schema/resolveSchemaChain.js";
+import { type IrChainPayload, resolveMinVersion } from "../../utils/schema/resolveSchemaChain.js";
 import type { DocumentTypeAsset, FileSystemType } from "../types.js";
 
 interface IrGenAssetOptions {
@@ -34,13 +34,6 @@ interface IrGenAssetOptions {
 interface SchemaCompatibilityRangeFile {
   readonly min: number;
   readonly max: number;
-}
-
-interface IrChainPayload {
-  __comment?: string;
-  latestVersion: number;
-  minSupportedVersion?: number;
-  chain: VersionedIrEntry[];
 }
 
 interface ResolvedIrInput {
