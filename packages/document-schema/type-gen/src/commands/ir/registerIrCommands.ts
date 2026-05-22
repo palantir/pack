@@ -29,7 +29,7 @@ export function registerIrCommands(program: Command): void {
   irCmd
     .command("gen-types")
     .description(
-      "Generate versioned SDK files (types, schemas, internal/, models.ts, versions.ts, versionedDocRef.ts, index.ts) from a versioned IR chain JSON. The minimum supported schema version is sourced from the IR payload's 'minSupportedVersion' field (set by 'schema ir --min-version').",
+      "Generate versioned SDK files (types, schemas, internal/, models.ts, versions.ts, versionedDocRef.ts, index.ts) from a versioned IR chain JSON. The minimum supported schema version is sourced from the IR payload's 'minSupportedVersion' field (set by 'schema ir --config <pack-config.json>').",
     )
     .requiredOption("-s, --schema <file>", "Path to versioned IR chain JSON file")
     .requiredOption("-o, --output <dir>", "Output directory for generated SDK files")
@@ -79,7 +79,7 @@ export function registerIrCommands(program: Command): void {
   irCmd
     .command("asset")
     .description(
-      "Generate document type asset JSON and a sibling schema compatibility range JSON from an IR file (advanced — most users should use 'ir deploy' instead). The minimum supported schema version is sourced from the IR payload's 'minSupportedVersion' field (set by 'schema ir --min-version'); legacy single-IR inputs default to min == max.",
+      "Generate document type asset JSON and a sibling schema compatibility range JSON from an IR file (advanced — most users should use 'ir deploy' instead). The minimum supported schema version is sourced from the IR payload's 'minSupportedVersion' field (set by 'schema ir --config <pack-config.json>'); legacy single-IR inputs default to min == max.",
     )
     .requiredOption(
       "-i, --ir <file>",
