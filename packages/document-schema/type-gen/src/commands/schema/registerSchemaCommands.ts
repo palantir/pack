@@ -37,7 +37,7 @@ export function registerSchemaCommands(program: Command): void {
     .requiredOption("-o, --output <file>", "Output IR chain JSON file")
     .option(
       "--config <file>",
-      "Path to the SDK's pack-config JSON file. Its 'minSupportedVersion' field is the single source of truth for the minimum supported schema version; the resolved value must match one of the chain's versions and is embedded in the output IR payload so downstream consumers ('ir gen-types', 'ir asset') read the same value.",
+      "Path to the SDK's pack-config JSON file containing the minSupportedVersion.",
     )
     .action(schemaIrHandler);
 }
