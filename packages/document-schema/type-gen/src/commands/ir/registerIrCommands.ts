@@ -29,7 +29,7 @@ export function registerIrCommands(program: Command): void {
   irCmd
     .command("gen-types")
     .description(
-      "Generate versioned SDK files (types, schemas, internal/, models.ts, versions.ts, versionedDocRef.ts, index.ts) from a versioned IR chain JSON. The minimum supported schema version is sourced from the IR payload's 'minSupportedVersion' field (set by 'schema ir --config <pack-config.json>').",
+      "Generate versioned SDK files (types, schemas, internal/, models.ts, versions.ts, versionedDocRef.ts, index.ts) from a versioned IR chain JSON.",
     )
     .requiredOption("-s, --schema <file>", "Path to versioned IR chain JSON file")
     .requiredOption("-o, --output <dir>", "Output directory for generated SDK files")
