@@ -17,19 +17,12 @@
 import { consola } from "consola";
 import fs from "fs-extra";
 import path from "path";
-import { resolveMinVersion, type VersionedIrEntry } from "../../utils/schema/resolveSchemaChain.js";
-import { parseMinVersion, writeAllSdkFiles } from "../../utils/schema/writeAllSdkFiles.js";
+import { type IrChainPayload, resolveMinVersion } from "../../utils/schema/resolveSchemaChain.js";
+import { writeAllSdkFiles } from "../../utils/schema/writeAllSdkFiles.js";
 
 interface IrGenTypesOptions {
   schema: string;
   output: string;
-  minVersion?: string;
-}
-
-interface IrChainPayload {
-  __comment?: string;
-  latestVersion: number;
-  chain: VersionedIrEntry[];
 }
 
 export async function irGenTypesHandler(options: IrGenTypesOptions): Promise<void> {
@@ -47,7 +40,7 @@ export async function irGenTypesHandler(options: IrGenTypesOptions): Promise<voi
     throw new Error(`Invalid IR chain payload at ${inputPath}: missing non-empty 'chain' array`);
   }
 
-  const minSupportedVersion = parseMinVersion(options.minVersion);
+  const { minSupportedVersion } = payload;
   const { latestVersion, minVersion } = resolveMinVersion(payload.chain, minSupportedVersion);
   const resolved = { chain: payload.chain, latestVersion, minVersion };
 

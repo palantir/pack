@@ -41,6 +41,13 @@ export interface ResolvedIrChain {
   minVersion: number;
 }
 
+export interface IrChainPayload {
+  __comment?: string;
+  latestVersion: number;
+  minSupportedVersion?: number;
+  chain: VersionedIrEntry[];
+}
+
 function collectVersionedIrChain(input: SchemaDefinition): VersionedIrEntry[] {
   const chain: VersionedIrEntry[] = [];
   let current: SchemaDefinition = input;

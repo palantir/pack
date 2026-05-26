@@ -29,11 +29,10 @@ export function registerIrCommands(program: Command): void {
   irCmd
     .command("gen-types")
     .description(
-      "Generate versioned SDK files (types, schemas, internal/, models.ts, versions.ts, versionedDocRef.ts, index.ts) from a versioned IR chain JSON",
+      "Generate versioned SDK files (types, schemas, internal/, models.ts, versions.ts, versionedDocRef.ts, index.ts) from a versioned IR chain JSON.",
     )
     .requiredOption("-s, --schema <file>", "Path to versioned IR chain JSON file")
     .requiredOption("-o, --output <dir>", "Output directory for generated SDK files")
-    .option("--min-version <version>", "Minimum supported version")
     .action(irGenTypesHandler);
 
   irCmd
@@ -80,14 +79,21 @@ export function registerIrCommands(program: Command): void {
   irCmd
     .command("asset")
     .description(
-      "Generate document type asset JSON from IR schema (advanced — most users should use 'ir deploy' instead)",
+      "Generate document type asset JSON and a sibling schema compatibility range JSON from an IR file (advanced — most users should use 'ir deploy' instead). The minimum supported schema version is sourced from the IR payload's 'minSupportedVersion' field (set by 'schema ir --config <pack-config.json>'); legacy single-IR inputs default to min == max.",
     )
-    .requiredOption("-i, --ir <file>", "Path to IR JSON file")
+    .requiredOption(
+      "-i, --ir <file>",
+      "Path to IR JSON file (chain payload from 'schema ir', or legacy single-version IR)",
+    )
     .requiredOption("-o, --output <file>", "Output file path for asset JSON")
     .option(
       "-f, --file-system-type <type>",
       "File system type (ARTIFACTS or COMPASS)",
       "ARTIFACTS",
+    )
+    .option(
+      "--compatibility-range-output <file>",
+      "Output path for the schema compatibility range JSON (defaults to a sibling of --output with '-schema-compatibility-range' suffix)",
     )
     .action(irGenAssetHandler);
 }

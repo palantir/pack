@@ -24,7 +24,6 @@ interface HookContext {
   outputPath: string;
   schema: unknown;
   schemaPath?: string;
-  answers?: Readonly<Record<string, unknown>>;
   options: { dryRun?: boolean; skipInstall?: boolean };
 }
 
@@ -70,23 +69,8 @@ async function syncModelTypesVersion(
   }
 }
 
-function readMinVersion(
-  answers: Readonly<Record<string, unknown>> | undefined,
-): number | undefined {
-  const raw = answers?.minVersion;
-  if (raw == null || raw === "") return undefined;
-  if (typeof raw !== "number" && typeof raw !== "string") {
-    throw new Error(`minVersion answer must be a number or numeric string`);
-  }
-  const value = typeof raw === "number" ? raw : Number(raw);
-  if (!Number.isInteger(value)) {
-    throw new Error(`minVersion answer must be an integer, got: ${raw}`);
-  }
-  return value;
-}
-
 export default async function afterGenerate(context: HookContext): Promise<void> {
-  const { outputPath, schemaPath, answers, options } = context;
+  const { outputPath, schemaPath, options } = context;
 
   if (options.dryRun) return;
   if (schemaPath == null) {
@@ -103,8 +87,6 @@ export default async function afterGenerate(context: HookContext): Promise<void>
   const resolvedIr = path.resolve(schemaPath);
   const { cli: typeGenCli, packageJsonPath: typeGenPackageJsonPath } = resolveTypeGenCli();
 
-  const minVersion = readMinVersion(answers);
-
   consola.log("Generating versioned SDK files from IR...");
   const genArgs = [
     "ir",
@@ -114,9 +96,6 @@ export default async function afterGenerate(context: HookContext): Promise<void>
     "-o",
     path.join(outputPath, "src"),
   ];
-  if (minVersion != null) {
-    genArgs.push("--min-version", String(minVersion));
-  }
   const genResult = spawnSync(typeGenCli, genArgs, { stdio: "inherit", cwd: outputPath });
   if (genResult.status !== 0) {
     throw new Error(
