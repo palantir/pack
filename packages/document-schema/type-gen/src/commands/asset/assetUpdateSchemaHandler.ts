@@ -65,7 +65,7 @@ export async function assetUpdateSchemaHandler(
       documentTypeName: asset.documentTypeName,
       requestBody: {
         ontologyRid: options.ontologyRid,
-        schema: asset.documentStorageType.yjs,
+        schema: asset.documentStorageType.yjs.schema,
         version: asset.schemaVersion,
         ...(options.forceOverwrite ? { forceOverwrite: true } : {}),
       },

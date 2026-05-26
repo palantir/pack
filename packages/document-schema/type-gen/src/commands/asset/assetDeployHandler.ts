@@ -97,7 +97,7 @@ export async function assetDeployHandler(options: AssetDeployOptions): Promise<v
       requestBody: {
         name: asset.documentTypeName,
         ontologyRid: options.ontologyRid,
-        schema: asset.documentStorageType.yjs,
+        schema: asset.documentStorageType.yjs.schema,
         fileSystemType: asset.fileSystemType,
         version: asset.schemaVersion,
       },

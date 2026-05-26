@@ -17,25 +17,91 @@
 import { CommanderError } from "commander";
 import { consola } from "consola";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "fs";
-import { dirname, resolve } from "path";
+import { basename, dirname, extname, join, resolve } from "path";
 import type { IRealTimeDocumentSchema } from "../../lib/pack-docschema-api/pack-docschema-ir/index.js";
 import { GENERATED_JSON_COMMENT } from "../../utils/generatedFileHeader.js";
 import { convertIrToWireSchema } from "../../utils/ir/convertIrToWireSchema.js";
+import { type IrChainPayload, resolveMinVersion } from "../../utils/schema/resolveSchemaChain.js";
 import type { DocumentTypeAsset, FileSystemType } from "../types.js";
 
 interface IrGenAssetOptions {
   readonly ir: string;
   readonly output: string;
   readonly fileSystemType?: FileSystemType;
+  readonly compatibilityRangeOutput?: string;
+}
+
+interface SchemaCompatibilityRangeFile {
+  readonly min: number;
+  readonly max: number;
+}
+
+interface ResolvedIrInput {
+  readonly ir: IRealTimeDocumentSchema;
+  readonly latestVersion: number;
+  readonly minSupportedVersion: number;
+}
+
+function isChainPayload(parsed: unknown): parsed is IrChainPayload {
+  return (
+    typeof parsed === "object"
+    && parsed != null
+    && "chain" in parsed
+    && Array.isArray((parsed as IrChainPayload).chain)
+    && typeof (parsed as IrChainPayload).latestVersion === "number"
+  );
+}
+
+function resolveFromChain(payload: IrChainPayload, irPath: string): ResolvedIrInput {
+  if (payload.chain.length === 0) {
+    throw new CommanderError(
+      1,
+      "EINVAL",
+      `Invalid IR chain payload at ${irPath}: 'chain' is empty`,
+    );
+  }
+  const { latestVersion, minVersion } = resolveMinVersion(
+    payload.chain,
+    payload.minSupportedVersion,
+  );
+  const latestEntry = payload.chain.find(c => c.version === latestVersion);
+  if (latestEntry == null) {
+    throw new CommanderError(
+      1,
+      "EINVAL",
+      `IR chain payload at ${irPath} has no entry matching latestVersion ${latestVersion}`,
+    );
+  }
+  return { ir: latestEntry.ir, latestVersion, minSupportedVersion: minVersion };
+}
+
+function resolveFromSingleIr(ir: IRealTimeDocumentSchema): ResolvedIrInput {
+  // Legacy single-IR input has no chain, so min defaults to max (no back-compat claim).
+  return { ir, latestVersion: ir.version, minSupportedVersion: ir.version };
+}
+
+function deriveCompatibilityRangePath(assetOutputPath: string): string {
+  const stem = basename(assetOutputPath, extname(assetOutputPath));
+  return join(dirname(assetOutputPath), `${stem}-schema-compatibility-range.json`);
 }
 
 /**
- * Generates a document type asset JSON file from an IR schema.
+ * Generates a document type asset JSON file (and a sibling schema
+ * compatibility range JSON file) from an IR schema.
  *
- * This command is intended for internal platform applications where the document
- * type asset must exist on disk so the platform can discover it and register the
- * document type automatically at deploy time. Most users should use `ir deploy`
- * to register document types via the Foundry API instead.
+ * The input IR may be either:
+ *  - a chain payload `{ latestVersion, minSupportedVersion?, chain }` produced
+ *    by `schema ir`. The latest entry's `ir` is used as the wire schema; the
+ *    asset's `schemaVersion` is `latestVersion`; the compatibility range is
+ *    `{ min: minSupportedVersion ?? latestVersion, max: latestVersion }`.
+ *  - a bare single-version `IRealTimeDocumentSchema` (legacy). The compat
+ *    range defaults to `{ min: version, max: version }` since no chain
+ *    information is available.
+ *
+ * This command is intended for internal platform applications where the
+ * document type asset must exist on disk so the platform can discover it and
+ * register the document type automatically at deploy time. Most users should
+ * use `ir deploy` to register document types via the Foundry API instead.
  *
  * If you are unsure whether you need this command, you almost certainly do not.
  */
@@ -49,11 +115,14 @@ export function irGenAssetHandler(options: IrGenAssetOptions): void {
     }
 
     consola.info(`Reading IR schema from: ${irPath}`);
-    const irSchema = JSON.parse(
-      readFileSync(irPath, "utf8"),
-    ) as IRealTimeDocumentSchema;
+    const parsed = JSON.parse(readFileSync(irPath, "utf8")) as unknown;
 
-    const { name: documentTypeName, version: schemaVersion } = irSchema;
+    const resolved = isChainPayload(parsed)
+      ? resolveFromChain(parsed, irPath)
+      : resolveFromSingleIr(parsed as IRealTimeDocumentSchema);
+
+    const { ir: irSchema, latestVersion, minSupportedVersion } = resolved;
+    const { name: documentTypeName } = irSchema;
     const wireSchema = convertIrToWireSchema(irSchema);
 
     const fileSystemType = options.fileSystemType ?? "ARTIFACTS";
@@ -69,10 +138,12 @@ export function irGenAssetHandler(options: IrGenAssetOptions): void {
       documentTypeName,
       documentStorageType: {
         type: "yjs",
-        yjs: wireSchema,
+        yjs: {
+          schema: wireSchema,
+        },
       },
       fileSystemType,
-      schemaVersion,
+      schemaVersion: latestVersion,
     };
 
     const outputDir = dirname(outputPath);
@@ -82,10 +153,33 @@ export function irGenAssetHandler(options: IrGenAssetOptions): void {
     const output = { __comment: GENERATED_JSON_COMMENT, ...asset };
     writeFileSync(outputPath, JSON.stringify(output, null, 2), "utf8");
 
+    const compatibilityRange: SchemaCompatibilityRangeFile = {
+      min: minSupportedVersion,
+      max: latestVersion,
+    };
+    const compatibilityRangePath = resolve(
+      options.compatibilityRangeOutput ?? deriveCompatibilityRangePath(outputPath),
+    );
+    const compatibilityRangeDir = dirname(compatibilityRangePath);
+    if (!existsSync(compatibilityRangeDir)) {
+      mkdirSync(compatibilityRangeDir, { recursive: true });
+    }
+    const compatibilityRangeOutput = {
+      __comment: GENERATED_JSON_COMMENT,
+      ...compatibilityRange,
+    };
+    writeFileSync(
+      compatibilityRangePath,
+      JSON.stringify(compatibilityRangeOutput, null, 2),
+      "utf8",
+    );
+
     consola.success("Successfully generated document type asset");
     consola.info(`   Output: ${outputPath}`);
+    consola.info(`   Compatibility range output: ${compatibilityRangePath}`);
     consola.info(`   Document type: ${documentTypeName}`);
-    consola.info(`   Schema version: ${schemaVersion}`);
+    consola.info(`   Schema version: ${latestVersion}`);
+    consola.info(`   Compatibility range: [${minSupportedVersion}, ${latestVersion}]`);
     consola.info(`   File system type: ${fileSystemType}`);
   } catch (error) {
     if (error instanceof CommanderError) {
