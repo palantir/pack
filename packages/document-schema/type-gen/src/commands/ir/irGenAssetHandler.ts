@@ -81,9 +81,8 @@ function resolveFromSingleIr(ir: IRealTimeDocumentSchema): ResolvedIrInput {
 }
 
 function deriveCompatibilityRangePath(assetOutputPath: string): string {
-  const ext = extname(assetOutputPath);
-  const stem = basename(assetOutputPath, ext);
-  return join(dirname(assetOutputPath), `${stem}-schema-compatibility-range${ext || ".json"}`);
+  const stem = basename(assetOutputPath, extname(assetOutputPath));
+  return join(dirname(assetOutputPath), `${stem}-schema-compatibility-range.json`);
 }
 
 /**
