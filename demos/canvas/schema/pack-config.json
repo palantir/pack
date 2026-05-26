@@ -1,5 +1,5 @@
 {
   "packageName": "@demo/canvas.sdk",
   "description": "Generated SDK from canvas schema",
-  "minVersion": 1
+  "minSupportedVersion": 1
 }
