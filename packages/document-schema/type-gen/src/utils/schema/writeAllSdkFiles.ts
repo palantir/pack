@@ -17,6 +17,7 @@
 import { consola } from "consola";
 import fs from "fs-extra";
 import path from "path";
+import { generateDocumentTypeFromChain } from "./generateDocumentTypeFromSchema.js";
 import { generateIndexFromChain } from "./generateIndexFromSchema.js";
 import { generateInternalFromChain } from "./generateInternalFromSchema.js";
 import { generateModelMetadataFromChain } from "./generateModelMetadataFromSchema.js";
@@ -107,4 +108,11 @@ export async function writeAllSdkFiles(
   const versionedDocRefPath = path.join(outputDir, "versionedDocRef.ts");
   await fs.writeFile(versionedDocRefPath, versionedDocRefContent, "utf8");
   consola.success(`Generated versioned doc ref: ${versionedDocRefPath}`);
+
+  // documentType.ts
+  consola.info("Generating document type identity constants...");
+  const documentTypeContent = generateDocumentTypeFromChain(resolved);
+  const documentTypePath = path.join(outputDir, "documentType.ts");
+  await fs.writeFile(documentTypePath, documentTypeContent, "utf8");
+  consola.success(`Generated document type: ${documentTypePath}`);
 }
