@@ -19,7 +19,7 @@ import fs from "fs-extra";
 import path from "path";
 import { GENERATED_JSON_COMMENT } from "../../utils/generatedFileHeader.js";
 import { loadSchemaModule } from "../../utils/schema/loadSchemaModule.js";
-import { resolveMinVersion, resolveSchemaChain } from "../../utils/schema/resolveSchemaChain.js";
+import { resolveSchemaChain } from "../../utils/schema/resolveSchemaChain.js";
 
 interface SchemaIrOptions {
   input: string;
@@ -92,9 +92,7 @@ export async function schemaIrHandler(options: SchemaIrOptions): Promise<void> {
   const schema = await loadSchemaModule(input);
 
   consola.info("Resolving versioned IR chain...");
-  const { chain, latestVersion } = resolveSchemaChain(schema);
-
-  resolveMinVersion(chain, minSupportedVersion);
+  const { chain, latestVersion } = resolveSchemaChain(schema, minSupportedVersion);
 
   const outputPath = path.resolve(output);
   await fs.ensureDir(path.dirname(outputPath));
