@@ -24,7 +24,7 @@ import { resolveSchemaChain } from "../../utils/schema/resolveSchemaChain.js";
 interface SchemaIrOptions {
   input: string;
   output: string;
-  config?: string;
+  config: string;
 }
 
 interface PackConfigLike {
@@ -57,13 +57,14 @@ async function readMinVersionFromConfig(configPath: string): Promise<number | un
  * single-version `IRealTimeDocumentSchema`. This is the input format for
  * `ir gen-types` and `ir asset`.
  *
- * The minimum supported schema version is sourced exclusively from the SDK's
- * pack-config file via `--config <pack-config.json>` (reading its `minSupportedVersion`
- * field). When provided, the value must match one of the chain entries'
- * `version` values; it is then embedded as `minSupportedVersion` in the
- * payload so downstream consumers (`ir gen-types`, `ir asset`) read the same
- * value without needing it forwarded to them. The pack-config is the single
- * source of truth for the minimum supported version.
+ * `--config <pack-config.json>` is required: the pack-config is the single
+ * source of truth for the minimum supported schema version. Its optional
+ * `minSupportedVersion` field declares the oldest version this SDK supports;
+ * when set, it must match one of the chain entries' `version` values and is
+ * embedded as `minSupportedVersion` in the payload so downstream consumers
+ * (`ir gen-types`, `ir asset`) read the same value. Omitting the field is
+ * an explicit opt-out: the IR will not include `minSupportedVersion` and
+ * downstream tools default to supporting only the latest schema version.
  *
  * Note: this is distinct from the legacy single-version IR JSON consumed by
  * `ir deploy` / `ir zod`, which is a bare `IRealTimeDocumentSchema` (no chain,
@@ -71,20 +72,14 @@ async function readMinVersionFromConfig(configPath: string): Promise<number | un
  * entry matching `latestVersion` from `chain` and use its `ir` field.
  */
 export async function schemaIrHandler(options: SchemaIrOptions): Promise<void> {
-  const { input, output } = options;
-  const minSupportedVersion = options.config != null
-    ? await readMinVersionFromConfig(options.config)
-    : undefined;
+  const { input, output, config } = options;
+  const minSupportedVersion = await readMinVersionFromConfig(config);
 
-  if (options.config == null) {
+  if (minSupportedVersion == null) {
     consola.warn(
-      "No --config provided. The generated IR will not include 'minSupportedVersion', so downstream tools (ir gen-types, ir asset) will default to supporting only the latest schema version. Pass --config <pack-config.json> with a 'minSupportedVersion' field to enable back-compat.",
-    );
-  } else if (minSupportedVersion == null) {
-    consola.warn(
-      `--config was provided but no 'minSupportedVersion' field is set in ${
-        path.resolve(options.config)
-      }. The generated IR will not include 'minSupportedVersion', so downstream tools (ir gen-types, ir asset) will default to supporting only the latest schema version. Add 'minSupportedVersion' to your pack-config to enable back-compat.`,
+      `--config ${
+        path.resolve(config)
+      } does not set 'minSupportedVersion'. The generated IR will not include it, so downstream tools (ir gen-types, ir asset) will default to supporting only the latest schema version. Add 'minSupportedVersion' to your pack-config to enable back-compat.`,
     );
   }
 

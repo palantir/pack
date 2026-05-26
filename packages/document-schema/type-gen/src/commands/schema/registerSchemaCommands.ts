@@ -35,9 +35,9 @@ export function registerSchemaCommands(program: Command): void {
     .description("Resolve a TypeScript schema module to a versioned IR chain JSON file")
     .requiredOption("-i, --input <file>", "Input TypeScript/JavaScript schema module")
     .requiredOption("-o, --output <file>", "Output IR chain JSON file")
-    .option(
+    .requiredOption(
       "--config <file>",
-      "Path to the SDK's pack-config JSON file containing the minSupportedVersion.",
+      "Path to the SDK's pack-config JSON file. Its optional 'minSupportedVersion' field declares the oldest schema version this SDK supports; omit the field to track latest only.",
     )
     .action(schemaIrHandler);
 }
