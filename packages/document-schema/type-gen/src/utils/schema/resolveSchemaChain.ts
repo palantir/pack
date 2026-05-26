@@ -48,21 +48,37 @@ export interface IrChainPayload {
   chain: VersionedIrEntry[];
 }
 
-function collectVersionedIrChain(input: SchemaDefinition): VersionedIrEntry[] {
+export interface SchemaIdentity {
+  readonly name?: string;
+  readonly description?: string;
+}
+
+function collectVersionedIrChain(
+  input: SchemaDefinition,
+  identity: SchemaIdentity,
+): VersionedIrEntry[] {
   const chain: VersionedIrEntry[] = [];
   let current: SchemaDefinition = input;
 
   while (current.type === "versioned") {
     chain.unshift({
       version: current.version,
-      ir: convertSchemaToIr(current.models, { version: current.version }),
+      ir: convertSchemaToIr(current.models, {
+        version: current.version,
+        name: identity.name,
+        description: identity.description,
+      }),
       migrations: serializeMigrations(current.migrations),
     });
     current = current.previous;
   }
   chain.unshift({
     version: current.version,
-    ir: convertSchemaToIr(current.models, { version: current.version }),
+    ir: convertSchemaToIr(current.models, {
+      version: current.version,
+      name: identity.name,
+      description: identity.description,
+    }),
   });
 
   return chain;
@@ -116,13 +132,17 @@ export function resolveMinVersion(
 /**
  * Collect the version chain and resolve min/latest versions.
  * Each version's models are converted to IR (IRealTimeDocumentSchema).
+ * `identity.name` / `identity.description` are embedded into each chain entry's
+ * IR; when omitted (e.g. test callers), `convertSchemaToIr` falls back to its
+ * defaults.
  * Throws on empty chain or invalid minSupportedVersion.
  */
 export function resolveSchemaChain(
   schema: SchemaDefinition,
   minSupportedVersion?: number,
+  identity: SchemaIdentity = {},
 ): ResolvedIrChain {
-  const chain = collectVersionedIrChain(schema);
+  const chain = collectVersionedIrChain(schema, identity);
   const { latestVersion, minVersion } = resolveMinVersion(chain, minSupportedVersion);
   return { chain, latestVersion, minVersion };
 }

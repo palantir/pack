@@ -28,25 +28,81 @@ interface SchemaIrOptions {
 }
 
 interface PackConfigLike {
+  documentTypeName?: unknown;
+  documentTypeDescription?: unknown;
   minSupportedVersion?: unknown;
 }
 
-async function readMinVersionFromConfig(configPath: string): Promise<number | undefined> {
+interface PackConfigValues {
+  readonly documentTypeName: string;
+  readonly documentTypeDescription?: string;
+  readonly minSupportedVersion?: number;
+}
+
+function assertNonEmptyString(value: unknown, field: string, configPath: string): string {
+  if (typeof value !== "string" || value.trim() === "") {
+    throw new Error(
+      `'${field}' in ${configPath} must be a non-empty string, got: ${JSON.stringify(value)}`,
+    );
+  }
+  return value;
+}
+
+function readRequiredNonEmptyString(
+  value: unknown,
+  field: string,
+  configPath: string,
+): string {
+  if (value == null) {
+    throw new Error(
+      `'${field}' is required in ${configPath} and must be a non-empty string`,
+    );
+  }
+  return assertNonEmptyString(value, field, configPath);
+}
+
+function readOptionalNonEmptyString(
+  value: unknown,
+  field: string,
+  configPath: string,
+): string | undefined {
+  if (value == null) return undefined;
+  return assertNonEmptyString(value, field, configPath);
+}
+
+async function readPackConfig(configPath: string): Promise<PackConfigValues> {
   const resolvedConfigPath = path.resolve(configPath);
   if (!(await fs.pathExists(resolvedConfigPath))) {
     throw new Error(`--config file not found: ${resolvedConfigPath}`);
   }
   const config = (await fs.readJson(resolvedConfigPath)) as PackConfigLike;
-  const raw = config.minSupportedVersion;
-  if (raw == null) return undefined;
-  if (typeof raw !== "number" || !Number.isInteger(raw) || raw <= 0) {
-    throw new Error(
-      `'minSupportedVersion' in ${resolvedConfigPath} must be a positive integer, got: ${
-        JSON.stringify(raw)
-      }`,
-    );
+
+  const documentTypeName = readRequiredNonEmptyString(
+    config.documentTypeName,
+    "documentTypeName",
+    resolvedConfigPath,
+  );
+
+  const documentTypeDescription = readOptionalNonEmptyString(
+    config.documentTypeDescription,
+    "documentTypeDescription",
+    resolvedConfigPath,
+  );
+
+  let minSupportedVersion: number | undefined;
+  const rawMin = config.minSupportedVersion;
+  if (rawMin != null) {
+    if (typeof rawMin !== "number" || !Number.isInteger(rawMin) || rawMin <= 0) {
+      throw new Error(
+        `'minSupportedVersion' in ${resolvedConfigPath} must be a positive integer, got: ${
+          JSON.stringify(rawMin)
+        }`,
+      );
+    }
+    minSupportedVersion = rawMin;
   }
-  return raw;
+
+  return { documentTypeName, documentTypeDescription, minSupportedVersion };
 }
 
 /**
@@ -58,13 +114,18 @@ async function readMinVersionFromConfig(configPath: string): Promise<number | un
  * `ir gen-types` and `ir asset`.
  *
  * `--config <pack-config.json>` is required: the pack-config is the single
- * source of truth for the minimum supported schema version. Its optional
- * `minSupportedVersion` field declares the oldest version this SDK supports;
- * when set, it must match one of the chain entries' `version` values and is
- * embedded as `minSupportedVersion` in the payload so downstream consumers
- * (`ir gen-types`, `ir asset`) read the same value. Omitting the field is
- * an explicit opt-out: the IR will not include `minSupportedVersion` and
- * downstream tools default to supporting only the latest schema version.
+ * source of truth for document-type identity. Required fields:
+ *  - `documentTypeName`: the document type name embedded into each chain
+ *    entry's IR (and surfaced as `documentTypeName` by `ir asset`).
+ * Optional fields:
+ *  - `documentTypeDescription`: document type description embedded into each
+ *    chain entry's IR.
+ *  - `minSupportedVersion`: declares the oldest version this SDK supports;
+ *    when set, it must match one of the chain entries' `version` values and is
+ *    embedded as `minSupportedVersion` in the payload so downstream consumers
+ *    (`ir gen-types`, `ir asset`) read the same value. Omitting the field is
+ *    an explicit opt-out: the IR will not include `minSupportedVersion` and
+ *    downstream tools default to supporting only the latest schema version.
  *
  * Note: this is distinct from the legacy single-version IR JSON consumed by
  * `ir deploy` / `ir zod`, which is a bare `IRealTimeDocumentSchema` (no chain,
@@ -73,7 +134,9 @@ async function readMinVersionFromConfig(configPath: string): Promise<number | un
  */
 export async function schemaIrHandler(options: SchemaIrOptions): Promise<void> {
   const { input, output, config } = options;
-  const minSupportedVersion = await readMinVersionFromConfig(config);
+  const { documentTypeName, documentTypeDescription, minSupportedVersion } = await readPackConfig(
+    config,
+  );
 
   if (minSupportedVersion == null) {
     consola.warn(
@@ -87,7 +150,10 @@ export async function schemaIrHandler(options: SchemaIrOptions): Promise<void> {
   const schema = await loadSchemaModule(input);
 
   consola.info("Resolving versioned IR chain...");
-  const { chain, latestVersion } = resolveSchemaChain(schema, minSupportedVersion);
+  const { chain, latestVersion } = resolveSchemaChain(schema, minSupportedVersion, {
+    name: documentTypeName,
+    description: documentTypeDescription,
+  });
 
   const outputPath = path.resolve(output);
   await fs.ensureDir(path.dirname(outputPath));
