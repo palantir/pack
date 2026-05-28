@@ -69,3 +69,6 @@ export const VERSIONS_PATH = "./versions.js";
 
 /** Versioned doc ref file path: `./versionedDocRef.js` */
 export const VERSIONED_DOC_REF_PATH = "./versionedDocRef.js";
+
+/** Document type identity constants file path: `./documentType.js` */
+export const DOCUMENT_TYPE_PATH = "./documentType.js";
