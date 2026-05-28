@@ -61,7 +61,7 @@ function readRequiredNonEmptyString(
   return assertNonEmptyString(value, field, configPath);
 }
 
-async function readPackConfig(configPath: string): Promise<PackConfigValues> {
+export async function readPackConfig(configPath: string): Promise<PackConfigValues> {
   const resolvedConfigPath = path.resolve(configPath);
   if (!(await fs.pathExists(resolvedConfigPath))) {
     throw new Error(`--config file not found: ${resolvedConfigPath}`);
