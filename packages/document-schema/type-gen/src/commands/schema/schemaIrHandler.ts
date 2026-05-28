@@ -35,7 +35,7 @@ interface PackConfigLike {
 
 interface PackConfigValues {
   readonly documentTypeName: string;
-  readonly documentTypeDescription?: string;
+  readonly documentTypeDescription: string;
   readonly minSupportedVersion?: number;
 }
 
@@ -61,15 +61,6 @@ function readRequiredNonEmptyString(
   return assertNonEmptyString(value, field, configPath);
 }
 
-function readOptionalNonEmptyString(
-  value: unknown,
-  field: string,
-  configPath: string,
-): string | undefined {
-  if (value == null) return undefined;
-  return assertNonEmptyString(value, field, configPath);
-}
-
 async function readPackConfig(configPath: string): Promise<PackConfigValues> {
   const resolvedConfigPath = path.resolve(configPath);
   if (!(await fs.pathExists(resolvedConfigPath))) {
@@ -83,7 +74,7 @@ async function readPackConfig(configPath: string): Promise<PackConfigValues> {
     resolvedConfigPath,
   );
 
-  const documentTypeDescription = readOptionalNonEmptyString(
+  const documentTypeDescription = readRequiredNonEmptyString(
     config.documentTypeDescription,
     "documentTypeDescription",
     resolvedConfigPath,
@@ -117,9 +108,9 @@ async function readPackConfig(configPath: string): Promise<PackConfigValues> {
  * source of truth for document-type identity. Required fields:
  *  - `documentTypeName`: the document type name embedded into each chain
  *    entry's IR (and surfaced as `documentTypeName` by `ir asset`).
- * Optional fields:
  *  - `documentTypeDescription`: document type description embedded into each
  *    chain entry's IR.
+ * Optional fields:
  *  - `minSupportedVersion`: declares the oldest version this SDK supports;
  *    when set, it must match one of the chain entries' `version` values and is
  *    embedded as `minSupportedVersion` in the payload so downstream consumers

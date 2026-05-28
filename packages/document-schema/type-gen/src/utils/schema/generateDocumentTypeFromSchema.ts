@@ -27,8 +27,6 @@ import type { ResolvedIrChain } from "./resolveSchemaChain.js";
  * export const DOCUMENT_TYPE_DESCRIPTION = "Schema for the Demo Canvas Application";
  * ```
  *
- * `DOCUMENT_TYPE_DESCRIPTION` is omitted when the IR carries no description.
- *
  * Identity is read off the latest chain entry's IR — it is the same string on
  * every entry (populated by `resolveSchemaChain` from pack-config), so the
  * choice of entry is incidental.
@@ -38,8 +36,6 @@ export function generateDocumentTypeFromChain(resolved: ResolvedIrChain): string
 
   let output = GENERATED_FILE_HEADER;
   output += `export const DOCUMENT_TYPE_NAME = ${JSON.stringify(latestIr.name)};\n`;
-  if (latestIr.description != null && latestIr.description !== "") {
-    output += `export const DOCUMENT_TYPE_DESCRIPTION = ${JSON.stringify(latestIr.description)};\n`;
-  }
+  output += `export const DOCUMENT_TYPE_DESCRIPTION = ${JSON.stringify(latestIr.description)};\n`;
   return output;
 }

@@ -24,7 +24,7 @@ import { formatSingleSnapshot } from "./snapshotUtils.js";
 describe("generateDocumentTypeFromChain", () => {
   const snapshotDir = path.join(__dirname, "__snapshots__", "generateDocumentTypeFromSchema");
 
-  it("emits both name and description when identity is provided", async () => {
+  it("emits name and description from identity", async () => {
     const resolved = resolveSchemaChain(singleVersionSchema, undefined, {
       name: "Canvas Document",
       description: "Schema for the Demo Canvas Application",
@@ -32,24 +32,6 @@ describe("generateDocumentTypeFromChain", () => {
     const result = generateDocumentTypeFromChain(resolved);
     await expect(await formatSingleSnapshot("documentType.ts", result)).toMatchFileSnapshot(
       path.join(snapshotDir, "with-name-and-description.ts"),
-    );
-  });
-
-  it("omits description when identity has no description", async () => {
-    const resolved = resolveSchemaChain(singleVersionSchema, undefined, {
-      name: "Canvas Document",
-    });
-    const result = generateDocumentTypeFromChain(resolved);
-    await expect(await formatSingleSnapshot("documentType.ts", result)).toMatchFileSnapshot(
-      path.join(snapshotDir, "name-only.ts"),
-    );
-  });
-
-  it("falls back to convertSchemaToIr defaults when identity is omitted", async () => {
-    const resolved = resolveSchemaChain(singleVersionSchema);
-    const result = generateDocumentTypeFromChain(resolved);
-    await expect(await formatSingleSnapshot("documentType.ts", result)).toMatchFileSnapshot(
-      path.join(snapshotDir, "no-identity-fallback.ts"),
     );
   });
 });
