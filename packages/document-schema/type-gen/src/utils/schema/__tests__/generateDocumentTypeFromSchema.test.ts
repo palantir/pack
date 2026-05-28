@@ -26,8 +26,8 @@ describe("generateDocumentTypeFromChain", () => {
 
   it("emits name and description from identity", async () => {
     const resolved = resolveSchemaChain(singleVersionSchema, undefined, {
-      name: "Canvas Document",
-      description: "Schema for the Demo Canvas Application",
+      name: "Canvas Document Type",
+      description: "Document type description for demo canvas",
     });
     const result = generateDocumentTypeFromChain(resolved);
     await expect(await formatSingleSnapshot("documentType.ts", result)).toMatchFileSnapshot(
