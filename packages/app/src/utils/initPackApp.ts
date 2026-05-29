@@ -49,6 +49,10 @@ type ConfidentialOauthClient = ReturnType<typeof createConfidentialOauthClient>;
 interface OsdkClientSharedContext extends Readonly<SharedClientContext> {
   // From MinimalClient but it's not exported
   readonly logger?: Logger;
+  // From MinimalClient (not exported); the ontology the client is bound to. Read through the same
+  // cast as `logger` so we can derive PACK's default ontologyRid from the client when the host
+  // doesn't pass one explicitly.
+  readonly ontologyRid?: string | Promise<string>;
 }
 
 /**
@@ -326,7 +330,7 @@ function getAppConfig(
     throw new Error("No appId provided or present in document meta[pack-appId]");
   }
 
-  const ontologyRid = options.ontologyRid ?? pageEnv.ontologyRid;
+  const ontologyRid = options.ontologyRid ?? pageEnv.ontologyRid ?? osdkClientContext.ontologyRid;
 
   return {
     app: {
@@ -341,6 +345,7 @@ function getAppConfig(
         new Error("No ontologyRid provided or present in document meta[osdk-ontologyRid]"),
       ),
     osdkClient: client,
+    createOsdkClientForOntology: options.createOsdkClientForOntology,
     remote: {
       baseUrl,
       fetchFn,

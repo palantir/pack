@@ -26,6 +26,7 @@ import { Documents } from "@osdk/foundry.pack";
 import {
   assertNever,
   getOntologyRid,
+  getOsdkClientForOntology,
   type ModuleConfigTuple,
   type PackAppInternal,
   type Unsubscribe,
@@ -139,7 +140,12 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
     schema: T,
   ): Promise<DocumentRef<T>> => {
     const { documentTypeName, name, parentFolderRid, security } = metadata;
-    const ontologyRid = await getOntologyRid(this.app);
+    const defaultOntologyRid = await getOntologyRid(this.app);
+    const ontologyRid = metadata.ontologyRid ?? defaultOntologyRid;
+    const osdkClient = getOsdkClientForOntology(
+      this.app,
+      ontologyRid === defaultOntologyRid ? undefined : ontologyRid,
+    );
 
     const request: CreateDocumentRequest = {
       documentTypeName: documentTypeName,
@@ -153,7 +159,7 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
     }
 
     const createResponse = await Documents.create(
-      this.app.config.osdkClient,
+      osdkClient,
       request,
       {
         preview: this.config.usePreviewApi ?? DEFAULT_USE_PREVIEW_API,

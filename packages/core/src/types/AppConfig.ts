@@ -39,6 +39,16 @@ export interface AppConfig {
   readonly ontologyRid: Promise<string>;
   readonly osdkClient: Client;
 
+  /**
+   * Optional factory that mints an OSDK client bound to a specific `ontologyRid`.
+   *
+   * A single OSDK {@link Client} is bound to one ontology for its lifetime, but document creation
+   * is ontology-scoped. Hosts that need to create documents in ontologies other than the one
+   * {@link osdkClient} is bound to provide this so PACK can route create
+   * calls to the right client. When omitted, all operations use {@link osdkClient}.
+   */
+  readonly createOsdkClientForOntology?: (ontologyRid: string) => Client;
+
   readonly remote: {
     readonly packEventsUrl: string;
     readonly baseUrl: string;
@@ -88,8 +98,19 @@ export interface AppOptions {
    */
   readonly moduleOverrides?: readonly ModuleConfigTuple[];
 
-  // TODO: ideally we can extract this from the osdkClient but it hides everything and provides no util.
+  /**
+   * The default ontology to create documents in. Optional: when omitted, PACK falls back to the
+   * `osdk-ontologyRid` page-environment meta tag, then to the ontology the OSDK client is bound to.
+   * Pass this only to override that default (e.g. to use a different ontology than the client's).
+   */
   readonly ontologyRid?: string | Promise<string>;
+
+  /**
+   * Optional factory that mints an OSDK client bound to a specific `ontologyRid`, enabling document
+   * creation in ontologies other than the one the primary client is bound to. See
+   * {@link AppConfig.createOsdkClientForOntology}. When omitted, all operations use the primary client.
+   */
+  readonly createOsdkClientForOntology?: (ontologyRid: string) => Client;
 
   readonly remote?: {
     /**
