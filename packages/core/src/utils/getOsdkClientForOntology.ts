@@ -27,8 +27,7 @@ const clientCacheByConfig = new WeakMap<AppConfig, Map<string, Client>>();
  *   {@link AppConfig.createOsdkClientForOntology}, returns the app's primary
  *   {@link AppConfig.osdkClient}. This is the path for single-ontology hosts
  *   and for ontology-agnostic operations (search, get/update/delete by id).
- * - Otherwise lazily creates (and caches) a client bound to the requested ontology. Document
- *   creation is the only ontology-scoped operation, so this is primarily used to route creates.
+ * - Otherwise lazily creates (and caches) a client bound to the requested ontology.
  */
 export function getOsdkClientForOntology(
   app: PackApp | PackAppInternal,
