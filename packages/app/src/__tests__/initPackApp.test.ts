@@ -19,6 +19,7 @@ import type { Client } from "@osdk/client";
 import { createClient } from "@osdk/client";
 import { MinimalLogger } from "@osdk/client/internal";
 import { createConfidentialOauthClient, createPublicOauthClient } from "@osdk/oauth";
+import { symbolClientContext } from "@osdk/shared.client2";
 import type { AppOptions } from "@palantir/pack.core";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { initPackApp } from "../utils/initPackApp.js";
@@ -78,6 +79,20 @@ describe("initPackApp", () => {
       TEST_REDIRECT_URL,
     );
     return createClient(TEST_FOUNDRY_URL, TEST_ONTOLOGY_RID, auth, options);
+  }
+
+  // A minimal client whose shared context carries no ontologyRid, so the config falls through to the
+  // reject branch when neither options nor page env supplies one (the client-derived fallback yields
+  // nothing). A real OSDK client always has an ontologyRid (createClient rejects an empty one), so we
+  // fabricate the context directly here.
+  function createTestClientWithoutOntology(): Client {
+    const context = {
+      baseUrl: TEST_FOUNDRY_URL,
+      fetch: globalThis.fetch,
+      tokenProvider: () => Promise.resolve("test-token"),
+      ontologyRid: undefined,
+    };
+    return { [symbolClientContext]: context } as unknown as Client;
   }
 
   function createTestConfidentialClient(options?: { logger?: Logger }): Client {
@@ -271,7 +286,7 @@ describe("initPackApp", () => {
         redirectUrl: "http://localhost:3000/page-env-callback",
       });
 
-      const client = createTestPublicClient();
+      const client = createTestClientWithoutOntology();
       const options: AppOptions = {
         app: TEST_APP_CONFIG,
       };
@@ -297,7 +312,7 @@ describe("initPackApp", () => {
         redirectUrl: "http://localhost:3000/page-env-callback",
       });
 
-      const client = createTestPublicClient();
+      const client = createTestClientWithoutOntology();
       const options: AppOptions = {
         app: TEST_APP_CONFIG,
       };
@@ -307,6 +322,32 @@ describe("initPackApp", () => {
       await expect(app.config.ontologyRid).rejects.toThrow(
         "No ontologyRid provided or present in document meta[osdk-ontologyRid]",
       );
+    });
+
+    it("should derive ontologyRid from the client when options and page env do not provide one", async () => {
+      vi.mocked(getPageEnv).mockReturnValue({
+        appId: "page-env-app-id",
+        appVersion: "1.0.0",
+        baseUrl: "https://page-env.example.com",
+        clientId: "page-env-client-id",
+        demoMode: null,
+        documentTypeName: TEST_DOCUMENT_TYPE_NAME,
+        fileSystemType: TEST_FILE_SYSTEM_TYPE,
+        ontologyRid: null,
+        parentFolderRid: null,
+        redirectUrl: "http://localhost:3000/page-env-callback",
+      });
+
+      // Client is bound to TEST_ONTOLOGY_RID; with no option/page-env value, config derives it.
+      const client = createTestPublicClient();
+      const options: AppOptions = {
+        app: TEST_APP_CONFIG,
+      };
+
+      const app = initPackApp(client, options);
+
+      const ontologyRid = await app.config.ontologyRid;
+      expect(ontologyRid).toBe(TEST_ONTOLOGY_RID);
     });
   });
 });
