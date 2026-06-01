@@ -21,6 +21,13 @@ export interface CreateDocumentMetadata {
   readonly documentTypeName: string;
   readonly security?: DocumentSecurity;
   readonly parentFolderRid?: string;
+  /**
+   * Ontology to create the document in. When omitted, the app's default ontology is used. Provide
+   * this to create in a different ontology (e.g. multi-tenant hosts that pick an ontology per
+   * document); the document's target ontology travels in the create request, so the app's OSDK
+   * client does not need to be bound to it.
+   */
+  readonly ontologyRid?: string;
 }
 
 export const FileSystemType = {
