@@ -21,7 +21,7 @@ export interface VersionedDocRef_v1 extends DocumentRef<DocumentModel> {
     ref: RecordRef<typeof ShapeBoxModel>,
     data: ShapeBoxUpdate_v1
   ): Promise<void>;
-  setCollectionRecord(
+  setRecord(
     model: typeof ShapeBoxModel,
     id: RecordId,
     data: ShapeBox_v1
@@ -34,7 +34,7 @@ export interface VersionedDocRef_v2 extends DocumentRef<DocumentModel> {
     ref: RecordRef<typeof ShapeBoxModel>,
     data: ShapeBoxUpdate_v2
   ): Promise<void>;
-  setCollectionRecord(
+  setRecord(
     model: typeof ShapeBoxModel,
     id: RecordId,
     data: ShapeBox_v2

@@ -15,13 +15,14 @@
  */
 
 import type { DocumentRef, DocumentSchema } from "@palantir/pack.document-schema.model-types";
+import { isValidDocRef } from "@palantir/pack.state.core";
+import { useEffect, useState } from "react";
 
 /**
  * Returns the schema version the document is currently operating at.
  *
- * Reads from `docRef.version`, which the framework populates from the document
- * service. The hook re-renders when the parent re-renders with a refreshed
- * docRef (e.g. after a metadata change is broadcast through `useDocMetadata`).
+ * Subscribes to metadata changes so callers update when the backend ratchets a
+ * document to a new schema version.
  *
  * @param docRef The document reference to read the schema version from.
  * @returns The document's current operating schema version number.
@@ -29,5 +30,19 @@ import type { DocumentRef, DocumentSchema } from "@palantir/pack.document-schema
 export function useDocumentSchemaVersion<D extends DocumentSchema>(
   docRef: DocumentRef<D>,
 ): number {
-  return docRef.version;
+  const [version, setVersion] = useState(() => docRef.version);
+
+  useEffect(() => {
+    setVersion(docRef.version);
+
+    if (!isValidDocRef(docRef)) {
+      return;
+    }
+
+    return docRef.onMetadataChange((_docRef, metadata) => {
+      setVersion(metadata.schemaVersion ?? docRef.version);
+    });
+  }, [docRef]);
+
+  return version;
 }

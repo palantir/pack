@@ -59,7 +59,7 @@ const INVALID_DOC_REF: DocumentRef = Object.freeze(
     updateRecord: () => {
       throw new Error("Invalid document reference");
     },
-    setCollectionRecord: () => {
+    setRecord: () => {
       throw new Error("Invalid document reference");
     },
     deleteRecord: () => {
@@ -176,7 +176,7 @@ class DocumentRefImpl<T extends DocumentSchema> implements DocumentRef<T> {
     return this.#stateModule.updateRecord(ref, data as Partial<ModelData<Model>>);
   }
 
-  setCollectionRecord(model: Model, id: RecordId, data: unknown): Promise<void> {
+  setRecord(model: Model, id: RecordId, data: unknown): Promise<void> {
     const collection: RecordCollectionRef = this.getRecords(model);
     return this.#stateModule.setCollectionRecord(collection, id, data as ModelData<Model>);
   }

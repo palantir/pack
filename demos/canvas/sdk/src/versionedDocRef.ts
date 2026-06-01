@@ -21,16 +21,16 @@ export interface VersionedDocRef_v1 extends DocumentRef<DocumentModel> {
   updateRecord(ref: RecordRef<typeof PresenceSelectionEventModel>, data: PresenceSelectionEventUpdate_v1): Promise<void>;
   updateRecord(ref: RecordRef<typeof ShapeBoxModel>, data: ShapeBoxUpdate_v1): Promise<void>;
   updateRecord(ref: RecordRef<typeof ShapeCircleModel>, data: ShapeCircleUpdate_v1): Promise<void>;
-  setCollectionRecord(model: typeof ActivityEventModel, id: RecordId, data: ActivityEvent_v1): Promise<void>;
-  setCollectionRecord(model: typeof ActivityShapeAddEventModel, id: RecordId, data: ActivityShapeAddEvent_v1): Promise<void>;
-  setCollectionRecord(model: typeof ActivityShapeDeleteEventModel, id: RecordId, data: ActivityShapeDeleteEvent_v1): Promise<void>;
-  setCollectionRecord(model: typeof ActivityShapeUpdateEventModel, id: RecordId, data: ActivityShapeUpdateEvent_v1): Promise<void>;
-  setCollectionRecord(model: typeof NodeShapeModel, id: RecordId, data: NodeShape_v1): Promise<void>;
-  setCollectionRecord(model: typeof PresenceCursorEventModel, id: RecordId, data: PresenceCursorEvent_v1): Promise<void>;
-  setCollectionRecord(model: typeof PresenceEventModel, id: RecordId, data: PresenceEvent_v1): Promise<void>;
-  setCollectionRecord(model: typeof PresenceSelectionEventModel, id: RecordId, data: PresenceSelectionEvent_v1): Promise<void>;
-  setCollectionRecord(model: typeof ShapeBoxModel, id: RecordId, data: ShapeBox_v1): Promise<void>;
-  setCollectionRecord(model: typeof ShapeCircleModel, id: RecordId, data: ShapeCircle_v1): Promise<void>;
+  setRecord(model: typeof ActivityEventModel, id: RecordId, data: ActivityEvent_v1): Promise<void>;
+  setRecord(model: typeof ActivityShapeAddEventModel, id: RecordId, data: ActivityShapeAddEvent_v1): Promise<void>;
+  setRecord(model: typeof ActivityShapeDeleteEventModel, id: RecordId, data: ActivityShapeDeleteEvent_v1): Promise<void>;
+  setRecord(model: typeof ActivityShapeUpdateEventModel, id: RecordId, data: ActivityShapeUpdateEvent_v1): Promise<void>;
+  setRecord(model: typeof NodeShapeModel, id: RecordId, data: NodeShape_v1): Promise<void>;
+  setRecord(model: typeof PresenceCursorEventModel, id: RecordId, data: PresenceCursorEvent_v1): Promise<void>;
+  setRecord(model: typeof PresenceEventModel, id: RecordId, data: PresenceEvent_v1): Promise<void>;
+  setRecord(model: typeof PresenceSelectionEventModel, id: RecordId, data: PresenceSelectionEvent_v1): Promise<void>;
+  setRecord(model: typeof ShapeBoxModel, id: RecordId, data: ShapeBox_v1): Promise<void>;
+  setRecord(model: typeof ShapeCircleModel, id: RecordId, data: ShapeCircle_v1): Promise<void>;
 }
 
 export interface VersionedDocRef_v2 extends DocumentRef<DocumentModel> {
@@ -45,16 +45,16 @@ export interface VersionedDocRef_v2 extends DocumentRef<DocumentModel> {
   updateRecord(ref: RecordRef<typeof PresenceSelectionEventModel>, data: PresenceSelectionEventUpdate_v2): Promise<void>;
   updateRecord(ref: RecordRef<typeof ShapeBoxModel>, data: ShapeBoxUpdate_v2): Promise<void>;
   updateRecord(ref: RecordRef<typeof ShapeCircleModel>, data: ShapeCircleUpdate_v2): Promise<void>;
-  setCollectionRecord(model: typeof ActivityEventModel, id: RecordId, data: ActivityEvent_v2): Promise<void>;
-  setCollectionRecord(model: typeof ActivityShapeAddEventModel, id: RecordId, data: ActivityShapeAddEvent_v2): Promise<void>;
-  setCollectionRecord(model: typeof ActivityShapeDeleteEventModel, id: RecordId, data: ActivityShapeDeleteEvent_v2): Promise<void>;
-  setCollectionRecord(model: typeof ActivityShapeUpdateEventModel, id: RecordId, data: ActivityShapeUpdateEvent_v2): Promise<void>;
-  setCollectionRecord(model: typeof NodeShapeModel, id: RecordId, data: NodeShape_v2): Promise<void>;
-  setCollectionRecord(model: typeof PresenceCursorEventModel, id: RecordId, data: PresenceCursorEvent_v2): Promise<void>;
-  setCollectionRecord(model: typeof PresenceEventModel, id: RecordId, data: PresenceEvent_v2): Promise<void>;
-  setCollectionRecord(model: typeof PresenceSelectionEventModel, id: RecordId, data: PresenceSelectionEvent_v2): Promise<void>;
-  setCollectionRecord(model: typeof ShapeBoxModel, id: RecordId, data: ShapeBox_v2): Promise<void>;
-  setCollectionRecord(model: typeof ShapeCircleModel, id: RecordId, data: ShapeCircle_v2): Promise<void>;
+  setRecord(model: typeof ActivityEventModel, id: RecordId, data: ActivityEvent_v2): Promise<void>;
+  setRecord(model: typeof ActivityShapeAddEventModel, id: RecordId, data: ActivityShapeAddEvent_v2): Promise<void>;
+  setRecord(model: typeof ActivityShapeDeleteEventModel, id: RecordId, data: ActivityShapeDeleteEvent_v2): Promise<void>;
+  setRecord(model: typeof ActivityShapeUpdateEventModel, id: RecordId, data: ActivityShapeUpdateEvent_v2): Promise<void>;
+  setRecord(model: typeof NodeShapeModel, id: RecordId, data: NodeShape_v2): Promise<void>;
+  setRecord(model: typeof PresenceCursorEventModel, id: RecordId, data: PresenceCursorEvent_v2): Promise<void>;
+  setRecord(model: typeof PresenceEventModel, id: RecordId, data: PresenceEvent_v2): Promise<void>;
+  setRecord(model: typeof PresenceSelectionEventModel, id: RecordId, data: PresenceSelectionEvent_v2): Promise<void>;
+  setRecord(model: typeof ShapeBoxModel, id: RecordId, data: ShapeBox_v2): Promise<void>;
+  setRecord(model: typeof ShapeCircleModel, id: RecordId, data: ShapeCircle_v2): Promise<void>;
 }
 
 export interface VersionedDocRef_v3 extends DocumentRef<DocumentModel> {
@@ -70,17 +70,17 @@ export interface VersionedDocRef_v3 extends DocumentRef<DocumentModel> {
   updateRecord(ref: RecordRef<typeof ShapeBoxModel>, data: ShapeBoxUpdate_v3): Promise<void>;
   updateRecord(ref: RecordRef<typeof ShapeCircleModel>, data: ShapeCircleUpdate_v3): Promise<void>;
   updateRecord(ref: RecordRef<typeof FreehandStrokeModel>, data: FreehandStrokeUpdate_v3): Promise<void>;
-  setCollectionRecord(model: typeof ActivityEventModel, id: RecordId, data: ActivityEvent_v3): Promise<void>;
-  setCollectionRecord(model: typeof ActivityShapeAddEventModel, id: RecordId, data: ActivityShapeAddEvent_v3): Promise<void>;
-  setCollectionRecord(model: typeof ActivityShapeDeleteEventModel, id: RecordId, data: ActivityShapeDeleteEvent_v3): Promise<void>;
-  setCollectionRecord(model: typeof ActivityShapeUpdateEventModel, id: RecordId, data: ActivityShapeUpdateEvent_v3): Promise<void>;
-  setCollectionRecord(model: typeof NodeShapeModel, id: RecordId, data: NodeShape_v3): Promise<void>;
-  setCollectionRecord(model: typeof PresenceCursorEventModel, id: RecordId, data: PresenceCursorEvent_v3): Promise<void>;
-  setCollectionRecord(model: typeof PresenceEventModel, id: RecordId, data: PresenceEvent_v3): Promise<void>;
-  setCollectionRecord(model: typeof PresenceSelectionEventModel, id: RecordId, data: PresenceSelectionEvent_v3): Promise<void>;
-  setCollectionRecord(model: typeof ShapeBoxModel, id: RecordId, data: ShapeBox_v3): Promise<void>;
-  setCollectionRecord(model: typeof ShapeCircleModel, id: RecordId, data: ShapeCircle_v3): Promise<void>;
-  setCollectionRecord(model: typeof FreehandStrokeModel, id: RecordId, data: FreehandStroke_v3): Promise<void>;
+  setRecord(model: typeof ActivityEventModel, id: RecordId, data: ActivityEvent_v3): Promise<void>;
+  setRecord(model: typeof ActivityShapeAddEventModel, id: RecordId, data: ActivityShapeAddEvent_v3): Promise<void>;
+  setRecord(model: typeof ActivityShapeDeleteEventModel, id: RecordId, data: ActivityShapeDeleteEvent_v3): Promise<void>;
+  setRecord(model: typeof ActivityShapeUpdateEventModel, id: RecordId, data: ActivityShapeUpdateEvent_v3): Promise<void>;
+  setRecord(model: typeof NodeShapeModel, id: RecordId, data: NodeShape_v3): Promise<void>;
+  setRecord(model: typeof PresenceCursorEventModel, id: RecordId, data: PresenceCursorEvent_v3): Promise<void>;
+  setRecord(model: typeof PresenceEventModel, id: RecordId, data: PresenceEvent_v3): Promise<void>;
+  setRecord(model: typeof PresenceSelectionEventModel, id: RecordId, data: PresenceSelectionEvent_v3): Promise<void>;
+  setRecord(model: typeof ShapeBoxModel, id: RecordId, data: ShapeBox_v3): Promise<void>;
+  setRecord(model: typeof ShapeCircleModel, id: RecordId, data: ShapeCircle_v3): Promise<void>;
+  setRecord(model: typeof FreehandStrokeModel, id: RecordId, data: FreehandStroke_v3): Promise<void>;
 }
 
 export type VersionedDocRef = VersionedDocRef_v1 | VersionedDocRef_v2 | VersionedDocRef_v3;

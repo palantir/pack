@@ -32,17 +32,17 @@ export interface VersionedDocRef_v1 extends DocumentRef<DocumentModel> {
     ref: RecordRef<typeof ShapeModel>,
     data: Partial<Shape_v1>
   ): Promise<void>;
-  setCollectionRecord(
+  setRecord(
     model: typeof CircleModel,
     id: RecordId,
     data: Circle_v1
   ): Promise<void>;
-  setCollectionRecord(
+  setRecord(
     model: typeof RectangleModel,
     id: RecordId,
     data: Rectangle_v1
   ): Promise<void>;
-  setCollectionRecord(
+  setRecord(
     model: typeof ShapeModel,
     id: RecordId,
     data: Shape_v1

@@ -49,7 +49,7 @@ class RBushShapeIndex extends RBush<ShapeIndexEntry> {
   }
 }
 
-export function useShapeIndex(docRef: VersionedDocRef): ShapeIndex {
+export function useShapeIndex(doc: VersionedDocRef): ShapeIndex {
   const rbush = useRef<RBushShapeIndex | null>(null);
   const entryCache = useRef<Map<RecordRef<NodeShapeModel>, ShapeIndexEntry> | null>(null);
 
@@ -61,7 +61,7 @@ export function useShapeIndex(docRef: VersionedDocRef): ShapeIndex {
   }
 
   useEffect(() => {
-    const shapeCollection = docRef.getRecords(NodeShapeModel);
+    const shapeCollection = doc.getRecords(NodeShapeModel);
 
     const unsubscribeAdded = shapeCollection.onItemsAdded(items =>
       Promise.all(items.map(recordRef =>
@@ -110,7 +110,7 @@ export function useShapeIndex(docRef: VersionedDocRef): ShapeIndex {
       unsubscribeRemoved();
       unsubscribeChanged();
     };
-  }, [docRef]);
+  }, [doc]);
 
   const findShapesAtPoint = useCallback(
     (x: number, y: number): RecordRef<typeof NodeShapeModel>[] => {

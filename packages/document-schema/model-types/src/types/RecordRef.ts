@@ -39,8 +39,8 @@ export const RecordRefBrand: unique symbol = Symbol("pack:RecordRef");
  *
  * const docRef = app.getDocRef<DocumentSchema>(someDocumentId);
  *
- * // Create a record via the version-narrowed setCollectionRecord on DocumentRef.
- * await docRef.setCollectionRecord(MyModel, "my-record-id", { myFieldName: "some value", foo: 42 });
+ * // Create a record via the version-narrowed setRecord on DocumentRef.
+ * await docRef.setRecord(MyModel, "my-record-id", { myFieldName: "some value", foo: 42 });
  *
  * // Then get the ref back.
  * const recordRef = docRef.getRecords(MyModel).get("my-record-id");

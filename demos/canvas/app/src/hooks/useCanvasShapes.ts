@@ -55,13 +55,13 @@ export function useCanvasShapes(doc: VersionedDocRef): UseCanvasShapesResult {
         () => {
           matchVersion(doc, {
             1: doc =>
-              doc.setCollectionRecord(NodeShapeModel, id, {
+              doc.setRecord(NodeShapeModel, id, {
                 ...bounds,
                 color,
                 shapeType,
               }),
-            2: doc => doc.setCollectionRecord(NodeShapeModel, id, v2ShapeData),
-            3: doc => doc.setCollectionRecord(NodeShapeModel, id, v2ShapeData),
+            2: doc => doc.setRecord(NodeShapeModel, id, v2ShapeData),
+            3: doc => doc.setRecord(NodeShapeModel, id, v2ShapeData),
           });
         },
         ActivityEvents.describeEdit(ActivityEventModel, {

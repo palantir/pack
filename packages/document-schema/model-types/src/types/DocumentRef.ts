@@ -285,7 +285,7 @@ export interface DocumentRef<D extends DocumentSchema = DocumentSchema> {
    * The data parameter is `never` on the base interface — narrow to a
    * version-specific type before calling this method.
    */
-  setCollectionRecord(model: Model, id: RecordId, data: never): Promise<void>;
+  setRecord(model: Model, id: RecordId, data: never): Promise<void>;
 
   /** Delete a record. Version-agnostic — callable without narrowing. */
   deleteRecord<M extends Model>(ref: RecordRef<M>): Promise<void>;
