@@ -1,5 +1,23 @@
 # @palantir/pack.state.core
 
+## 0.14.0
+
+### Minor Changes
+
+- d44fe3f: Allow `createDocument` to target a specific ontology via `CreateDocumentMetadata.ontologyRid`.
+
+  When provided, the document is created in that ontology (the target ontology travels in the create
+  request body); when omitted, the app's default ontology is used. This lets multi-tenant hosts create
+  documents in different ontologies without a separate OSDK client per ontology — the app's single
+  client is used regardless, since its bound ontology does not affect document creation.
+
+- e540eba: Move upgrade forward functions out of the schema/IR into a typed UpgradeFns table that apps supply to the generated DocumentModel(...) factory at boot, eliminating Function.toString() source-splicing and enforcing exhaustive upgrade function coverage at compile time.
+
+### Patch Changes
+
+- Updated dependencies [e540eba]
+  - @palantir/pack.document-schema.model-types@0.11.0
+
 ## 0.13.0
 
 ### Patch Changes
