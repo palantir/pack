@@ -1,5 +1,21 @@
 # @palantir/pack.sdkgen.pack-template
 
+## 0.10.0
+
+### Minor Changes
+
+- e540eba: Move upgrade forward functions out of the schema/IR into a typed UpgradeFns table that apps supply to the generated DocumentModel(...) factory at boot, eliminating Function.toString() source-splicing and enforcing exhaustive upgrade function coverage at compile time.
+
+### Patch Changes
+
+- Updated dependencies [4b27697]
+- Updated dependencies [e40ca65]
+- Updated dependencies [8ff3c6a]
+- Updated dependencies [f92557e]
+- Updated dependencies [e540eba]
+  - @palantir/pack.document-schema.type-gen@0.12.0
+  - @palantir/pack.document-schema.model-types@0.11.0
+
 ## 0.9.0
 
 ### Patch Changes
