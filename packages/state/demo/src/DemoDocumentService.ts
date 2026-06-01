@@ -182,11 +182,16 @@ export class DemoDocumentService extends BaseYjsDocumentService<DemoInternalDoc>
   }
 
   readonly createDocument = async <T extends DocumentSchema>(
-    { documentTypeName, name, security = EMPTY_DOCUMENT_SECURITY }: CreateDocumentMetadata,
+    {
+      documentTypeName,
+      name,
+      security = EMPTY_DOCUMENT_SECURITY,
+      ontologyRid: metadataOntologyRid,
+    }: CreateDocumentMetadata,
     schema: T,
   ): Promise<DocumentRef<T>> => {
     await this.metadataStore.whenReady();
-    const ontologyRid = await getOntologyRid(this.app);
+    const ontologyRid = metadataOntologyRid ?? await getOntologyRid(this.app);
 
     const id = generateDocumentId();
     const docRef = createDocRef(this.app, id, schema);
