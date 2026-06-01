@@ -67,8 +67,8 @@ function createTestApp(
       },
       isDemoMode: config.isDemoMode ?? true,
       logger: config.logger ?? consoleLogger({}),
-      ontologyRid: Promise.resolve("ri.ontology...test"),
-      osdkClient,
+      defaultOntologyRid: "ri.ontology...test",
+      getClient: () => osdkClient,
       remote: {
         baseUrl: "http://localhost",
         fetchFn: fetch,

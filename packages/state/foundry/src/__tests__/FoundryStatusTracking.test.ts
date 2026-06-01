@@ -68,7 +68,7 @@ const mockApp = {
   getModule: vi.fn().mockReturnValue(mockAuthModule),
   config: {
     logger: mockLogger,
-    osdkClient: mockOsdkClient,
+    getClient: () => mockOsdkClient,
     remote: {
       packEventsUrl: "https://test.example.com/ws/cometd",
       baseUrl: "https://test.example.com",

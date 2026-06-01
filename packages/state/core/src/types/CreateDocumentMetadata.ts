@@ -22,9 +22,9 @@ export interface CreateDocumentMetadata {
   readonly security?: DocumentSecurity;
   readonly parentFolderRid?: string;
   /**
-   * Ontology to create the document in. When omitted, the ontology the app's primary OSDK client is
-   * bound to is used. Provide this to create in a different ontology (requires the host to supply
-   * {@link AppConfig.createOsdkClientForOntology}).
+   * Ontology to create the document in. When omitted, falls back to the app's default ontology
+   * ({@link AppConfig.defaultOntologyRid}). Provide this to create in a different ontology; the
+   * host's client factory (see {@link initPackApp}) mints a client bound to it on demand.
    */
   readonly ontologyRid?: string;
 }

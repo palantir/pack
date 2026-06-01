@@ -91,7 +91,7 @@ describe("initPackApp - Auth Integration", () => {
         app: TEST_APP_CONFIG,
       };
 
-      const app = initPackApp(client, options);
+      const app = initPackApp(() => client, options);
 
       expect(app.auth).toBeDefined();
     });
@@ -102,7 +102,7 @@ describe("initPackApp - Auth Integration", () => {
         app: TEST_APP_CONFIG,
       };
 
-      const app = initPackApp(client, options);
+      const app = initPackApp(() => client, options);
 
       expect(app.auth).toBeDefined();
     });
@@ -115,7 +115,7 @@ describe("initPackApp - Auth Integration", () => {
         auth: customTokenProvider,
       };
 
-      const app = initPackApp(client, options);
+      const app = initPackApp(() => client, options);
 
       expect(app.auth).toBeDefined();
     });
@@ -130,7 +130,7 @@ describe("initPackApp - Auth Integration", () => {
         },
       };
 
-      const app = initPackApp(client, options);
+      const app = initPackApp(() => client, options);
 
       expect(app.auth).toBeDefined();
       expect(app.config.remote.baseUrl).toBe(customBaseUrl);

@@ -52,8 +52,8 @@ describe("ConfidentialOauthService", () => {
       config: {
         app: { appId: "test-app" },
         logger: mockLogger,
-        ontologyRid: Promise.resolve("ri.ontology...test"),
-        osdkClient: mockOsdkClient,
+        defaultOntologyRid: "ri.ontology...test",
+        getClient: () => mockOsdkClient,
         remote: {
           packEventsUrl: "https://test.example.com/api/v2/packSubscriptions/cometd",
           baseUrl: "https://test.example.com",

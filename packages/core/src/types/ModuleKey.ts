@@ -33,15 +33,13 @@ import type { PackAppInternal } from "./PackApp.js";
  *   initModule: initMyModule,
  * };
  *
- * const app = initPackApp({
- *   moduleConfig: {
- *     [MY_MODULE_KEY.key]: { ... config ... } satisfies MyModuleConfig
- *
- *     // Note this is the actual shape of the moduleConfig, ie index by module key symbol
- *     // But it is far more ergonomic to spread from a config creator, ie:
- *     ...createMyModuleConfig({ ... config ... }),
- *   }
- * })
+ * const app = initPackApp(
+ *   (ontologyRid) => createClient(FOUNDRY_URL, ontologyRid, authClient),
+ *   { app: { appId: 'your-app-id' }, ontologyRid: ONTOLOGY_RID },
+ * )
+ *   // Configure the module via the builder (spread from a config creator for ergonomics):
+ *   .with(createMyModuleConfig({ ... config ... }))
+ *   .build();
  *
  * // Get the module (manual way)
  * const myModule = app.getModule(MY_MODULE_KEY);

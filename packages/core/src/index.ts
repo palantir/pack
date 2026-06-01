@@ -22,8 +22,8 @@ export type { ModuleConfig, ModuleConfigTuple, PackApp, PackAppInternal } from "
 export type { TokenProvider } from "./types/TokenProvider.js";
 export type { Unsubscribe } from "./types/Unsubscribe.js";
 export { assertNever } from "./utils/assertNever.js";
+export { createMemoizedClientResolver } from "./utils/createMemoizedClientResolver.js";
 export { generateId } from "./utils/generateId.js";
-export { getOntologyRid } from "./utils/getOntologyRid.js";
-export { getOsdkClientForOntology } from "./utils/getOsdkClientForOntology.js";
+export { getDefaultOntologyRid } from "./utils/getDefaultOntologyRid.js";
 export { justOnce } from "./utils/justOnce.js";
 export { parseJwtPayload } from "./utils/parseJwtPayload.js";

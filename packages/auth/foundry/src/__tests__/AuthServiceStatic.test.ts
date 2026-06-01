@@ -48,8 +48,8 @@ describe("StaticTokenService", () => {
       config: {
         app: { appId: "test-app" },
         logger: mockLogger,
-        ontologyRid: Promise.resolve("ri.ontology...test"),
-        osdkClient: mockOsdkClient,
+        defaultOntologyRid: "ri.ontology...test",
+        getClient: () => mockOsdkClient,
         remote: {
           packEventsUrl: "https://test.example.com/api/v2/packSubscriptions/cometd",
           baseUrl: "https://test.example.com",
@@ -192,7 +192,7 @@ describe("StaticTokenService", () => {
       expect(isValid).toBe(true);
       expect(service.isValidated()).toBe(true);
       expect(service.getCurrentUserId()).toBeDefined();
-      expect(Users.getCurrent).toHaveBeenCalledWith(mockApp.config.osdkClient);
+      expect(Users.getCurrent).toHaveBeenCalledWith(mockApp.config.getClient());
     });
 
     it("should handle validation failure", async () => {

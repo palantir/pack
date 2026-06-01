@@ -75,20 +75,22 @@ function createAuthClient(): PublicOauthClient | (() => Promise<string>) {
 
 const authClient = createAuthClient();
 
-const osdkClient = createClient(FOUNDRY_URL, ONTOLOGY_RID, authClient, {
-  logger,
-});
-
-export const app = initPackApp(osdkClient, {
-  app: pageEnv.appId != null
-    ? {
-      appId: pageEnv.appId,
-      appVersion: pageEnv.appVersion ?? undefined,
-    }
-    : undefined,
-  demoMode: isDemoEnv(),
-  logLevel: "info",
-  ontologyRid: ONTOLOGY_RID,
-})
+export const app = initPackApp(
+  ontologyRid =>
+    createClient(FOUNDRY_URL, ontologyRid, authClient, {
+      logger,
+    }),
+  {
+    app: pageEnv.appId != null
+      ? {
+        appId: pageEnv.appId,
+        appVersion: pageEnv.appVersion ?? undefined,
+      }
+      : undefined,
+    demoMode: isDemoEnv(),
+    logLevel: "info",
+    ontologyRid: ONTOLOGY_RID,
+  },
+)
   .withState()
   .build();

@@ -25,8 +25,6 @@ import type {
 import { Documents } from "@osdk/foundry.pack";
 import {
   assertNever,
-  getOntologyRid,
-  getOsdkClientForOntology,
   type ModuleConfigTuple,
   type PackAppInternal,
   type Unsubscribe,
@@ -140,12 +138,8 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
     schema: T,
   ): Promise<DocumentRef<T>> => {
     const { documentTypeName, name, parentFolderRid, security } = metadata;
-    const defaultOntologyRid = await getOntologyRid(this.app);
-    const ontologyRid = metadata.ontologyRid ?? defaultOntologyRid;
-    const osdkClient = getOsdkClientForOntology(
-      this.app,
-      ontologyRid === defaultOntologyRid ? undefined : ontologyRid,
-    );
+    const ontologyRid = metadata.ontologyRid ?? this.app.config.defaultOntologyRid;
+    const osdkClient = this.app.config.getClient(ontologyRid);
 
     const request: CreateDocumentRequest = {
       documentTypeName: documentTypeName,
@@ -190,7 +184,7 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
     };
 
     const searchResponse = await Documents.search(
-      this.app.config.osdkClient,
+      this.app.config.getClient(),
       request,
       {
         preview: this.config.usePreviewApi ?? DEFAULT_USE_PREVIEW_API,
@@ -219,7 +213,7 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
     update: UpdateDocumentMetadata,
   ): Promise<DocumentMetadata> => {
     const document = await Documents.update(
-      this.app.config.osdkClient,
+      this.app.config.getClient(),
       docRef.id,
       {
         requestBody: {
@@ -251,7 +245,7 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
     docRef: DocumentRef,
   ): Promise<void> => {
     await Documents.deleteDocument(
-      this.app.config.osdkClient,
+      this.app.config.getClient(),
       docRef.id,
       {
         preview: this.config.usePreviewApi ?? DEFAULT_USE_PREVIEW_API,
@@ -274,7 +268,7 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
       load: DocumentLoadStatus.LOADING,
     });
 
-    Documents.get(this.app.config.osdkClient, docRef.id, {
+    Documents.get(this.app.config.getClient(), docRef.id, {
       preview: this.config.usePreviewApi ?? DEFAULT_USE_PREVIEW_API,
     })
       .then(document => {
@@ -392,7 +386,7 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
     if (!this.documents.has(docRef.id)) {
       return;
     }
-    Documents.get(this.app.config.osdkClient, docRef.id, {
+    Documents.get(this.app.config.getClient(), docRef.id, {
       preview: this.config.usePreviewApi ?? DEFAULT_USE_PREVIEW_API,
     })
       .then(document => {

@@ -16,6 +16,11 @@
 
 import type { PackApp, PackAppInternal } from "../types/PackApp.js";
 
-export async function getOntologyRid(app: PackApp | PackAppInternal): Promise<string> {
-  return app.config.ontologyRid;
+/**
+ * Resolves the app's default ontologyRid ({@link AppConfig.defaultOntologyRid}).
+ *
+ * {@link initPackApp} guarantees a default ontology is always present.
+ */
+export function getDefaultOntologyRid(app: PackApp | PackAppInternal): Promise<string> {
+  return Promise.resolve(app.config.defaultOntologyRid);
 }

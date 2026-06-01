@@ -15,7 +15,7 @@
  */
 
 import { Documents } from "@osdk/foundry.pack";
-import type { PackAppInternal } from "@palantir/pack.core";
+import { createMemoizedClientResolver, type PackAppInternal } from "@palantir/pack.core";
 import type { DocumentSchema } from "@palantir/pack.document-schema.model-types";
 import { Metadata } from "@palantir/pack.document-schema.model-types";
 import type { FoundryEventService } from "@palantir/pack.state.foundry-event";
@@ -34,9 +34,13 @@ vi.mock("@osdk/foundry.pack", () => ({
 const PRIMARY_ONTOLOGY_RID = "ri.ontology.main.ontology.primary";
 const OTHER_ONTOLOGY_RID = "ri.ontology.main.ontology.other";
 
-// Sentinel client stand-ins; identity is all these tests assert on.
-const PRIMARY_CLIENT = { __label: "primary" };
-const OTHER_CLIENT = { __label: "other" };
+// The OSDK Client type, sourced from the resolver's signature so we don't import @osdk/client
+// (not a dependency of this package). Identity is all these tests assert on.
+type Client = Parameters<typeof createMemoizedClientResolver>[1];
+
+// Sentinel client stand-ins.
+const PRIMARY_CLIENT = { __label: "primary" } as unknown as Client;
+const OTHER_CLIENT = { __label: "other" } as unknown as Client;
 
 const mockLogger = {
   child: vi.fn(),
@@ -55,18 +59,21 @@ function createApp(): {
   app: PackAppInternal;
   factory: ReturnType<typeof vi.fn>;
 } {
-  // Factory returns a distinct client only for non-primary ontologies, mirroring how a host
-  // mints per-ontology clients.
-  const factory = vi.fn((ontologyRid: string) =>
-    ontologyRid === OTHER_ONTOLOGY_RID ? OTHER_CLIENT : { __label: ontologyRid }
+  // Factory mints a distinct client per non-default ontology, mirroring how a host mints
+  // per-ontology clients. The memoized resolver serves the default from the boot client without
+  // ever calling the factory for it.
+  const factory = vi.fn((ontologyRid: string): Client =>
+    ontologyRid === OTHER_ONTOLOGY_RID
+      ? OTHER_CLIENT
+      : ({ __label: ontologyRid } as unknown as Client)
   );
+  const getClient = createMemoizedClientResolver(factory, PRIMARY_CLIENT, PRIMARY_ONTOLOGY_RID);
   const app = {
     getModule: vi.fn().mockReturnValue({ onTokenChange: vi.fn(), getToken: vi.fn() }),
     config: {
       logger: mockLogger,
-      osdkClient: PRIMARY_CLIENT,
-      ontologyRid: Promise.resolve(PRIMARY_ONTOLOGY_RID),
-      createOsdkClientForOntology: factory,
+      defaultOntologyRid: PRIMARY_ONTOLOGY_RID,
+      getClient,
       remote: {
         packEventsUrl: "https://test.example.com/ws/cometd",
         baseUrl: "https://test.example.com",

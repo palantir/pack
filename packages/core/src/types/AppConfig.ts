@@ -36,18 +36,27 @@ export interface AppConfig {
 
   readonly logger: Logger;
 
-  readonly ontologyRid: Promise<string>;
-  readonly osdkClient: Client;
+  /**
+   * Default ontology used for document creation (when a caller omits a per-call `ontologyRid`) and
+   * the ontology the boot client is minted against. Resolved at boot from `options.ontologyRid` ??
+   * the `osdk-ontologyRid` page-environment meta tag; {@link initPackApp} throws if neither is
+   * present.
+   */
+  readonly defaultOntologyRid: string;
 
   /**
-   * Optional factory that mints an OSDK client bound to a specific `ontologyRid`.
+   * The single OSDK client resolver.
    *
-   * A single OSDK {@link Client} is bound to one ontology for its lifetime, but document creation
-   * is ontology-scoped. Hosts that need to create documents in ontologies other than the one
-   * {@link osdkClient} is bound to provide this so PACK can route create
-   * calls to the right client. When omitted, all operations use {@link osdkClient}.
+   * - `getClient()` (no arg) returns the boot client, used for ontology-agnostic operations: auth
+   *   and all document-id-based ops (search/get/update/delete). The client's bound ontology is
+   *   irrelevant for these — only its base URL and token are used.
+   * - `getClient(ontologyRid)` returns a client bound to that ontology, used for document creation.
+   *
+   * Built once by {@link initPackApp} from the host-supplied client factory: the boot client is
+   * `factory(defaultOntologyRid)`, and clients for other ontologies are minted (and memoized) on
+   * demand.
    */
-  readonly createOsdkClientForOntology?: (ontologyRid: string) => Client;
+  readonly getClient: (ontologyRid?: string) => Client;
 
   readonly remote: {
     readonly packEventsUrl: string;
@@ -99,18 +108,15 @@ export interface AppOptions {
   readonly moduleOverrides?: readonly ModuleConfigTuple[];
 
   /**
-   * The default ontology to create documents in. Optional: when omitted, PACK falls back to the
-   * `osdk-ontologyRid` page-environment meta tag, then to the ontology the OSDK client is bound to.
-   * Pass this only to override that default (e.g. to use a different ontology than the client's).
+   * The default ontology to create documents in, and the ontology the boot client is minted
+   * against. When omitted, PACK falls back to the `osdk-ontologyRid` page-environment meta tag;
+   * {@link initPackApp} throws if neither is present.
+   *
+   * Plain string (deferred hosts await before calling {@link initPackApp}). Multi-ontology hosts
+   * supply this for the default and pass a per-call `ontologyRid` on
+   * {@link CreateDocumentMetadata} to create in other ontologies.
    */
-  readonly ontologyRid?: string | Promise<string>;
-
-  /**
-   * Optional factory that mints an OSDK client bound to a specific `ontologyRid`, enabling document
-   * creation in ontologies other than the one the primary client is bound to. See
-   * {@link AppConfig.createOsdkClientForOntology}. When omitted, all operations use the primary client.
-   */
-  readonly createOsdkClientForOntology?: (ontologyRid: string) => Client;
+  readonly ontologyRid?: string;
 
   readonly remote?: {
     /**

@@ -32,7 +32,7 @@ import { app, DOCUMENT_TYPE_NAME, FILE_SYSTEM_TYPE, PARENT_FOLDER_RID } from "..
 const isCompassFileSystem = FILE_SYSTEM_TYPE === FileSystemType.COMPASS;
 
 // TODO: Set your organization's classification (e.g. ["MU"])
-const DEFAULT_CLASSIFICATION: readonly string[] = [];
+const DEFAULT_CLASSIFICATION: readonly string[] = ["MU"];
 
 const DEFAULT_DOCUMENT_SECURITY = Object.freeze({
   discretionary: {},

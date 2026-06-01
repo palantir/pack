@@ -34,7 +34,7 @@ export function createTestApp(
     ...config.moduleConfigs,
   };
 
-  const mockClient = config.osdkClient ?? mock<Client>();
+  const mockClient = mock<Client>();
 
   const app: PackAppInternal = {
     config: {
@@ -44,8 +44,8 @@ export function createTestApp(
       },
       isDemoMode: config.isDemoMode ?? true,
       logger: config.logger ?? consoleLogger({}),
-      ontologyRid: config.ontologyRid ?? Promise.resolve("ri.ontology...test"),
-      osdkClient: mockClient,
+      defaultOntologyRid: config.defaultOntologyRid ?? "ri.ontology...test",
+      getClient: config.getClient ?? (() => mockClient),
       remote: {
         packEventsUrl: "http://localhost/api/v2/packSubscriptions/cometd",
         baseUrl: "http://localhost",

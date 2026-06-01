@@ -34,6 +34,7 @@ import {
 import {
   type AppConfig,
   type AppOptions,
+  createMemoizedClientResolver,
   isModuleConfigTuple,
   type ModuleConfig,
   type ModuleKey,
@@ -49,10 +50,6 @@ type ConfidentialOauthClient = ReturnType<typeof createConfidentialOauthClient>;
 interface OsdkClientSharedContext extends Readonly<SharedClientContext> {
   // From MinimalClient but it's not exported
   readonly logger?: Logger;
-  // From MinimalClient (not exported); the ontology the client is bound to. Read through the same
-  // cast as `logger` so we can derive PACK's default ontologyRid from the client when the host
-  // doesn't pass one explicitly.
-  readonly ontologyRid?: string | Promise<string>;
 }
 
 /**
@@ -106,26 +103,48 @@ export interface AppBuilders {
 }
 
 /**
- * Initialize an Pack application instance from an OSDK client.
+ * Factory that mints an OSDK client bound to the given `ontologyRid`.
  *
- * @param client - OSDK client instance (required)
+ * PACK always calls this with a concrete `ontologyRid`: once at boot with the default ontology to
+ * create the boot client, and again (memoized) for each other ontology a document is created in.
+ * Because the rid is always supplied, hosts pass it straight through:
+ *
+ * ```ts
+ * initPackApp((ontologyRid) => createClient(FOUNDRY_URL, ontologyRid, auth), { ontologyRid: DEFAULT_RID })
+ * ```
+ */
+export type OsdkClientFactory = (ontologyRid: string) => Client;
+
+/**
+ * Initialize a Pack application instance from an OSDK client factory.
+ *
+ * @param clientFactory - Factory that mints an OSDK client for a given ontology. The
+ *   boot client is `clientFactory(defaultOntologyRid)`; clients for other ontologies are minted on
+ *   demand (e.g. at document-create time when called with a different ontologyRid).
  * @param options - Application configuration options / overrides
  * @returns Configured Pack application instance
  */
 export function initPackApp(
-  client: Client,
+  clientFactory: OsdkClientFactory,
   options: AppOptions,
 ): PackAppWithAuth & AppBuilders {
   // PackAppInternal -> PackApp is tricky due to module accessors (eg 'state').
   // This probably needs some rethinking, but we ideally want to maintain inversion of dependencies
   return new PackAppImpl(
-    client,
+    clientFactory,
     options,
   ) satisfies PackAppInternal as unknown as PackAppWithAuth & AppBuilders;
 }
 
 function getOsdkClientSharedContext(value: SharedClient): OsdkClientSharedContext {
   return value[symbolClientContext] as OsdkClientSharedContext;
+}
+
+/**
+ * Coerce a possibly-empty ontologyRid to a non-empty plain string, or `undefined`.
+ */
+function normalizeOntologyRid(ontologyRid: string | null | undefined): string | undefined {
+  return ontologyRid != null && ontologyRid !== "" ? ontologyRid : undefined;
 }
 
 /**
@@ -147,12 +166,27 @@ class PackAppImpl implements PackAppInternal, AppBuilders {
   readonly #moduleInstances: Map<symbol, unknown> = new Map();
   readonly config: AppConfig;
 
-  constructor(client: Client, options: AppOptions) {
-    this.config = Object.freeze(getAppConfig(client, options));
+  constructor(clientFactory: OsdkClientFactory, options: AppOptions) {
+    const pageEnv = getPageEnv();
+
+    // Default ontology, resolved synchronously: options ?? page-env. Always passed to the factory
+    // to mint the boot client, and stamped into creates that omit a per-call ontologyRid.
+    const defaultOntologyRid = normalizeOntologyRid(options.ontologyRid)
+      ?? normalizeOntologyRid(pageEnv.ontologyRid);
+    if (defaultOntologyRid == null) {
+      throw new Error("No ontologyRid provided or present in document meta[osdk-ontologyRid]");
+    }
+
+    // The boot client serves auth + all ontology-agnostic ops, and seeds the default ontology.
+    const bootClient = clientFactory(defaultOntologyRid);
+
+    this.config = Object.freeze(
+      getAppConfig(bootClient, clientFactory, defaultOntologyRid, options, pageEnv),
+    );
 
     const moduleOverrides = options.moduleOverrides ?? [];
 
-    const authService = this.createAuthService(client);
+    const authService = this.createAuthService(bootClient);
     const authModuleConfig = createAuthModuleConfig(authService);
 
     const [defaultDocModule, defaultDocModuleConfig] = getDocumentServiceConfig(this.config);
@@ -297,11 +331,13 @@ function hasRealFoundryConfig(baseUrl: string | undefined): boolean {
 }
 
 function getAppConfig(
-  client: Client,
+  bootClient: Client,
+  clientFactory: OsdkClientFactory,
+  defaultOntologyRid: string,
   options: AppOptions,
+  pageEnv: ReturnType<typeof getPageEnv>,
 ): AppConfig {
-  const pageEnv = getPageEnv();
-  const osdkClientContext = getOsdkClientSharedContext(client);
+  const osdkClientContext = getOsdkClientSharedContext(bootClient);
 
   // Precedence: provided options ?? osdkClientContext ?? defaults
   const level = options.logLevel ?? "warn";
@@ -330,8 +366,6 @@ function getAppConfig(
     throw new Error("No appId provided or present in document meta[pack-appId]");
   }
 
-  const ontologyRid = options.ontologyRid ?? pageEnv.ontologyRid ?? osdkClientContext.ontologyRid;
-
   return {
     app: {
       appId,
@@ -339,13 +373,8 @@ function getAppConfig(
     },
     isDemoMode,
     logger,
-    ontologyRid: ontologyRid != null && ontologyRid !== ""
-      ? Promise.resolve(ontologyRid)
-      : Promise.reject(
-        new Error("No ontologyRid provided or present in document meta[osdk-ontologyRid]"),
-      ),
-    osdkClient: client,
-    createOsdkClientForOntology: options.createOsdkClientForOntology,
+    defaultOntologyRid,
+    getClient: createMemoizedClientResolver(clientFactory, bootClient, defaultOntologyRid),
     remote: {
       baseUrl,
       fetchFn,

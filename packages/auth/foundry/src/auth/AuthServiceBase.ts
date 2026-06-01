@@ -87,7 +87,7 @@ export abstract class AuthServiceBase implements BaseAuthService {
     }
 
     try {
-      const user = await Users.getCurrent(this.app.config.osdkClient);
+      const user = await Users.getCurrent(this.app.config.getClient());
       this.isTokenValidated = true;
       this.cachedUserData = user;
       this.currentUserId = user.id;
@@ -155,7 +155,7 @@ export abstract class AuthServiceBase implements BaseAuthService {
 
     try {
       // TODO: debounce and use Users.getBatch for efficiency when looking up multiple users
-      const user = await Users.get(this.app.config.osdkClient, userId);
+      const user = await Users.get(this.app.config.getClient(), userId);
       this.cachedUserData = user;
       return user;
     } catch (error) {

@@ -81,16 +81,13 @@ describe("initPackApp", () => {
     return createClient(TEST_FOUNDRY_URL, TEST_ONTOLOGY_RID, auth, options);
   }
 
-  // A minimal client whose shared context carries no ontologyRid, so the config falls through to the
-  // reject branch when neither options nor page env supplies one (the client-derived fallback yields
-  // nothing). A real OSDK client always has an ontologyRid (createClient rejects an empty one), so we
-  // fabricate the context directly here.
+  // A minimal client whose shared context provides only a token provider, used to assert that
+  // initPackApp throws when no ontologyRid is supplied via options or page env.
   function createTestClientWithoutOntology(): Client {
     const context = {
       baseUrl: TEST_FOUNDRY_URL,
       fetch: globalThis.fetch,
       tokenProvider: () => Promise.resolve("test-token"),
-      ontologyRid: undefined,
     };
     return { [symbolClientContext]: context } as unknown as Client;
   }
@@ -113,24 +110,24 @@ describe("initPackApp", () => {
       const client = createTestPublicClient();
       const options = APP_CONFIG;
 
-      const app = initPackApp(client, options);
+      const app = initPackApp(() => client, options);
 
       expect(app).toBeDefined();
       expect(app.config.app).toEqual(TEST_APP_CONFIG);
       expect(app.config.remote.baseUrl).toBe(TEST_FOUNDRY_URL_WITH_SLASH);
-      expect(app.config.osdkClient).toBe(client);
+      expect(app.config.getClient()).toBe(client);
     });
 
     it("should create app from confidential OSDK client", () => {
       const client = createTestConfidentialClient();
       const options = APP_CONFIG;
 
-      const app = initPackApp(client, options);
+      const app = initPackApp(() => client, options);
 
       expect(app).toBeDefined();
       expect(app.config.app).toEqual(TEST_APP_CONFIG);
       expect(app.config.remote.baseUrl).toBe(TEST_FOUNDRY_URL_WITH_SLASH);
-      expect(app.config.osdkClient).toBe(client);
+      expect(app.config.getClient()).toBe(client);
     });
 
     it("should allow overriding auth with custom token provider", () => {
@@ -141,12 +138,12 @@ describe("initPackApp", () => {
         auth: customTokenProvider,
       };
 
-      const app = initPackApp(client, options);
+      const app = initPackApp(() => client, options);
 
       expect(app).toBeDefined();
       expect(app.config.app).toEqual(TEST_APP_CONFIG);
       expect(app.auth).toBeDefined();
-      expect(app.config.osdkClient).toBe(client);
+      expect(app.config.getClient()).toBe(client);
     });
 
     it("should allow overriding baseUrl", () => {
@@ -159,7 +156,7 @@ describe("initPackApp", () => {
         },
       };
 
-      const app = initPackApp(client, options);
+      const app = initPackApp(() => client, options);
 
       expect(app).toBeDefined();
       expect(app.config.remote.baseUrl).toBe(customBaseUrl);
@@ -173,7 +170,7 @@ describe("initPackApp", () => {
         logger: customLogger,
       };
 
-      const app = initPackApp(client, options);
+      const app = initPackApp(() => client, options);
 
       expect(app).toBeDefined();
       expect(app.config.logger).toBe(customLogger);
@@ -187,7 +184,7 @@ describe("initPackApp", () => {
 
       const options: AppOptions = APP_CONFIG;
 
-      initPackApp(clientWithLogger, options);
+      initPackApp(() => clientWithLogger, options);
 
       expect(childSpy).toHaveBeenCalledWith({}, { level: "warn", msgPrefix: "PACK" });
     });
@@ -198,7 +195,7 @@ describe("initPackApp", () => {
         // No app config provided - should use page env
       };
 
-      const app = initPackApp(client, options);
+      const app = initPackApp(() => client, options);
 
       expect(app.config.app.appId).toBe("page-env-app-id");
       expect(app.config.app.appVersion).toBe("1.0.0");
@@ -214,7 +211,7 @@ describe("initPackApp", () => {
         },
       };
 
-      const app = initPackApp(client, options);
+      const app = initPackApp(() => client, options);
 
       expect(app.config.app.appId).toBe("override-app-id");
       expect(app.config.app.appVersion).toBe("2.0.0");
@@ -240,25 +237,24 @@ describe("initPackApp", () => {
       };
 
       expect(() => {
-        initPackApp(client, options);
+        initPackApp(() => client, options);
       }).toThrow("No appId provided or present in document meta[pack-appId]");
     });
   });
 
   describe("ontologyRid configuration", () => {
-    it("should use ontologyRid from page environment when not provided", async () => {
+    it("should use ontologyRid from page environment when not provided", () => {
       const client = createTestPublicClient();
       const options: AppOptions = {
         app: TEST_APP_CONFIG,
       };
 
-      const app = initPackApp(client, options);
+      const app = initPackApp(() => client, options);
 
-      const ontologyRid = await app.config.ontologyRid;
-      expect(ontologyRid).toBe(TEST_ONTOLOGY_RID);
+      expect(app.config.defaultOntologyRid).toBe(TEST_ONTOLOGY_RID);
     });
 
-    it("should override page environment ontologyRid when provided in options", async () => {
+    it("should override page environment ontologyRid when provided in options", () => {
       const client = createTestPublicClient();
       const overrideOntologyRid = "ri.ontology.main.ontology.override";
       const options: AppOptions = {
@@ -266,13 +262,12 @@ describe("initPackApp", () => {
         ontologyRid: overrideOntologyRid,
       };
 
-      const app = initPackApp(client, options);
+      const app = initPackApp(() => client, options);
 
-      const ontologyRid = await app.config.ontologyRid;
-      expect(ontologyRid).toBe(overrideOntologyRid);
+      expect(app.config.defaultOntologyRid).toBe(overrideOntologyRid);
     });
 
-    it("should reject promise when no ontologyRid in options and page env is null", async () => {
+    it("should throw when no ontologyRid in options and page env is null", () => {
       vi.mocked(getPageEnv).mockReturnValue({
         appId: "page-env-app-id",
         appVersion: "1.0.0",
@@ -291,14 +286,12 @@ describe("initPackApp", () => {
         app: TEST_APP_CONFIG,
       };
 
-      const app = initPackApp(client, options);
-
-      await expect(app.config.ontologyRid).rejects.toThrow(
+      expect(() => initPackApp(() => client, options)).toThrow(
         "No ontologyRid provided or present in document meta[osdk-ontologyRid]",
       );
     });
 
-    it("should reject promise when page env is empty string", async () => {
+    it("should throw when page env ontologyRid is an empty string", () => {
       vi.mocked(getPageEnv).mockReturnValue({
         appId: "page-env-app-id",
         appVersion: "1.0.0",
@@ -317,37 +310,9 @@ describe("initPackApp", () => {
         app: TEST_APP_CONFIG,
       };
 
-      const app = initPackApp(client, options);
-
-      await expect(app.config.ontologyRid).rejects.toThrow(
+      expect(() => initPackApp(() => client, options)).toThrow(
         "No ontologyRid provided or present in document meta[osdk-ontologyRid]",
       );
-    });
-
-    it("should derive ontologyRid from the client when options and page env do not provide one", async () => {
-      vi.mocked(getPageEnv).mockReturnValue({
-        appId: "page-env-app-id",
-        appVersion: "1.0.0",
-        baseUrl: "https://page-env.example.com",
-        clientId: "page-env-client-id",
-        demoMode: null,
-        documentTypeName: TEST_DOCUMENT_TYPE_NAME,
-        fileSystemType: TEST_FILE_SYSTEM_TYPE,
-        ontologyRid: null,
-        parentFolderRid: null,
-        redirectUrl: "http://localhost:3000/page-env-callback",
-      });
-
-      // Client is bound to TEST_ONTOLOGY_RID; with no option/page-env value, config derives it.
-      const client = createTestPublicClient();
-      const options: AppOptions = {
-        app: TEST_APP_CONFIG,
-      };
-
-      const app = initPackApp(client, options);
-
-      const ontologyRid = await app.config.ontologyRid;
-      expect(ontologyRid).toBe(TEST_ONTOLOGY_RID);
     });
   });
 });

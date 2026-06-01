@@ -27,15 +27,15 @@ import type { ModuleKey } from "./ModuleKey.js";
  *
  * @example
  * ```typescript
- * import { DocumentRef } from '@palantir/pack.state.core';
+ * import { createClient } from '@osdk/client';
  * import { DocSchema } from '@my-app/schema';
  *
- * const app = initPackApp({
- *   tokenProvider: () => 'your-token',
- *   moduleConfigs: {
- *     ...createPackDocumentServiceConfig({appId: 'your-app-id', documentType: 'your-document-type'})
- *   },
- * });
+ * const app = initPackApp(
+ *   (ontologyRid) => createClient(FOUNDRY_URL, ontologyRid, authClient),
+ *   { app: { appId: 'your-app-id' }, ontologyRid: ONTOLOGY_RID },
+ * )
+ *   .withState()
+ *   .build();
  *
  * const docRef = app.state.createDocRef(docSchema, 'your-document-id');
  * const doc = await docRef.getSnapshot(); // get pojo of your doc state.

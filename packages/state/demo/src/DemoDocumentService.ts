@@ -15,7 +15,7 @@
  */
 
 import type { PackAppInternal, Unsubscribe } from "@palantir/pack.core";
-import { generateId, getOntologyRid } from "@palantir/pack.core";
+import { generateId, getDefaultOntologyRid } from "@palantir/pack.core";
 import type {
   ActivityEvent,
   ActivityEventId,
@@ -186,7 +186,7 @@ export class DemoDocumentService extends BaseYjsDocumentService<DemoInternalDoc>
     schema: T,
   ): Promise<DocumentRef<T>> => {
     await this.metadataStore.whenReady();
-    const ontologyRid = await getOntologyRid(this.app);
+    const ontologyRid = await getDefaultOntologyRid(this.app);
 
     const id = generateDocumentId();
     const docRef = createDocRef(this.app, id, schema);
