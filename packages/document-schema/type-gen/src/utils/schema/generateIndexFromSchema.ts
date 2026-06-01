@@ -19,6 +19,7 @@ import { GENERATED_FILE_HEADER } from "../generatedFileHeader.js";
 import type { ResolvedIrChain } from "./resolveSchemaChain.js";
 import { resolveMinVersion } from "./resolveSchemaChain.js";
 import {
+  DOCUMENT_TYPE_PATH,
   INTERNAL_UPGRADE_FNS_PATH,
   MODELS_PATH,
   TYPES_REEXPORT_PATH,
@@ -37,6 +38,7 @@ import {
  * - `types.js` (star export — latest-version type aliases)
  * - `versions.js` (star export — SupportedVersions, LatestVersion, MinSupportedVersion)
  * - `versionedDocRef.js` (star export — VersionedDocRef types and factory)
+ * - `documentType.js` (star export — DOCUMENT_TYPE_NAME and DOCUMENT_TYPE_DESCRIPTION)
  * - `DocumentUpgradeFns` type (the typed shape the factory accepts)
  * - Per supported version: explicit named type exports from `types_vN.js`
  *   (not star exports, to avoid polluting autocomplete for read-only consumers)
@@ -55,6 +57,7 @@ export function generateIndexFromChain(
   output += `export * from "${TYPES_REEXPORT_PATH}";\n`;
   output += `export * from "${VERSIONS_PATH}";\n`;
   output += `export * from "${VERSIONED_DOC_REF_PATH}";\n`;
+  output += `export * from "${DOCUMENT_TYPE_PATH}";\n`;
   // The typed upgrade-function table shape. Apps reference this type when
   // constructing the value passed to `DocumentModel(...)`.
   output += `export { type DocumentUpgradeFns } from "${INTERNAL_UPGRADE_FNS_PATH}";\n`;

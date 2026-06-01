@@ -6,8 +6,8 @@
     {
       "version": 1,
       "ir": {
-        "name": "Generated Schema",
-        "description": "Schema generated from migration steps",
+        "name": "Canvas Document Type",
+        "description": "Document type description for demo canvas",
         "version": 1,
         "primaryModelKeys": [
           "ActivityEvent",
@@ -412,8 +412,8 @@
     {
       "version": 2,
       "ir": {
-        "name": "Generated Schema",
-        "description": "Schema generated from migration steps",
+        "name": "Canvas Document Type",
+        "description": "Document type description for demo canvas",
         "version": 2,
         "primaryModelKeys": [
           "ActivityEvent",
@@ -904,8 +904,8 @@
     {
       "version": 3,
       "ir": {
-        "name": "Generated Schema",
-        "description": "Schema generated from migration steps",
+        "name": "Canvas Document Type",
+        "description": "Document type description for demo canvas",
         "version": 3,
         "primaryModelKeys": [
           "ActivityEvent",

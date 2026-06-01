@@ -1,5 +1,7 @@
 {
   "packageName": "@demo/canvas.sdk",
   "description": "Generated SDK from canvas schema",
+  "documentTypeName": "Canvas Document Type",
+  "documentTypeDescription": "Document type description for demo canvas",
   "minSupportedVersion": 1
 }
