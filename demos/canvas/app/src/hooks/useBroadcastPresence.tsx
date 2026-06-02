@@ -15,7 +15,7 @@
  */
 
 import type { DocumentModel } from "@demo/canvas.sdk";
-import { PresenceCursorEventModel, PresenceSelectionEventModel } from "@demo/canvas.sdk";
+import { CursorPresenceModel, SelectionPresenceModel } from "@demo/canvas.sdk";
 import type { DocumentRef } from "@palantir/pack.document-schema.model-types";
 import { useCallback, useRef } from "react";
 
@@ -50,7 +50,7 @@ export function useBroadcastPresence(
             rafIdRef.current = null;
             if (pendingCursorRef.current != null) {
               const { x, y } = pendingCursorRef.current;
-              docRef.updateCustomPresence(PresenceCursorEventModel, { x, y });
+              docRef.updateCustomPresence(CursorPresenceModel, { x, y });
               lastCursorBroadcastRef.current = Date.now();
               pendingCursorRef.current = null;
             }
@@ -60,7 +60,7 @@ export function useBroadcastPresence(
 
         if (pendingCursorRef.current != null) {
           const { x, y } = pendingCursorRef.current;
-          docRef.updateCustomPresence(PresenceCursorEventModel, { x, y });
+          docRef.updateCustomPresence(CursorPresenceModel, { x, y });
           lastCursorBroadcastRef.current = now;
           pendingCursorRef.current = null;
         }
@@ -71,7 +71,7 @@ export function useBroadcastPresence(
 
   const broadcastSelection = useCallback(
     (nodeIds: readonly string[]) => {
-      docRef.updateCustomPresence(PresenceSelectionEventModel, {
+      docRef.updateCustomPresence(SelectionPresenceModel, {
         selectedNodeIds: [...nodeIds],
       });
     },

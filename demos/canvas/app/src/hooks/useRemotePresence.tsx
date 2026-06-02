@@ -15,7 +15,7 @@
  */
 
 import type { DocumentModel } from "@demo/canvas.sdk";
-import { PresenceCursorEventModel, PresenceSelectionEventModel } from "@demo/canvas.sdk";
+import { CursorPresenceModel, SelectionPresenceModel } from "@demo/canvas.sdk";
 import type { DocumentRef, UserId } from "@palantir/pack.document-schema.model-types";
 import { PresenceEvents } from "@palantir/pack.document-schema.model-types";
 import { useOnDocPresenceEvents } from "@palantir/pack.state.react";
@@ -92,7 +92,7 @@ export function useRemotePresence(docRef: DocumentRef<DocumentModel>): UseRemote
         return;
       }
 
-      if (PresenceEvents.isCustom(eventData, PresenceCursorEventModel)) {
+      if (PresenceEvents.isCustom(eventData, CursorPresenceModel)) {
         setRemoteUsersByUserId(prev => {
           const next = new Map(prev);
           const existing = next.get(userId) ?? { selectedNodeIds: [] };
@@ -105,7 +105,7 @@ export function useRemotePresence(docRef: DocumentRef<DocumentModel>): UseRemote
         return;
       }
 
-      if (PresenceEvents.isCustom(eventData, PresenceSelectionEventModel)) {
+      if (PresenceEvents.isCustom(eventData, SelectionPresenceModel)) {
         setRemoteUsersByUserId(prev => {
           const next = new Map(prev);
           const existing = next.get(userId) ?? { selectedNodeIds: [] };
