@@ -22,6 +22,7 @@ import { useCanvasDocuments } from "../../hooks/useCanvasDocuments.js";
 import { CreateFileDialog } from "./CreateCanvasDialog.js";
 import { DeleteCanvasDialog } from "./DeleteCanvasDialog.js";
 import { DocumentList } from "./DocumentList.js";
+import { DocumentTypeMetadata } from "./DocumentTypeMetadata.js";
 import css from "./HomePage.module.css";
 
 export const HomePage = React.memo(function HomePage() {
@@ -57,7 +58,10 @@ export const HomePage = React.memo(function HomePage() {
   return (
     <div className={css.pageWrapper}>
       <div className={css.pageHeader}>
-        <h1>Canvas Demo</h1>
+        <div className={css.titleGroup}>
+          <h1>Canvas Demo</h1>
+          <DocumentTypeMetadata />
+        </div>
         <Button onClick={showCreateDialog}>Create New Canvas</Button>
       </div>
       <div className={css.contentSection}>
