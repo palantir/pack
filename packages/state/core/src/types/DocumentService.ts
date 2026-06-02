@@ -109,6 +109,7 @@ export interface SearchDocumentsResult {
 export interface UpdateDocumentMetadata {
   readonly name?: string;
   readonly description?: string;
+  readonly schemaVersion?: number;
   readonly security?: DocumentSecurity;
 }
 

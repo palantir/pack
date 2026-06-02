@@ -156,6 +156,12 @@ export interface StateModule {
     state: ModelData<R>,
   ) => Promise<void>;
 
+  readonly setCollectionRecord: <M extends Model>(
+    collection: RecordCollectionRef<M>,
+    id: RecordId,
+    state: ModelData<M>,
+  ) => Promise<void>;
+
   readonly updateRecord: <R extends Model>(
     recordRef: RecordRef<R>,
     partialState: Partial<ModelData<R>>,

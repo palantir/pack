@@ -113,10 +113,10 @@ export function generateScopeFromChain(
       }
     }
 
-    // setCollectionRecord overloads
+    // setRecord overloads
     for (const [modelKey] of Object.entries(ir.models)) {
       const readType = versionedTypeName(modelKey, version);
-      output += `  setCollectionRecord(model: typeof ${
+      output += `  setRecord(model: typeof ${
         modelName(modelKey)
       }, id: RecordId, data: ${readType}): Promise<void>;\n`;
     }

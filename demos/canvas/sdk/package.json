@@ -13,6 +13,7 @@
   "scripts": {
     "build": "tsc",
     "clean": "rm -rf build dist *.tgz tsconfig.tsbuildinfo",
+    "transpileTypes": "tsc --emitDeclarationOnly",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

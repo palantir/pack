@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-import type { DocumentModel, NodeShape } from "@demo/canvas.sdk";
+import type { NodeShape, VersionedDocRef } from "@demo/canvas.sdk";
 import { NodeShapeModel } from "@demo/canvas.sdk";
-import type { DocumentRef, RecordRef } from "@palantir/pack.document-schema.model-types";
+import type { RecordRef } from "@palantir/pack.document-schema.model-types";
 import type { BBox } from "rbush";
 import RBush from "rbush";
 import { useCallback, useEffect, useRef } from "react";
@@ -49,7 +49,7 @@ class RBushShapeIndex extends RBush<ShapeIndexEntry> {
   }
 }
 
-export function useShapeIndex(docRef: DocumentRef<DocumentModel>): ShapeIndex {
+export function useShapeIndex(doc: VersionedDocRef): ShapeIndex {
   const rbush = useRef<RBushShapeIndex | null>(null);
   const entryCache = useRef<Map<RecordRef<NodeShapeModel>, ShapeIndexEntry> | null>(null);
 
@@ -61,7 +61,7 @@ export function useShapeIndex(docRef: DocumentRef<DocumentModel>): ShapeIndex {
   }
 
   useEffect(() => {
-    const shapeCollection = docRef.getRecords(NodeShapeModel);
+    const shapeCollection = doc.getRecords(NodeShapeModel);
 
     const unsubscribeAdded = shapeCollection.onItemsAdded(items =>
       Promise.all(items.map(recordRef =>
@@ -110,7 +110,7 @@ export function useShapeIndex(docRef: DocumentRef<DocumentModel>): ShapeIndex {
       unsubscribeRemoved();
       unsubscribeChanged();
     };
-  }, [docRef]);
+  }, [doc]);
 
   const findShapesAtPoint = useCallback(
     (x: number, y: number): RecordRef<typeof NodeShapeModel>[] => {
