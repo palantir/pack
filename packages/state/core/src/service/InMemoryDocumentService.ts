@@ -33,6 +33,7 @@ import type { CreateDocumentMetadata } from "../types/CreateDocumentMetadata.js"
 import { createDocRef } from "../types/DocumentRefImpl.js";
 import type {
   DocumentService,
+  DocumentType,
   SearchDocumentsResult,
   UpdateDocumentMetadata,
 } from "../types/DocumentService.js";
@@ -168,6 +169,34 @@ class InMemoryDocumentService extends BaseYjsDocumentService {
     }
     this.documents.delete(docRef.id);
     return Promise.resolve();
+  };
+
+  readonly loadDocumentTypeByName = (
+    _documentTypeName: string,
+    _ontologyRid?: string,
+  ): Promise<DocumentType> => {
+    return Promise.reject(
+      new Error("loadDocumentTypeByName is not supported by the in-memory document service"),
+    );
+  };
+
+  readonly getDocumentType = (
+    _documentTypeRid: string,
+  ): Promise<DocumentType> => {
+    return Promise.reject(
+      new Error("getDocumentType is not supported by the in-memory document service"),
+    );
+  };
+
+  readonly getDocumentTypeOperationalVersion = (
+    _documentTypeName: string,
+    _ontologyRid?: string,
+  ): Promise<number | undefined> => {
+    return Promise.reject(
+      new Error(
+        "getDocumentTypeOperationalVersion is not supported by the in-memory document service",
+      ),
+    );
   };
 
   // Lifecycle method implementations

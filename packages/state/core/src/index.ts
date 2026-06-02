@@ -32,6 +32,7 @@ export type {
   DocumentStatus,
   DocumentStatusChangeCallback,
   DocumentSyncStatus,
+  DocumentType,
   SearchDocumentsResult,
   UpdateDocumentMetadata,
 } from "./types/DocumentService.js";
