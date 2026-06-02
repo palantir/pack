@@ -2,77 +2,10 @@
 
 import type { DocumentSchema, RecordModel, UnionModel, UpgradeFns } from "@palantir/pack.document-schema.model-types";
 import { Metadata } from "@palantir/pack.document-schema.model-types";
-import type { ActivityEvent, ActivityEventShapeAdd, ActivityEventShapeDelete, ActivityEventShapeUpdate, ActivityShapeAddEvent, ActivityShapeDeleteEvent, ActivityShapeUpdateEvent, FreehandStroke, NodeShape, NodeShapeBox, NodeShapeCircle, PresenceCursorEvent, PresenceEvent, PresenceEventCursor, PresenceEventSelection, PresenceSelectionEvent, ShapeBox, ShapeCircle } from "./types.js";
-import { ActivityEventSchema, ActivityEventShapeAddSchema, ActivityEventShapeDeleteSchema, ActivityEventShapeUpdateSchema, ActivityShapeAddEventSchema, ActivityShapeDeleteEventSchema, ActivityShapeUpdateEventSchema, FreehandStrokeSchema, NodeShapeSchema, NodeShapeBoxSchema, NodeShapeCircleSchema, PresenceCursorEventSchema, PresenceEventSchema, PresenceEventCursorSchema, PresenceEventSelectionSchema, PresenceSelectionEventSchema, ShapeBoxSchema, ShapeCircleSchema } from "./schema.js";
-import { ActivityShapeAddEventUpgrades, ActivityShapeDeleteEventUpgrades, ActivityShapeUpdateEventUpgrades, PresenceCursorEventUpgrades, PresenceSelectionEventUpgrades, ShapeBoxUpgrades, ShapeCircleUpgrades, FreehandStrokeUpgrades, ActivityEventUpgrades, NodeShapeUpgrades, PresenceEventUpgrades } from "./_internal/upgrades.js";
+import type { CanvasActivity, CanvasActivityShapeAdded, CanvasActivityShapeDeleted, CanvasActivityShapeUpdated, CursorPresence, FreehandStroke, NodeShape, NodeShapeBox, NodeShapeCircle, SelectionPresence, ShapeAddedActivity, ShapeBox, ShapeCircle, ShapeDeletedActivity, ShapeUpdatedActivity } from "./types.js";
+import { CanvasActivitySchema, CanvasActivityShapeAddedSchema, CanvasActivityShapeDeletedSchema, CanvasActivityShapeUpdatedSchema, CursorPresenceSchema, FreehandStrokeSchema, NodeShapeSchema, NodeShapeBoxSchema, NodeShapeCircleSchema, SelectionPresenceSchema, ShapeAddedActivitySchema, ShapeBoxSchema, ShapeCircleSchema, ShapeDeletedActivitySchema, ShapeUpdatedActivitySchema } from "./schema.js";
+import { ShapeBoxUpgrades, ShapeCircleUpgrades, ShapeAddedActivityUpgrades, ShapeDeletedActivityUpgrades, ShapeUpdatedActivityUpgrades, CursorPresenceUpgrades, SelectionPresenceUpgrades, FreehandStrokeUpgrades, NodeShapeUpgrades, CanvasActivityUpgrades } from "./_internal/upgrades.js";
 import type { DocumentUpgradeFns } from "./_internal/upgradeFns.js";
-
-export interface ActivityEventModel extends UnionModel<ActivityEvent, typeof ActivityEventSchema> {}
-export const ActivityEventModel: ActivityEventModel = {
-  __type: {} as ActivityEvent,
-  zodSchema: ActivityEventSchema,
-  [Metadata]: {
-    discriminant: "eventType",
-    name: "ActivityEvent",
-  },
-};
-
-export interface ActivityEventShapeAddModel extends UnionModel<ActivityEventShapeAdd, typeof ActivityEventShapeAddSchema> {}
-export const ActivityEventShapeAddModel: ActivityEventShapeAddModel = {
-  __type: {} as ActivityEventShapeAdd,
-  zodSchema: ActivityEventShapeAddSchema,
-  [Metadata]: {
-    discriminant: "eventType",
-    name: "ActivityEventShapeAdd",
-  },
-};
-
-export interface ActivityEventShapeDeleteModel extends UnionModel<ActivityEventShapeDelete, typeof ActivityEventShapeDeleteSchema> {}
-export const ActivityEventShapeDeleteModel: ActivityEventShapeDeleteModel = {
-  __type: {} as ActivityEventShapeDelete,
-  zodSchema: ActivityEventShapeDeleteSchema,
-  [Metadata]: {
-    discriminant: "eventType",
-    name: "ActivityEventShapeDelete",
-  },
-};
-
-export interface ActivityEventShapeUpdateModel extends UnionModel<ActivityEventShapeUpdate, typeof ActivityEventShapeUpdateSchema> {}
-export const ActivityEventShapeUpdateModel: ActivityEventShapeUpdateModel = {
-  __type: {} as ActivityEventShapeUpdate,
-  zodSchema: ActivityEventShapeUpdateSchema,
-  [Metadata]: {
-    discriminant: "eventType",
-    name: "ActivityEventShapeUpdate",
-  },
-};
-
-export interface ActivityShapeAddEventModel extends RecordModel<ActivityShapeAddEvent, typeof ActivityShapeAddEventSchema> {}
-export const ActivityShapeAddEventModel: ActivityShapeAddEventModel = {
-  __type: {} as ActivityShapeAddEvent,
-  zodSchema: ActivityShapeAddEventSchema,
-  [Metadata]: {
-    name: "ActivityShapeAddEvent",
-  },
-};
-
-export interface ActivityShapeDeleteEventModel extends RecordModel<ActivityShapeDeleteEvent, typeof ActivityShapeDeleteEventSchema> {}
-export const ActivityShapeDeleteEventModel: ActivityShapeDeleteEventModel = {
-  __type: {} as ActivityShapeDeleteEvent,
-  zodSchema: ActivityShapeDeleteEventSchema,
-  [Metadata]: {
-    name: "ActivityShapeDeleteEvent",
-  },
-};
-
-export interface ActivityShapeUpdateEventModel extends RecordModel<ActivityShapeUpdateEvent, typeof ActivityShapeUpdateEventSchema> {}
-export const ActivityShapeUpdateEventModel: ActivityShapeUpdateEventModel = {
-  __type: {} as ActivityShapeUpdateEvent,
-  zodSchema: ActivityShapeUpdateEventSchema,
-  [Metadata]: {
-    name: "ActivityShapeUpdateEvent",
-  },
-};
 
 export interface NodeShapeModel extends UnionModel<NodeShape, typeof NodeShapeSchema> {}
 export const NodeShapeModel: NodeShapeModel = {
@@ -104,54 +37,6 @@ export const NodeShapeCircleModel: NodeShapeCircleModel = {
   },
 };
 
-export interface PresenceCursorEventModel extends RecordModel<PresenceCursorEvent, typeof PresenceCursorEventSchema> {}
-export const PresenceCursorEventModel: PresenceCursorEventModel = {
-  __type: {} as PresenceCursorEvent,
-  zodSchema: PresenceCursorEventSchema,
-  [Metadata]: {
-    name: "PresenceCursorEvent",
-  },
-};
-
-export interface PresenceEventModel extends UnionModel<PresenceEvent, typeof PresenceEventSchema> {}
-export const PresenceEventModel: PresenceEventModel = {
-  __type: {} as PresenceEvent,
-  zodSchema: PresenceEventSchema,
-  [Metadata]: {
-    discriminant: "eventType",
-    name: "PresenceEvent",
-  },
-};
-
-export interface PresenceEventCursorModel extends UnionModel<PresenceEventCursor, typeof PresenceEventCursorSchema> {}
-export const PresenceEventCursorModel: PresenceEventCursorModel = {
-  __type: {} as PresenceEventCursor,
-  zodSchema: PresenceEventCursorSchema,
-  [Metadata]: {
-    discriminant: "eventType",
-    name: "PresenceEventCursor",
-  },
-};
-
-export interface PresenceEventSelectionModel extends UnionModel<PresenceEventSelection, typeof PresenceEventSelectionSchema> {}
-export const PresenceEventSelectionModel: PresenceEventSelectionModel = {
-  __type: {} as PresenceEventSelection,
-  zodSchema: PresenceEventSelectionSchema,
-  [Metadata]: {
-    discriminant: "eventType",
-    name: "PresenceEventSelection",
-  },
-};
-
-export interface PresenceSelectionEventModel extends RecordModel<PresenceSelectionEvent, typeof PresenceSelectionEventSchema> {}
-export const PresenceSelectionEventModel: PresenceSelectionEventModel = {
-  __type: {} as PresenceSelectionEvent,
-  zodSchema: PresenceSelectionEventSchema,
-  [Metadata]: {
-    name: "PresenceSelectionEvent",
-  },
-};
-
 export interface ShapeBoxModel extends RecordModel<ShapeBox, typeof ShapeBoxSchema> {}
 export const ShapeBoxModel: ShapeBoxModel = {
   __type: {} as ShapeBox,
@@ -170,6 +55,91 @@ export const ShapeCircleModel: ShapeCircleModel = {
   },
 };
 
+export interface CanvasActivityModel extends UnionModel<CanvasActivity, typeof CanvasActivitySchema> {}
+export const CanvasActivityModel: CanvasActivityModel = {
+  __type: {} as CanvasActivity,
+  zodSchema: CanvasActivitySchema,
+  [Metadata]: {
+    discriminant: "activityType",
+    name: "CanvasActivity",
+  },
+};
+
+export interface CanvasActivityShapeAddedModel extends UnionModel<CanvasActivityShapeAdded, typeof CanvasActivityShapeAddedSchema> {}
+export const CanvasActivityShapeAddedModel: CanvasActivityShapeAddedModel = {
+  __type: {} as CanvasActivityShapeAdded,
+  zodSchema: CanvasActivityShapeAddedSchema,
+  [Metadata]: {
+    discriminant: "activityType",
+    name: "CanvasActivityShapeAdded",
+  },
+};
+
+export interface CanvasActivityShapeDeletedModel extends UnionModel<CanvasActivityShapeDeleted, typeof CanvasActivityShapeDeletedSchema> {}
+export const CanvasActivityShapeDeletedModel: CanvasActivityShapeDeletedModel = {
+  __type: {} as CanvasActivityShapeDeleted,
+  zodSchema: CanvasActivityShapeDeletedSchema,
+  [Metadata]: {
+    discriminant: "activityType",
+    name: "CanvasActivityShapeDeleted",
+  },
+};
+
+export interface CanvasActivityShapeUpdatedModel extends UnionModel<CanvasActivityShapeUpdated, typeof CanvasActivityShapeUpdatedSchema> {}
+export const CanvasActivityShapeUpdatedModel: CanvasActivityShapeUpdatedModel = {
+  __type: {} as CanvasActivityShapeUpdated,
+  zodSchema: CanvasActivityShapeUpdatedSchema,
+  [Metadata]: {
+    discriminant: "activityType",
+    name: "CanvasActivityShapeUpdated",
+  },
+};
+
+export interface ShapeAddedActivityModel extends RecordModel<ShapeAddedActivity, typeof ShapeAddedActivitySchema> {}
+export const ShapeAddedActivityModel: ShapeAddedActivityModel = {
+  __type: {} as ShapeAddedActivity,
+  zodSchema: ShapeAddedActivitySchema,
+  [Metadata]: {
+    name: "ShapeAddedActivity",
+  },
+};
+
+export interface ShapeDeletedActivityModel extends RecordModel<ShapeDeletedActivity, typeof ShapeDeletedActivitySchema> {}
+export const ShapeDeletedActivityModel: ShapeDeletedActivityModel = {
+  __type: {} as ShapeDeletedActivity,
+  zodSchema: ShapeDeletedActivitySchema,
+  [Metadata]: {
+    name: "ShapeDeletedActivity",
+  },
+};
+
+export interface ShapeUpdatedActivityModel extends RecordModel<ShapeUpdatedActivity, typeof ShapeUpdatedActivitySchema> {}
+export const ShapeUpdatedActivityModel: ShapeUpdatedActivityModel = {
+  __type: {} as ShapeUpdatedActivity,
+  zodSchema: ShapeUpdatedActivitySchema,
+  [Metadata]: {
+    name: "ShapeUpdatedActivity",
+  },
+};
+
+export interface CursorPresenceModel extends RecordModel<CursorPresence, typeof CursorPresenceSchema> {}
+export const CursorPresenceModel: CursorPresenceModel = {
+  __type: {} as CursorPresence,
+  zodSchema: CursorPresenceSchema,
+  [Metadata]: {
+    name: "CursorPresence",
+  },
+};
+
+export interface SelectionPresenceModel extends RecordModel<SelectionPresence, typeof SelectionPresenceSchema> {}
+export const SelectionPresenceModel: SelectionPresenceModel = {
+  __type: {} as SelectionPresence,
+  zodSchema: SelectionPresenceSchema,
+  [Metadata]: {
+    name: "SelectionPresence",
+  },
+};
+
 export interface FreehandStrokeModel extends RecordModel<FreehandStroke, typeof FreehandStrokeSchema> {}
 export const FreehandStrokeModel: FreehandStrokeModel = {
   __type: {} as FreehandStroke,
@@ -185,39 +155,35 @@ export const FreehandStrokeModel: FreehandStrokeModel = {
  */
 export function DocumentModel(upgradeFns: DocumentUpgradeFns): DocumentSchema {
   return {
-    ActivityEvent: ActivityEventModel,
-    ActivityEventShapeAdd: ActivityEventShapeAddModel,
-    ActivityEventShapeDelete: ActivityEventShapeDeleteModel,
-    ActivityEventShapeUpdate: ActivityEventShapeUpdateModel,
-    ActivityShapeAddEvent: ActivityShapeAddEventModel,
-    ActivityShapeDeleteEvent: ActivityShapeDeleteEventModel,
-    ActivityShapeUpdateEvent: ActivityShapeUpdateEventModel,
     NodeShape: NodeShapeModel,
     NodeShapeBox: NodeShapeBoxModel,
     NodeShapeCircle: NodeShapeCircleModel,
-    PresenceCursorEvent: PresenceCursorEventModel,
-    PresenceEvent: PresenceEventModel,
-    PresenceEventCursor: PresenceEventCursorModel,
-    PresenceEventSelection: PresenceEventSelectionModel,
-    PresenceSelectionEvent: PresenceSelectionEventModel,
     ShapeBox: ShapeBoxModel,
     ShapeCircle: ShapeCircleModel,
+    CanvasActivity: CanvasActivityModel,
+    CanvasActivityShapeAdded: CanvasActivityShapeAddedModel,
+    CanvasActivityShapeDeleted: CanvasActivityShapeDeletedModel,
+    CanvasActivityShapeUpdated: CanvasActivityShapeUpdatedModel,
+    ShapeAddedActivity: ShapeAddedActivityModel,
+    ShapeDeletedActivity: ShapeDeletedActivityModel,
+    ShapeUpdatedActivity: ShapeUpdatedActivityModel,
+    CursorPresence: CursorPresenceModel,
+    SelectionPresence: SelectionPresenceModel,
     FreehandStroke: FreehandStrokeModel,
     [Metadata]: {
       version: 3,
       minSupportedVersion: 1,
       upgrades: {
-        ActivityShapeAddEvent: ActivityShapeAddEventUpgrades,
-        ActivityShapeDeleteEvent: ActivityShapeDeleteEventUpgrades,
-        ActivityShapeUpdateEvent: ActivityShapeUpdateEventUpgrades,
-        PresenceCursorEvent: PresenceCursorEventUpgrades,
-        PresenceSelectionEvent: PresenceSelectionEventUpgrades,
         ShapeBox: ShapeBoxUpgrades,
         ShapeCircle: ShapeCircleUpgrades,
+        ShapeAddedActivity: ShapeAddedActivityUpgrades,
+        ShapeDeletedActivity: ShapeDeletedActivityUpgrades,
+        ShapeUpdatedActivity: ShapeUpdatedActivityUpgrades,
+        CursorPresence: CursorPresenceUpgrades,
+        SelectionPresence: SelectionPresenceUpgrades,
         FreehandStroke: FreehandStrokeUpgrades,
-        ActivityEvent: ActivityEventUpgrades,
         NodeShape: NodeShapeUpgrades,
-        PresenceEvent: PresenceEventUpgrades,
+        CanvasActivity: CanvasActivityUpgrades,
       },
       upgradeFns: upgradeFns as unknown as UpgradeFns,
     },

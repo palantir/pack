@@ -15,7 +15,7 @@
  */
 
 import type { NodeShape, NodeShapeModel, VersionedDocRef } from "@demo/canvas.sdk";
-import { ActivityEventModel, matchVersion } from "@demo/canvas.sdk";
+import { CanvasActivityModel, matchVersion } from "@demo/canvas.sdk";
 import type { RecordRef } from "@palantir/pack.document-schema.model-types";
 import { ActivityEvents } from "@palantir/pack.document-schema.model-types";
 import type { MouseEvent } from "react";
@@ -211,8 +211,8 @@ export function useShapeDrag(
               3: doc => doc.updateRecord(dragState.shapeRef, finalBounds),
             });
           },
-          ActivityEvents.describeEdit(ActivityEventModel, {
-            eventType: "shapeUpdate",
+          ActivityEvents.describeEdit(CanvasActivityModel, {
+            activityType: "shapeUpdated",
             newShape: finalShape,
             nodeId: dragState.shapeRef.id,
             oldShape: dragState.initialShape,

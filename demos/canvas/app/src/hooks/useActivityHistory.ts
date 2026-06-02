@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-import { ActivityEventModel } from "@demo/canvas.sdk";
+import { CanvasActivityModel } from "@demo/canvas.sdk";
 import type { ActivityEvent, DocumentRef } from "@palantir/pack.document-schema.model-types";
-import { ActivityEventDataType } from "@palantir/pack.document-schema.model-types";
+import { ActivityEventDataType, ActivityEvents } from "@palantir/pack.document-schema.model-types";
 import { useEffect, useState } from "react";
 
 export interface ActivityHistoryItem {
@@ -37,14 +37,13 @@ function getActivityMessage(event: ActivityEvent): string | undefined {
     case ActivityEventDataType.DOCUMENT_DISCRETIONARY_SECURITY_UPDATE:
       return "Updated document security settings";
     case ActivityEventDataType.CUSTOM_EVENT:
-      if (event.eventData.model === ActivityEventModel) {
-        const customEvent = event.eventData;
-        switch (customEvent.eventType) {
-          case "shapeAdd":
+      if (ActivityEvents.isEdit(event.eventData, CanvasActivityModel)) {
+        switch (event.eventData.data.activityType) {
+          case "shapeAdded":
             return "User added a shape";
-          case "shapeDelete":
+          case "shapeDeleted":
             return "User deleted a shape";
-          case "shapeUpdate":
+          case "shapeUpdated":
             return "User updated a shape";
           default:
             return undefined;

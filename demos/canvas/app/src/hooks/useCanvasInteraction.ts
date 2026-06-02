@@ -15,7 +15,7 @@
  */
 
 import type { FreehandStrokeModel, NodeShapeModel, VersionedDocRef } from "@demo/canvas.sdk";
-import { ActivityEventModel, matchVersion } from "@demo/canvas.sdk";
+import { CanvasActivityModel, matchVersion } from "@demo/canvas.sdk";
 import type { RecordRef } from "@palantir/pack.document-schema.model-types";
 import { ActivityEvents } from "@palantir/pack.document-schema.model-types";
 import type { MouseEvent } from "react";
@@ -85,8 +85,8 @@ export function useCanvasInteraction(
         () => {
           doc.deleteRecord(selectedShapeRef);
         },
-        ActivityEvents.describeEdit(ActivityEventModel, {
-          eventType: "shapeDelete",
+        ActivityEvents.describeEdit(CanvasActivityModel, {
+          activityType: "shapeDeleted",
           nodeId,
         }),
       );
@@ -116,8 +116,8 @@ export function useCanvasInteraction(
                 doc.updateRecord(selectedShapeRef, { fillColor: color, strokeColor: color }),
             });
           },
-          ActivityEvents.describeEdit(ActivityEventModel, {
-            eventType: "shapeUpdate",
+          ActivityEvents.describeEdit(CanvasActivityModel, {
+            activityType: "shapeUpdated",
             nodeId: selectedShapeRef.id,
             oldShape,
             newShape,

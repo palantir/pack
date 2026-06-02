@@ -27,7 +27,7 @@ const SHAPE_COMMON = {
   color: S.Optional(S.String),
 };
 
-const migration000 = S.defineMigration({}, () => {
+function defineShapeModels() {
   const ShapeCircle = S.defineRecord("ShapeCircle", {
     docs: "A circle.",
     fields: SHAPE_COMMON,
@@ -47,22 +47,30 @@ const migration000 = S.defineMigration({}, () => {
     },
   });
 
-  const ActivityShapeAddEvent = S.defineRecord("ActivityShapeAddEvent", {
-    docs: "An event representing the addition of a shape node.",
+  return {
+    NodeShape,
+    ShapeBox,
+    ShapeCircle,
+  };
+}
+
+function defineActivityModels(NodeShape) {
+  const ShapeAddedActivity = S.defineRecord("ShapeAddedActivity", {
+    docs: "Activity payload for a shape addition.",
     fields: {
       nodeId: S.String,
     },
   });
 
-  const ActivityShapeDeleteEvent = S.defineRecord("ActivityShapeDeleteEvent", {
-    docs: "An event representing the deletion of a shape node.",
+  const ShapeDeletedActivity = S.defineRecord("ShapeDeletedActivity", {
+    docs: "Activity payload for a shape deletion.",
     fields: {
       nodeId: S.String,
     },
   });
 
-  const ActivityShapeUpdateEvent = S.defineRecord("ActivityShapeUpdateEvent", {
-    docs: "An event representing the update of a shape node.",
+  const ShapeUpdatedActivity = S.defineRecord("ShapeUpdatedActivity", {
+    docs: "Activity payload for a shape update.",
     fields: {
       nodeId: S.String,
       oldShape: NodeShape,
@@ -70,75 +78,78 @@ const migration000 = S.defineMigration({}, () => {
     },
   });
 
-  const ActivityEvent = S.defineUnion("ActivityEvent", {
-    discriminant: "eventType",
-    docs: "An activity event describing a change to the document model.",
+  const CanvasActivity = S.defineUnion("CanvasActivity", {
+    discriminant: "activityType",
+    docs: "Canvas-specific custom activity payload.",
     variants: {
-      "shapeAdd": ActivityShapeAddEvent,
-      "shapeDelete": ActivityShapeDeleteEvent,
-      "shapeUpdate": ActivityShapeUpdateEvent,
+      "shapeAdded": ShapeAddedActivity,
+      "shapeDeleted": ShapeDeletedActivity,
+      "shapeUpdated": ShapeUpdatedActivity,
     },
   });
 
-  const PresenceCursorEvent = S.defineRecord("PresenceCursorEvent", {
-    docs: "Cursor position for remote user.",
+  return {
+    CanvasActivity,
+    ShapeAddedActivity,
+    ShapeDeletedActivity,
+    ShapeUpdatedActivity,
+  };
+}
+
+function definePresenceModels() {
+  const CursorPresence = S.defineRecord("CursorPresence", {
+    docs: "Cursor position for a remote user.",
     fields: {
       x: S.Double,
       y: S.Double,
     },
   });
 
-  const PresenceSelectionEvent = S.defineRecord("PresenceSelectionEvent", {
-    docs: "Selected nodes for remote user.",
+  const SelectionPresence = S.defineRecord("SelectionPresence", {
+    docs: "Selected shape ids for a remote user.",
     fields: {
       selectedNodeIds: S.Array(S.String),
     },
   });
 
-  const PresenceEvent = S.defineUnion("PresenceEvent", {
-    discriminant: "eventType",
-    docs: "A presence event describing user cursor or selection state.",
-    variants: {
-      "cursor": PresenceCursorEvent,
-      "selection": PresenceSelectionEvent,
-    },
-  });
-
   return {
-    ActivityEvent,
-    ActivityShapeAddEvent,
-    ActivityShapeDeleteEvent,
-    ActivityShapeUpdateEvent,
-    NodeShape,
-    PresenceCursorEvent,
-    PresenceEvent,
-    PresenceSelectionEvent,
-    ShapeBox,
-    ShapeCircle,
+    CursorPresence,
+    SelectionPresence,
   };
-});
+}
 
-const schemaV1 = S.defineSchema(migration000);
+const shapeModels = defineShapeModels();
+const activityModels = defineActivityModels(shapeModels.NodeShape);
+const presenceModels = definePresenceModels();
+
+const schemaV1 = S.defineSchema({
+  ...shapeModels,
+  ...activityModels,
+  ...presenceModels,
+});
 
 // --- Schema change: color split ---
-const addColorSplit = S.defineSchemaUpdate("addColorSplit", schema => {
-  const ShapeBox = schema.ShapeBox
-    .addField("fillColor", S.Optional(S.String), { derivedFrom: ["color"] })
-    .addField("strokeColor", S.Optional(S.String), { derivedFrom: ["color"] })
-    .removeField("color")
-    .build();
+const splitShapeColorIntoFillAndStroke = S.defineSchemaUpdate(
+  "splitShapeColorIntoFillAndStroke",
+  schema => {
+    const ShapeBox = schema.ShapeBox
+      .addField("fillColor", S.Optional(S.String), { derivedFrom: ["color"] })
+      .addField("strokeColor", S.Optional(S.String), { derivedFrom: ["color"] })
+      .removeField("color")
+      .build();
 
-  const ShapeCircle = schema.ShapeCircle
-    .addField("fillColor", S.Optional(S.String), { derivedFrom: ["color"] })
-    .addField("strokeColor", S.Optional(S.String), { derivedFrom: ["color"] })
-    .removeField("color")
-    .build();
+    const ShapeCircle = schema.ShapeCircle
+      .addField("fillColor", S.Optional(S.String), { derivedFrom: ["color"] })
+      .addField("strokeColor", S.Optional(S.String), { derivedFrom: ["color"] })
+      .removeField("color")
+      .build();
 
-  return { ShapeBox, ShapeCircle };
-});
+    return { ShapeBox, ShapeCircle };
+  },
+);
 
 // --- Schema change: add opacity (additive) ---
-const addOpacity = S.defineSchemaUpdate("addOpacity", schema => {
+const addShapeOpacity = S.defineSchemaUpdate("addShapeOpacity", schema => {
   const ShapeBox = schema.ShapeBox
     .addField("opacity", S.Optional(S.Double), { default: 1.0 })
     .build();
@@ -152,12 +163,12 @@ const addOpacity = S.defineSchemaUpdate("addOpacity", schema => {
 
 // --- Schema v2: apply both changes ---
 const schemaV2 = S.nextSchema(schemaV1)
-  .addSchemaUpdate(addColorSplit)
-  .addSchemaUpdate(addOpacity)
+  .addSchemaUpdate(splitShapeColorIntoFillAndStroke)
+  .addSchemaUpdate(addShapeOpacity)
   .build();
 
 // --- Schema change: add freehand strokes (purely additive) ---
-const addFreehandStroke = S.defineSchemaUpdate("addFreehandStroke", () => {
+const addFreehandStrokeModel = S.defineSchemaUpdate("addFreehandStrokeModel", () => {
   const FreehandStroke = S.defineRecord("FreehandStroke", {
     docs: "A freehand pen stroke stored as a JSON-encoded array of [x, y, pressure] tuples.",
     fields: {
@@ -170,7 +181,7 @@ const addFreehandStroke = S.defineSchemaUpdate("addFreehandStroke", () => {
 
 // --- Schema v3: add pen tool support ---
 const schemaV3 = S.nextSchema(schemaV2)
-  .addSchemaUpdate(addFreehandStroke)
+  .addSchemaUpdate(addFreehandStrokeModel)
   .build();
 
 export default schemaV3;

@@ -15,10 +15,9 @@
  */
 
 import type { Toaster } from "@blueprintjs/core";
-import type { ActivityEvent } from "@demo/canvas.sdk";
-import { ActivityEventModel } from "@demo/canvas.sdk";
+import { CanvasActivityModel } from "@demo/canvas.sdk";
 import type { DocumentRef } from "@palantir/pack.document-schema.model-types";
-import { ActivityEventDataType } from "@palantir/pack.document-schema.model-types";
+import { ActivityEventDataType, ActivityEvents } from "@palantir/pack.document-schema.model-types";
 import { useEffect, useRef } from "react";
 import { ShapeUpdateToast } from "../components/toast/ShapeUpdateToast.js";
 
@@ -58,29 +57,28 @@ export function useActivityToast(
       // TODO: Filter out events from current client once docRef.getClientId() is available
       // if (event.createdBy === docRef.getClientId()) { return; }
 
-      if (event.eventData.model !== ActivityEventModel) {
+      if (!ActivityEvents.isEdit(event.eventData, CanvasActivityModel)) {
         return;
       }
 
-      const customEvent = event.eventData;
-      const eventData = event.eventData.data as ActivityEvent;
-      switch (customEvent.eventType) {
-        case "shapeAdd":
+      const canvasActivity = event.eventData.data;
+      switch (canvasActivity.activityType) {
+        case "shapeAdded":
           toaster.show({
             intent: "primary",
             message: "User added a shape",
             timeout: 3000,
           });
           break;
-        case "shapeDelete":
+        case "shapeDeleted":
           toaster.show({
             intent: "primary",
             message: "User deleted a shape",
             timeout: 3000,
           });
           break;
-        case "shapeUpdate": {
-          const nodeId = eventData.nodeId;
+        case "shapeUpdated": {
+          const nodeId = canvasActivity.nodeId;
           const existing = updateCountsRef.current.get(nodeId);
 
           if (existing != null) {
