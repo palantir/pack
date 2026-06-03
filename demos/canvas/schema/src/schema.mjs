@@ -135,13 +135,13 @@ const splitShapeColorIntoFillAndStroke = S.defineSchemaUpdate(
     const ShapeBox = schema.ShapeBox
       .addField("fillColor", S.Optional(S.String), { derivedFrom: ["color"] })
       .addField("strokeColor", S.Optional(S.String), { derivedFrom: ["color"] })
-      .deprecateField("color")
+      .deprecateField("color", "Use fillColor and strokeColor instead.")
       .build();
 
     const ShapeCircle = schema.ShapeCircle
       .addField("fillColor", S.Optional(S.String), { derivedFrom: ["color"] })
       .addField("strokeColor", S.Optional(S.String), { derivedFrom: ["color"] })
-      .deprecateField("color")
+      .deprecateField("color", "Use fillColor and strokeColor instead.")
       .build();
 
     return { ShapeBox, ShapeCircle };

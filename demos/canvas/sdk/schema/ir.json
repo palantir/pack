@@ -6,7 +6,7 @@
     {
       "version": 1,
       "ir": {
-        "name": "Canvas Document Type",
+        "name": "com.palantir.pack.demo.migration-doctype5",
         "description": "Document type description for demo canvas",
         "version": 1,
         "primaryModelKeys": [
@@ -395,7 +395,7 @@
     {
       "version": 2,
       "ir": {
-        "name": "Canvas Document Type",
+        "name": "com.palantir.pack.demo.migration-doctype5",
         "description": "Document type description for demo canvas",
         "version": 2,
         "primaryModelKeys": [
@@ -500,7 +500,8 @@
                   },
                   "metadata": {
                     "addedInVersion": 1,
-                    "deprecatedFromVersion": 2
+                    "deprecatedFromVersion": 2,
+                    "deprecatedMessage": "Use fillColor and strokeColor instead."
                   },
                   "isOptional": true
                 },
@@ -627,7 +628,8 @@
                   },
                   "metadata": {
                     "addedInVersion": 1,
-                    "deprecatedFromVersion": 2
+                    "deprecatedFromVersion": 2,
+                    "deprecatedMessage": "Use fillColor and strokeColor instead."
                   },
                   "isOptional": true
                 },
@@ -902,7 +904,7 @@
     {
       "version": 3,
       "ir": {
-        "name": "Canvas Document Type",
+        "name": "com.palantir.pack.demo.migration-doctype5",
         "description": "Document type description for demo canvas",
         "version": 3,
         "primaryModelKeys": [
@@ -1008,7 +1010,8 @@
                   },
                   "metadata": {
                     "addedInVersion": 1,
-                    "deprecatedFromVersion": 2
+                    "deprecatedFromVersion": 2,
+                    "deprecatedMessage": "Use fillColor and strokeColor instead."
                   },
                   "isOptional": true
                 },
@@ -1135,7 +1138,8 @@
                   },
                   "metadata": {
                     "addedInVersion": 1,
-                    "deprecatedFromVersion": 2
+                    "deprecatedFromVersion": 2,
+                    "deprecatedMessage": "Use fillColor and strokeColor instead."
                   },
                   "isOptional": true
                 },
