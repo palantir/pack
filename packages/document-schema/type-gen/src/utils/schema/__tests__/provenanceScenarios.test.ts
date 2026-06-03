@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-import { defineRecord, defineSchema, defineSchemaUpdate, nextSchema } from "@palantir/pack.schema";
 import * as P from "@palantir/pack.schema";
+import { defineRecord, defineSchema, defineSchemaUpdate, nextSchema } from "@palantir/pack.schema";
 import { describe, expect, it } from "vitest";
 import type {
   IFieldDef,
@@ -43,7 +43,6 @@ function unionMeta(e: VersionedIrEntry, key: string) {
 }
 
 describe("provenance — scenarios beyond the demo", () => {
-  // v1: Box(a) + one v1 union.
   const v1 = defineSchema({
     Box: defineRecord("Box", { docs: "", fields: { a: P.Double } }),
     OldUnion: P.defineUnion("OldUnion", {
@@ -52,7 +51,6 @@ describe("provenance — scenarios beyond the demo", () => {
     }),
   });
 
-  // v2: add a NEW record (Circle) AND a NEW union (NewUnion); add field b to Box.
   const v2update = defineSchemaUpdate("v2", (s: P.SchemaBuilder<typeof v1.models>) => {
     const Box = s.Box.addField("b", P.Optional(P.String)).build();
     const Circle = defineRecord("Circle", { docs: "", fields: { r: P.Double } });
@@ -64,7 +62,6 @@ describe("provenance — scenarios beyond the demo", () => {
   });
   const v2 = nextSchema(v1).addSchemaUpdate(v2update).build();
 
-  // v3: add field c to Box (3 hops from v1).
   const v3update = defineSchemaUpdate("v3", (s: P.SchemaBuilder<typeof v2.models>) => ({
     Box: s.Box.addField("c", P.Optional(P.Double)).build(),
   }));
@@ -79,9 +76,7 @@ describe("provenance — scenarios beyond the demo", () => {
 
   it("union added in v2 gets addedInVersion 2", () => {
     const { chain } = resolveSchemaChain(v3);
-    // not present in v1
     expect(entry(chain, 1).ir.models.NewUnion).toBeUndefined();
-    // present in v2 and v3, stamped 2 in both
     expect(unionMeta(entry(chain, 2), "NewUnion").addedInVersion).toBe(2);
     expect(unionMeta(entry(chain, 3), "NewUnion").addedInVersion).toBe(2);
   });
@@ -96,13 +91,11 @@ describe("provenance — scenarios beyond the demo", () => {
   it("field added in v3 to a v1 record gets addedInVersion 3; older fields keep theirs", () => {
     const { chain } = resolveSchemaChain(v3);
     const f = recordFields(entry(chain, 3), "Box");
-    expect(f.a!.metadata.addedInVersion).toBe(1); // since v1
-    expect(f.b!.metadata.addedInVersion).toBe(2); // added v2
-    expect(f.c!.metadata.addedInVersion).toBe(3); // added v3
+    expect(f.b!.metadata.addedInVersion).toBe(2);
+    expect(f.c!.metadata.addedInVersion).toBe(3);
   });
 
   it("hand-built schema provenance is derived from first appearance in the chain", () => {
-    // Simulate a SchemaDefinition produced without the DSL builder.
     const hand: P.SchemaDefinition = {
       type: "versioned",
       version: 2,
@@ -116,7 +109,6 @@ describe("provenance — scenarios beyond the demo", () => {
   });
 
   it("upgrade lens still records removedFields + derivedFrom for a deprecated field", () => {
-    // Box: color in v1, split to fillColor/strokeColor + deprecate in v2.
     const b1 = defineSchema({
       Box: defineRecord("Box", { docs: "", fields: { a: P.Double, color: P.Optional(P.String) } }),
     });
@@ -128,9 +120,6 @@ describe("provenance — scenarios beyond the demo", () => {
     }));
     const b2 = nextSchema(b1).addSchemaUpdate(split).build();
 
-    // The SDK path strips deprecated fields BEFORE generating internals (exactly
-    // as irGenTypesHandler does). That strip is what turns "color deprecated in
-    // v2" into "color removed at v2" for the upgrade lens.
     const resolved = resolveSchemaChain(b2);
     const stripped = { ...resolved, chain: stripDeprecatedFieldsForSdk(resolved.chain) };
     const internal = generateInternalFromChain(stripped);

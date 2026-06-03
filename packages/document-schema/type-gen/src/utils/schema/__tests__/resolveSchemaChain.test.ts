@@ -94,7 +94,6 @@ describe("resolveSchemaChain provenance", () => {
     expect(v2Fields.color).toBeUndefined();
     expect(v2Fields.fillColor).toBeDefined();
 
-    // Original chain not mutated.
     expect(fieldsByKey(chain.find(c => c.version === 2)!, "ShapeBox").color).toBeDefined();
   });
 });
