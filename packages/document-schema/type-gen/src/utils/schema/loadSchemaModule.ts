@@ -14,7 +14,8 @@
  * limitations under the License.
  */
 
-import type { InitialSchema, SchemaDefinition } from "@palantir/pack.schema";
+import type { SchemaDefinition } from "@palantir/pack.schema";
+import { defineSchema } from "@palantir/pack.schema";
 import fs from "fs-extra";
 import path from "path";
 import { pathToFileURL } from "url";
@@ -39,7 +40,7 @@ export function extractSchemaDefinition(schemaModule: unknown): SchemaDefinition
   }
 
   const models = extractValidSchema(schemaModule);
-  return { type: "initial", version: 1, models } satisfies InitialSchema;
+  return defineSchema(models);
 }
 
 /**

@@ -117,9 +117,10 @@ export interface RecordBuilder<T extends Record<string, Type>> {
     type: V,
     options?: FieldOptions,
   ): RecordBuilder<T & { [k in K]: V }>;
-  removeField<K extends keyof T & string>(
+  deprecateField<K extends keyof T & string>(
     name: K,
-  ): RecordBuilder<Omit<T, K>>;
+    message?: string,
+  ): RecordBuilder<T>;
   build(): RecordDef<T>;
 }
 
@@ -174,14 +175,29 @@ class UnionBuilderImpl<S extends UnionVariants> implements UnionBuilder<S> {
  */
 const UPGRADE_OPTIONS_CARRIER = "__pack_upgrade_options__";
 
+/**
+ * Non-enumerable carrier property attached to a `RecordDef` by
+ * `RecordBuilderImpl.build()` when the builder has collected one or more
+ * `deprecateField` calls. `applyMigration` reads this and then deletes the
+ * property, so the returned `RecordDef` is structurally clean. Maps field name
+ * → its deprecation info.
+ */
+const DEPRECATED_FIELDS_CARRIER = "__pack_deprecated_fields__";
+
+export interface FieldDeprecation {
+  readonly message?: string;
+}
+
 class RecordBuilderImpl<T extends RecordFields> implements RecordBuilder<T> {
   private readonly name: string;
   private readonly fields: T;
   private readonly upgradeOptions: ReadonlyMap<string, FieldOptions>;
+  private readonly deprecatedFields: ReadonlyMap<string, FieldDeprecation>;
 
   constructor(
     initialRecordDef: RecordDef<T>,
     upgradeOptions?: ReadonlyMap<string, FieldOptions>,
+    deprecatedFields?: ReadonlyMap<string, FieldDeprecation>,
   ) {
     this.name = initialRecordDef.name;
     this.fields = { ...initialRecordDef.fields };
@@ -189,6 +205,7 @@ class RecordBuilderImpl<T extends RecordFields> implements RecordBuilder<T> {
     // they are NOT inherited from the prior version's RecordDef, because each
     // version's upgrades describe a specific version transition.
     this.upgradeOptions = new Map<string, FieldOptions>(upgradeOptions ?? []);
+    this.deprecatedFields = new Map<string, FieldDeprecation>(deprecatedFields ?? []);
   }
 
   // TODO: resolve field value from arg instead
@@ -212,24 +229,26 @@ class RecordBuilderImpl<T extends RecordFields> implements RecordBuilder<T> {
         docs: "",
       },
       next,
+      this.deprecatedFields,
     );
   }
 
-  removeField<K extends keyof T & string>(
+  deprecateField<K extends keyof T & string>(
     name: K,
-  ): RecordBuilder<Omit<T, K>> {
-    const { [name]: _removed, ...rest } = this.fields;
-    const next = new Map(this.upgradeOptions);
-    next.delete(name);
+    message?: string,
+  ): RecordBuilder<T> {
+    const next = new Map(this.deprecatedFields);
+    next.set(name, { message });
     return new RecordBuilderImpl(
       {
         type: ModelDefType.RECORD,
         name: this.name,
-        fields: rest as RecordFields,
+        fields: { ...this.fields },
         docs: "",
       },
+      this.upgradeOptions,
       next,
-    ) as unknown as RecordBuilder<Omit<T, K>>;
+    );
   }
 
   build(): RecordDef<T> {
@@ -242,6 +261,14 @@ class RecordBuilderImpl<T extends RecordFields> implements RecordBuilder<T> {
     if (this.upgradeOptions.size > 0) {
       Object.defineProperty(result, UPGRADE_OPTIONS_CARRIER, {
         value: this.upgradeOptions,
+        enumerable: false,
+        configurable: true,
+        writable: false,
+      });
+    }
+    if (this.deprecatedFields.size > 0) {
+      Object.defineProperty(result, DEPRECATED_FIELDS_CARRIER, {
+        value: this.deprecatedFields,
         enumerable: false,
         configurable: true,
         writable: false,
@@ -270,22 +297,29 @@ export type FieldUpgrades = Record<
   Record<string, UpgradeFieldOptions<Record<string, unknown>>>
 >;
 
+export type FieldDeprecations = Record<
+  string,
+  Record<string, FieldDeprecation>
+>;
+
 export interface MigrationResult<M extends ModelDefs> {
   readonly models: M;
   readonly upgrades?: FieldUpgrades;
+  readonly deprecations?: FieldDeprecations;
 }
 
 /**
- * Lower-level entry point that returns both the merged models AND any
- * `UpgradeFieldOptions` collected via `addField(name, type, options)` during
- * the migration callback. Used by `addSchemaUpdate` to fold sugar-form
- * upgrades into a `VersionedSchema`'s migrations map.
+ * Lower-level entry point that returns the merged models plus the per-field
+ * metadata collected during the migration callback: `UpgradeFieldOptions` from
+ * `addField(name, type, options)` and deprecations from `deprecateField(name)`.
+ * Used by `addSchemaUpdate` to fold sugar-form upgrades into a
+ * `VersionedSchema`'s migrations map and deprecations into its deprecations map.
  *
- * Each `RecordBuilderImpl.build()` attaches its collected options to the
- * produced `RecordDef` via a non-enumerable carrier property; this function
- * walks the merged result, extracts the options keyed by the user's chosen
- * output key (so renames are handled), and strips the carrier so the returned
- * `RecordDef`s are structurally clean.
+ * Each `RecordBuilderImpl.build()` attaches its collected upgrade options and
+ * deprecations to the produced `RecordDef` via two non-enumerable carrier
+ * properties; this function walks the merged result, extracts both keyed by the
+ * user's chosen output key (so renames are handled), and strips the carriers so
+ * the returned `RecordDef`s are structurally clean.
  */
 export function applyMigration<
   const T extends ModelDefs,
@@ -298,35 +332,53 @@ export function applyMigration<
   const merged = { ...models, ...migration(builders) } as T & S;
 
   const upgrades: FieldUpgrades = {};
+  const deprecations: FieldDeprecations = {};
   for (const [modelKey, def] of Object.entries(merged)) {
     if (!isRecordDef(def)) continue;
     const carrier = def as unknown as Record<string, unknown>;
     const opts = carrier[UPGRADE_OPTIONS_CARRIER] as
       | ReadonlyMap<string, FieldOptions>
       | undefined;
-    if (opts == null) continue;
-    // Strip the carrier so the returned RecordDef is structurally clean.
-    delete carrier[UPGRADE_OPTIONS_CARRIER];
-    const fieldEntries: Record<
-      string,
-      UpgradeFieldOptions<Record<string, unknown>>
-    > = {};
-    for (const [fieldName, options] of opts) {
-      // Only `UpgradeFieldOptions` (which declare `derivedFrom`) flow into the
-      // upgrades map; `AdditiveFieldOptions` carry only a literal `default`
-      // and have no read-time lens effect.
-      if ("derivedFrom" in options) {
-        fieldEntries[fieldName] = options;
+    if (opts != null) {
+      // Strip the carrier so the returned RecordDef is structurally clean.
+      delete carrier[UPGRADE_OPTIONS_CARRIER];
+      const fieldEntries: Record<
+        string,
+        UpgradeFieldOptions<Record<string, unknown>>
+      > = {};
+      for (const [fieldName, options] of opts) {
+        // Only `UpgradeFieldOptions` (which declare `derivedFrom`) flow into the
+        // upgrades map; `AdditiveFieldOptions` carry only a literal `default`
+        // and have no read-time lens effect.
+        if ("derivedFrom" in options) {
+          fieldEntries[fieldName] = options;
+        }
+      }
+      if (Object.keys(fieldEntries).length > 0) {
+        upgrades[modelKey] = fieldEntries;
       }
     }
-    if (Object.keys(fieldEntries).length > 0) {
-      upgrades[modelKey] = fieldEntries;
+
+    const deprecated = carrier[DEPRECATED_FIELDS_CARRIER] as
+      | ReadonlyMap<string, FieldDeprecation>
+      | undefined;
+    if (deprecated != null) {
+      // Strip the carrier so the returned RecordDef is structurally clean.
+      delete carrier[DEPRECATED_FIELDS_CARRIER];
+      const fieldEntries: Record<string, FieldDeprecation> = {};
+      for (const [fieldName, info] of deprecated) {
+        fieldEntries[fieldName] = info;
+      }
+      if (Object.keys(fieldEntries).length > 0) {
+        deprecations[modelKey] = fieldEntries;
+      }
     }
   }
 
   return {
     models: merged,
     upgrades: Object.keys(upgrades).length > 0 ? upgrades : undefined,
+    deprecations: Object.keys(deprecations).length > 0 ? deprecations : undefined,
   };
 }
 

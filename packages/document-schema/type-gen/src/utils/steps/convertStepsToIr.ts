@@ -42,6 +42,19 @@ export interface SchemaMetadata {
 }
 
 /**
+ * Per-field version provenance for a schema, keyed by model export key then
+ * field name. Supplied by the version-aware caller (`resolveSchemaChain`) so the
+ * IR records the version each field first appeared in (and any deprecation)
+ * instead of a placeholder. When omitted, fields fall back to the schema's
+ * top-level version (correct for single-version / steps-based callers).
+ */
+export interface SchemaProvenance {
+  readonly fieldVersions?: Record<string, Record<string, number>>;
+  readonly modelVersions?: Record<string, number>;
+  readonly deprecations?: P.VersionDeprecations;
+}
+
+/**
  * Converts migration steps to Palantir IR format
  */
 export function convertStepsToIr(
@@ -60,11 +73,15 @@ export function convertStepsToIr(
 }
 
 /**
- * Converts record and union definitions to Palantir IR format
+ * Converts record and union definitions to Palantir IR format. When
+ * `provenance` is supplied (by the version-aware caller), each field/model is
+ * stamped with the version it first appeared in and any deprecation; otherwise
+ * everything falls back to `metadata.version` (default 1).
  */
 export function convertSchemaToIr(
   inputSchema: P.Schema<P.ReturnedSchema>,
   metadata?: SchemaMetadata,
+  provenance?: SchemaProvenance,
 ): IRealTimeDocumentSchema {
   // Build a mapping from declared model name → export key so that union variant
   // refs (which use declared model names) can be remapped to export keys.
@@ -77,12 +94,13 @@ export function convertSchemaToIr(
     );
     nameToExportKey.set(modelDef.name, exportKey);
   }
+  const fallbackVersion = metadata?.version ?? 1;
 
   const primaryModelKeys: IModelTypeKey[] = [];
   const models = new Map<IModelTypeKey, IModelDef>();
 
   for (const [exportKey, modelDef] of Object.entries(inputSchema)) {
-    if (collectModels(exportKey, modelDef, nameToExportKey, models)) {
+    if (collectModels(exportKey, modelDef, nameToExportKey, models, fallbackVersion, provenance)) {
       primaryModelKeys.push(exportKey);
     }
   }
@@ -90,7 +108,7 @@ export function convertSchemaToIr(
   return {
     name: metadata?.name ?? "Generated Schema",
     description: metadata?.description ?? "Schema generated from migration steps",
-    version: metadata?.version ?? 1,
+    version: fallbackVersion,
     primaryModelKeys,
     models: Object.fromEntries(models),
   };
@@ -101,6 +119,8 @@ function collectModels(
   modelDef: P.ModelDef,
   nameToExportKey: Map<string, string>,
   outModels: Map<IModelTypeKey, IModelDef>,
+  fallbackVersion: number,
+  provenance?: SchemaProvenance,
 ): boolean {
   invariant(
     !outModels.has(exportKey),
@@ -111,14 +131,18 @@ function collectModels(
     case "record": {
       outModels.set(
         exportKey,
-        IModelDef.record(convertRecordDefToIr(modelDef, exportKey, nameToExportKey)),
+        IModelDef.record(
+          convertRecordDefToIr(modelDef, exportKey, nameToExportKey, fallbackVersion, provenance),
+        ),
       );
       return true;
     }
     case "union": {
       outModels.set(
         exportKey,
-        IModelDef.union(convertUnionDefToIr(modelDef, exportKey, nameToExportKey)),
+        IModelDef.union(
+          convertUnionDefToIr(modelDef, exportKey, nameToExportKey, fallbackVersion, provenance),
+        ),
       );
       return true;
     }
@@ -131,19 +155,34 @@ export function convertRecordDefToIr(
   recordDef: P.RecordDef,
   exportKey?: string,
   nameToExportKey?: Map<string, string>,
+  fallbackVersion: number = 1,
+  provenance?: SchemaProvenance,
 ): IRecordDef {
-  const key = exportKey ?? recordDef.name;
-  const fields = Object.entries(recordDef.fields).map(([fieldKey, fieldType]): IFieldDef => ({
-    key: fieldKey,
-    name: fieldKey,
-    description: undefined,
-    fieldType: convertTypeToFieldTypeUnion(fieldType, nameToExportKey),
-    metadata: { addedInVersion: 1 },
-    isOptional: fieldType.type === "optional" ? true : undefined,
-  }));
+  const modelKey = exportKey ?? recordDef.name;
+  const fieldVersions = provenance?.fieldVersions?.[modelKey];
+  const deprecations = provenance?.deprecations?.[modelKey];
+  const fields = Object.entries(recordDef.fields).map(([fieldKey, fieldType]): IFieldDef => {
+    const dep = deprecations?.[fieldKey];
+    return {
+      key: fieldKey,
+      name: fieldKey,
+      description: undefined,
+      fieldType: convertTypeToFieldTypeUnion(fieldType, nameToExportKey),
+      metadata: {
+        addedInVersion: fieldVersions?.[fieldKey] ?? fallbackVersion,
+        ...(dep != null
+          ? {
+            deprecatedFromVersion: dep.fromVersion,
+            ...(dep.message != null ? { deprecatedMessage: dep.message } : {}),
+          }
+          : {}),
+      },
+      isOptional: fieldType.type === "optional" ? true : undefined,
+    };
+  });
 
   return {
-    key,
+    key: modelKey,
     name: recordDef.name,
     description: recordDef.docs ?? undefined,
     fields,
@@ -154,8 +193,10 @@ export function convertUnionDefToIr(
   unionDef: P.UnionDef,
   exportKey?: string,
   nameToExportKey?: Map<string, string>,
+  fallbackVersion: number = 1,
+  provenance?: SchemaProvenance,
 ): IUnionDef {
-  const key = exportKey ?? unionDef.name;
+  const modelKey = exportKey ?? unionDef.name;
   const variantEntries = Object.entries(unionDef.variants).map((
     [variantName, modelRef],
   ) =>
@@ -165,13 +206,15 @@ export function convertUnionDefToIr(
     ] as const
   );
 
+  const unionAddedIn = provenance?.modelVersions?.[modelKey] ?? fallbackVersion;
+
   return {
-    key,
+    key: modelKey,
     name: unionDef.name,
     description: unionDef.docs,
     discriminant: unionDef.discriminant,
     variants: Object.fromEntries(variantEntries),
-    metadata: { addedInVersion: 1 },
+    metadata: { addedInVersion: unionAddedIn },
   };
 }
 

@@ -158,7 +158,7 @@ function collectRecordModels(
         }
       }
 
-      // Fields removed in this version
+      // Fields absent from this version relative to the previous one (i.e. deprecated fields).
       const removedFields: string[] = [];
       for (const fieldKey of prevFields) {
         if (!currFields.has(fieldKey)) {
