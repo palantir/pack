@@ -10,143 +10,17 @@
         "description": "Document type description for demo canvas",
         "version": 1,
         "primaryModelKeys": [
-          "ActivityEvent",
-          "ActivityShapeAddEvent",
-          "ActivityShapeDeleteEvent",
-          "ActivityShapeUpdateEvent",
           "NodeShape",
-          "PresenceCursorEvent",
-          "PresenceEvent",
-          "PresenceSelectionEvent",
           "ShapeBox",
-          "ShapeCircle"
+          "ShapeCircle",
+          "CanvasActivity",
+          "ShapeAddedActivity",
+          "ShapeDeletedActivity",
+          "ShapeUpdatedActivity",
+          "CursorPresence",
+          "SelectionPresence"
         ],
         "models": {
-          "ActivityEvent": {
-            "union": {
-              "key": "ActivityEvent",
-              "name": "ActivityEvent",
-              "description": "An activity event describing a change to the document model.",
-              "discriminant": "eventType",
-              "variants": {
-                "shapeAdd": "ActivityShapeAddEvent",
-                "shapeDelete": "ActivityShapeDeleteEvent",
-                "shapeUpdate": "ActivityShapeUpdateEvent"
-              },
-              "metadata": {
-                "addedInVersion": 1
-              }
-            },
-            "type": "union"
-          },
-          "ActivityShapeAddEvent": {
-            "record": {
-              "key": "ActivityShapeAddEvent",
-              "name": "ActivityShapeAddEvent",
-              "description": "An event representing the addition of a shape node.",
-              "fields": [
-                {
-                  "key": "nodeId",
-                  "name": "nodeId",
-                  "fieldType": {
-                    "value": {
-                      "string": {},
-                      "type": "string"
-                    },
-                    "type": "value"
-                  },
-                  "metadata": {
-                    "addedInVersion": 1
-                  }
-                }
-              ]
-            },
-            "type": "record"
-          },
-          "ActivityShapeDeleteEvent": {
-            "record": {
-              "key": "ActivityShapeDeleteEvent",
-              "name": "ActivityShapeDeleteEvent",
-              "description": "An event representing the deletion of a shape node.",
-              "fields": [
-                {
-                  "key": "nodeId",
-                  "name": "nodeId",
-                  "fieldType": {
-                    "value": {
-                      "string": {},
-                      "type": "string"
-                    },
-                    "type": "value"
-                  },
-                  "metadata": {
-                    "addedInVersion": 1
-                  }
-                }
-              ]
-            },
-            "type": "record"
-          },
-          "ActivityShapeUpdateEvent": {
-            "record": {
-              "key": "ActivityShapeUpdateEvent",
-              "name": "ActivityShapeUpdateEvent",
-              "description": "An event representing the update of a shape node.",
-              "fields": [
-                {
-                  "key": "nodeId",
-                  "name": "nodeId",
-                  "fieldType": {
-                    "value": {
-                      "string": {},
-                      "type": "string"
-                    },
-                    "type": "value"
-                  },
-                  "metadata": {
-                    "addedInVersion": 1
-                  }
-                },
-                {
-                  "key": "oldShape",
-                  "name": "oldShape",
-                  "fieldType": {
-                    "value": {
-                      "modelRef": {
-                        "modelTypes": [
-                          "NodeShape"
-                        ]
-                      },
-                      "type": "modelRef"
-                    },
-                    "type": "value"
-                  },
-                  "metadata": {
-                    "addedInVersion": 1
-                  }
-                },
-                {
-                  "key": "newShape",
-                  "name": "newShape",
-                  "fieldType": {
-                    "value": {
-                      "modelRef": {
-                        "modelTypes": [
-                          "NodeShape"
-                        ]
-                      },
-                      "type": "modelRef"
-                    },
-                    "type": "value"
-                  },
-                  "metadata": {
-                    "addedInVersion": 1
-                  }
-                }
-              ]
-            },
-            "type": "record"
-          },
           "NodeShape": {
             "union": {
               "key": "NodeShape",
@@ -162,87 +36,6 @@
               }
             },
             "type": "union"
-          },
-          "PresenceCursorEvent": {
-            "record": {
-              "key": "PresenceCursorEvent",
-              "name": "PresenceCursorEvent",
-              "description": "Cursor position for remote user.",
-              "fields": [
-                {
-                  "key": "x",
-                  "name": "x",
-                  "fieldType": {
-                    "value": {
-                      "double": {},
-                      "type": "double"
-                    },
-                    "type": "value"
-                  },
-                  "metadata": {
-                    "addedInVersion": 1
-                  }
-                },
-                {
-                  "key": "y",
-                  "name": "y",
-                  "fieldType": {
-                    "value": {
-                      "double": {},
-                      "type": "double"
-                    },
-                    "type": "value"
-                  },
-                  "metadata": {
-                    "addedInVersion": 1
-                  }
-                }
-              ]
-            },
-            "type": "record"
-          },
-          "PresenceEvent": {
-            "union": {
-              "key": "PresenceEvent",
-              "name": "PresenceEvent",
-              "description": "A presence event describing user cursor or selection state.",
-              "discriminant": "eventType",
-              "variants": {
-                "cursor": "PresenceCursorEvent",
-                "selection": "PresenceSelectionEvent"
-              },
-              "metadata": {
-                "addedInVersion": 1
-              }
-            },
-            "type": "union"
-          },
-          "PresenceSelectionEvent": {
-            "record": {
-              "key": "PresenceSelectionEvent",
-              "name": "PresenceSelectionEvent",
-              "description": "Selected nodes for remote user.",
-              "fields": [
-                {
-                  "key": "selectedNodeIds",
-                  "name": "selectedNodeIds",
-                  "fieldType": {
-                    "array": {
-                      "allowNullValue": false,
-                      "value": {
-                        "string": {},
-                        "type": "string"
-                      }
-                    },
-                    "type": "array"
-                  },
-                  "metadata": {
-                    "addedInVersion": 1
-                  }
-                }
-              ]
-            },
-            "type": "record"
           },
           "ShapeBox": {
             "record": {
@@ -405,39 +198,17 @@
               ]
             },
             "type": "record"
-          }
-        }
-      }
-    },
-    {
-      "version": 2,
-      "ir": {
-        "name": "Canvas Document Type",
-        "description": "Document type description for demo canvas",
-        "version": 2,
-        "primaryModelKeys": [
-          "ActivityEvent",
-          "ActivityShapeAddEvent",
-          "ActivityShapeDeleteEvent",
-          "ActivityShapeUpdateEvent",
-          "NodeShape",
-          "PresenceCursorEvent",
-          "PresenceEvent",
-          "PresenceSelectionEvent",
-          "ShapeBox",
-          "ShapeCircle"
-        ],
-        "models": {
-          "ActivityEvent": {
+          },
+          "CanvasActivity": {
             "union": {
-              "key": "ActivityEvent",
-              "name": "ActivityEvent",
-              "description": "An activity event describing a change to the document model.",
-              "discriminant": "eventType",
+              "key": "CanvasActivity",
+              "name": "CanvasActivity",
+              "description": "Canvas-specific custom activity payload.",
+              "discriminant": "activityType",
               "variants": {
-                "shapeAdd": "ActivityShapeAddEvent",
-                "shapeDelete": "ActivityShapeDeleteEvent",
-                "shapeUpdate": "ActivityShapeUpdateEvent"
+                "shapeAdded": "ShapeAddedActivity",
+                "shapeDeleted": "ShapeDeletedActivity",
+                "shapeUpdated": "ShapeUpdatedActivity"
               },
               "metadata": {
                 "addedInVersion": 1
@@ -445,11 +216,11 @@
             },
             "type": "union"
           },
-          "ActivityShapeAddEvent": {
+          "ShapeAddedActivity": {
             "record": {
-              "key": "ActivityShapeAddEvent",
-              "name": "ActivityShapeAddEvent",
-              "description": "An event representing the addition of a shape node.",
+              "key": "ShapeAddedActivity",
+              "name": "ShapeAddedActivity",
+              "description": "Activity payload for a shape addition.",
               "fields": [
                 {
                   "key": "nodeId",
@@ -469,11 +240,11 @@
             },
             "type": "record"
           },
-          "ActivityShapeDeleteEvent": {
+          "ShapeDeletedActivity": {
             "record": {
-              "key": "ActivityShapeDeleteEvent",
-              "name": "ActivityShapeDeleteEvent",
-              "description": "An event representing the deletion of a shape node.",
+              "key": "ShapeDeletedActivity",
+              "name": "ShapeDeletedActivity",
+              "description": "Activity payload for a shape deletion.",
               "fields": [
                 {
                   "key": "nodeId",
@@ -493,11 +264,11 @@
             },
             "type": "record"
           },
-          "ActivityShapeUpdateEvent": {
+          "ShapeUpdatedActivity": {
             "record": {
-              "key": "ActivityShapeUpdateEvent",
-              "name": "ActivityShapeUpdateEvent",
-              "description": "An event representing the update of a shape node.",
+              "key": "ShapeUpdatedActivity",
+              "name": "ShapeUpdatedActivity",
+              "description": "Activity payload for a shape update.",
               "fields": [
                 {
                   "key": "nodeId",
@@ -553,27 +324,11 @@
             },
             "type": "record"
           },
-          "NodeShape": {
-            "union": {
-              "key": "NodeShape",
-              "name": "NodeShape",
-              "description": "The shape of a node.",
-              "discriminant": "shapeType",
-              "variants": {
-                "box": "ShapeBox",
-                "circle": "ShapeCircle"
-              },
-              "metadata": {
-                "addedInVersion": 1
-              }
-            },
-            "type": "union"
-          },
-          "PresenceCursorEvent": {
+          "CursorPresence": {
             "record": {
-              "key": "PresenceCursorEvent",
-              "name": "PresenceCursorEvent",
-              "description": "Cursor position for remote user.",
+              "key": "CursorPresence",
+              "name": "CursorPresence",
+              "description": "Cursor position for a remote user.",
               "fields": [
                 {
                   "key": "x",
@@ -607,27 +362,11 @@
             },
             "type": "record"
           },
-          "PresenceEvent": {
-            "union": {
-              "key": "PresenceEvent",
-              "name": "PresenceEvent",
-              "description": "A presence event describing user cursor or selection state.",
-              "discriminant": "eventType",
-              "variants": {
-                "cursor": "PresenceCursorEvent",
-                "selection": "PresenceSelectionEvent"
-              },
-              "metadata": {
-                "addedInVersion": 1
-              }
-            },
-            "type": "union"
-          },
-          "PresenceSelectionEvent": {
+          "SelectionPresence": {
             "record": {
-              "key": "PresenceSelectionEvent",
-              "name": "PresenceSelectionEvent",
-              "description": "Selected nodes for remote user.",
+              "key": "SelectionPresence",
+              "name": "SelectionPresence",
+              "description": "Selected shape ids for a remote user.",
               "fields": [
                 {
                   "key": "selectedNodeIds",
@@ -649,6 +388,43 @@
               ]
             },
             "type": "record"
+          }
+        }
+      }
+    },
+    {
+      "version": 2,
+      "ir": {
+        "name": "Canvas Document Type",
+        "description": "Document type description for demo canvas",
+        "version": 2,
+        "primaryModelKeys": [
+          "NodeShape",
+          "ShapeBox",
+          "ShapeCircle",
+          "CanvasActivity",
+          "ShapeAddedActivity",
+          "ShapeDeletedActivity",
+          "ShapeUpdatedActivity",
+          "CursorPresence",
+          "SelectionPresence"
+        ],
+        "models": {
+          "NodeShape": {
+            "union": {
+              "key": "NodeShape",
+              "name": "NodeShape",
+              "description": "The shape of a node.",
+              "discriminant": "shapeType",
+              "variants": {
+                "box": "ShapeBox",
+                "circle": "ShapeCircle"
+              },
+              "metadata": {
+                "addedInVersion": 1
+              }
+            },
+            "type": "union"
           },
           "ShapeBox": {
             "record": {
@@ -867,6 +643,196 @@
                     "addedInVersion": 1
                   },
                   "isOptional": true
+                }
+              ]
+            },
+            "type": "record"
+          },
+          "CanvasActivity": {
+            "union": {
+              "key": "CanvasActivity",
+              "name": "CanvasActivity",
+              "description": "Canvas-specific custom activity payload.",
+              "discriminant": "activityType",
+              "variants": {
+                "shapeAdded": "ShapeAddedActivity",
+                "shapeDeleted": "ShapeDeletedActivity",
+                "shapeUpdated": "ShapeUpdatedActivity"
+              },
+              "metadata": {
+                "addedInVersion": 1
+              }
+            },
+            "type": "union"
+          },
+          "ShapeAddedActivity": {
+            "record": {
+              "key": "ShapeAddedActivity",
+              "name": "ShapeAddedActivity",
+              "description": "Activity payload for a shape addition.",
+              "fields": [
+                {
+                  "key": "nodeId",
+                  "name": "nodeId",
+                  "fieldType": {
+                    "value": {
+                      "string": {},
+                      "type": "string"
+                    },
+                    "type": "value"
+                  },
+                  "metadata": {
+                    "addedInVersion": 1
+                  }
+                }
+              ]
+            },
+            "type": "record"
+          },
+          "ShapeDeletedActivity": {
+            "record": {
+              "key": "ShapeDeletedActivity",
+              "name": "ShapeDeletedActivity",
+              "description": "Activity payload for a shape deletion.",
+              "fields": [
+                {
+                  "key": "nodeId",
+                  "name": "nodeId",
+                  "fieldType": {
+                    "value": {
+                      "string": {},
+                      "type": "string"
+                    },
+                    "type": "value"
+                  },
+                  "metadata": {
+                    "addedInVersion": 1
+                  }
+                }
+              ]
+            },
+            "type": "record"
+          },
+          "ShapeUpdatedActivity": {
+            "record": {
+              "key": "ShapeUpdatedActivity",
+              "name": "ShapeUpdatedActivity",
+              "description": "Activity payload for a shape update.",
+              "fields": [
+                {
+                  "key": "nodeId",
+                  "name": "nodeId",
+                  "fieldType": {
+                    "value": {
+                      "string": {},
+                      "type": "string"
+                    },
+                    "type": "value"
+                  },
+                  "metadata": {
+                    "addedInVersion": 1
+                  }
+                },
+                {
+                  "key": "oldShape",
+                  "name": "oldShape",
+                  "fieldType": {
+                    "value": {
+                      "modelRef": {
+                        "modelTypes": [
+                          "NodeShape"
+                        ]
+                      },
+                      "type": "modelRef"
+                    },
+                    "type": "value"
+                  },
+                  "metadata": {
+                    "addedInVersion": 1
+                  }
+                },
+                {
+                  "key": "newShape",
+                  "name": "newShape",
+                  "fieldType": {
+                    "value": {
+                      "modelRef": {
+                        "modelTypes": [
+                          "NodeShape"
+                        ]
+                      },
+                      "type": "modelRef"
+                    },
+                    "type": "value"
+                  },
+                  "metadata": {
+                    "addedInVersion": 1
+                  }
+                }
+              ]
+            },
+            "type": "record"
+          },
+          "CursorPresence": {
+            "record": {
+              "key": "CursorPresence",
+              "name": "CursorPresence",
+              "description": "Cursor position for a remote user.",
+              "fields": [
+                {
+                  "key": "x",
+                  "name": "x",
+                  "fieldType": {
+                    "value": {
+                      "double": {},
+                      "type": "double"
+                    },
+                    "type": "value"
+                  },
+                  "metadata": {
+                    "addedInVersion": 1
+                  }
+                },
+                {
+                  "key": "y",
+                  "name": "y",
+                  "fieldType": {
+                    "value": {
+                      "double": {},
+                      "type": "double"
+                    },
+                    "type": "value"
+                  },
+                  "metadata": {
+                    "addedInVersion": 1
+                  }
+                }
+              ]
+            },
+            "type": "record"
+          },
+          "SelectionPresence": {
+            "record": {
+              "key": "SelectionPresence",
+              "name": "SelectionPresence",
+              "description": "Selected shape ids for a remote user.",
+              "fields": [
+                {
+                  "key": "selectedNodeIds",
+                  "name": "selectedNodeIds",
+                  "fieldType": {
+                    "array": {
+                      "allowNullValue": false,
+                      "value": {
+                        "string": {},
+                        "type": "string"
+                      }
+                    },
+                    "type": "array"
+                  },
+                  "metadata": {
+                    "addedInVersion": 1
+                  }
                 }
               ]
             },
@@ -908,144 +874,18 @@
         "description": "Document type description for demo canvas",
         "version": 3,
         "primaryModelKeys": [
-          "ActivityEvent",
-          "ActivityShapeAddEvent",
-          "ActivityShapeDeleteEvent",
-          "ActivityShapeUpdateEvent",
           "NodeShape",
-          "PresenceCursorEvent",
-          "PresenceEvent",
-          "PresenceSelectionEvent",
           "ShapeBox",
           "ShapeCircle",
+          "CanvasActivity",
+          "ShapeAddedActivity",
+          "ShapeDeletedActivity",
+          "ShapeUpdatedActivity",
+          "CursorPresence",
+          "SelectionPresence",
           "FreehandStroke"
         ],
         "models": {
-          "ActivityEvent": {
-            "union": {
-              "key": "ActivityEvent",
-              "name": "ActivityEvent",
-              "description": "An activity event describing a change to the document model.",
-              "discriminant": "eventType",
-              "variants": {
-                "shapeAdd": "ActivityShapeAddEvent",
-                "shapeDelete": "ActivityShapeDeleteEvent",
-                "shapeUpdate": "ActivityShapeUpdateEvent"
-              },
-              "metadata": {
-                "addedInVersion": 1
-              }
-            },
-            "type": "union"
-          },
-          "ActivityShapeAddEvent": {
-            "record": {
-              "key": "ActivityShapeAddEvent",
-              "name": "ActivityShapeAddEvent",
-              "description": "An event representing the addition of a shape node.",
-              "fields": [
-                {
-                  "key": "nodeId",
-                  "name": "nodeId",
-                  "fieldType": {
-                    "value": {
-                      "string": {},
-                      "type": "string"
-                    },
-                    "type": "value"
-                  },
-                  "metadata": {
-                    "addedInVersion": 1
-                  }
-                }
-              ]
-            },
-            "type": "record"
-          },
-          "ActivityShapeDeleteEvent": {
-            "record": {
-              "key": "ActivityShapeDeleteEvent",
-              "name": "ActivityShapeDeleteEvent",
-              "description": "An event representing the deletion of a shape node.",
-              "fields": [
-                {
-                  "key": "nodeId",
-                  "name": "nodeId",
-                  "fieldType": {
-                    "value": {
-                      "string": {},
-                      "type": "string"
-                    },
-                    "type": "value"
-                  },
-                  "metadata": {
-                    "addedInVersion": 1
-                  }
-                }
-              ]
-            },
-            "type": "record"
-          },
-          "ActivityShapeUpdateEvent": {
-            "record": {
-              "key": "ActivityShapeUpdateEvent",
-              "name": "ActivityShapeUpdateEvent",
-              "description": "An event representing the update of a shape node.",
-              "fields": [
-                {
-                  "key": "nodeId",
-                  "name": "nodeId",
-                  "fieldType": {
-                    "value": {
-                      "string": {},
-                      "type": "string"
-                    },
-                    "type": "value"
-                  },
-                  "metadata": {
-                    "addedInVersion": 1
-                  }
-                },
-                {
-                  "key": "oldShape",
-                  "name": "oldShape",
-                  "fieldType": {
-                    "value": {
-                      "modelRef": {
-                        "modelTypes": [
-                          "NodeShape"
-                        ]
-                      },
-                      "type": "modelRef"
-                    },
-                    "type": "value"
-                  },
-                  "metadata": {
-                    "addedInVersion": 1
-                  }
-                },
-                {
-                  "key": "newShape",
-                  "name": "newShape",
-                  "fieldType": {
-                    "value": {
-                      "modelRef": {
-                        "modelTypes": [
-                          "NodeShape"
-                        ]
-                      },
-                      "type": "modelRef"
-                    },
-                    "type": "value"
-                  },
-                  "metadata": {
-                    "addedInVersion": 1
-                  }
-                }
-              ]
-            },
-            "type": "record"
-          },
           "NodeShape": {
             "union": {
               "key": "NodeShape",
@@ -1061,87 +901,6 @@
               }
             },
             "type": "union"
-          },
-          "PresenceCursorEvent": {
-            "record": {
-              "key": "PresenceCursorEvent",
-              "name": "PresenceCursorEvent",
-              "description": "Cursor position for remote user.",
-              "fields": [
-                {
-                  "key": "x",
-                  "name": "x",
-                  "fieldType": {
-                    "value": {
-                      "double": {},
-                      "type": "double"
-                    },
-                    "type": "value"
-                  },
-                  "metadata": {
-                    "addedInVersion": 1
-                  }
-                },
-                {
-                  "key": "y",
-                  "name": "y",
-                  "fieldType": {
-                    "value": {
-                      "double": {},
-                      "type": "double"
-                    },
-                    "type": "value"
-                  },
-                  "metadata": {
-                    "addedInVersion": 1
-                  }
-                }
-              ]
-            },
-            "type": "record"
-          },
-          "PresenceEvent": {
-            "union": {
-              "key": "PresenceEvent",
-              "name": "PresenceEvent",
-              "description": "A presence event describing user cursor or selection state.",
-              "discriminant": "eventType",
-              "variants": {
-                "cursor": "PresenceCursorEvent",
-                "selection": "PresenceSelectionEvent"
-              },
-              "metadata": {
-                "addedInVersion": 1
-              }
-            },
-            "type": "union"
-          },
-          "PresenceSelectionEvent": {
-            "record": {
-              "key": "PresenceSelectionEvent",
-              "name": "PresenceSelectionEvent",
-              "description": "Selected nodes for remote user.",
-              "fields": [
-                {
-                  "key": "selectedNodeIds",
-                  "name": "selectedNodeIds",
-                  "fieldType": {
-                    "array": {
-                      "allowNullValue": false,
-                      "value": {
-                        "string": {},
-                        "type": "string"
-                      }
-                    },
-                    "type": "array"
-                  },
-                  "metadata": {
-                    "addedInVersion": 1
-                  }
-                }
-              ]
-            },
-            "type": "record"
           },
           "ShapeBox": {
             "record": {
@@ -1360,6 +1119,196 @@
                     "addedInVersion": 1
                   },
                   "isOptional": true
+                }
+              ]
+            },
+            "type": "record"
+          },
+          "CanvasActivity": {
+            "union": {
+              "key": "CanvasActivity",
+              "name": "CanvasActivity",
+              "description": "Canvas-specific custom activity payload.",
+              "discriminant": "activityType",
+              "variants": {
+                "shapeAdded": "ShapeAddedActivity",
+                "shapeDeleted": "ShapeDeletedActivity",
+                "shapeUpdated": "ShapeUpdatedActivity"
+              },
+              "metadata": {
+                "addedInVersion": 1
+              }
+            },
+            "type": "union"
+          },
+          "ShapeAddedActivity": {
+            "record": {
+              "key": "ShapeAddedActivity",
+              "name": "ShapeAddedActivity",
+              "description": "Activity payload for a shape addition.",
+              "fields": [
+                {
+                  "key": "nodeId",
+                  "name": "nodeId",
+                  "fieldType": {
+                    "value": {
+                      "string": {},
+                      "type": "string"
+                    },
+                    "type": "value"
+                  },
+                  "metadata": {
+                    "addedInVersion": 1
+                  }
+                }
+              ]
+            },
+            "type": "record"
+          },
+          "ShapeDeletedActivity": {
+            "record": {
+              "key": "ShapeDeletedActivity",
+              "name": "ShapeDeletedActivity",
+              "description": "Activity payload for a shape deletion.",
+              "fields": [
+                {
+                  "key": "nodeId",
+                  "name": "nodeId",
+                  "fieldType": {
+                    "value": {
+                      "string": {},
+                      "type": "string"
+                    },
+                    "type": "value"
+                  },
+                  "metadata": {
+                    "addedInVersion": 1
+                  }
+                }
+              ]
+            },
+            "type": "record"
+          },
+          "ShapeUpdatedActivity": {
+            "record": {
+              "key": "ShapeUpdatedActivity",
+              "name": "ShapeUpdatedActivity",
+              "description": "Activity payload for a shape update.",
+              "fields": [
+                {
+                  "key": "nodeId",
+                  "name": "nodeId",
+                  "fieldType": {
+                    "value": {
+                      "string": {},
+                      "type": "string"
+                    },
+                    "type": "value"
+                  },
+                  "metadata": {
+                    "addedInVersion": 1
+                  }
+                },
+                {
+                  "key": "oldShape",
+                  "name": "oldShape",
+                  "fieldType": {
+                    "value": {
+                      "modelRef": {
+                        "modelTypes": [
+                          "NodeShape"
+                        ]
+                      },
+                      "type": "modelRef"
+                    },
+                    "type": "value"
+                  },
+                  "metadata": {
+                    "addedInVersion": 1
+                  }
+                },
+                {
+                  "key": "newShape",
+                  "name": "newShape",
+                  "fieldType": {
+                    "value": {
+                      "modelRef": {
+                        "modelTypes": [
+                          "NodeShape"
+                        ]
+                      },
+                      "type": "modelRef"
+                    },
+                    "type": "value"
+                  },
+                  "metadata": {
+                    "addedInVersion": 1
+                  }
+                }
+              ]
+            },
+            "type": "record"
+          },
+          "CursorPresence": {
+            "record": {
+              "key": "CursorPresence",
+              "name": "CursorPresence",
+              "description": "Cursor position for a remote user.",
+              "fields": [
+                {
+                  "key": "x",
+                  "name": "x",
+                  "fieldType": {
+                    "value": {
+                      "double": {},
+                      "type": "double"
+                    },
+                    "type": "value"
+                  },
+                  "metadata": {
+                    "addedInVersion": 1
+                  }
+                },
+                {
+                  "key": "y",
+                  "name": "y",
+                  "fieldType": {
+                    "value": {
+                      "double": {},
+                      "type": "double"
+                    },
+                    "type": "value"
+                  },
+                  "metadata": {
+                    "addedInVersion": 1
+                  }
+                }
+              ]
+            },
+            "type": "record"
+          },
+          "SelectionPresence": {
+            "record": {
+              "key": "SelectionPresence",
+              "name": "SelectionPresence",
+              "description": "Selected shape ids for a remote user.",
+              "fields": [
+                {
+                  "key": "selectedNodeIds",
+                  "name": "selectedNodeIds",
+                  "fieldType": {
+                    "array": {
+                      "allowNullValue": false,
+                      "value": {
+                        "string": {},
+                        "type": "string"
+                      }
+                    },
+                    "type": "array"
+                  },
+                  "metadata": {
+                    "addedInVersion": 1
+                  }
                 }
               ]
             },

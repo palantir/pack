@@ -2,30 +2,11 @@
 
 import type { UpgradeRegistry, UnionUpgradeRegistry } from "@palantir/pack.document-schema.model-types";
 
-export const ActivityShapeAddEventUpgrades: UpgradeRegistry<"ActivityShapeAddEvent"> = {
-  modelName: "ActivityShapeAddEvent",
+export const CursorPresenceUpgrades: UpgradeRegistry<"CursorPresence"> = {
+  modelName: "CursorPresence",
   allFields: {
-    nodeId: { type: { kind: "primitive" } },
-  },
-  steps: [
-  ],
-};
-
-export const ActivityShapeDeleteEventUpgrades: UpgradeRegistry<"ActivityShapeDeleteEvent"> = {
-  modelName: "ActivityShapeDeleteEvent",
-  allFields: {
-    nodeId: { type: { kind: "primitive" } },
-  },
-  steps: [
-  ],
-};
-
-export const ActivityShapeUpdateEventUpgrades: UpgradeRegistry<"ActivityShapeUpdateEvent"> = {
-  modelName: "ActivityShapeUpdateEvent",
-  allFields: {
-    newShape: { type: { kind: "modelRef", model: "NodeShape" } },
-    nodeId: { type: { kind: "primitive" } },
-    oldShape: { type: { kind: "modelRef", model: "NodeShape" } },
+    x: { type: { kind: "primitive" } },
+    y: { type: { kind: "primitive" } },
   },
   steps: [
   ],
@@ -41,20 +22,19 @@ export const FreehandStrokeUpgrades: UpgradeRegistry<"FreehandStroke"> = {
   ],
 };
 
-export const PresenceCursorEventUpgrades: UpgradeRegistry<"PresenceCursorEvent"> = {
-  modelName: "PresenceCursorEvent",
+export const SelectionPresenceUpgrades: UpgradeRegistry<"SelectionPresence"> = {
+  modelName: "SelectionPresence",
   allFields: {
-    x: { type: { kind: "primitive" } },
-    y: { type: { kind: "primitive" } },
+    selectedNodeIds: { type: { kind: "array", element: { kind: "primitive" } } },
   },
   steps: [
   ],
 };
 
-export const PresenceSelectionEventUpgrades: UpgradeRegistry<"PresenceSelectionEvent"> = {
-  modelName: "PresenceSelectionEvent",
+export const ShapeAddedActivityUpgrades: UpgradeRegistry<"ShapeAddedActivity"> = {
+  modelName: "ShapeAddedActivity",
   allFields: {
-    selectedNodeIds: { type: { kind: "array", element: { kind: "primitive" } } },
+    nodeId: { type: { kind: "primitive" } },
   },
   steps: [
   ],
@@ -122,14 +102,24 @@ export const ShapeCircleUpgrades: UpgradeRegistry<"ShapeCircle"> = {
   ],
 };
 
-export const ActivityEventUpgrades: UnionUpgradeRegistry<"ActivityEvent"> = {
-  modelName: "ActivityEvent",
-  discriminant: "eventType",
-  variants: {
-    "shapeAdd": "ActivityShapeAddEvent",
-    "shapeDelete": "ActivityShapeDeleteEvent",
-    "shapeUpdate": "ActivityShapeUpdateEvent",
+export const ShapeDeletedActivityUpgrades: UpgradeRegistry<"ShapeDeletedActivity"> = {
+  modelName: "ShapeDeletedActivity",
+  allFields: {
+    nodeId: { type: { kind: "primitive" } },
   },
+  steps: [
+  ],
+};
+
+export const ShapeUpdatedActivityUpgrades: UpgradeRegistry<"ShapeUpdatedActivity"> = {
+  modelName: "ShapeUpdatedActivity",
+  allFields: {
+    newShape: { type: { kind: "modelRef", model: "NodeShape" } },
+    nodeId: { type: { kind: "primitive" } },
+    oldShape: { type: { kind: "modelRef", model: "NodeShape" } },
+  },
+  steps: [
+  ],
 };
 
 export const NodeShapeUpgrades: UnionUpgradeRegistry<"NodeShape"> = {
@@ -141,12 +131,13 @@ export const NodeShapeUpgrades: UnionUpgradeRegistry<"NodeShape"> = {
   },
 };
 
-export const PresenceEventUpgrades: UnionUpgradeRegistry<"PresenceEvent"> = {
-  modelName: "PresenceEvent",
-  discriminant: "eventType",
+export const CanvasActivityUpgrades: UnionUpgradeRegistry<"CanvasActivity"> = {
+  modelName: "CanvasActivity",
+  discriminant: "activityType",
   variants: {
-    "cursor": "PresenceCursorEvent",
-    "selection": "PresenceSelectionEvent",
+    "shapeAdded": "ShapeAddedActivity",
+    "shapeDeleted": "ShapeDeletedActivity",
+    "shapeUpdated": "ShapeUpdatedActivity",
   },
 };
 

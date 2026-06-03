@@ -2,29 +2,6 @@
 
 import type { NodeShape_v2 } from "./types_v2.js";
 
-export type ActivityShapeAddEventUpdate_v2 = {
-  readonly nodeId?: string;
-};
-
-export type ActivityShapeDeleteEventUpdate_v2 = {
-  readonly nodeId?: string;
-};
-
-export type ActivityShapeUpdateEventUpdate_v2 = {
-  readonly nodeId?: string;
-  readonly oldShape?: NodeShape_v2;
-  readonly newShape?: NodeShape_v2;
-};
-
-export type PresenceCursorEventUpdate_v2 = {
-  readonly x?: number;
-  readonly y?: number;
-};
-
-export type PresenceSelectionEventUpdate_v2 = {
-  readonly selectedNodeIds?: readonly string[];
-};
-
 export type ShapeBoxUpdate_v2 = {
   readonly bottom?: number;
   readonly left?: number;
@@ -43,5 +20,28 @@ export type ShapeCircleUpdate_v2 = {
   readonly fillColor?: string;
   readonly strokeColor?: string;
   readonly opacity?: number;
+};
+
+export type ShapeAddedActivityUpdate_v2 = {
+  readonly nodeId?: string;
+};
+
+export type ShapeDeletedActivityUpdate_v2 = {
+  readonly nodeId?: string;
+};
+
+export type ShapeUpdatedActivityUpdate_v2 = {
+  readonly nodeId?: string;
+  readonly oldShape?: NodeShape_v2;
+  readonly newShape?: NodeShape_v2;
+};
+
+export type CursorPresenceUpdate_v2 = {
+  readonly x?: number;
+  readonly y?: number;
+};
+
+export type SelectionPresenceUpdate_v2 = {
+  readonly selectedNodeIds?: readonly string[];
 };
 

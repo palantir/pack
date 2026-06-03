@@ -2,18 +2,9 @@
 
 import { z } from "zod";
 
-export const ActivityShapeAddEventInternalSchema = z.object({
-  nodeId: z.string(),
-}).passthrough();
-
-export const ActivityShapeDeleteEventInternalSchema = z.object({
-  nodeId: z.string(),
-}).passthrough();
-
-export const ActivityShapeUpdateEventInternalSchema = z.object({
-  newShape: z.unknown(),
-  nodeId: z.string(),
-  oldShape: z.unknown(),
+export const CursorPresenceInternalSchema = z.object({
+  x: z.number(),
+  y: z.number(),
 }).passthrough();
 
 export const FreehandStrokeInternalSchema = z.object({
@@ -21,13 +12,12 @@ export const FreehandStrokeInternalSchema = z.object({
   points: z.string().optional(),
 }).passthrough();
 
-export const PresenceCursorEventInternalSchema = z.object({
-  x: z.number(),
-  y: z.number(),
+export const SelectionPresenceInternalSchema = z.object({
+  selectedNodeIds: z.array(z.string()),
 }).passthrough();
 
-export const PresenceSelectionEventInternalSchema = z.object({
-  selectedNodeIds: z.array(z.string()),
+export const ShapeAddedActivityInternalSchema = z.object({
+  nodeId: z.string(),
 }).passthrough();
 
 export const ShapeBoxInternalSchema = z.object({
@@ -50,5 +40,15 @@ export const ShapeCircleInternalSchema = z.object({
   right: z.number(),
   strokeColor: z.string().optional(),
   top: z.number(),
+}).passthrough();
+
+export const ShapeDeletedActivityInternalSchema = z.object({
+  nodeId: z.string(),
+}).passthrough();
+
+export const ShapeUpdatedActivityInternalSchema = z.object({
+  newShape: z.unknown(),
+  nodeId: z.string(),
+  oldShape: z.unknown(),
 }).passthrough();
 

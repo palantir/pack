@@ -2,30 +2,7 @@
 
 import type { ZodType } from "zod";
 import { z } from "zod";
-import type { ActivityEvent_v1, ActivityEvent_v1ShapeAdd, ActivityEvent_v1ShapeDelete, ActivityEvent_v1ShapeUpdate, ActivityShapeAddEvent_v1, ActivityShapeDeleteEvent_v1, ActivityShapeUpdateEvent_v1, NodeShape_v1, NodeShape_v1Box, NodeShape_v1Circle, PresenceCursorEvent_v1, PresenceEvent_v1, PresenceEvent_v1Cursor, PresenceEvent_v1Selection, PresenceSelectionEvent_v1, ShapeBox_v1, ShapeCircle_v1 } from "./types_v1.js";
-
-export const ActivityShapeAddEventSchema_v1 = z.object({
-  nodeId: z.string()
-}).passthrough() satisfies ZodType<ActivityShapeAddEvent_v1>;
-
-export const ActivityShapeDeleteEventSchema_v1 = z.object({
-  nodeId: z.string()
-}).passthrough() satisfies ZodType<ActivityShapeDeleteEvent_v1>;
-
-export const ActivityShapeUpdateEventSchema_v1 = z.object({
-  nodeId: z.string(),
-  oldShape: z.lazy((): ZodType<NodeShape_v1> => NodeShapeSchema_v1),
-  newShape: z.lazy((): ZodType<NodeShape_v1> => NodeShapeSchema_v1)
-}).passthrough() satisfies ZodType<ActivityShapeUpdateEvent_v1>;
-
-export const PresenceCursorEventSchema_v1 = z.object({
-  x: z.number(),
-  y: z.number()
-}).passthrough() satisfies ZodType<PresenceCursorEvent_v1>;
-
-export const PresenceSelectionEventSchema_v1 = z.object({
-  selectedNodeIds: z.array(z.string())
-}).passthrough() satisfies ZodType<PresenceSelectionEvent_v1>;
+import type { CanvasActivity_v1, CanvasActivity_v1ShapeAdded, CanvasActivity_v1ShapeDeleted, CanvasActivity_v1ShapeUpdated, CursorPresence_v1, NodeShape_v1, NodeShape_v1Box, NodeShape_v1Circle, SelectionPresence_v1, ShapeAddedActivity_v1, ShapeBox_v1, ShapeCircle_v1, ShapeDeletedActivity_v1, ShapeUpdatedActivity_v1 } from "./types_v1.js";
 
 export const ShapeBoxSchema_v1 = z.object({
   bottom: z.number(),
@@ -43,23 +20,28 @@ export const ShapeCircleSchema_v1 = z.object({
   color: z.string().optional()
 }).passthrough() satisfies ZodType<ShapeCircle_v1>;
 
-export const ActivityEventSchema_v1ShapeAdd = ActivityShapeAddEventSchema_v1.extend({
-  eventType: z.literal("shapeAdd")
-}) satisfies ZodType<ActivityEvent_v1ShapeAdd>;
+export const ShapeAddedActivitySchema_v1 = z.object({
+  nodeId: z.string()
+}).passthrough() satisfies ZodType<ShapeAddedActivity_v1>;
 
-export const ActivityEventSchema_v1ShapeDelete = ActivityShapeDeleteEventSchema_v1.extend({
-  eventType: z.literal("shapeDelete")
-}) satisfies ZodType<ActivityEvent_v1ShapeDelete>;
+export const ShapeDeletedActivitySchema_v1 = z.object({
+  nodeId: z.string()
+}).passthrough() satisfies ZodType<ShapeDeletedActivity_v1>;
 
-export const ActivityEventSchema_v1ShapeUpdate = ActivityShapeUpdateEventSchema_v1.extend({
-  eventType: z.literal("shapeUpdate")
-}) satisfies ZodType<ActivityEvent_v1ShapeUpdate>;
+export const ShapeUpdatedActivitySchema_v1 = z.object({
+  nodeId: z.string(),
+  oldShape: z.lazy((): ZodType<NodeShape_v1> => NodeShapeSchema_v1),
+  newShape: z.lazy((): ZodType<NodeShape_v1> => NodeShapeSchema_v1)
+}).passthrough() satisfies ZodType<ShapeUpdatedActivity_v1>;
 
-export const ActivityEventSchema_v1 = z.discriminatedUnion("eventType", [
-  ActivityEventSchema_v1ShapeAdd,
-  ActivityEventSchema_v1ShapeDelete,
-  ActivityEventSchema_v1ShapeUpdate
-]) satisfies ZodType<ActivityEvent_v1>;
+export const CursorPresenceSchema_v1 = z.object({
+  x: z.number(),
+  y: z.number()
+}).passthrough() satisfies ZodType<CursorPresence_v1>;
+
+export const SelectionPresenceSchema_v1 = z.object({
+  selectedNodeIds: z.array(z.string())
+}).passthrough() satisfies ZodType<SelectionPresence_v1>;
 
 export const NodeShapeSchema_v1Box = ShapeBoxSchema_v1.extend({
   shapeType: z.literal("box")
@@ -74,16 +56,21 @@ export const NodeShapeSchema_v1 = z.discriminatedUnion("shapeType", [
   NodeShapeSchema_v1Circle
 ]) satisfies ZodType<NodeShape_v1>;
 
-export const PresenceEventSchema_v1Cursor = PresenceCursorEventSchema_v1.extend({
-  eventType: z.literal("cursor")
-}) satisfies ZodType<PresenceEvent_v1Cursor>;
+export const CanvasActivitySchema_v1ShapeAdded = ShapeAddedActivitySchema_v1.extend({
+  activityType: z.literal("shapeAdded")
+}) satisfies ZodType<CanvasActivity_v1ShapeAdded>;
 
-export const PresenceEventSchema_v1Selection = PresenceSelectionEventSchema_v1.extend({
-  eventType: z.literal("selection")
-}) satisfies ZodType<PresenceEvent_v1Selection>;
+export const CanvasActivitySchema_v1ShapeDeleted = ShapeDeletedActivitySchema_v1.extend({
+  activityType: z.literal("shapeDeleted")
+}) satisfies ZodType<CanvasActivity_v1ShapeDeleted>;
 
-export const PresenceEventSchema_v1 = z.discriminatedUnion("eventType", [
-  PresenceEventSchema_v1Cursor,
-  PresenceEventSchema_v1Selection
-]) satisfies ZodType<PresenceEvent_v1>;
+export const CanvasActivitySchema_v1ShapeUpdated = ShapeUpdatedActivitySchema_v1.extend({
+  activityType: z.literal("shapeUpdated")
+}) satisfies ZodType<CanvasActivity_v1ShapeUpdated>;
+
+export const CanvasActivitySchema_v1 = z.discriminatedUnion("activityType", [
+  CanvasActivitySchema_v1ShapeAdded,
+  CanvasActivitySchema_v1ShapeDeleted,
+  CanvasActivitySchema_v1ShapeUpdated
+]) satisfies ZodType<CanvasActivity_v1>;
 

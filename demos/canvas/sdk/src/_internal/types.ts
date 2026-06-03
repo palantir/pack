@@ -2,20 +2,9 @@
 
 
 /** Internal representation containing all fields across all schema versions. */
-export interface ActivityShapeAddEvent__Internal {
-  readonly nodeId: string;
-}
-
-/** Internal representation containing all fields across all schema versions. */
-export interface ActivityShapeDeleteEvent__Internal {
-  readonly nodeId: string;
-}
-
-/** Internal representation containing all fields across all schema versions. */
-export interface ActivityShapeUpdateEvent__Internal {
-  readonly newShape: unknown;
-  readonly nodeId: string;
-  readonly oldShape: unknown;
+export interface CursorPresence__Internal {
+  readonly x: number;
+  readonly y: number;
 }
 
 /** Internal representation containing all fields across all schema versions. */
@@ -25,14 +14,13 @@ export interface FreehandStroke__Internal {
 }
 
 /** Internal representation containing all fields across all schema versions. */
-export interface PresenceCursorEvent__Internal {
-  readonly x: number;
-  readonly y: number;
+export interface SelectionPresence__Internal {
+  readonly selectedNodeIds: readonly string[];
 }
 
 /** Internal representation containing all fields across all schema versions. */
-export interface PresenceSelectionEvent__Internal {
-  readonly selectedNodeIds: readonly string[];
+export interface ShapeAddedActivity__Internal {
+  readonly nodeId: string;
 }
 
 /** Internal representation containing all fields across all schema versions. */
@@ -59,55 +47,34 @@ export interface ShapeCircle__Internal {
   readonly top: number;
 }
 
-/** Internal representation of ActivityShapeAddEvent at schema version 1. */
-export interface ActivityShapeAddEvent__v1 {
+/** Internal representation containing all fields across all schema versions. */
+export interface ShapeDeletedActivity__Internal {
   readonly nodeId: string;
 }
 
-/** Internal representation of ActivityShapeAddEvent at schema version 2. */
-export interface ActivityShapeAddEvent__v2 {
-  readonly nodeId: string;
-}
-
-/** Internal representation of ActivityShapeAddEvent at schema version 3. */
-export interface ActivityShapeAddEvent__v3 {
-  readonly nodeId: string;
-}
-
-/** Internal representation of ActivityShapeDeleteEvent at schema version 1. */
-export interface ActivityShapeDeleteEvent__v1 {
-  readonly nodeId: string;
-}
-
-/** Internal representation of ActivityShapeDeleteEvent at schema version 2. */
-export interface ActivityShapeDeleteEvent__v2 {
-  readonly nodeId: string;
-}
-
-/** Internal representation of ActivityShapeDeleteEvent at schema version 3. */
-export interface ActivityShapeDeleteEvent__v3 {
-  readonly nodeId: string;
-}
-
-/** Internal representation of ActivityShapeUpdateEvent at schema version 1. */
-export interface ActivityShapeUpdateEvent__v1 {
+/** Internal representation containing all fields across all schema versions. */
+export interface ShapeUpdatedActivity__Internal {
   readonly newShape: unknown;
   readonly nodeId: string;
   readonly oldShape: unknown;
 }
 
-/** Internal representation of ActivityShapeUpdateEvent at schema version 2. */
-export interface ActivityShapeUpdateEvent__v2 {
-  readonly newShape: unknown;
-  readonly nodeId: string;
-  readonly oldShape: unknown;
+/** Internal representation of CursorPresence at schema version 1. */
+export interface CursorPresence__v1 {
+  readonly x: number;
+  readonly y: number;
 }
 
-/** Internal representation of ActivityShapeUpdateEvent at schema version 3. */
-export interface ActivityShapeUpdateEvent__v3 {
-  readonly newShape: unknown;
-  readonly nodeId: string;
-  readonly oldShape: unknown;
+/** Internal representation of CursorPresence at schema version 2. */
+export interface CursorPresence__v2 {
+  readonly x: number;
+  readonly y: number;
+}
+
+/** Internal representation of CursorPresence at schema version 3. */
+export interface CursorPresence__v3 {
+  readonly x: number;
+  readonly y: number;
 }
 
 /** Internal representation of FreehandStroke at schema version 3. */
@@ -116,37 +83,34 @@ export interface FreehandStroke__v3 {
   readonly points: string;
 }
 
-/** Internal representation of PresenceCursorEvent at schema version 1. */
-export interface PresenceCursorEvent__v1 {
-  readonly x: number;
-  readonly y: number;
-}
-
-/** Internal representation of PresenceCursorEvent at schema version 2. */
-export interface PresenceCursorEvent__v2 {
-  readonly x: number;
-  readonly y: number;
-}
-
-/** Internal representation of PresenceCursorEvent at schema version 3. */
-export interface PresenceCursorEvent__v3 {
-  readonly x: number;
-  readonly y: number;
-}
-
-/** Internal representation of PresenceSelectionEvent at schema version 1. */
-export interface PresenceSelectionEvent__v1 {
+/** Internal representation of SelectionPresence at schema version 1. */
+export interface SelectionPresence__v1 {
   readonly selectedNodeIds: readonly string[];
 }
 
-/** Internal representation of PresenceSelectionEvent at schema version 2. */
-export interface PresenceSelectionEvent__v2 {
+/** Internal representation of SelectionPresence at schema version 2. */
+export interface SelectionPresence__v2 {
   readonly selectedNodeIds: readonly string[];
 }
 
-/** Internal representation of PresenceSelectionEvent at schema version 3. */
-export interface PresenceSelectionEvent__v3 {
+/** Internal representation of SelectionPresence at schema version 3. */
+export interface SelectionPresence__v3 {
   readonly selectedNodeIds: readonly string[];
+}
+
+/** Internal representation of ShapeAddedActivity at schema version 1. */
+export interface ShapeAddedActivity__v1 {
+  readonly nodeId: string;
+}
+
+/** Internal representation of ShapeAddedActivity at schema version 2. */
+export interface ShapeAddedActivity__v2 {
+  readonly nodeId: string;
+}
+
+/** Internal representation of ShapeAddedActivity at schema version 3. */
+export interface ShapeAddedActivity__v3 {
+  readonly nodeId: string;
 }
 
 /** Internal representation of ShapeBox at schema version 1. */
@@ -209,5 +173,41 @@ export interface ShapeCircle__v3 {
   readonly right: number;
   readonly strokeColor?: (string | undefined);
   readonly top: number;
+}
+
+/** Internal representation of ShapeDeletedActivity at schema version 1. */
+export interface ShapeDeletedActivity__v1 {
+  readonly nodeId: string;
+}
+
+/** Internal representation of ShapeDeletedActivity at schema version 2. */
+export interface ShapeDeletedActivity__v2 {
+  readonly nodeId: string;
+}
+
+/** Internal representation of ShapeDeletedActivity at schema version 3. */
+export interface ShapeDeletedActivity__v3 {
+  readonly nodeId: string;
+}
+
+/** Internal representation of ShapeUpdatedActivity at schema version 1. */
+export interface ShapeUpdatedActivity__v1 {
+  readonly newShape: unknown;
+  readonly nodeId: string;
+  readonly oldShape: unknown;
+}
+
+/** Internal representation of ShapeUpdatedActivity at schema version 2. */
+export interface ShapeUpdatedActivity__v2 {
+  readonly newShape: unknown;
+  readonly nodeId: string;
+  readonly oldShape: unknown;
+}
+
+/** Internal representation of ShapeUpdatedActivity at schema version 3. */
+export interface ShapeUpdatedActivity__v3 {
+  readonly newShape: unknown;
+  readonly nodeId: string;
+  readonly oldShape: unknown;
 }
 

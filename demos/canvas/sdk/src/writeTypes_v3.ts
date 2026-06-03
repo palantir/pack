@@ -2,29 +2,6 @@
 
 import type { NodeShape_v3 } from "./types_v3.js";
 
-export type ActivityShapeAddEventUpdate_v3 = {
-  readonly nodeId?: string;
-};
-
-export type ActivityShapeDeleteEventUpdate_v3 = {
-  readonly nodeId?: string;
-};
-
-export type ActivityShapeUpdateEventUpdate_v3 = {
-  readonly nodeId?: string;
-  readonly oldShape?: NodeShape_v3;
-  readonly newShape?: NodeShape_v3;
-};
-
-export type PresenceCursorEventUpdate_v3 = {
-  readonly x?: number;
-  readonly y?: number;
-};
-
-export type PresenceSelectionEventUpdate_v3 = {
-  readonly selectedNodeIds?: readonly string[];
-};
-
 export type ShapeBoxUpdate_v3 = {
   readonly bottom?: number;
   readonly left?: number;
@@ -43,6 +20,29 @@ export type ShapeCircleUpdate_v3 = {
   readonly fillColor?: string;
   readonly strokeColor?: string;
   readonly opacity?: number;
+};
+
+export type ShapeAddedActivityUpdate_v3 = {
+  readonly nodeId?: string;
+};
+
+export type ShapeDeletedActivityUpdate_v3 = {
+  readonly nodeId?: string;
+};
+
+export type ShapeUpdatedActivityUpdate_v3 = {
+  readonly nodeId?: string;
+  readonly oldShape?: NodeShape_v3;
+  readonly newShape?: NodeShape_v3;
+};
+
+export type CursorPresenceUpdate_v3 = {
+  readonly x?: number;
+  readonly y?: number;
+};
+
+export type SelectionPresenceUpdate_v3 = {
+  readonly selectedNodeIds?: readonly string[];
 };
 
 export type FreehandStrokeUpdate_v3 = {
