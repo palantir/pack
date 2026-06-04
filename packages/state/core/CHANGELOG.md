@@ -1,5 +1,18 @@
 # @palantir/pack.state.core
 
+## 0.15.0
+
+### Minor Changes
+
+- 98803f7: Add version-safe update methods to DocumentRef
+- e49616d: add endpoints for document type metadata, including operational version
+
+### Patch Changes
+
+- Updated dependencies [98803f7]
+  - @palantir/pack.document-schema.model-types@0.12.0
+  - @palantir/pack.core@0.4.0
+
 ## 0.14.0
 
 ### Minor Changes
