@@ -37,6 +37,7 @@ import {
 } from "@palantir/pack.document-schema.model-types";
 import type {
   CreateDocumentMetadata,
+  DocumentType,
   InternalYjsDoc,
   SearchDocumentsResult,
   UpdateDocumentMetadata,
@@ -314,6 +315,34 @@ export class DemoDocumentService extends BaseYjsDocumentService<DemoInternalDoc>
     }
     this.metadataStore.deleteDocument(docRef.id);
     this.documents.delete(docRef.id);
+  };
+
+  readonly loadDocumentTypeByName = (
+    _documentTypeName: string,
+    _ontologyRid?: string,
+  ): Promise<DocumentType> => {
+    return Promise.reject(
+      new Error("loadDocumentTypeByName is not supported by the demo document service"),
+    );
+  };
+
+  readonly getDocumentType = (
+    _documentTypeRid: string,
+  ): Promise<DocumentType> => {
+    return Promise.reject(
+      new Error("getDocumentType is not supported by the demo document service"),
+    );
+  };
+
+  readonly getDocumentTypeOperationalVersion = (
+    _documentTypeName: string,
+    _ontologyRid?: string,
+  ): Promise<number | undefined> => {
+    return Promise.reject(
+      new Error(
+        "getDocumentTypeOperationalVersion is not supported by the demo document service",
+      ),
+    );
   };
 
   protected onMetadataSubscriptionOpened(

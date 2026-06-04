@@ -49,6 +49,7 @@ import type {
   DocumentStatus,
   DocumentStatusChangeCallback,
   DocumentSyncStatus,
+  DocumentType,
   RecordChangeCallback,
   RecordCollectionChangeCallback,
   RecordDeleteCallback,
@@ -168,6 +169,20 @@ export abstract class BaseYjsDocumentService<TDoc extends InternalYjsDoc = Inter
   abstract readonly deleteDocument: (
     docRef: DocumentRef,
   ) => Promise<void>;
+
+  abstract readonly loadDocumentTypeByName: (
+    documentTypeName: string,
+    ontologyRid?: string,
+  ) => Promise<DocumentType>;
+
+  abstract readonly getDocumentType: (
+    documentTypeRid: string,
+  ) => Promise<DocumentType>;
+
+  abstract readonly getDocumentTypeOperationalVersion: (
+    documentTypeName: string,
+    ontologyRid?: string,
+  ) => Promise<number | undefined>;
 
   readonly getDocumentSchemaVersion = (
     docRef: DocumentRef,
