@@ -64,6 +64,7 @@ export interface PresenceEventDataCustom<M extends Model = Model> {
   readonly type: typeof PresenceEventDataType.CUSTOM_EVENT;
   readonly eventData: ModelData<M>;
   readonly model: M;
+  readonly schemaVersion?: number;
 }
 
 /**

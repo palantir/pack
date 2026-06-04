@@ -58,7 +58,7 @@ export function generateScopeFromChain(
 
   // Import model-types
   output +=
-    `import type { DocumentRef, RecordId, RecordRef } from "@palantir/pack.document-schema.model-types";\n`;
+    `import type { DocumentRef, EditDescription, PresencePublishOptions, RecordId, RecordRef } from "@palantir/pack.document-schema.model-types";\n`;
 
   // Import model types from models.ts
   const modelImports = allModelNames.map(n => modelName(n));
@@ -119,6 +119,22 @@ export function generateScopeFromChain(
       output += `  setRecord(model: typeof ${
         modelName(modelKey)
       }, id: RecordId, data: ${readType}): Promise<void>;\n`;
+    }
+
+    // custom presence overloads
+    for (const [modelKey] of Object.entries(ir.models)) {
+      const readType = versionedTypeName(modelKey, version);
+      output += `  updateCustomPresence(model: typeof ${
+        modelName(modelKey)
+      }, data: ${readType}, options?: PresencePublishOptions): void;\n`;
+    }
+
+    // custom activity description overloads
+    for (const [modelKey] of Object.entries(ir.models)) {
+      const readType = versionedTypeName(modelKey, version);
+      output += `  describeEdit(model: typeof ${
+        modelName(modelKey)
+      }, data: ${readType}): EditDescription<typeof ${modelName(modelKey)}>;\n`;
     }
 
     output += `}\n\n`;

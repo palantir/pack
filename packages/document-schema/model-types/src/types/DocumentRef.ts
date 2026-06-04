@@ -18,7 +18,7 @@ import type { Flavored } from "@palantir/pack.core";
 import type { ActivityEvent } from "./ActivityEvent.js";
 import type { DocumentMetadata } from "./DocumentMetadata.js";
 import type { DocumentSchema, DocumentState } from "./DocumentSchema.js";
-import type { EditDescription, Model, ModelData } from "./Model.js";
+import type { EditDescription, Model } from "./Model.js";
 import type { PresenceEvent } from "./PresenceEvent.js";
 import type { RecordCollectionRef } from "./RecordCollectionRef.js";
 import type { RecordId, RecordRef } from "./RecordRef.js";
@@ -175,10 +175,7 @@ export interface DocumentRef<D extends DocumentSchema = DocumentSchema> {
    *   }
    * }, { ignoreSelfUpdates: true });
    *
-   * // Broadcast a presence update
-   * docRef.updateCustomPresence(MyPresenceModel, {
-   *  cursorPosition: [42, 7],
-   * });
+   * // Broadcast a presence update after narrowing to a generated versioned doc ref.
    *
    * // Later, to unsubscribe:
    * unsubscribe();
@@ -226,11 +223,19 @@ export interface DocumentRef<D extends DocumentSchema = DocumentSchema> {
    * @param eventData The new presence data for the model.
    * @param options Options for presence publishing.
    */
-  updateCustomPresence<M extends Model = Model>(
-    model: M,
-    eventData: ModelData<M>,
+  updateCustomPresence(
+    model: Model,
+    eventData: never,
     options?: PresencePublishOptions,
   ): void;
+
+  /**
+   * Create a custom activity edit description.
+   *
+   * The data parameter is `never` on the base interface — narrow to a
+   * version-specific type before calling this method.
+   */
+  describeEdit(model: Model, data: never): EditDescription;
 
   /**
    * Execute one or more document edits within a transaction, optionally providing
@@ -255,7 +260,7 @@ export interface DocumentRef<D extends DocumentSchema = DocumentSchema> {
    *   const myRecords = docRef.getRecords(MyModel);
    *   myRecords.set("record-1", { field: "new value" });
    *   myRecords.delete("record-2");
-   * }, ActivityEvents.describeEdit(MyEditEventModel, {
+   * }, doc.describeEdit(MyEditEventModel, {
    *   summary: "Updated record-1 and deleted record-2",
    * }));
    * ```

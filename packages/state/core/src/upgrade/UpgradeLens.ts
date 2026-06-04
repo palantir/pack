@@ -66,8 +66,10 @@ export function resolveAndApplyLens(
                 return { ...rawData, value: upgradedValue };
               }
             }
-          } else if (variantRegistry.steps.length > 0) {
-            // Union→record: the record payload is the outer object itself
+          } else {
+            // Union→record: the record payload is the outer object itself.
+            // Apply even when the variant has no direct steps so nested
+            // modelRef fields are lensed.
             return applyReadLens(rawData, variantRegistry, allRegistries, upgradeFns);
           }
         }
@@ -76,11 +78,7 @@ export function resolveAndApplyLens(
     return rawData;
   }
 
-  if (entry.steps.length > 0) {
-    return applyReadLens(rawData, entry, allRegistries, upgradeFns);
-  }
-
-  return rawData;
+  return applyReadLens(rawData, entry, allRegistries, upgradeFns);
 }
 
 /**

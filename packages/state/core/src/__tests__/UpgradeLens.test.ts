@@ -615,11 +615,11 @@ describe("resolveAndApplyLens", () => {
     expect(result).toBe(rawData);
   });
 
-  it("returns raw data when variant has no upgrade steps", () => {
+  it("returns equivalent data when variant has no upgrade steps", () => {
     const rawData = { kind: "rect", width: 10, height: 20 };
     const result = resolveAndApplyLens(rawData, shapeUnion, allRegistries, upgradeFns);
 
-    expect(result).toBe(rawData);
+    expect(result).toStrictEqual(rawData);
   });
 
   it("delegates to applyReadLens for record registries with steps", () => {
@@ -629,11 +629,11 @@ describe("resolveAndApplyLens", () => {
     expect(result.diameter).toBe(10);
   });
 
-  it("returns raw data for record registries with no steps", () => {
+  it("returns equivalent data for record registries with no steps", () => {
     const rawData = { width: 10, height: 20 };
     const result = resolveAndApplyLens(rawData, rectRegistry, allRegistries, upgradeFns);
 
-    expect(result).toBe(rawData);
+    expect(result).toStrictEqual(rawData);
   });
 
   describe("union → union recursion", () => {

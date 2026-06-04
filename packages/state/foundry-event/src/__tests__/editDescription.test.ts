@@ -43,13 +43,17 @@ function isEditDescription(obj: unknown): obj is { data: unknown; model: Model }
   );
 }
 
-function createDocumentEditDescription(editDescription: { data: unknown; model: Model }) {
+function createDocumentEditDescription(
+  editDescription: { data: unknown; model: Model; schemaVersion?: number },
+) {
+  const eventType = getMetadata(editDescription.model).name;
   return {
     eventData: {
       data: editDescription.data,
-      version: 1,
+      eventType,
+      version: editDescription.schemaVersion ?? 1,
     },
-    eventType: getMetadata(editDescription.model).name,
+    eventType,
   };
 }
 
@@ -130,10 +134,23 @@ describe("EditDescription helpers", () => {
             id: "user1",
             name: "Alice",
           },
+          eventType: "User",
           version: 1,
         },
         eventType: "User",
       });
+    });
+
+    it("should preserve schema version from EditDescription", () => {
+      const editDescription = {
+        data: { id: "123" },
+        model: UserModel,
+        schemaVersion: 3,
+      };
+
+      const result = createDocumentEditDescription(editDescription);
+
+      expect(result.eventData.version).toBe(3);
     });
 
     it("should extract correct model name from metadata", () => {
@@ -154,6 +171,7 @@ describe("EditDescription helpers", () => {
 
       expect(result.eventType).toBe("AnotherModel");
       expect(result.eventData.data).toEqual({ id: "123" });
+      expect(result.eventData.eventType).toBe("AnotherModel");
     });
   });
 });

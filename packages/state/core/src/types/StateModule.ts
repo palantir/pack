@@ -125,10 +125,10 @@ export interface StateModule {
     cb: (docRef: DocumentRef<T>) => void,
   ) => Unsubscribe;
 
-  readonly updateCustomPresence: <M extends Model>(
+  readonly updateCustomPresence: (
     docRef: DocumentRef,
-    model: M,
-    eventData: ModelData<M>,
+    model: Model,
+    eventData: never,
     options?: PresencePublishOptions,
   ) => void;
 

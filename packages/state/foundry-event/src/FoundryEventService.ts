@@ -118,6 +118,7 @@ export interface FoundryEventService {
     documentId: DocumentId,
     eventType: string,
     eventData: unknown,
+    payloadSchemaVersion: number,
     clientSupportedVersionRange: ClientSupportedVersionRange,
     options?: PresencePublishOptions,
   ): Promise<void>;
@@ -408,6 +409,7 @@ class FoundryEventServiceImpl implements FoundryEventService {
     documentId: DocumentId,
     eventType: string,
     eventData: unknown,
+    payloadSchemaVersion: number,
     clientSupportedVersionRange: ClientSupportedVersionRange,
     options?: PresencePublishOptions,
   ): Promise<void> {
@@ -422,7 +424,7 @@ class FoundryEventServiceImpl implements FoundryEventService {
       throw new Error("Could not get current userId");
     }
 
-    return this.eventService.publish(channelId, {
+    const message = {
       clientSupportedVersionRange,
       messageType: {
         type: "custom",
@@ -432,8 +434,13 @@ class FoundryEventServiceImpl implements FoundryEventService {
         eventType,
         isEphemeral,
         userId,
+        version: payloadSchemaVersion,
       },
-    }).catch((error: unknown) => {
+    } satisfies PresencePublishMessage & {
+      readonly messageType: PresencePublishMessage["messageType"] & { readonly version: number };
+    };
+
+    return this.eventService.publish(channelId, message).catch((error: unknown) => {
       this.logger.error("Failed to publish custom presence", error, {
         docId: documentId,
       });
@@ -593,7 +600,7 @@ function createDocumentEditDescription(editDescription: EditDescription): Docume
     eventData: {
       data: editDescription.data,
       eventType,
-      version: 1,
+      version: editDescription.schemaVersion ?? 1,
     },
     // TODO: remove duplicate after updating platform sdk
     eventType,

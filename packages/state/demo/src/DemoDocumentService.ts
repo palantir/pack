@@ -191,6 +191,7 @@ export class DemoDocumentService extends BaseYjsDocumentService<DemoInternalDoc>
             data: origin.data,
             eventType: modelName,
             model: origin.model,
+            schemaVersion: origin.schemaVersion ?? docRef.version,
             type: ActivityEventDataType.CUSTOM_EVENT,
           },
           eventId: generateId() as ActivityEventId,
@@ -489,6 +490,7 @@ export class DemoDocumentService extends BaseYjsDocumentService<DemoInternalDoc>
       eventData: {
         eventData,
         model,
+        schemaVersion: docRef.version,
         type: ActivityEventDataType.CUSTOM_EVENT,
       },
       userId: this.clientId as UserId,

@@ -30,7 +30,12 @@ const STALE_CLIENT_TIMEOUT_MS = 15000;
 
 type SerializableActivityEvent = Omit<ActivityEvent, "eventData"> & {
   readonly eventData:
-    | { readonly type: "customEvent"; readonly data: unknown; readonly eventType: string }
+    | {
+      readonly type: "customEvent";
+      readonly data: unknown;
+      readonly eventType: string;
+      readonly schemaVersion?: number;
+    }
     | ActivityEvent["eventData"];
 };
 
@@ -50,7 +55,12 @@ type ActivityChannelMessage = {
 
 type SerializablePresenceEvent = Omit<PresenceEvent, "eventData"> & {
   readonly eventData:
-    | { readonly type: "customEvent"; readonly eventData: unknown; readonly modelName: string }
+    | {
+      readonly type: "customEvent";
+      readonly eventData: unknown;
+      readonly modelName: string;
+      readonly schemaVersion?: number;
+    }
     | PresenceEvent["eventData"];
 };
 
@@ -104,6 +114,7 @@ export class PresenceManager {
         ? {
           data: event.eventData.data,
           eventType: event.eventData.eventType,
+          schemaVersion: event.eventData.schemaVersion,
           type: "customEvent",
         }
         : event.eventData,
@@ -124,6 +135,7 @@ export class PresenceManager {
         ? {
           eventData: event.eventData.eventData,
           modelName: getMetadata(event.eventData.model).name,
+          schemaVersion: event.eventData.schemaVersion,
           type: "customEvent",
         }
         : event.eventData,
@@ -240,6 +252,7 @@ export class PresenceManager {
             data: event.eventData.data,
             eventType,
             model,
+            schemaVersion: event.eventData.schemaVersion,
             type: "customEvent",
           },
         };
@@ -283,6 +296,7 @@ export class PresenceManager {
           eventData: {
             eventData: event.eventData.eventData,
             model,
+            schemaVersion: event.eventData.schemaVersion,
             type: "customEvent",
           },
         };

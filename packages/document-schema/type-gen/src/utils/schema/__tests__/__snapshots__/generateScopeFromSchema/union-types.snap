@@ -6,6 +6,8 @@
 
 import type {
   DocumentRef,
+  EditDescription,
+  PresencePublishOptions,
   RecordId,
   RecordRef,
 } from '@palantir/pack.document-schema.model-types';
@@ -47,6 +49,33 @@ export interface VersionedDocRef_v1 extends DocumentRef<DocumentModel> {
     id: RecordId,
     data: Shape_v1
   ): Promise<void>;
+  updateCustomPresence(
+    model: typeof CircleModel,
+    data: Circle_v1,
+    options?: PresencePublishOptions
+  ): void;
+  updateCustomPresence(
+    model: typeof RectangleModel,
+    data: Rectangle_v1,
+    options?: PresencePublishOptions
+  ): void;
+  updateCustomPresence(
+    model: typeof ShapeModel,
+    data: Shape_v1,
+    options?: PresencePublishOptions
+  ): void;
+  describeEdit(
+    model: typeof CircleModel,
+    data: Circle_v1
+  ): EditDescription<typeof CircleModel>;
+  describeEdit(
+    model: typeof RectangleModel,
+    data: Rectangle_v1
+  ): EditDescription<typeof RectangleModel>;
+  describeEdit(
+    model: typeof ShapeModel,
+    data: Shape_v1
+  ): EditDescription<typeof ShapeModel>;
 }
 
 export type VersionedDocRef = VersionedDocRef_v1;

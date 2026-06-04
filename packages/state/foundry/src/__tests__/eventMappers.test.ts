@@ -14,11 +14,15 @@
  * limitations under the License.
  */
 
-import type { ActivityCollaborativeUpdate } from "@osdk/foundry.pack";
+import type { ActivityCollaborativeUpdate, PresenceCollaborativeUpdate } from "@osdk/foundry.pack";
 import type { DocumentSchema, Model } from "@palantir/pack.document-schema.model-types";
-import { ActivityEventDataType, Metadata } from "@palantir/pack.document-schema.model-types";
+import {
+  ActivityEventDataType,
+  Metadata,
+  PresenceEventDataType,
+} from "@palantir/pack.document-schema.model-types";
 import { describe, expect, it } from "vitest";
-import { getActivityEvent } from "../eventMappers.js";
+import { getActivityEvent, getPresenceEvent } from "../eventMappers.js";
 
 const mockModel = {
   __type: {} as { someField: string },
@@ -27,12 +31,42 @@ const mockModel = {
 } as unknown as Model;
 
 const emptySchema = {
-  [Metadata]: { name: "TestSchema", version: 0, models: {} },
+  [Metadata]: { name: "TestSchema", version: 1, models: {} },
 } as unknown as DocumentSchema;
 
 const schemaWithModel = {
   ...emptySchema,
   TestModel: mockModel,
+} as unknown as DocumentSchema;
+
+const schemaWithUpgradedModel = {
+  ...emptySchema,
+  TestModel: mockModel,
+  [Metadata]: {
+    name: "TestSchema",
+    version: 2,
+    minSupportedVersion: 1,
+    upgrades: {
+      TestModel: {
+        modelName: "TestModel",
+        allFields: {
+          fillColor: { type: { kind: "primitive" } },
+          someField: { type: { kind: "primitive" } },
+        },
+        steps: [
+          {
+            addedInVersion: 2,
+            fields: {
+              fillColor: {
+                default: "black",
+                derivedFrom: [],
+              },
+            },
+          },
+        ],
+      },
+    },
+  },
 } as unknown as DocumentSchema;
 
 function makeActivityUpdate(
@@ -196,7 +230,50 @@ describe("getActivityEvent", () => {
       type: ActivityEventDataType.CUSTOM_EVENT,
       model: mockModel,
       eventType: "TestModel",
+      schemaVersion: 1,
       data: customData,
+    });
+  });
+
+  it("maps documentCustomEvent with invalid schema version to UNKNOWN", () => {
+    const customData = { eventType: "shapeAdd", nodeId: "node-1" };
+    const result = getActivityEvent(
+      schemaWithModel,
+      makeActivityUpdate({
+        type: "documentCustomEvent",
+        eventType: "TestModel",
+        data: customData,
+        version: "future",
+      }),
+    );
+
+    expect(result!.eventData).toEqual({
+      type: ActivityEventDataType.UNKNOWN,
+      rawType: "TestModel",
+      rawData: customData,
+    });
+  });
+
+  it("lenses documentCustomEvent payloads to the readable model view", () => {
+    const result = getActivityEvent(
+      schemaWithUpgradedModel,
+      makeActivityUpdate({
+        type: "documentCustomEvent",
+        eventType: "TestModel",
+        data: { someField: "node-1" },
+        version: 1,
+      }),
+    );
+
+    expect(result!.eventData).toEqual({
+      type: ActivityEventDataType.CUSTOM_EVENT,
+      model: mockModel,
+      eventType: "TestModel",
+      schemaVersion: 1,
+      data: {
+        fillColor: "black",
+        someField: "node-1",
+      },
     });
   });
 
@@ -254,5 +331,51 @@ describe("getActivityEvent", () => {
     expect(result!.createdInstant).toEqual(
       new Date("2026-01-01T00:00:00Z").getTime(),
     );
+  });
+});
+
+describe("getPresenceEvent", () => {
+  it("maps customPresenceEvent with known model to CUSTOM_EVENT", () => {
+    const customData = { eventType: "cursor", x: 1, y: 2 };
+    const result = getPresenceEvent(
+      schemaWithModel,
+      {
+        type: "customPresenceEvent",
+        clientId: "client-1",
+        eventData: customData,
+        eventType: "TestModel",
+        isEphemeral: true,
+        userId: "user-1",
+        version: 1,
+      } as PresenceCollaborativeUpdate,
+    );
+
+    expect(result.eventData).toEqual({
+      type: PresenceEventDataType.CUSTOM_EVENT,
+      model: mockModel,
+      schemaVersion: 1,
+      eventData: customData,
+    });
+  });
+
+  it("maps customPresenceEvent with invalid schema version to UNKNOWN", () => {
+    const customData = { eventType: "cursor", x: 1, y: 2 };
+    const result = getPresenceEvent(
+      schemaWithModel,
+      {
+        type: "customPresenceEvent",
+        clientId: "client-1",
+        eventData: customData,
+        eventType: "TestModel",
+        userId: "user-1",
+        version: 99,
+      } as PresenceCollaborativeUpdate,
+    );
+
+    expect(result.eventData).toEqual({
+      type: PresenceEventDataType.UNKNOWN,
+      rawType: "TestModel",
+      rawData: customData,
+    });
   });
 });
