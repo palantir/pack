@@ -1,5 +1,22 @@
 # @palantir/pack.app
 
+## 0.16.0
+
+### Minor Changes
+
+- 98803f7: Add version-safe update methods to DocumentRef
+
+### Patch Changes
+
+- Updated dependencies [98803f7]
+- Updated dependencies [e49616d]
+  - @palantir/pack.state.foundry@0.18.0
+  - @palantir/pack.auth.foundry@0.3.0
+  - @palantir/pack.state.core@0.15.0
+  - @palantir/pack.state.demo@0.13.0
+  - @palantir/pack.auth@0.3.0
+  - @palantir/pack.core@0.4.0
+
 ## 0.15.0
 
 ### Minor Changes

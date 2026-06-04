@@ -1,5 +1,16 @@
 # @palantir/pack.auth
 
+## 0.3.0
+
+### Minor Changes
+
+- 98803f7: Add version-safe update methods to DocumentRef
+
+### Patch Changes
+
+- Updated dependencies [98803f7]
+  - @palantir/pack.core@0.4.0
+
 ## 0.2.0
 
 ### Patch Changes
