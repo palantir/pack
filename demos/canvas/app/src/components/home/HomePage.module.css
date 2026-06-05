@@ -58,19 +58,15 @@
   background-color: #0055aa;
 }
 
-.canvasLink {
-  background: none;
-  border: none;
+.canvasName {
   color: #0066cc;
-  cursor: pointer;
   font-size: 1rem;
   font-weight: 600;
-  padding: 0;
   text-align: left;
 }
 
-.canvasLink:hover {
-  text-decoration: underline;
+.deleteButton {
+  margin-left: auto;
 }
 
 .emptyList {
@@ -103,6 +99,7 @@
   cursor: pointer;
   transition: all 0.15s ease;
   overflow: hidden;
+  text-decoration: none;
 }
 
 .listItem:hover {
