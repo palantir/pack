@@ -76,20 +76,19 @@ const DocumentListItem = React.memo(function DocumentListItem({
   );
 
   return (
-    <div className={css.listItem}>
-      <Link
-        className={css.canvasLink}
-        to={`/canvas/${document.id}`}
-      >
-        {document.name}
-      </Link>
+    <Link
+      className={css.listItem}
+      to={`/canvas/${document.id}`}
+    >
+      <span className={css.canvasName}>{document.name}</span>
       <Button
+        className={css.deleteButton}
         icon="trash"
         variant="minimal"
         intent="danger"
         onClick={handleDelete}
         aria-label={`Delete ${document.name}`}
       />
-    </div>
+    </Link>
   );
 });
