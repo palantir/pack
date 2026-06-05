@@ -6,6 +6,8 @@
 
 import type {
   DocumentRef,
+  EditDescription,
+  PresencePublishOptions,
   RecordId,
   RecordRef,
 } from '@palantir/pack.document-schema.model-types';
@@ -26,6 +28,15 @@ export interface VersionedDocRef_v1 extends DocumentRef<DocumentModel> {
     id: RecordId,
     data: ShapeBox_v1
   ): Promise<void>;
+  updateCustomPresence(
+    model: typeof ShapeBoxModel,
+    data: ShapeBox_v1,
+    options?: PresencePublishOptions
+  ): void;
+  describeEdit(
+    model: typeof ShapeBoxModel,
+    data: ShapeBox_v1
+  ): EditDescription<typeof ShapeBoxModel>;
 }
 
 export interface VersionedDocRef_v2 extends DocumentRef<DocumentModel> {
@@ -39,6 +50,15 @@ export interface VersionedDocRef_v2 extends DocumentRef<DocumentModel> {
     id: RecordId,
     data: ShapeBox_v2
   ): Promise<void>;
+  updateCustomPresence(
+    model: typeof ShapeBoxModel,
+    data: ShapeBox_v2,
+    options?: PresencePublishOptions
+  ): void;
+  describeEdit(
+    model: typeof ShapeBoxModel,
+    data: ShapeBox_v2
+  ): EditDescription<typeof ShapeBoxModel>;
 }
 
 export type VersionedDocRef = VersionedDocRef_v1 | VersionedDocRef_v2;

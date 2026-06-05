@@ -59,6 +59,7 @@ export interface ActivityEventDataCustom<M extends Model = Model> {
   readonly type: typeof ActivityEventDataType.CUSTOM_EVENT;
   readonly model: M;
   readonly eventType: string;
+  readonly schemaVersion?: number;
   readonly data: ModelData<M>;
 }
 

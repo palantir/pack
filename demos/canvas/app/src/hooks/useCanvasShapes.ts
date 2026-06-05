@@ -18,7 +18,6 @@ import { CanvasActivityModel, matchVersion, NodeShapeModel } from "@demo/canvas.
 import type { VersionedDocRef } from "@demo/canvas.sdk";
 import { generateId } from "@palantir/pack.core";
 import type { RecordId, RecordRef } from "@palantir/pack.document-schema.model-types";
-import { ActivityEvents } from "@palantir/pack.document-schema.model-types";
 import { isValidRecordRef } from "@palantir/pack.state.core";
 import { useRecords } from "@palantir/pack.state.react";
 import { useCallback } from "react";
@@ -51,24 +50,42 @@ export function useCanvasShapes(doc: VersionedDocRef): UseCanvasShapesResult {
         shapeType,
       } as const;
 
-      await doc.withTransaction(
-        () => {
-          matchVersion(doc, {
-            1: doc =>
-              doc.setRecord(NodeShapeModel, id, {
+      matchVersion(doc, {
+        1: doc =>
+          doc.withTransaction(
+            () => {
+              void doc.setRecord(NodeShapeModel, id, {
                 ...bounds,
                 color,
                 shapeType,
-              }),
-            2: doc => doc.setRecord(NodeShapeModel, id, v2ShapeData),
-            3: doc => doc.setRecord(NodeShapeModel, id, v2ShapeData),
-          });
-        },
-        ActivityEvents.describeEdit(CanvasActivityModel, {
-          activityType: "shapeAdded",
-          nodeId: id,
-        }),
-      );
+              });
+            },
+            doc.describeEdit(CanvasActivityModel, {
+              activityType: "shapeAdded",
+              nodeId: id,
+            }),
+          ),
+        2: doc =>
+          doc.withTransaction(
+            () => {
+              void doc.setRecord(NodeShapeModel, id, v2ShapeData);
+            },
+            doc.describeEdit(CanvasActivityModel, {
+              activityType: "shapeAdded",
+              nodeId: id,
+            }),
+          ),
+        3: doc =>
+          doc.withTransaction(
+            () => {
+              void doc.setRecord(NodeShapeModel, id, v2ShapeData);
+            },
+            doc.describeEdit(CanvasActivityModel, {
+              activityType: "shapeAdded",
+              nodeId: id,
+            }),
+          ),
+      });
 
       const collection = doc.getRecords(NodeShapeModel);
       const recordRef = collection.get(id);

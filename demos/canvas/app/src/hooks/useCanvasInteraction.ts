@@ -17,12 +17,12 @@
 import type { FreehandStrokeModel, NodeShapeModel, VersionedDocRef } from "@demo/canvas.sdk";
 import { CanvasActivityModel, matchVersion } from "@demo/canvas.sdk";
 import type { RecordRef } from "@palantir/pack.document-schema.model-types";
-import { ActivityEvents } from "@palantir/pack.document-schema.model-types";
 import type { MouseEvent } from "react";
 import { useCallback, useRef, useState } from "react";
 import { centerToBounds } from "../utils/centerToBounds.js";
 import { getDefaultColor } from "../utils/getDefaultColor.js";
 import { getDefaultShapeSize } from "../utils/getDefaultShapeSize.js";
+import { toNodeShapeV1, toNodeShapeV2, toNodeShapeV3 } from "../utils/versionedShapes.js";
 import { useCanvasShapes } from "./useCanvasShapes.js";
 import { useFreehandStrokes } from "./useFreehandStrokes.js";
 import { useShapeDrag } from "./useShapeDrag.js";
@@ -81,15 +81,38 @@ export function useCanvasInteraction(
   const deleteSelected = useCallback(() => {
     if (selectedShapeRef != null) {
       const nodeId = selectedShapeRef.id;
-      doc.withTransaction(
-        () => {
-          doc.deleteRecord(selectedShapeRef);
-        },
-        ActivityEvents.describeEdit(CanvasActivityModel, {
-          activityType: "shapeDeleted",
-          nodeId,
-        }),
-      );
+      matchVersion(doc, {
+        1: doc =>
+          doc.withTransaction(
+            () => {
+              void doc.deleteRecord(selectedShapeRef);
+            },
+            doc.describeEdit(CanvasActivityModel, {
+              activityType: "shapeDeleted",
+              nodeId,
+            }),
+          ),
+        2: doc =>
+          doc.withTransaction(
+            () => {
+              void doc.deleteRecord(selectedShapeRef);
+            },
+            doc.describeEdit(CanvasActivityModel, {
+              activityType: "shapeDeleted",
+              nodeId,
+            }),
+          ),
+        3: doc =>
+          doc.withTransaction(
+            () => {
+              void doc.deleteRecord(selectedShapeRef);
+            },
+            doc.describeEdit(CanvasActivityModel, {
+              activityType: "shapeDeleted",
+              nodeId,
+            }),
+          ),
+      });
       clearSelection();
       broadcastSelection([]);
     }
@@ -102,27 +125,67 @@ export function useCanvasInteraction(
         const oldShape = await selectedShapeRef.getSnapshot();
         if (oldShape == null) return;
 
-        const newShape = oldShape.shapeType === "box"
-          ? { ...oldShape, fillColor: color, strokeColor: color }
-          : { ...oldShape, fillColor: color, strokeColor: color };
-
-        doc.withTransaction(
-          () => {
-            matchVersion(doc, {
-              1: doc => doc.updateRecord(selectedShapeRef, { color }),
-              2: doc =>
-                doc.updateRecord(selectedShapeRef, { fillColor: color, strokeColor: color }),
-              3: doc =>
-                doc.updateRecord(selectedShapeRef, { fillColor: color, strokeColor: color }),
-            });
+        matchVersion(doc, {
+          1: doc => {
+            const oldShapeV1 = toNodeShapeV1(oldShape);
+            const newShapeV1 = { ...oldShapeV1, color };
+            doc.withTransaction(
+              () => {
+                void doc.updateRecord(selectedShapeRef, { color });
+              },
+              doc.describeEdit(CanvasActivityModel, {
+                activityType: "shapeUpdated",
+                nodeId: selectedShapeRef.id,
+                oldShape: oldShapeV1,
+                newShape: newShapeV1,
+              }),
+            );
           },
-          ActivityEvents.describeEdit(CanvasActivityModel, {
-            activityType: "shapeUpdated",
-            nodeId: selectedShapeRef.id,
-            oldShape,
-            newShape,
-          }),
-        );
+          2: doc => {
+            const oldShapeV2 = toNodeShapeV2(oldShape);
+            const newShapeV2 = toNodeShapeV2({
+              ...oldShape,
+              fillColor: color,
+              strokeColor: color,
+            });
+            doc.withTransaction(
+              () => {
+                void doc.updateRecord(selectedShapeRef, {
+                  fillColor: color,
+                  strokeColor: color,
+                });
+              },
+              doc.describeEdit(CanvasActivityModel, {
+                activityType: "shapeUpdated",
+                nodeId: selectedShapeRef.id,
+                oldShape: oldShapeV2,
+                newShape: newShapeV2,
+              }),
+            );
+          },
+          3: doc => {
+            const oldShapeV3 = toNodeShapeV3(oldShape);
+            const newShapeV3 = toNodeShapeV3({
+              ...oldShape,
+              fillColor: color,
+              strokeColor: color,
+            });
+            doc.withTransaction(
+              () => {
+                void doc.updateRecord(selectedShapeRef, {
+                  fillColor: color,
+                  strokeColor: color,
+                });
+              },
+              doc.describeEdit(CanvasActivityModel, {
+                activityType: "shapeUpdated",
+                nodeId: selectedShapeRef.id,
+                oldShape: oldShapeV3,
+                newShape: newShapeV3,
+              }),
+            );
+          },
+        });
       }
     },
     [doc, selectedShapeRef],

@@ -509,6 +509,7 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
         docRef.id,
         eventType,
         eventData,
+        docRef.version,
         getClientSupportedVersionRange(docRef.schema),
         options,
       )
