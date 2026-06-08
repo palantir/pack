@@ -151,11 +151,11 @@ const splitShapeColorIntoFillAndStroke = S.defineSchemaUpdate(
 // --- Schema change: add opacity (additive) ---
 const addShapeOpacity = S.defineSchemaUpdate("addShapeOpacity", schema => {
   const ShapeBox = schema.ShapeBox
-    .addField("opacity", S.Optional(S.Double), { default: 1.0 })
+    .addField("opacity", S.Optional(S.Double), { default: 0.4 })
     .build();
 
   const ShapeCircle = schema.ShapeCircle
-    .addField("opacity", S.Optional(S.Double), { default: 1.0 })
+    .addField("opacity", S.Optional(S.Double), { default: 0.1 })
     .build();
 
   return { ShapeBox, ShapeCircle };

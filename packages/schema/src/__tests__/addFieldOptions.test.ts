@@ -147,7 +147,7 @@ describe("addField with upgrade options", () => {
     expect(v2.migrations?.ShapeBox?.opacity?.derivedFrom).toEqual([]);
   });
 
-  it("AdditiveFieldOptions { default } is accepted but not added to upgrades", () => {
+  it("AdditiveFieldOptions { default } flows into migrations as an empty-derivedFrom upgrade", () => {
     const update = defineSchemaUpdate("update", (schema: SchemaBuilder<typeof v1.models>) => ({
       ShapeBox: schema.ShapeBox
         .addField("opacity", P.Optional(P.Double), { default: 1.0 })
@@ -155,7 +155,7 @@ describe("addField with upgrade options", () => {
     }));
 
     const v2 = nextSchema(v1).addSchemaUpdate(update).build();
-    expect(v2.migrations?.ShapeBox?.opacity).toBeUndefined();
+    expect(v2.migrations?.ShapeBox?.opacity).toEqual({ derivedFrom: [], default: 1.0 });
   });
 
   it("addField without options stays sugar-free", () => {
@@ -279,13 +279,13 @@ describe("addField with upgrade options", () => {
     expect(result.upgrades).toBeUndefined();
   });
 
-  it("applyMigration filters out AdditiveFieldOptions from upgrades", () => {
+  it("applyMigration normalizes AdditiveFieldOptions into empty-derivedFrom upgrades", () => {
     const result = applyMigration(v1.models, schema => ({
       ShapeBox: schema.ShapeBox
         .addField("opacity", P.Optional(P.Double), { default: 0.5 })
         .build(),
     }));
-    expect(result.upgrades).toBeUndefined();
+    expect(result.upgrades?.ShapeBox?.opacity).toEqual({ derivedFrom: [], default: 0.5 });
   });
 
   it("defineMigration drops upgrade options silently (lower-level entry point)", () => {

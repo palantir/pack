@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import type { FieldDeprecation, SchemaBuilder } from "./defineMigration.js";
+import type { FieldDeprecation, JsonValue, SchemaBuilder } from "./defineMigration.js";
 import { applyMigration } from "./defineMigration.js";
 import type { ModelDefs } from "./defs.js";
 import { isRecordDef } from "./utils.js";
@@ -27,6 +27,7 @@ export interface InitialSchema<T extends ModelDefs = ModelDefs> {
 
 export interface FieldMigration {
   readonly derivedFrom: readonly string[];
+  readonly default?: JsonValue;
 }
 
 export type VersionMigrations = Record<string, Record<string, FieldMigration>>;

@@ -23,6 +23,7 @@ import {
   nestedUnionSchema,
   optionalToRequiredFieldSchema,
   singleVersionSchema,
+  twoVersionDefaultFieldSchema,
   twoVersionDerivedFieldsSchema,
   twoVersionFieldRemovalSchema,
 } from "./fixtures.js";
@@ -56,6 +57,15 @@ describe("generateInternalFromChain", () => {
     const result = generateInternalFromChain(resolveSchemaChain(twoVersionDerivedFieldsSchema));
     await expect(await formatInternalTypesSnapshot(result)).toMatchFileSnapshot(
       path.join(snapshotDir, "two-version-derived-fields.snap"),
+    );
+  });
+
+  it("additive field default flows into the generated upgrade registry step", async () => {
+    const result = generateInternalFromChain(resolveSchemaChain(twoVersionDefaultFieldSchema));
+    expect(result.upgrades).toContain("opacity: {");
+    expect(result.upgrades).toContain("default: 1,");
+    await expect(await formatInternalTypesSnapshot(result)).toMatchFileSnapshot(
+      path.join(snapshotDir, "two-version-default-field.snap"),
     );
   });
 

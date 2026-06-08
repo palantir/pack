@@ -885,6 +885,10 @@
             "derivedFrom": [
               "color"
             ]
+          },
+          "opacity": {
+            "derivedFrom": [],
+            "default": 0.4
           }
         },
         "ShapeCircle": {
@@ -897,6 +901,10 @@
             "derivedFrom": [
               "color"
             ]
+          },
+          "opacity": {
+            "derivedFrom": [],
+            "default": 0.1
           }
         }
       }

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import type { SchemaDefinition, VersionMigrations } from "@palantir/pack.schema";
+import type { JsonValue, SchemaDefinition, VersionMigrations } from "@palantir/pack.schema";
 import type {
   IModelDef,
   IRealTimeDocumentSchema,
@@ -26,6 +26,7 @@ import { convertSchemaToIr } from "../steps/convertStepsToIr.js";
 /** JSON-serializable form of a single field migration. */
 export interface SerializedFieldMigration {
   readonly derivedFrom: readonly string[];
+  readonly default?: JsonValue;
 }
 
 /** Serialized migrations keyed by `[recordModelName][fieldName]`. */
@@ -148,6 +149,7 @@ function serializeMigrations(
     for (const [fieldName, migration] of Object.entries(fields)) {
       fieldEntries[fieldName] = {
         derivedFrom: [...migration.derivedFrom],
+        ...(migration.default !== undefined ? { default: migration.default } : {}),
       };
     }
     result[modelKey] = fieldEntries;
