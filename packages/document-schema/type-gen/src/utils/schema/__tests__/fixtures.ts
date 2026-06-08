@@ -76,6 +76,25 @@ export const twoVersionAdditiveSchema: SchemaDefinition = nextSchema(singleVersi
   .addSchemaUpdate(addFillColorUpdate)
   .build();
 
+/**
+ * Two-version schema adding a field with a literal `default` via `addField`
+ * sugar. Exercises the pure-additive default path: the default must flow all
+ * the way into the generated upgrade registry step so the read-time lens can
+ * back-fill it for v1 documents.
+ */
+const addOpacityWithDefaultUpdate = defineSchemaUpdate(
+  "addOpacityWithDefault",
+  (schema: SchemaBuilder<typeof singleVersionModels>) => ({
+    ShapeBox: schema.ShapeBox
+      .addField("opacity", P.Optional(P.Double), { default: 1 })
+      .build(),
+  }),
+);
+
+export const twoVersionDefaultFieldSchema: SchemaDefinition = nextSchema(singleVersionSchemaNarrow)
+  .addSchemaUpdate(addOpacityWithDefaultUpdate)
+  .build();
+
 /** Schema with ref fields: tests import paths for record refs, DocumentRef, UserRef */
 const CircleRecord = defineRecord("Circle", {
   docs: "A circle",

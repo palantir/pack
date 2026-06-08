@@ -149,6 +149,7 @@ function collectRecordModels(
           if (annotation != null) {
             addedFields.set(fieldKey, {
               derivedFrom: [...annotation.derivedFrom],
+              ...(annotation.default !== undefined ? { default: annotation.default } : {}),
             });
           } else {
             addedFields.set(fieldKey, {

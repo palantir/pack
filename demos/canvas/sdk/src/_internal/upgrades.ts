@@ -64,6 +64,7 @@ export const ShapeBoxUpgrades: UpgradeRegistry<"ShapeBox"> = {
         },
         opacity: {
           derivedFrom: [],
+          default: 0.4,
         },
       },
       removedFields: ["color"],
@@ -95,6 +96,7 @@ export const ShapeCircleUpgrades: UpgradeRegistry<"ShapeCircle"> = {
         },
         opacity: {
           derivedFrom: [],
+          default: 0.1,
         },
       },
       removedFields: ["color"],

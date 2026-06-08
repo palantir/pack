@@ -40,7 +40,7 @@ export type SchemaBuilder<T extends ModelDefs> = {
  * `@palantir/pack.document-schema.model-types`; kept local here to avoid a
  * package dependency from `pack.schema`.
  */
-type JsonValue =
+export type JsonValue =
   | string
   | number
   | boolean
@@ -347,11 +347,13 @@ export function applyMigration<
         UpgradeFieldOptions<Record<string, unknown>>
       > = {};
       for (const [fieldName, options] of opts) {
-        // Only `UpgradeFieldOptions` (which declare `derivedFrom`) flow into the
-        // upgrades map; `AdditiveFieldOptions` carry only a literal `default`
-        // and have no read-time lens effect.
         if ("derivedFrom" in options) {
           fieldEntries[fieldName] = options;
+        } else if (options.default !== undefined) {
+          // Default-only shape (no `derivedFrom` key). Normalize to an empty
+          // `derivedFrom` so it flows through code generator identically to the cases
+          // above; the read-time lens applies the default when the field is absent.
+          fieldEntries[fieldName] = { derivedFrom: [], default: options.default };
         }
       }
       if (Object.keys(fieldEntries).length > 0) {
