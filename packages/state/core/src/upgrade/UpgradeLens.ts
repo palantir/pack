@@ -36,8 +36,8 @@ function isUnionRegistry(entry: UpgradeRegistryEntry): entry is UnionUpgradeRegi
  *
  * `upgradeFns` are the runtime-supplied typed forward callbacks (passed to the
  * generated `DocumentModel({...})` factory at boot). May be `undefined` for
- * schemas with no `derivedFrom` fields; required when any field needs
- * forward-derivation.
+ * schemas that don't add any fields past v1 that require lens treatment;
+ * required whenever an entry exists in any step's `fields` map.
  */
 export function resolveAndApplyLens(
   rawData: Record<string, unknown>,
@@ -86,19 +86,23 @@ export function resolveAndApplyLens(
 /**
  * Applies the read lens to raw record data using the upgrade registry.
  *
- * Walks upgrade steps in order, deriving missing fields from source fields
- * via forward transforms, applying defaults for additive fields, and
- * recursively applying the lens to nested model refs, arrays, and maps.
+ * Walks upgrade steps in order, invoking the supplied upgrade fn for each
+ * absent field whose source data (if any) is present, then recursively
+ * applying the lens to nested model refs, arrays, and maps.
+ *
+ * Derived fields (`derivedFrom.length > 0`) only fire when all source fields
+ * are present. Additive fields (`derivedFrom.length === 0`) always fire,
+ * receiving `{}` — the upgrade fn is the value supplier.
  *
  * Never writes back to the Y.Doc. Returns full data with no key deletion.
  *
  * ## Null / undefined semantics
  *
  * The lens uses `=== undefined` as the sole "absent" sentinel:
- *  - **`undefined` (or missing key)**: field is absent. The lens will attempt
- *    to derive it via a forward transform, then fall back to the step default.
- *  - **`null`**: field is explicitly present with a null value. The lens will
- *    not derive or default — `null` is preserved as-is.
+ *  - **`undefined` (or missing key)**: field is absent. The lens will invoke
+ *    the upgrade fn for it (when source data, if any, is also present).
+ *  - **`null`**: field is explicitly present with a null value. The lens
+ *    does not derive — `null` is preserved as-is.
  *  - **`{ a: undefined }` vs `{}`**: indistinguishable — `obj["a"]` yields
  *    `undefined` in both cases, so both are treated as absent.
  *
@@ -116,13 +120,13 @@ export function applyReadLens(
 ): Record<string, unknown> {
   const data = { ...rawData };
 
-  // 1. Apply forward transforms for derived fields
+  // 1. Invoke upgrade fns for absent fields
   for (const step of registry.steps) {
     for (const [fieldName, def] of Object.entries(step.fields)) {
-      if (def.derivedFrom.length === 0) continue; // additive, skip to defaults
       if (data[fieldName] !== undefined) continue; // already present, use as-is
 
-      // Check if source fields are available to derive from
+      // Derived fields require all source fields to be present; additive
+      // fields (empty derivedFrom) trivially satisfy this with an empty loop.
       const sourceFields: Record<string, unknown> = {};
       let canDerive = true;
       for (const src of def.derivedFrom) {
@@ -132,32 +136,22 @@ export function applyReadLens(
         }
         sourceFields[src] = data[src];
       }
+      if (!canDerive) continue;
 
-      if (canDerive) {
-        const stepKey = `v${step.addedInVersion}`;
-        const forward = upgradeFns?.[registry.modelName]?.[stepKey]?.[fieldName];
-        if (forward == null) {
-          throw new Error(
-            `Missing upgrade function for ${registry.modelName}.${stepKey}.${fieldName}. `
-              + `Construct the document model with \`DocumentModel({...})\` and `
-              + `pass the result to your document service at boot, or regenerate your SDK.`,
-          );
-        }
-        data[fieldName] = forward(sourceFields);
+      const stepKey = `v${step.addedInVersion}`;
+      const forward = upgradeFns?.[registry.modelName]?.[stepKey]?.[fieldName];
+      if (forward == null) {
+        throw new Error(
+          `Missing upgrade function for ${registry.modelName}.${stepKey}.${fieldName}. `
+            + `Construct the document model with \`DocumentModel({...})\` and `
+            + `pass the result to your document service at boot, or regenerate your SDK.`,
+        );
       }
+      data[fieldName] = forward(sourceFields);
     }
   }
 
-  // 2. Apply defaults for additive fields
-  for (const step of registry.steps) {
-    for (const [fieldName, def] of Object.entries(step.fields)) {
-      if (data[fieldName] === undefined && def.default !== undefined) {
-        data[fieldName] = def.default;
-      }
-    }
-  }
-
-  // 3. Recursively apply lens to nested model refs
+  // 2. Recursively apply lens to nested model refs
   for (const [fieldName, fieldDef] of Object.entries(registry.allFields)) {
     if (data[fieldName] === undefined) continue;
     data[fieldName] = applyLensToValue(data[fieldName], fieldDef.type, allRegistries, upgradeFns);

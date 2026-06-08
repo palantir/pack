@@ -76,6 +76,25 @@ export const twoVersionAdditiveSchema: SchemaDefinition = nextSchema(singleVersi
   .addSchemaUpdate(addFillColorUpdate)
   .build();
 
+/**
+ * Two-version schema adding a *required* additive field. Drives the type
+ * generator down the path where `DocumentUpgradeFns` must include a zero-arg
+ * thunk for the new field — `() => Model__v<current>[field]`. Optional
+ * additive fields (above) are deliberately absent from `DocumentUpgradeFns`.
+ */
+const addOpacityRequiredUpdate = defineSchemaUpdate(
+  "addOpacityRequired",
+  (schema: SchemaBuilder<typeof singleVersionModels>) => ({
+    ShapeBox: schema.ShapeBox
+      .addField("opacity", P.Double)
+      .build(),
+  }),
+);
+
+export const twoVersionRequiredAdditiveSchema: SchemaDefinition = nextSchema(
+  singleVersionSchemaNarrow,
+).addSchemaUpdate(addOpacityRequiredUpdate).build();
+
 /** Schema with ref fields: tests import paths for record refs, DocumentRef, UserRef */
 const CircleRecord = defineRecord("Circle", {
   docs: "A circle",

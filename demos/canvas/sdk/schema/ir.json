@@ -547,8 +547,7 @@
                   },
                   "metadata": {
                     "addedInVersion": 2
-                  },
-                  "isOptional": true
+                  }
                 }
               ]
             },
@@ -675,8 +674,7 @@
                   },
                   "metadata": {
                     "addedInVersion": 2
-                  },
-                  "isOptional": true
+                  }
                 }
               ]
             },
@@ -1057,8 +1055,7 @@
                   },
                   "metadata": {
                     "addedInVersion": 2
-                  },
-                  "isOptional": true
+                  }
                 }
               ]
             },
@@ -1185,8 +1182,7 @@
                   },
                   "metadata": {
                     "addedInVersion": 2
-                  },
-                  "isOptional": true
+                  }
                 }
               ]
             },

@@ -39,17 +39,7 @@ export const ShapeBoxUpgrades: UpgradeRegistry<'ShapeBox'> = {
   steps: [
     {
       addedInVersion: 2,
-      fields: {
-        fillColor: {
-          derivedFrom: [],
-        },
-        strokeColor: {
-          derivedFrom: [],
-        },
-        opacity: {
-          derivedFrom: [],
-        },
-      },
+      fields: {},
       removedFields: ['color'],
     },
   ],
@@ -85,7 +75,10 @@ export const ShapeBoxInternalSchema = z
 /**
  * Typed upgrade functions the application must supply at boot. Coverage is
  * exhaustive: missing or extra entries fail type-check at the `DocumentModel(...)`
- * call site. Additive fields (empty `derivedFrom`) are intentionally absent.
+ * call site. Derived fields receive their declared source fields; required
+ * additive fields receive no arguments. Optional additive fields are absent
+ * — `undefined` is a legal value at the new version, so the runtime lens
+ * leaves them alone.
  */
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type
 export interface DocumentUpgradeFns {}

@@ -147,17 +147,6 @@ describe("addField with upgrade options", () => {
     expect(v2.migrations?.ShapeBox?.opacity?.derivedFrom).toEqual([]);
   });
 
-  it("AdditiveFieldOptions { default } is accepted but not added to upgrades", () => {
-    const update = defineSchemaUpdate("update", (schema: SchemaBuilder<typeof v1.models>) => ({
-      ShapeBox: schema.ShapeBox
-        .addField("opacity", P.Optional(P.Double), { default: 1.0 })
-        .build(),
-    }));
-
-    const v2 = nextSchema(v1).addSchemaUpdate(update).build();
-    expect(v2.migrations?.ShapeBox?.opacity).toBeUndefined();
-  });
-
   it("addField without options stays sugar-free", () => {
     const update = defineSchemaUpdate("update", (schema: SchemaBuilder<typeof v1.models>) => ({
       ShapeBox: schema.ShapeBox
@@ -279,15 +268,6 @@ describe("addField with upgrade options", () => {
     expect(result.upgrades).toBeUndefined();
   });
 
-  it("applyMigration filters out AdditiveFieldOptions from upgrades", () => {
-    const result = applyMigration(v1.models, schema => ({
-      ShapeBox: schema.ShapeBox
-        .addField("opacity", P.Optional(P.Double), { default: 0.5 })
-        .build(),
-    }));
-    expect(result.upgrades).toBeUndefined();
-  });
-
   it("defineMigration drops upgrade options silently (lower-level entry point)", () => {
     // The public defineMigration returns just T & S; it does not surface
     // upgrades. Callers that need upgrades use applyMigration or addSchemaUpdate.
@@ -364,136 +344,5 @@ describe("addField with upgrade options", () => {
     // the runtime override produces the union. Cast for the runtime check.
     expect((v2.models.ShapeBox as unknown as { type: string }).type).toBe("union");
     expect(v2.migrations).toBeUndefined();
-  });
-
-  it("UpgradeFieldOptions { derivedFrom, default } captures default in upgrades", () => {
-    // When a derived field also supplies a literal-JSON `default`, the option
-    // object flows into `upgrades` verbatim — the runtime upgrade function
-    // may consult `default` when no source data is present.
-    const update = defineSchemaUpdate("update", (schema: SchemaBuilder<typeof v1.models>) => ({
-      ShapeBox: schema.ShapeBox
-        .addField("fillColor", P.Optional(P.String), {
-          derivedFrom: ["color"],
-          default: "transparent",
-        })
-        .build(),
-    }));
-
-    const v2 = nextSchema(v1).addSchemaUpdate(update).build();
-    expect(v2.migrations?.ShapeBox?.fillColor).toEqual({
-      derivedFrom: ["color"],
-      default: "transparent",
-    });
-  });
-});
-
-// Exercises `assertJsonDefault` via the public `addField()` entry point.
-// `assertJsonDefault` is not exported, so we drive it through the builder.
-// Each rejection case asserts both that the call throws and that the path
-// reported in the error message includes the field name (and, where
-// applicable, a nested key/index) — that path is the user-facing breadcrumb
-// when a default value is malformed.
-describe("addField default value validation (assertJsonDefault)", () => {
-  const v1 = defineSchema({
-    R: defineRecord("R", { docs: "r", fields: { x: P.Double } }),
-  });
-
-  /**
-   * Helper that builds a one-field migration adding `extra` with the given
-   * `default`. Returns the `addField` invocation as a thunk so callers can
-   * either invoke it (success case) or assert it throws (rejection case).
-   */
-  function withDefault(value: unknown): () => unknown {
-    return () =>
-      defineMigration(v1.models, schema => ({
-        R: schema.R
-          .addField("extra", P.Optional(P.String), { default: value as never })
-          .build(),
-      }));
-  }
-
-  describe("accepts literal JSON", () => {
-    it.each([
-      ["string", "hello"],
-      ["number", 42],
-      ["zero", 0],
-      ["negative number", -1.5],
-      ["true", true],
-      ["false", false],
-      ["null", null],
-      ["empty object", {}],
-      ["empty array", []],
-      ["nested plain object", { a: 1, b: { c: "x", d: [1, 2, null] } }],
-      ["nested array of plain objects", [{ x: 1 }, { x: 2 }]],
-    ])("%s", (_label, value) => {
-      expect(withDefault(value)).not.toThrow();
-    });
-  });
-
-  describe("rejects non-JSON values", () => {
-    it("undefined at the top level", () => {
-      // Note: `{ default: undefined }` is structurally the same as `{}` so
-      // it bypasses validation; the real top-level case is `default: NaN`
-      // surfacing as undefined-after-stringify. We test undefined-via-nesting
-      // below where it actually triggers the validator.
-      expect(withDefault(() => undefined)).toThrow(/function is not valid JSON/);
-    });
-
-    it("nested undefined inside an object", () => {
-      expect(withDefault({ a: 1, b: undefined })).toThrow(
-        /addField\("extra"\)\.default\.b: undefined is not valid JSON/,
-      );
-    });
-
-    it("nested undefined inside an array", () => {
-      expect(withDefault([1, undefined, 3])).toThrow(
-        /addField\("extra"\)\.default\[1\]: undefined is not valid JSON/,
-      );
-    });
-
-    it("function", () => {
-      expect(withDefault(() => 1)).toThrow(/function is not valid JSON/);
-    });
-
-    it("symbol", () => {
-      expect(withDefault(Symbol("s"))).toThrow(/symbol is not valid JSON/);
-    });
-
-    it("bigint", () => {
-      expect(withDefault(BigInt(1))).toThrow(/bigint is not valid JSON/);
-    });
-
-    it("Date instance (non-plain object)", () => {
-      expect(withDefault(new Date(0))).toThrow(/Date is not valid JSON/);
-    });
-
-    it("RegExp instance (non-plain object)", () => {
-      expect(withDefault(/foo/)).toThrow(/RegExp is not valid JSON/);
-    });
-
-    it("class instance (non-plain object)", () => {
-      class Widget {
-        readonly id = 1;
-      }
-      expect(withDefault(new Widget())).toThrow(/Widget is not valid JSON/);
-    });
-
-    it("Map (non-plain object)", () => {
-      expect(withDefault(new Map())).toThrow(/Map is not valid JSON/);
-    });
-
-    it("symbol-keyed property on a plain object", () => {
-      const obj: Record<string | symbol, unknown> = { a: 1 };
-      obj[Symbol("k")] = 2;
-      expect(withDefault(obj)).toThrow(
-        /symbol-keyed properties are not valid JSON/,
-      );
-    });
-
-    it("nested non-plain object reports the path", () => {
-      expect(withDefault({ inner: { date: new Date(0) } })).toThrow(
-        /addField\("extra"\)\.default\.inner\.date: Date is not valid JSON/,
-      );
-    });
   });
 });

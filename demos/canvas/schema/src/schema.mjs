@@ -148,14 +148,17 @@ const splitShapeColorIntoFillAndStroke = S.defineSchemaUpdate(
   },
 );
 
-// --- Schema change: add opacity (additive) ---
+// --- Schema change: add opacity (additive, required) ---
+// The field is required at v2 — its value can never be undefined under the v2
+// type. The app provides `opacity: () => 1.0` at boot so the read lens
+// back-fills v1 documents.
 const addShapeOpacity = S.defineSchemaUpdate("addShapeOpacity", schema => {
   const ShapeBox = schema.ShapeBox
-    .addField("opacity", S.Optional(S.Double), { default: 1.0 })
+    .addField("opacity", S.Double)
     .build();
 
   const ShapeCircle = schema.ShapeCircle
-    .addField("opacity", S.Optional(S.Double), { default: 1.0 })
+    .addField("opacity", S.Double)
     .build();
 
   return { ShapeBox, ShapeCircle };

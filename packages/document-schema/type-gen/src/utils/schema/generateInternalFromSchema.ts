@@ -26,7 +26,7 @@ import {
   convertFieldTypeToInternalZod,
 } from "../ir/irFieldHelpers.js";
 import {
-  chainHasDerivedFields,
+  chainNeedsUpgradeFns,
   type ResolvedIrChain,
   type VersionedIrEntry,
 } from "./resolveSchemaChain.js";
@@ -56,10 +56,16 @@ interface AllFieldInfo {
 
 /**
  * Represents an upgrade step for a model between version transitions.
+ *
+ * `fields` only contains entries that require lens treatment — derived fields
+ * (`derivedFrom.length > 0`) and required additive fields (`derivedFrom.length
+ * === 0 && !isOptional`). Optional additive fields are absent because
+ * `undefined` is a legal value at the current version and the lens has no
+ * work to do.
  */
 interface UpgradeStep {
   addedInVersion: number;
-  fields: Map<string, { derivedFrom: string[]; default?: unknown }>;
+  fields: Map<string, { derivedFrom: string[]; isOptional: boolean }>;
   removedFields: string[];
 }
 
@@ -137,25 +143,22 @@ function collectRecordModels(
       const prevFields = new Set(prevModelDef.record.fields.map(f => f.key));
       const currFields = new Set(currModelDef.record.fields.map(f => f.key));
 
-      // Fields added in this version
+      // Fields added in this version that require lens treatment. Optional
+      // additive fields are skipped — `undefined` is a legal v_current value
+      // for them, so the lens has nothing to invent.
       const addedFields = new Map<
         string,
-        { derivedFrom: string[]; default?: unknown }
+        { derivedFrom: string[]; isOptional: boolean }
       >();
       const recordUpgrades = currEntry.migrations?.[modelKey];
-      for (const fieldKey of currFields) {
-        if (!prevFields.has(fieldKey)) {
-          const annotation = recordUpgrades?.[fieldKey];
-          if (annotation != null) {
-            addedFields.set(fieldKey, {
-              derivedFrom: [...annotation.derivedFrom],
-            });
-          } else {
-            addedFields.set(fieldKey, {
-              derivedFrom: [],
-            });
-          }
-        }
+      for (const field of currModelDef.record.fields) {
+        const fieldKey = field.key;
+        if (prevFields.has(fieldKey)) continue;
+        const isOptional = field.isOptional === true;
+        const annotation = recordUpgrades?.[fieldKey];
+        const derivedFrom = annotation != null ? [...annotation.derivedFrom] : [];
+        if (derivedFrom.length === 0 && isOptional) continue;
+        addedFields.set(fieldKey, { derivedFrom, isOptional });
       }
 
       // Fields absent from this version relative to the previous one (i.e. deprecated fields).
@@ -318,9 +321,6 @@ function generateUpgrades(
         output += `          derivedFrom: [${
           fieldMeta.derivedFrom.map(d => `"${d}"`).join(", ")
         }],\n`;
-        if (fieldMeta.default !== undefined) {
-          output += `          default: ${JSON.stringify(fieldMeta.default)},\n`;
-        }
         output += `        },\n`;
       }
       output += `      },\n`;
@@ -385,16 +385,21 @@ function generateInternalSchemaContent(
  * Generate _internal/upgradeFns.ts content: a typed `DocumentUpgradeFns`
  * interface enumerating every upgrade function the app must supply at boot.
  *
- * For every `(modelName, v${version}, fieldName)` triple where `derivedFrom` is
- * non-empty, emit a property typed
- * `(oldFields: Pick<<Model>__v<prior>, derivedFrom[number]>) => <Model>__v<current>[fieldName]`.
- * Additive fields (empty `derivedFrom`) are intentionally absent — they are
- * handled by the structural `default` in `_internal/upgrades.ts`.
+ * For each `(modelName, v${version}, fieldName)` triple in a step's `fields`,
+ * emit one property:
+ *  - Derived (`derivedFrom.length > 0`):
+ *    `(oldFields: Pick<<Model>__v<prior>, derivedFrom[number]>) => <Model>__v<current>[fieldName]`.
+ *  - Required additive (`derivedFrom.length === 0`):
+ *    `() => <Model>__v<current>[fieldName]`.
+ *
+ * Optional additive fields are filtered out at step-collection time and don't
+ * appear here — `undefined` is a legal v<current> value for them, so the app
+ * has no obligation to invent one.
  *
  * The interface is consumed by the generated `DocumentModel` factory in
- * `models.ts`, which requires it as a parameter when the schema has any
- * derived fields. Schemas without derived fields emit an empty interface
- * (still exported for type-uniformity in downstream code).
+ * `models.ts`, which requires it as a parameter when the schema needs any
+ * upgrade functions. Schemas with no required fields added past v1 emit an
+ * empty interface (still exported for type-uniformity in downstream code).
  */
 function generateUpgradeFns(
   chain: VersionedIrEntry[],
@@ -421,7 +426,6 @@ function generateUpgradeFns(
 
       const fields: UpgradeFnEntry[] = [];
       for (const [fieldName, fieldMeta] of step.fields) {
-        if (fieldMeta.derivedFrom.length === 0) continue;
         fields.push({ fieldName, derivedFrom: [...fieldMeta.derivedFrom] });
       }
       if (fields.length === 0) continue;
@@ -436,7 +440,10 @@ function generateUpgradeFns(
         priorVersion,
         fields,
       });
-      neededTypes.add(`${modelKey}__v${priorVersion}`);
+      // Prior-version type only needed when at least one field derives from it.
+      if (fields.some(f => f.derivedFrom.length > 0)) {
+        neededTypes.add(`${modelKey}__v${priorVersion}`);
+      }
       neededTypes.add(`${modelKey}__v${step.addedInVersion}`);
     }
   }
@@ -453,7 +460,10 @@ function generateUpgradeFns(
   output += ` * Typed upgrade functions the application must supply at boot. Coverage is\n`;
   output +=
     ` * exhaustive: missing or extra entries fail type-check at the \`DocumentModel(...)\`\n`;
-  output += ` * call site. Additive fields (empty \`derivedFrom\`) are intentionally absent.\n`;
+  output += ` * call site. Derived fields receive their declared source fields; required\n`;
+  output += ` * additive fields receive no arguments. Optional additive fields are absent\n`;
+  output += ` * — \`undefined\` is a legal value at the new version, so the runtime lens\n`;
+  output += ` * leaves them alone.\n`;
   output += ` */\n`;
   if (perModel.size === 0) {
     output += `// eslint-disable-next-line @typescript-eslint/no-empty-object-type\n`;
@@ -469,9 +479,14 @@ function generateUpgradeFns(
       for (const step of steps) {
         output += `    v${step.currentVersion}: {\n`;
         for (const f of step.fields) {
-          const pickKeys = f.derivedFrom.map(d => `"${d}"`).join(" | ");
-          output +=
-            `      ${f.fieldName}: (oldFields: Pick<${modelKey}__v${step.priorVersion}, ${pickKeys}>) => ${modelKey}__v${step.currentVersion}["${f.fieldName}"];\n`;
+          const returnType = `${modelKey}__v${step.currentVersion}["${f.fieldName}"]`;
+          if (f.derivedFrom.length === 0) {
+            output += `      ${f.fieldName}: () => ${returnType};\n`;
+          } else {
+            const pickKeys = f.derivedFrom.map(d => `"${d}"`).join(" | ");
+            output +=
+              `      ${f.fieldName}: (oldFields: Pick<${modelKey}__v${step.priorVersion}, ${pickKeys}>) => ${returnType};\n`;
+          }
         }
         output += `    };\n`;
       }
@@ -496,7 +511,7 @@ export function generateInternalFromChain(
   const allRecordModels = collectRecordModels(chain);
 
   const internalTypes = generateInternalTypes(allRecordModels)
-    + (chainHasDerivedFields(chain) ? generatePerVersionInternalTypes(chain) : "");
+    + (chainNeedsUpgradeFns(chain) ? generatePerVersionInternalTypes(chain) : "");
   const upgrades = generateUpgrades(allRecordModels, latestIr);
   const internalSchema = generateInternalSchemaContent(allRecordModels);
   const internalUpgradeFns = generateUpgradeFns(chain, allRecordModels);
