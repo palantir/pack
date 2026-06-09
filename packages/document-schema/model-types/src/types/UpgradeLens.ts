@@ -34,6 +34,7 @@ export interface FieldLensDef {
 
 export interface FieldDef {
   type: FieldTypeDescriptor;
+  addedInVersion?: number;
 }
 
 export interface UpgradeStepDef {

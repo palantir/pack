@@ -81,6 +81,10 @@ function sortedEntries<V>(map: Map<string, V>): [string, V][] {
   return Array.from(map.entries()).sort(([a], [b]) => a.localeCompare(b));
 }
 
+function getAddedInVersion(fieldInfo: AllFieldInfo): number {
+  return Math.min(...fieldInfo.presentInVersions);
+}
+
 /**
  * Collect all record model info across all versions and compute upgrade steps.
  */
@@ -306,7 +310,9 @@ function generateUpgrades(
         fieldInfo.fieldType,
         fieldInfo.isOptional,
       );
-      output += `    ${fieldName}: { type: ${typeDescriptor} },\n`;
+      output += `    ${fieldName}: { type: ${typeDescriptor}, addedInVersion: ${
+        getAddedInVersion(fieldInfo)
+      } },\n`;
     }
     output += `  },\n`;
 
