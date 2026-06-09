@@ -647,6 +647,102 @@ describe("resolveAndApplyLens", () => {
     expect(result).toBe(rawData);
   });
 
+  it("recursively applies nested record lenses when parent record has no local steps", () => {
+    const colorRegistry: UpgradeRegistry = {
+      modelName: "Color",
+      allFields: {
+        hex: { type: optionalPrimitive },
+        rgba: { type: optionalPrimitive },
+      },
+      steps: [
+        {
+          addedInVersion: 2,
+          fields: {
+            rgba: { derivedFrom: ["hex"] },
+          },
+        },
+      ],
+    };
+
+    const boxRegistry: UpgradeRegistry = {
+      modelName: "Box",
+      allFields: {
+        color: { type: { kind: "modelRef", model: "Color" } },
+      },
+      steps: [],
+    };
+
+    const nestedRegistries: UpgradeRegistryMap = {
+      Box: boxRegistry,
+      Color: colorRegistry,
+    };
+    const nestedUpgradeFns: UpgradeFns = {
+      Color: {
+        v2: {
+          rgba: ({ hex }) => `rgba(${hex})`,
+        },
+      },
+    };
+
+    const rawData = { color: { hex: "#FF0000" } };
+    const result = resolveAndApplyLens(rawData, boxRegistry, nestedRegistries, nestedUpgradeFns);
+
+    expect((result.color as Record<string, unknown>).rgba).toBe("rgba(#FF0000)");
+    expect((result.color as Record<string, unknown>).hex).toBe("#FF0000");
+  });
+
+  it("recursively applies nested record lenses when union record variant has no local steps", () => {
+    const colorRegistry: UpgradeRegistry = {
+      modelName: "Color",
+      allFields: {
+        hex: { type: optionalPrimitive },
+        rgba: { type: optionalPrimitive },
+      },
+      steps: [
+        {
+          addedInVersion: 2,
+          fields: {
+            rgba: { derivedFrom: ["hex"] },
+          },
+        },
+      ],
+    };
+
+    const boxRegistry: UpgradeRegistry = {
+      modelName: "Box",
+      allFields: {
+        kind: { type: primitive },
+        color: { type: { kind: "modelRef", model: "Color" } },
+      },
+      steps: [],
+    };
+
+    const boxUnion: UnionUpgradeRegistry = {
+      modelName: "BoxUnion",
+      discriminant: "kind",
+      variants: { box: "Box" },
+    };
+
+    const nestedRegistries: UpgradeRegistryMap = {
+      BoxUnion: boxUnion,
+      Box: boxRegistry,
+      Color: colorRegistry,
+    };
+    const nestedUpgradeFns: UpgradeFns = {
+      Color: {
+        v2: {
+          rgba: ({ hex }) => `rgba(${hex})`,
+        },
+      },
+    };
+
+    const rawData = { kind: "box", color: { hex: "#00FF00" } };
+    const result = resolveAndApplyLens(rawData, boxUnion, nestedRegistries, nestedUpgradeFns);
+
+    expect((result.color as Record<string, unknown>).rgba).toBe("rgba(#00FF00)");
+    expect((result.color as Record<string, unknown>).hex).toBe("#00FF00");
+  });
+
   describe("union → union recursion", () => {
     // Entity { type: "livingBeing", value: LivingBeing }
     // LivingBeing { kind: "animal", ...Animal fields }

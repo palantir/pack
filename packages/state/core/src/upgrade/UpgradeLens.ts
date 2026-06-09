@@ -30,7 +30,8 @@ function isUnionRegistry(entry: UpgradeRegistryEntry): entry is UnionUpgradeRegi
 /**
  * Resolve an upgrade registry entry and apply the read lens.
  *
- * For record registries, applies the lens directly.
+ * For record registries, applies the lens when the record or any nested record
+ * may need upgrade treatment.
  * For union registries, reads the discriminant from the data to determine the
  * variant, then applies that variant's lens.
  *
@@ -66,7 +67,7 @@ export function resolveAndApplyLens(
                 return { ...rawData, value: upgradedValue };
               }
             }
-          } else if (variantRegistry.steps.length > 0) {
+          } else if (registryNeedsReadLens(variantRegistry, allRegistries)) {
             // Union→record: the record payload is the outer object itself
             return applyReadLens(rawData, variantRegistry, allRegistries, upgradeFns);
           }
@@ -76,11 +77,57 @@ export function resolveAndApplyLens(
     return rawData;
   }
 
-  if (entry.steps.length > 0) {
+  if (registryNeedsReadLens(entry, allRegistries)) {
     return applyReadLens(rawData, entry, allRegistries, upgradeFns);
   }
 
   return rawData;
+}
+
+function registryNeedsReadLens(
+  entry: UpgradeRegistryEntry,
+  allRegistries: UpgradeRegistryMap,
+  visited = new Set<string>(),
+): boolean {
+  if (isUnionRegistry(entry)) {
+    if (visited.has(entry.modelName)) return false;
+    visited.add(entry.modelName);
+
+    return Object.values(entry.variants).some(variantModelName => {
+      const variantRegistry = allRegistries[variantModelName];
+      return variantRegistry != null
+        && registryNeedsReadLens(variantRegistry, allRegistries, visited);
+    });
+  }
+
+  if (entry.steps.length > 0) return true;
+  if (visited.has(entry.modelName)) return false;
+  visited.add(entry.modelName);
+
+  return Object.values(entry.allFields).some(fieldDef =>
+    fieldTypeNeedsReadLens(fieldDef.type, allRegistries, visited)
+  );
+}
+
+function fieldTypeNeedsReadLens(
+  type: FieldTypeDescriptor,
+  allRegistries: UpgradeRegistryMap,
+  visited: Set<string>,
+): boolean {
+  switch (type.kind) {
+    case "primitive":
+      return false;
+    case "modelRef": {
+      const subEntry = allRegistries[type.model];
+      return subEntry != null && registryNeedsReadLens(subEntry, allRegistries, visited);
+    }
+    case "array":
+      return fieldTypeNeedsReadLens(type.element, allRegistries, visited);
+    case "map":
+      return fieldTypeNeedsReadLens(type.value, allRegistries, visited);
+    case "optional":
+      return fieldTypeNeedsReadLens(type.inner, allRegistries, visited);
+  }
 }
 
 /**
