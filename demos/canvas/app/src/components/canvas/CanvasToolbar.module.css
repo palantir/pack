@@ -87,6 +87,16 @@
   padding: 4px 8px;
 }
 
+.slider {
+  width: 120px;
+}
+
+.opacityValue {
+  color: #5f6b7c;
+  font-size: 12px;
+  min-width: 36px;
+}
+
 .toolGroupRight {
   align-items: center;
   display: flex;

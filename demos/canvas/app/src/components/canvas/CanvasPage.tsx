@@ -114,10 +114,12 @@ export const CanvasPage = () => {
       <CanvasToolbar
         canDelete={interaction.selectedShapeId != null}
         currentColor={interaction.currentColor}
+        currentOpacity={interaction.currentOpacity}
         currentTool={interaction.currentTool}
         doc={doc}
         onColorChange={interaction.setColor}
         onDelete={interaction.deleteSelected}
+        onOpacityChange={interaction.setOpacity}
         onToolChange={interaction.setTool}
       />
       <CanvasContent
