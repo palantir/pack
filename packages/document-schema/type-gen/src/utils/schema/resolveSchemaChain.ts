@@ -230,16 +230,33 @@ export function stripDeprecatedFieldsForSdk(chain: VersionedIrEntry[]): Versione
 }
 
 /**
- * True if any migration in the chain declares a non-empty `derivedFrom`. Drives
- * whether the generated SDK emits `DocumentModel` as a factory (requires the
- * app to supply typed upgrade functions) or as a const (no upgrade functions needed).
+ * True if the chain has any field that requires a runtime upgrade function.
+ * Drives whether the generated SDK emits `DocumentModel` as a factory
+ * (requires the app to supply typed upgrade functions) or as a const.
+ *
+ * Two cases trigger this:
+ *  - A field declares `derivedFrom` with one or more source fields — the app
+ *    must supply a forward function.
+ *  - A required field is added in a version past v1 (no `derivedFrom`) — the
+ *    app must supply a zero-arg thunk; `undefined` is not a legal value.
+ *
+ * Optional additive fields don't trigger it; the lens leaves them alone.
  */
-export function chainHasDerivedFields(chain: VersionedIrEntry[]): boolean {
-  for (const entry of chain) {
-    if (entry.migrations == null) continue;
-    for (const recordMigrations of Object.values(entry.migrations)) {
-      for (const fieldMigration of Object.values(recordMigrations)) {
-        if (fieldMigration.derivedFrom.length > 0) return true;
+export function chainNeedsUpgradeFns(chain: VersionedIrEntry[]): boolean {
+  for (let i = 1; i < chain.length; i++) {
+    const prevEntry = chain[i - 1]!;
+    const currEntry = chain[i]!;
+    for (const [modelKey, currModelDef] of Object.entries(currEntry.ir.models)) {
+      if (currModelDef.type !== "record") continue;
+      const prevModelDef = prevEntry.ir.models[modelKey];
+      if (prevModelDef == null || prevModelDef.type !== "record") continue;
+      const prevFields = new Set(prevModelDef.record.fields.map(f => f.key));
+      const recordMigrations = currEntry.migrations?.[modelKey];
+      for (const field of currModelDef.record.fields) {
+        if (prevFields.has(field.key)) continue;
+        const derivedFrom = recordMigrations?.[field.key]?.derivedFrom ?? [];
+        if (derivedFrom.length > 0) return true;
+        if (field.isOptional !== true) return true;
       }
     }
   }

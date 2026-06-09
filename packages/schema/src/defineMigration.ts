@@ -34,81 +34,19 @@ export type SchemaBuilder<T extends ModelDefs> = {
 };
 
 /**
- * Recursive literal-JSON type. Constrains schema-time `default` values to
- * data that JSON-serializes losslessly — no `Date`, `RegExp`, functions, class
- * instances, or `undefined`. Mirrors the `JsonValue` exported by
- * `@palantir/pack.document-schema.model-types`; kept local here to avoid a
- * package dependency from `pack.schema`.
- */
-type JsonValue =
-  | string
-  | number
-  | boolean
-  | null
-  | JsonValue[]
-  | { [key: string]: JsonValue };
-
-/**
- * Upgrade options for a field whose value is derived from prior-version fields.
- * Supplied as the third argument to `addField`; surfaced by `applyMigration`
- * as part of `MigrationResult.upgrades`. Declares the structural dependency
- * (`derivedFrom`) and an optional literal JSON `default` used when no source
- * data exists. The runtime forward function is supplied separately via the
- * generated `DocumentModel(...)` factory's `UpgradeFns` parameter.
+ * Upgrade options for a field added in this version. Supplied as the third
+ * argument to `addField`; surfaced by `applyMigration` as part of
+ * `MigrationResult.upgrades`. Declares the structural dependency
+ * (`derivedFrom`) the runtime lens uses to decide when to invoke the
+ * upgrade function. The function itself — derived or constant — is supplied
+ * at boot via the generated `DocumentModel(...)` factory's `UpgradeFns`
+ * parameter.
  */
 export interface UpgradeFieldOptions<TOld extends Record<string, unknown>> {
   readonly derivedFrom: ReadonlyArray<keyof TOld & string>;
-  readonly default?: JsonValue;
 }
 
-/**
- * Options for a purely additive field. `default` is literal JSON only;
- * validated at `addField()` call time.
- */
-export interface AdditiveFieldOptions {
-  readonly default?: JsonValue;
-}
-
-export type FieldOptions =
-  | UpgradeFieldOptions<Record<string, unknown>>
-  | AdditiveFieldOptions;
-
-/**
- * Recursively assert `value` is representable as literal JSON. Rejects `Date`,
- * `RegExp`, functions, class instances, symbol-keyed properties, `undefined`
- * (anywhere — top-level or nested), `symbol`, and `bigint`. Throws on the
- * first offending value, naming the path for debuggability.
- */
-function assertJsonDefault(value: unknown, path: string): void {
-  // eslint-disable-next-line eqeqeq -- need to distinguish null (valid JSON) from undefined (not).
-  if (value === null) return;
-  const t = typeof value;
-  if (t === "undefined") {
-    throw new Error(`Invalid JSON default at ${path}: undefined is not valid JSON`);
-  }
-  if (t === "string" || t === "number" || t === "boolean") return;
-  if (t === "function" || t === "symbol" || t === "bigint") {
-    throw new Error(`Invalid JSON default at ${path}: ${t} is not valid JSON`);
-  }
-  if (Array.isArray(value)) {
-    for (let i = 0; i < value.length; i++) {
-      assertJsonDefault(value[i], `${path}[${i}]`);
-    }
-    return;
-  }
-  const proto = Object.getPrototypeOf(value);
-  if (proto !== Object.prototype && proto != null) {
-    const ctorName = (value as { constructor?: { name?: string } }).constructor?.name
-      ?? "non-plain object";
-    throw new Error(`Invalid JSON default at ${path}: ${ctorName} is not valid JSON`);
-  }
-  if (Object.getOwnPropertySymbols(value as object).length > 0) {
-    throw new Error(`Invalid JSON default at ${path}: symbol-keyed properties are not valid JSON`);
-  }
-  for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
-    assertJsonDefault(v, `${path}.${k}`);
-  }
-}
+export type FieldOptions = UpgradeFieldOptions<Record<string, unknown>>;
 
 export interface RecordBuilder<T extends Record<string, Type>> {
   // TODO: builders should support arg types and resolveModels to refs
@@ -214,9 +152,6 @@ class RecordBuilderImpl<T extends RecordFields> implements RecordBuilder<T> {
     value: V,
     options?: FieldOptions,
   ): RecordBuilder<T & Record<K, V>> {
-    if (options != null && "default" in options && options.default !== undefined) {
-      assertJsonDefault(options.default, `addField("${name}").default`);
-    }
     const next = new Map(this.upgradeOptions);
     if (options != null) {
       next.set(name, options);
@@ -347,12 +282,7 @@ export function applyMigration<
         UpgradeFieldOptions<Record<string, unknown>>
       > = {};
       for (const [fieldName, options] of opts) {
-        // Only `UpgradeFieldOptions` (which declare `derivedFrom`) flow into the
-        // upgrades map; `AdditiveFieldOptions` carry only a literal `default`
-        // and have no read-time lens effect.
-        if ("derivedFrom" in options) {
-          fieldEntries[fieldName] = options;
-        }
+        fieldEntries[fieldName] = options;
       }
       if (Object.keys(fieldEntries).length > 0) {
         upgrades[modelKey] = fieldEntries;

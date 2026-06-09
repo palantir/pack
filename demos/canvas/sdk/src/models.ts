@@ -151,7 +151,7 @@ export const FreehandStrokeModel: FreehandStrokeModel = {
 
 /**
  * Construct the DocumentModel for this SDK, wiring in the typed forward
- * functions the runtime needs to materialize derived fields.
+ * functions the runtime needs to materialize fields added past v1.
  */
 export function DocumentModel(upgradeFns: DocumentUpgradeFns): DocumentSchema {
   return {

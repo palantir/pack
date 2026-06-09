@@ -31,12 +31,14 @@ export const CanvasSchema = DocumentModel({
     v2: {
       fillColor: ({ color }) => color,
       strokeColor: ({ color }) => color,
+      opacity: () => 1.0,
     },
   },
   ShapeCircle: {
     v2: {
       fillColor: ({ color }) => color,
       strokeColor: ({ color }) => color,
+      opacity: () => 1.0,
     },
   },
 });

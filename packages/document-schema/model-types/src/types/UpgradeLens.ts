@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 
-import type { JsonValue } from "./JsonValue.js";
-
 /** Type descriptor for a field, enabling recursive lens application. */
 export type FieldTypeDescriptor =
   | { kind: "primitive" }
@@ -26,17 +24,16 @@ export type FieldTypeDescriptor =
 
 export interface FieldLensDef {
   /**
-   * Source field names. When empty, the field is additive — only `default` applies and no
-   * forward function is invoked.
+   * Source field names. When empty, the field is additive — the upgrade fn
+   * receives `{}` and returns a value of the field's type. Either way, the
+   * runtime looks up an entry in `UpgradeFns` at this `(modelName, version,
+   * fieldName)` and calls it.
    */
   derivedFrom: string[];
-  /** Literal JSON only — validated at schema build time. Used when no source data exists. */
-  default?: JsonValue;
 }
 
 export interface FieldDef {
   type: FieldTypeDescriptor;
-  default?: unknown;
 }
 
 export interface UpgradeStepDef {

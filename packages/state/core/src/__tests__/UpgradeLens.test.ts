@@ -66,32 +66,54 @@ describe("applyReadLens", () => {
     expect(result.left).toBe(10);
   });
 
-  it("applies default values for additive fields", () => {
+  it("invokes a zero-source upgrade fn for additive fields added past v1", () => {
     const registry: UpgradeRegistry = {
       modelName: "ShapeBox",
       allFields: {
         left: { type: primitive },
-        opacity: { type: optionalPrimitive, default: 1.0 },
+        opacity: { type: primitive },
       },
       steps: [
         {
           addedInVersion: 2,
           fields: {
-            opacity: {
-              derivedFrom: [],
-              default: 1.0,
-            },
+            opacity: { derivedFrom: [] },
           },
         },
       ],
     };
+    const upgradeFns: UpgradeFns = {
+      ShapeBox: {
+        v2: {
+          opacity: () => 1.0,
+        },
+      },
+    };
 
     const rawData = { left: 10 };
-    // No upgrade function needed — purely additive, no forward derivation.
-    const result = applyReadLens(rawData, registry, { ShapeBox: registry }, undefined);
+    const result = applyReadLens(rawData, registry, { ShapeBox: registry }, upgradeFns);
 
     expect(result.opacity).toBe(1.0);
     expect(result.left).toBe(10);
+  });
+
+  it("throws when a required additive upgrade fn is missing", () => {
+    const registry: UpgradeRegistry = {
+      modelName: "ShapeBox",
+      allFields: {
+        opacity: { type: primitive },
+      },
+      steps: [
+        {
+          addedInVersion: 2,
+          fields: {
+            opacity: { derivedFrom: [] },
+          },
+        },
+      ],
+    };
+    expect(() => applyReadLens({}, registry, { ShapeBox: registry }, undefined))
+      .toThrow(/Missing upgrade function for ShapeBox\.v2\.opacity/);
   });
 
   it("does not overwrite a field that is already present", () => {
@@ -373,9 +395,13 @@ describe("applyReadLens", () => {
  * Null vs undefined vs missing-key semantics.
  *
  * The lens uses `=== undefined` as the sole "absent" sentinel:
- *  - `undefined` (or missing key): field is absent — derive via forward transform, then default.
- *  - `null`: field is present with an explicit null value — no derivation, no default, preserved as-is.
+ *  - `undefined` (or missing key): field is absent — invoke the upgrade fn if its sources are present.
+ *  - `null`: field is present with an explicit null value — no derivation, preserved as-is.
  *  - `{ a: undefined }` vs `{}`: indistinguishable at runtime (`obj["a"]` is `undefined` either way).
+ *
+ * When a derived field's source is missing, the field stays undefined — there is no
+ * "fall back to default" path. Optional fields can legitimately end up undefined; required
+ * fields shouldn't be in that state (the upgrade fn for them is zero-arg and always fires).
  *
  * This aligns with Y.js `YMap` semantics: `YMap.get()` returns `undefined`
  * for deleted/missing keys, while `null` is a valid storable value.
@@ -383,7 +409,7 @@ describe("applyReadLens", () => {
  * @see {@link https://github.com/yjs/yjs/blob/da7366c0852548b7d7055f3173f72e700a9d4510/src/ytype.js#L1860-L1864 | YMap.get — typeMapGet}
  */
 describe("null / undefined / missing-key semantics", () => {
-  // Shared registry: derives `label` from `name`, with a default of "untitled".
+  // Shared registry: derives `label` from `name`.
   const registry: UpgradeRegistry = {
     modelName: "Item",
     allFields: {
@@ -394,10 +420,7 @@ describe("null / undefined / missing-key semantics", () => {
       {
         addedInVersion: 2,
         fields: {
-          label: {
-            derivedFrom: ["name"],
-            default: "untitled",
-          },
+          label: { derivedFrom: ["name"] },
         },
       },
     ],
@@ -439,36 +462,24 @@ describe("null / undefined / missing-key semantics", () => {
   });
 
   describe("source field presence for derivation", () => {
-    it("source missing — cannot derive, falls back to default", () => {
+    it("source missing — cannot derive, field stays undefined", () => {
       const result = applyReadLens({}, registry, allRegistries, upgradeFns);
-      expect(result.label).toBe("untitled");
+      expect(result.label).toBeUndefined();
     });
 
-    it("source undefined — cannot derive, falls back to default", () => {
+    it("source undefined — cannot derive, field stays undefined", () => {
       const result = applyReadLens(
         { name: undefined },
         registry,
         allRegistries,
         upgradeFns,
       );
-      expect(result.label).toBe("untitled");
+      expect(result.label).toBeUndefined();
     });
 
     it("source null — can derive (null is a present value)", () => {
       const result = applyReadLens({ name: null }, registry, allRegistries, upgradeFns);
       expect(result.label).toBe("derived:null");
-    });
-  });
-
-  describe("default application", () => {
-    it("applies default only when field is undefined after derivation", () => {
-      const result = applyReadLens({}, registry, allRegistries, upgradeFns);
-      expect(result.label).toBe("untitled");
-    });
-
-    it("does not apply default when field is null", () => {
-      const result = applyReadLens({ label: null }, registry, allRegistries, upgradeFns);
-      expect(result.label).toBeNull();
     });
   });
 });
@@ -634,6 +645,102 @@ describe("resolveAndApplyLens", () => {
     const result = resolveAndApplyLens(rawData, rectRegistry, allRegistries, upgradeFns);
 
     expect(result).toBe(rawData);
+  });
+
+  it("recursively applies nested record lenses when parent record has no local steps", () => {
+    const colorRegistry: UpgradeRegistry = {
+      modelName: "Color",
+      allFields: {
+        hex: { type: optionalPrimitive },
+        rgba: { type: optionalPrimitive },
+      },
+      steps: [
+        {
+          addedInVersion: 2,
+          fields: {
+            rgba: { derivedFrom: ["hex"] },
+          },
+        },
+      ],
+    };
+
+    const boxRegistry: UpgradeRegistry = {
+      modelName: "Box",
+      allFields: {
+        color: { type: { kind: "modelRef", model: "Color" } },
+      },
+      steps: [],
+    };
+
+    const nestedRegistries: UpgradeRegistryMap = {
+      Box: boxRegistry,
+      Color: colorRegistry,
+    };
+    const nestedUpgradeFns: UpgradeFns = {
+      Color: {
+        v2: {
+          rgba: ({ hex }) => `rgba(${hex})`,
+        },
+      },
+    };
+
+    const rawData = { color: { hex: "#FF0000" } };
+    const result = resolveAndApplyLens(rawData, boxRegistry, nestedRegistries, nestedUpgradeFns);
+
+    expect((result.color as Record<string, unknown>).rgba).toBe("rgba(#FF0000)");
+    expect((result.color as Record<string, unknown>).hex).toBe("#FF0000");
+  });
+
+  it("recursively applies nested record lenses when union record variant has no local steps", () => {
+    const colorRegistry: UpgradeRegistry = {
+      modelName: "Color",
+      allFields: {
+        hex: { type: optionalPrimitive },
+        rgba: { type: optionalPrimitive },
+      },
+      steps: [
+        {
+          addedInVersion: 2,
+          fields: {
+            rgba: { derivedFrom: ["hex"] },
+          },
+        },
+      ],
+    };
+
+    const boxRegistry: UpgradeRegistry = {
+      modelName: "Box",
+      allFields: {
+        kind: { type: primitive },
+        color: { type: { kind: "modelRef", model: "Color" } },
+      },
+      steps: [],
+    };
+
+    const boxUnion: UnionUpgradeRegistry = {
+      modelName: "BoxUnion",
+      discriminant: "kind",
+      variants: { box: "Box" },
+    };
+
+    const nestedRegistries: UpgradeRegistryMap = {
+      BoxUnion: boxUnion,
+      Box: boxRegistry,
+      Color: colorRegistry,
+    };
+    const nestedUpgradeFns: UpgradeFns = {
+      Color: {
+        v2: {
+          rgba: ({ hex }) => `rgba(${hex})`,
+        },
+      },
+    };
+
+    const rawData = { kind: "box", color: { hex: "#00FF00" } };
+    const result = resolveAndApplyLens(rawData, boxUnion, nestedRegistries, nestedUpgradeFns);
+
+    expect((result.color as Record<string, unknown>).rgba).toBe("rgba(#00FF00)");
+    expect((result.color as Record<string, unknown>).hex).toBe("#00FF00");
   });
 
   describe("union → union recursion", () => {

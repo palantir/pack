@@ -66,9 +66,6 @@ export const ShapeBoxUpgrades: UpgradeRegistry<'ShapeBox'> = {
         strokeColor: {
           derivedFrom: ['color'],
         },
-        opacity: {
-          derivedFrom: [],
-        },
       },
       removedFields: ['color'],
     },
@@ -107,7 +104,10 @@ import type { ShapeBox__v1, ShapeBox__v2 } from './types.js';
 /**
  * Typed upgrade functions the application must supply at boot. Coverage is
  * exhaustive: missing or extra entries fail type-check at the `DocumentModel(...)`
- * call site. Additive fields (empty `derivedFrom`) are intentionally absent.
+ * call site. Derived fields receive their declared source fields; required
+ * additive fields receive no arguments. Optional additive fields are absent
+ * — `undefined` is a legal value at the new version, so the runtime lens
+ * leaves them alone.
  */
 export interface DocumentUpgradeFns {
   ShapeBox: {

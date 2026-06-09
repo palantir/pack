@@ -29,7 +29,7 @@ export interface ShapeBox__Internal {
   readonly color?: (string | undefined);
   readonly fillColor?: (string | undefined);
   readonly left: number;
-  readonly opacity?: (number | undefined);
+  readonly opacity?: number;
   readonly right: number;
   readonly strokeColor?: (string | undefined);
   readonly top: number;
@@ -41,7 +41,7 @@ export interface ShapeCircle__Internal {
   readonly color?: (string | undefined);
   readonly fillColor?: (string | undefined);
   readonly left: number;
-  readonly opacity?: (number | undefined);
+  readonly opacity?: number;
   readonly right: number;
   readonly strokeColor?: (string | undefined);
   readonly top: number;
@@ -127,7 +127,7 @@ export interface ShapeBox__v2 {
   readonly bottom: number;
   readonly fillColor?: (string | undefined);
   readonly left: number;
-  readonly opacity?: (number | undefined);
+  readonly opacity: number;
   readonly right: number;
   readonly strokeColor?: (string | undefined);
   readonly top: number;
@@ -138,7 +138,7 @@ export interface ShapeBox__v3 {
   readonly bottom: number;
   readonly fillColor?: (string | undefined);
   readonly left: number;
-  readonly opacity?: (number | undefined);
+  readonly opacity: number;
   readonly right: number;
   readonly strokeColor?: (string | undefined);
   readonly top: number;
@@ -158,7 +158,7 @@ export interface ShapeCircle__v2 {
   readonly bottom: number;
   readonly fillColor?: (string | undefined);
   readonly left: number;
-  readonly opacity?: (number | undefined);
+  readonly opacity: number;
   readonly right: number;
   readonly strokeColor?: (string | undefined);
   readonly top: number;
@@ -169,7 +169,7 @@ export interface ShapeCircle__v3 {
   readonly bottom: number;
   readonly fillColor?: (string | undefined);
   readonly left: number;
-  readonly opacity?: (number | undefined);
+  readonly opacity: number;
   readonly right: number;
   readonly strokeColor?: (string | undefined);
   readonly top: number;
