@@ -59,6 +59,11 @@ import type {
 import { DocumentLiveStatus, DocumentLoadStatus } from "../types/DocumentService.js";
 import { createRecordCollectionRef } from "../types/RecordCollectionRefImpl.js";
 import { createRecordRef } from "../types/RecordRefImpl.js";
+import {
+  addDocumentUpdateSchemaVersionToTransaction,
+  getModelDataSchemaVersion,
+  getPartialModelDataSchemaVersion,
+} from "./DocumentUpdateSchemaVersion.js";
 import * as YjsSchemaMapper from "./YjsSchemaMapper.js";
 
 export interface RecordCollectionSubscriptions<M extends Model = Model> {
@@ -535,11 +540,17 @@ export abstract class BaseYjsDocumentService<TDoc extends InternalYjsDoc = Inter
     // TODO: perhaps we just call this via onRecordSet instead?
 
     const storageName = getMetadata(recordRef.model).name;
+    const documentUpdateSchemaVersion = getModelDataSchemaVersion(
+      internalDoc.schema,
+      storageName,
+      state,
+    );
     YjsSchemaMapper.setRecord(
       internalDoc.yDoc,
       storageName,
       recordRef.id,
       state,
+      documentUpdateSchemaVersion,
     );
 
     this.logger.debug("setRecord", {
@@ -566,11 +577,19 @@ export abstract class BaseYjsDocumentService<TDoc extends InternalYjsDoc = Inter
     );
 
     const storageName = getMetadata(recordRef.model).name;
+    const currentState = this.getRecordSnapshotInternal(internalDoc, recordRef);
+    const documentUpdateSchemaVersion = getPartialModelDataSchemaVersion(
+      internalDoc.schema,
+      storageName,
+      partialState,
+      currentState,
+    );
     const wasUpdated = YjsSchemaMapper.updateRecord(
       internalDoc.yDoc,
       storageName,
       recordRef.id,
       partialState,
+      documentUpdateSchemaVersion,
     );
 
     if (!wasUpdated) {
@@ -882,7 +901,15 @@ export abstract class BaseYjsDocumentService<TDoc extends InternalYjsDoc = Inter
 
     const existed = recordsCollection.has(record.id as string);
     if (existed) {
-      recordsCollection.delete(record.id as string);
+      const documentUpdateSchemaVersion = getModelDataSchemaVersion(
+        internalDoc.schema,
+        storageName,
+        this.getRecordSnapshotInternal(internalDoc, record),
+      );
+      internalDoc.yDoc.transact(transaction => {
+        addDocumentUpdateSchemaVersionToTransaction(transaction, documentUpdateSchemaVersion);
+        recordsCollection.delete(record.id as string);
+      });
     }
 
     return Promise.resolve();

@@ -521,9 +521,11 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
 }
 
 function getClientSupportedVersionRange(schema: DocumentSchema): ClientSupportedVersionRange {
-  const version = getMetadata(schema).version;
-  // TODO: Placeholder versions from schema now, update when migration story is complete and implemented
-  return { minVersion: version, maxVersion: version };
+  const schemaMeta = getMetadata(schema);
+  return {
+    minVersion: schemaMeta.minSupportedVersion ?? schemaMeta.version,
+    maxVersion: schemaMeta.version,
+  };
 }
 
 function getWireSecurity({

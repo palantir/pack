@@ -22,18 +22,23 @@ import type { UpgradeRegistry } from '@palantir/pack.document-schema.model-types
 export const ConfigUpgrades: UpgradeRegistry<'Config'> = {
   modelName: 'Config',
   allFields: {
-    label: { type: { kind: 'optional', inner: { kind: 'primitive' } } },
+    label: {
+      type: { kind: 'optional', inner: { kind: 'primitive' } },
+      addedInVersion: 1,
+    },
     scores: {
       type: {
         kind: 'array',
         element: { kind: 'optional', inner: { kind: 'primitive' } },
       },
+      addedInVersion: 1,
     },
     tags: {
       type: {
         kind: 'array',
         element: { kind: 'optional', inner: { kind: 'primitive' } },
       },
+      addedInVersion: 1,
     },
   },
   steps: [],

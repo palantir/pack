@@ -21,8 +21,11 @@ import type { UpgradeRegistry } from '@palantir/pack.document-schema.model-types
 export const ItemUpgrades: UpgradeRegistry<'Item'> = {
   modelName: 'Item',
   allFields: {
-    label: { type: { kind: 'optional', inner: { kind: 'primitive' } } },
-    name: { type: { kind: 'primitive' } },
+    label: {
+      type: { kind: 'optional', inner: { kind: 'primitive' } },
+      addedInVersion: 1,
+    },
+    name: { type: { kind: 'primitive' }, addedInVersion: 1 },
   },
   steps: [],
 };

@@ -28,7 +28,7 @@ import type {
 export const AnimalUpgrades: UpgradeRegistry<'Animal'> = {
   modelName: 'Animal',
   allFields: {
-    species: { type: { kind: 'primitive' } },
+    species: { type: { kind: 'primitive' }, addedInVersion: 1 },
   },
   steps: [],
 };
@@ -36,7 +36,7 @@ export const AnimalUpgrades: UpgradeRegistry<'Animal'> = {
 export const PlantUpgrades: UpgradeRegistry<'Plant'> = {
   modelName: 'Plant',
   allFields: {
-    genus: { type: { kind: 'primitive' } },
+    genus: { type: { kind: 'primitive' }, addedInVersion: 1 },
   },
   steps: [],
 };
