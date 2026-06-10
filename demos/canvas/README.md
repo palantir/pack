@@ -151,12 +151,19 @@ The generated SDK also emits this value as `DOCUMENT_TYPE_NAME`, so app code can
 use the SDK constant as the code-level source of truth when runtime env
 overrides are not needed.
 
-To test the demo app against a real backend, manually deploy the document type
-to Foundry first. The app creates documents by document type name, so create
-will fail if that type has not been registered in the target stack.
+To test the demo app against a real backend with your own document type,
+manually deploy the document type to Foundry first. The app creates documents
+by document type name, so create will fail if that type has not been registered in the target stack.
 
-TODO: Update this section with the deploy command after the deploy handler is
-updated for the current IR pipeline.
+From the repository root, run:
+
+```bash
+pnpm --filter @demo/canvas.schema deploy:document-type
+```
+
+This script reads the same app env files used by the Vite dev server, builds
+the current schema IR, and deploys the document type to `VITE_FOUNDRY_URL`
+using `VITE_DEV_FOUNDRY_TOKEN`.
 
 Use `VITE_PACK_FILE_SYSTEM_TYPE=ARTIFACTS` for artifact-backed documents. Use
 `VITE_PACK_FILE_SYSTEM_TYPE=COMPASS` for Compass-backed documents and provide
