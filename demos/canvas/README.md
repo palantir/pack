@@ -134,8 +134,6 @@ In Foundry, navigate to **Control Panel > Third-party applications** and create 
 3. **Required scopes** - Enable the following:
    - `api:use-admin-read`
    - `api:use-admin-write`
-   - `api:use-filesystem-read`
-   - `api:use-filesystem-write`
    - `api:use-mediasets-read`
    - `api:use-mediasets-write`
    - `api:use-ontologies-read`
