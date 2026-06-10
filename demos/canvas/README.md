@@ -47,7 +47,7 @@ required page env values populated with non-placeholder values.
 
 To connect to a real Foundry instance, you need to:
 
-1. Create a local env file in `demos/canvas/app/`
+1. Create a local env file (`.env.development.local`) in `demos/canvas/app/`
 2. Configure your Foundry credentials
 3. Set up a Third Party Application (TPA) in Foundry
 4. Configure the document type, filesystem mode, and security settings
