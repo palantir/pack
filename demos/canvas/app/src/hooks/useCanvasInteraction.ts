@@ -39,11 +39,13 @@ export interface UseCanvasInteractionResult {
     onMouseUp: (e: MouseEvent<SVGSVGElement>) => void;
   };
   readonly currentColor: string;
+  readonly currentOpacity: number | undefined;
   readonly currentTool: ToolMode;
   deleteSelected: () => void;
   readonly penPoints: readonly [number, number, number][] | undefined;
   readonly selectedShapeId: string | undefined;
   setColor: (color: string) => void;
+  setOpacity: (opacity: number) => void;
   setTool: (tool: ToolMode) => void;
   readonly shapeRefs: readonly RecordRef<typeof NodeShapeModel>[];
   readonly strokeRefs: readonly RecordRef<typeof FreehandStrokeModel>[];
@@ -59,6 +61,7 @@ export function useCanvasInteraction(
   const { clearSelection, selectedShapeRef, selectShape } = useShapeSelection();
   const [currentTool, setCurrentTool] = useState<ToolMode>("select");
   const [currentColor, setCurrentColor] = useState<string>(getDefaultColor());
+  const [currentOpacity, setCurrentOpacity] = useState<number | undefined>();
 
   const creationStateRef = useRef<{ startX: number; startY: number } | undefined>(undefined);
   const [penPoints, setPenPoints] = useState<[number, number, number][] | undefined>(undefined);
@@ -67,6 +70,14 @@ export function useCanvasInteraction(
     (ref: RecordRef<typeof NodeShapeModel> | undefined) => {
       selectShape(ref);
       broadcastSelection(ref != null ? [ref.id] : []);
+      if (ref == null) {
+        setCurrentOpacity(undefined);
+        return;
+      }
+      setCurrentOpacity(undefined);
+      void ref.getSnapshot().then(shape => {
+        setCurrentOpacity(shape?.opacity);
+      });
     },
     [broadcastSelection, selectShape],
   );
@@ -92,6 +103,7 @@ export function useCanvasInteraction(
       );
       clearSelection();
       broadcastSelection([]);
+      setCurrentOpacity(undefined);
     }
   }, [broadcastSelection, clearSelection, doc, selectedShapeRef]);
 
@@ -124,6 +136,38 @@ export function useCanvasInteraction(
           }),
         );
       }
+    },
+    [doc, selectedShapeRef],
+  );
+
+  const setOpacity = useCallback(
+    async (opacity: number) => {
+      if (selectedShapeRef == null) {
+        return;
+      }
+
+      const normalizedOpacity = normalizeOpacity(opacity);
+      setCurrentOpacity(normalizedOpacity);
+
+      const oldShape = await selectedShapeRef.getSnapshot();
+      if (oldShape == null) return;
+
+      const newShape = { ...oldShape, opacity: normalizedOpacity };
+      doc.withTransaction(
+        () => {
+          matchVersion(doc, {
+            1: () => {},
+            2: doc => doc.updateRecord(selectedShapeRef, { opacity: normalizedOpacity }),
+            3: doc => doc.updateRecord(selectedShapeRef, { opacity: normalizedOpacity }),
+          });
+        },
+        ActivityEvents.describeEdit(CanvasActivityModel, {
+          activityType: "shapeUpdated",
+          nodeId: selectedShapeRef.id,
+          oldShape,
+          newShape,
+        }),
+      );
     },
     [doc, selectedShapeRef],
   );
@@ -246,13 +290,19 @@ export function useCanvasInteraction(
       onMouseUp,
     },
     currentColor,
+    currentOpacity,
     currentTool,
     deleteSelected,
     penPoints,
     selectedShapeId: selectedShapeRef?.id,
     setColor,
+    setOpacity,
     setTool,
     shapeRefs,
     strokeRefs,
   };
+}
+
+function normalizeOpacity(opacity: number): number {
+  return Math.min(1, Math.max(0.1, Math.round(opacity * 100) / 100));
 }

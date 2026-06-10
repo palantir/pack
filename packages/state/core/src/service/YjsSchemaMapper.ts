@@ -25,6 +25,7 @@ import {
 } from "@palantir/pack.document-schema.model-types";
 import * as Y from "yjs";
 import { resolveAndApplyLens } from "../upgrade/UpgradeLens.js";
+import { addDocumentUpdateSchemaVersionToTransaction } from "./DocumentUpdateSchemaVersion.js";
 
 export function initializeDocumentStructure(
   yDoc: Y.Doc,
@@ -57,13 +58,17 @@ export function setRecord(
   storageName: string,
   recordId: RecordId,
   state: ModelData<Model>,
+  documentUpdateSchemaVersion?: number,
 ): boolean {
   const recordsCollection = getRecordsMap(yDoc, storageName);
   const currentRecord = recordsCollection.get(recordId as string) as Y.Map<unknown> | undefined;
   const wasExisting = currentRecord != null;
 
   // Use transaction for atomic update
-  yDoc.transact(() => {
+  yDoc.transact(transaction => {
+    if (documentUpdateSchemaVersion != null) {
+      addDocumentUpdateSchemaVersionToTransaction(transaction, documentUpdateSchemaVersion);
+    }
     if (currentRecord != null) {
       // Clear existing record completely
       currentRecord.clear();
@@ -107,6 +112,7 @@ export function updateRecord(
   storageName: string,
   recordId: RecordId,
   partialState: Partial<ModelData<Model>>,
+  documentUpdateSchemaVersion?: number,
 ): boolean {
   const recordsCollection = getRecordsMap(yDoc, storageName);
   const currentRecord = recordsCollection.get(recordId as string) as Y.Map<unknown> | undefined;
@@ -116,7 +122,10 @@ export function updateRecord(
   }
 
   // Use transaction for atomic partial update
-  yDoc.transact(() => {
+  yDoc.transact(transaction => {
+    if (documentUpdateSchemaVersion != null) {
+      addDocumentUpdateSchemaVersionToTransaction(transaction, documentUpdateSchemaVersion);
+    }
     updateYMapFromPartialState(currentRecord, partialState);
   });
 

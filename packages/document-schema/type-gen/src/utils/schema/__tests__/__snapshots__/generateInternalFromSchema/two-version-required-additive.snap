@@ -44,12 +44,15 @@ import type { UpgradeRegistry } from '@palantir/pack.document-schema.model-types
 export const ShapeBoxUpgrades: UpgradeRegistry<'ShapeBox'> = {
   modelName: 'ShapeBox',
   allFields: {
-    bottom: { type: { kind: 'primitive' } },
-    color: { type: { kind: 'optional', inner: { kind: 'primitive' } } },
-    left: { type: { kind: 'primitive' } },
-    opacity: { type: { kind: 'primitive' } },
-    right: { type: { kind: 'primitive' } },
-    top: { type: { kind: 'primitive' } },
+    bottom: { type: { kind: 'primitive' }, addedInVersion: 1 },
+    color: {
+      type: { kind: 'optional', inner: { kind: 'primitive' } },
+      addedInVersion: 1,
+    },
+    left: { type: { kind: 'primitive' }, addedInVersion: 1 },
+    opacity: { type: { kind: 'primitive' }, addedInVersion: 2 },
+    right: { type: { kind: 'primitive' }, addedInVersion: 1 },
+    top: { type: { kind: 'primitive' }, addedInVersion: 1 },
   },
   steps: [
     {
