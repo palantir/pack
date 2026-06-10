@@ -119,9 +119,9 @@ export async function readPackConfig(configPath: string): Promise<PackConfigValu
  *    downstream tools default to supporting only the latest schema version.
  *
  * Note: this is distinct from the legacy single-version IR JSON consumed by
- * `ir deploy` / `ir zod`, which is a bare `IRealTimeDocumentSchema` (no chain,
- * no migrations). Tools that previously read that format should pick the
- * entry matching `latestVersion` from `chain` and use its `ir` field.
+ * `ir zod`, which is a bare `IRealTimeDocumentSchema` (no chain, no migrations).
+ * Tools that previously read that format should pick the entry matching
+ * `latestVersion` from `chain` and use its `ir` field.
  */
 export async function schemaIrHandler(options: SchemaIrOptions): Promise<void> {
   const { input, output, config } = options;
