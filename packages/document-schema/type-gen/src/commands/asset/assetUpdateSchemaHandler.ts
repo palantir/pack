@@ -29,11 +29,28 @@ interface AssetUpdateSchemaOptions {
   readonly baseUrl: string;
   readonly auth: string;
   readonly ontologyRid: string;
+  readonly version?: string;
   readonly forceOverwrite?: boolean;
   readonly firstPartyPrefix?: string;
 }
 
 const DEFAULT_API_PREFIX = "/api";
+
+function resolveSchemaVersion(assetVersion: number, versionOverride?: string): number {
+  if (versionOverride == null) {
+    return assetVersion;
+  }
+
+  if (!/^[1-9]\d*$/.test(versionOverride)) {
+    throw new CommanderError(
+      1,
+      "EINVAL",
+      `Invalid --version "${versionOverride}". Must be a positive integer.`,
+    );
+  }
+
+  return Number(versionOverride);
+}
 
 /** Updates the schema of an existing document type using a generated asset JSON file. */
 export async function assetUpdateSchemaHandler(
@@ -46,6 +63,7 @@ export async function assetUpdateSchemaHandler(
 
     const assetContent = readFileSync(assetPath, "utf8");
     const asset = JSON.parse(assetContent) as DocumentTypeAsset;
+    const schemaVersion = resolveSchemaVersion(asset.schemaVersion, options.version);
 
     const fetchFn = options.firstPartyPrefix != null
       ? buildPrefixRewriteFetch(options.firstPartyPrefix)
@@ -66,7 +84,7 @@ export async function assetUpdateSchemaHandler(
       requestBody: {
         ontologyRid: options.ontologyRid,
         schema: asset.documentStorageType.yjs.schema,
-        version: asset.schemaVersion,
+        version: schemaVersion,
         ...(options.forceOverwrite ? { forceOverwrite: true } : {}),
       },
     };
@@ -76,7 +94,7 @@ export async function assetUpdateSchemaHandler(
     }
 
     consola.info(
-      `Updating schema for document type "${asset.documentTypeName}" -> version ${asset.schemaVersion}`,
+      `Updating schema for document type "${asset.documentTypeName}" -> version ${schemaVersion}`,
     );
 
     const result = await DocumentTypes.updateSchema(osdkClient, request, { preview: true });

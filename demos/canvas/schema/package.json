@@ -9,6 +9,7 @@
     "url": "https://github.com/palantir/pack.git"
   },
   "scripts": {
+    "build:asset": "pnpm run build:ir && type-gen ir asset -i build/ir.json -o build/asset.json",
     "build:ir": "type-gen schema ir -i src/schema.mjs -o build/ir.json --config pack-config.json",
     "clean": "rimraf .turbo build dist lib test-output *.tgz tsconfig.tsbuildinfo",
     "deploy:document-type": "bash scripts/deploy-document-type.sh",
@@ -17,7 +18,8 @@
     "sdk-gen": "bash scripts/build-sdk.sh",
     "test": "vitest run --passWithNoTests -u",
     "test:watch": "vitest --passWithNoTests",
-    "typecheck": "tsc --noEmit --emitDeclarationOnly false"
+    "typecheck": "tsc --noEmit --emitDeclarationOnly false",
+    "upgrade:schema": "bash scripts/upgrade-schema.sh"
   },
   "devDependencies": {
     "@palantir/pack.document-schema.type-gen": "workspace:*",
