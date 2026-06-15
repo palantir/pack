@@ -136,6 +136,7 @@ export interface FoundryEventService {
     yDoc: y.Doc,
     clientSupportedVersionRange: ClientSupportedVersionRange,
     onStatusChange: (status: Partial<DocumentSyncStatus>) => void,
+    getDocumentSchemaOperationalVersion?: () => number,
   ): SyncSession;
 
   stopDocumentSync(session: SyncSession): void;
@@ -201,6 +202,7 @@ class FoundryEventServiceImpl implements FoundryEventService {
     yDoc: y.Doc,
     clientSupportedVersionRange: ClientSupportedVersionRange,
     onStatusChange: (status: Partial<DocumentSyncStatus>) => void,
+    getDocumentSchemaOperationalVersion?: () => number,
   ): SyncSession {
     const session = this.getOrCreateSession(documentId, yDoc);
 
@@ -233,6 +235,7 @@ class FoundryEventServiceImpl implements FoundryEventService {
         ? createDocumentEditDescription(origin)
         : undefined;
       const documentUpdateSchemaVersion = getDocumentUpdateSchemaVersionFromTransaction(transaction)
+        ?? getDocumentSchemaOperationalVersion?.()
         ?? getFallbackDocumentUpdateSchemaVersion(clientSupportedVersionRange);
       const publishMessage: DocumentPublishMessage = {
         clientId: session.clientId,

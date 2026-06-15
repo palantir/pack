@@ -139,6 +139,10 @@ export interface DocumentRef<D extends DocumentSchema = DocumentSchema> {
   /**
    * Subscribe to metadata changes for the document.
    *
+   * In Foundry, metadata update events are sent for metadata edits/deletion.
+   * Name and description changes are not identified in the event payload, and
+   * operational-version-only changes do not currently trigger this callback.
+   *
    * @returns An unsubscribe function.
    * @example
    * ```ts
@@ -263,10 +267,10 @@ export interface DocumentRef<D extends DocumentSchema = DocumentSchema> {
   withTransaction(fn: () => void, description?: EditDescription): void;
 
   /**
-   * The document's current operating schema version.
+   * The document's current schema operational version.
    *
-   * All connected clients operate at this version. The version is determined
-   * by the backend and may change during a session (version bump).
+   * The backend determines the highest schema version this document currently
+   * accepts. This may change during a session.
    */
   readonly version: number;
 

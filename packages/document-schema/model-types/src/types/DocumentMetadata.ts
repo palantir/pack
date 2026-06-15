@@ -59,10 +59,9 @@ export interface DocumentMetadata {
   readonly ontologyRid: string;
   /**
    * The schema version this document is currently operating at.
-   * All connected clients must read and write at this version.
-   * Set by the backend; only increases (one-way ratchet).
+   * Calculated and set by the backend; only increases (one-way ratchet).
    */
-  readonly schemaVersion?: number;
+  readonly operationalVersion?: number;
   readonly security: DocumentSecurity;
   readonly updatedBy?: string;
   readonly updatedTime?: string;
