@@ -27,7 +27,7 @@ import { useDocumentSchemaVersion } from "../hooks/useDocumentSchemaVersion.js";
 
 type MetadataCallback = (docRef: DocumentRef<DocumentSchema>, metadata: DocumentMetadata) => void;
 
-function metadata(schemaVersion?: number): DocumentMetadata {
+function metadata(operationalVersion?: number): DocumentMetadata {
   const baseMetadata = {
     documentTypeName: "TestType",
     name: "Test Document",
@@ -37,7 +37,7 @@ function metadata(schemaVersion?: number): DocumentMetadata {
       mandatory: {},
     },
   };
-  return schemaVersion != null ? { ...baseMetadata, schemaVersion } : baseMetadata;
+  return operationalVersion != null ? { ...baseMetadata, operationalVersion } : baseMetadata;
 }
 
 function createTestDocRef(initialVersion: number): {
@@ -66,8 +66,8 @@ function createTestDocRef(initialVersion: number): {
   return {
     docRef,
     emitMetadata: newMetadata => {
-      if (newMetadata.schemaVersion != null) {
-        currentVersion = newMetadata.schemaVersion;
+      if (newMetadata.operationalVersion != null) {
+        currentVersion = newMetadata.operationalVersion;
       }
       callback?.(docRef, newMetadata);
     },
@@ -79,7 +79,7 @@ function createTestDocRef(initialVersion: number): {
 }
 
 describe("useDocumentSchemaVersion", () => {
-  it("updates when document metadata reports a new schema version", () => {
+  it("updates when document metadata reports a new operational version", () => {
     const { docRef, emitMetadata, unsubscribe } = createTestDocRef(1);
 
     const { result, unmount } = renderHook(() => useDocumentSchemaVersion(docRef));
@@ -96,7 +96,7 @@ describe("useDocumentSchemaVersion", () => {
     expect(unsubscribe).toHaveBeenCalledOnce();
   });
 
-  it("falls back to docRef.version when metadata omits schemaVersion", () => {
+  it("falls back to docRef.version when metadata omits operationalVersion", () => {
     const { docRef, emitMetadata, setCurrentVersion } = createTestDocRef(1);
 
     const { result } = renderHook(() => useDocumentSchemaVersion(docRef));
