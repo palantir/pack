@@ -1,5 +1,12 @@
 # @palantir/pack.schema
 
+## 0.8.0
+
+### Minor Changes
+
+- 1cc9a09: included versions for added fields and models and deprecations
+- 98803f7: Add version-safe update methods to DocumentRef
+
 ## 0.7.0
 
 ### Minor Changes

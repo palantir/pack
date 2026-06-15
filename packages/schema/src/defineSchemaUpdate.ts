@@ -14,9 +14,10 @@
  * limitations under the License.
  */
 
-import type { SchemaBuilder } from "./defineMigration.js";
+import type { FieldDeprecation, SchemaBuilder } from "./defineMigration.js";
 import { applyMigration } from "./defineMigration.js";
 import type { ModelDefs } from "./defs.js";
+import { isRecordDef } from "./utils.js";
 
 export interface InitialSchema<T extends ModelDefs = ModelDefs> {
   readonly type: "initial";
@@ -30,12 +31,19 @@ export interface FieldMigration {
 
 export type VersionMigrations = Record<string, Record<string, FieldMigration>>;
 
+export interface FieldDeprecationInfo {
+  readonly fromVersion: number;
+  readonly message?: string;
+}
+export type VersionDeprecations = Record<string, Record<string, FieldDeprecationInfo>>;
+
 export interface VersionedSchema<T extends ModelDefs = ModelDefs> {
   readonly type: "versioned";
   readonly models: T;
   readonly version: number;
   readonly previous: SchemaDefinition;
   readonly migrations?: VersionMigrations;
+  readonly deprecations?: VersionDeprecations;
 }
 
 export type SchemaDefinition<T extends ModelDefs = ModelDefs> =
@@ -67,18 +75,18 @@ export interface SchemaVersionBuilder<T extends ModelDefs> {
 }
 
 /**
- * Merge two `VersionMigrations` records. Per-model field migrations from
- * `override` take precedence over `base` for the same field, but the maps are
- * combined at both the model and field level so explicit `withMigrations`
- * calls can supplement (not just replace) the sugar from `addField` options.
+ * Shallow-merge two `[modelKey][fieldName]` maps; `override` wins per field.
+ * Used for both migrations (so `withMigrations` supplements `addField` sugar)
+ * and deprecations (so each version's deprecations accumulate forward). The
+ * maps are combined at both the model and field level.
  */
-function mergeMigrations(
-  base: VersionMigrations | undefined,
-  override: VersionMigrations | undefined,
-): VersionMigrations | undefined {
+function mergeByModelField<V>(
+  base: Record<string, Record<string, V>> | undefined,
+  override: Record<string, Record<string, V>> | undefined,
+): Record<string, Record<string, V>> | undefined {
   if (base == null) return override;
   if (override == null) return base;
-  const result: VersionMigrations = { ...base };
+  const result: Record<string, Record<string, V>> = { ...base };
   for (const [modelKey, fields] of Object.entries(override)) {
     result[modelKey] = { ...result[modelKey], ...fields };
   }
@@ -87,7 +95,7 @@ function mergeMigrations(
 
 /**
  * Drop migration entries that no longer correspond to a field on a record in
- * `models`. Required because `mergeMigrations` is monotonic — a later
+ * `models`. Required because `mergeByModelField` is monotonic — a later
  * `addSchemaUpdate` that removes or retypes a field would otherwise leave a
  * stale entry in the accumulator. Entries are dropped when:
  *   - the model key is no longer present,
@@ -102,7 +110,7 @@ function pruneMigrations(
   const result: VersionMigrations = {};
   for (const [modelKey, fields] of Object.entries(migrations)) {
     const def = models[modelKey];
-    if (def == null || def.type !== "record") continue;
+    if (!isRecordDef(def)) continue;
     const recordFields = def.fields;
     const kept: Record<string, FieldMigration> = {};
     for (const [fieldName, migration] of Object.entries(fields)) {
@@ -117,44 +125,82 @@ function pruneMigrations(
   return Object.keys(result).length > 0 ? result : undefined;
 }
 
+/**
+ * Convert the version-agnostic `FieldDeprecations` collected by `applyMigration`
+ * (just `{ message? }`) into `VersionDeprecations` by stamping `fromVersion`.
+ */
+function stampDeprecationVersions(
+  deprecations: Record<string, Record<string, FieldDeprecation>> | undefined,
+  version: number,
+): VersionDeprecations | undefined {
+  if (deprecations == null) return undefined;
+  const result: VersionDeprecations = {};
+  for (const [modelKey, fields] of Object.entries(deprecations)) {
+    const out: Record<string, FieldDeprecationInfo> = {};
+    for (const [fieldName, info] of Object.entries(fields)) {
+      out[fieldName] = { fromVersion: version, ...info };
+    }
+    result[modelKey] = out;
+  }
+  return result;
+}
+
 class SchemaVersionBuilderImpl<T extends ModelDefs> implements SchemaVersionBuilder<T> {
   private readonly models: T;
   private readonly version: number;
   private readonly previous: SchemaDefinition;
   private readonly _migrations: VersionMigrations | undefined;
+  private readonly _deprecations: VersionDeprecations | undefined;
 
   constructor(
     models: T,
     version: number,
     previous: SchemaDefinition,
-    migrations?: VersionMigrations,
+    migrations: VersionMigrations | undefined,
+    deprecations?: VersionDeprecations,
   ) {
     this.models = models;
     this.version = version;
     this.previous = previous;
     this._migrations = migrations;
+    this._deprecations = deprecations;
   }
 
   addSchemaUpdate<S extends ModelDefs>(
     update: SchemaUpdate<T, S>,
   ): SchemaVersionBuilder<T & S> {
-    // applyMigration returns both the merged models and any sugar-form
-    // upgrades collected via `addField(name, type, { derivedFrom, forward })`.
-    const { models, upgrades } = applyMigration(this.models, update.migration);
-    const merged = mergeMigrations(
+    // applyMigration returns the merged models, any sugar-form upgrades from
+    // `addField(name, type, { derivedFrom })`, and any `deprecateField` calls.
+    const { models, upgrades, deprecations } = applyMigration(this.models, update.migration);
+    const merged = mergeByModelField(
       this._migrations,
       upgrades as VersionMigrations | undefined,
     );
-    // Reconcile against the new models: a later update that removes or
-    // retypes a field must drop the prior step's stale migration entry.
+    // Reconcile against the new models: a later update that retypes a field
+    // must drop the prior step's stale migration entry.
     const pruned = pruneMigrations(merged, models);
-    return new SchemaVersionBuilderImpl(models, this.version, this.previous, pruned);
+    // Attach this version to each freshly-deprecated field, then merge forward.
+    const thisVersionDeprecations = stampDeprecationVersions(deprecations, this.version);
+    const mergedDeprecations = mergeByModelField(this._deprecations, thisVersionDeprecations);
+    return new SchemaVersionBuilderImpl(
+      models,
+      this.version,
+      this.previous,
+      pruned,
+      mergedDeprecations,
+    );
   }
 
   withMigrations(migrations: VersionMigrations): SchemaVersionBuilder<T> {
-    const merged = mergeMigrations(this._migrations, migrations);
+    const merged = mergeByModelField(this._migrations, migrations);
     const pruned = pruneMigrations(merged, this.models);
-    return new SchemaVersionBuilderImpl(this.models, this.version, this.previous, pruned);
+    return new SchemaVersionBuilderImpl(
+      this.models,
+      this.version,
+      this.previous,
+      pruned,
+      this._deprecations,
+    );
   }
 
   build(): VersionedSchema<T> {
@@ -164,6 +210,7 @@ class SchemaVersionBuilderImpl<T extends ModelDefs> implements SchemaVersionBuil
       version: this.version,
       previous: this.previous,
       ...(this._migrations != null ? { migrations: this._migrations } : {}),
+      ...(this._deprecations != null ? { deprecations: this._deprecations } : {}),
     };
   }
 }
@@ -171,5 +218,13 @@ class SchemaVersionBuilderImpl<T extends ModelDefs> implements SchemaVersionBuil
 export function nextSchema<T extends ModelDefs>(
   previous: SchemaDefinition<T>,
 ): SchemaVersionBuilder<T> {
-  return new SchemaVersionBuilderImpl(previous.models, previous.version + 1, previous);
+  const version = previous.version + 1;
+  const deprecations = "deprecations" in previous ? previous.deprecations : undefined;
+  return new SchemaVersionBuilderImpl(
+    previous.models,
+    version,
+    previous,
+    undefined,
+    deprecations,
+  );
 }

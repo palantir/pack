@@ -17,7 +17,11 @@
 import { consola } from "consola";
 import fs from "fs-extra";
 import path from "path";
-import { type IrChainPayload, resolveMinVersion } from "../../utils/schema/resolveSchemaChain.js";
+import {
+  type IrChainPayload,
+  resolveMinVersion,
+  stripDeprecatedFieldsForSdk,
+} from "../../utils/schema/resolveSchemaChain.js";
 import { writeAllSdkFiles } from "../../utils/schema/writeAllSdkFiles.js";
 
 interface IrGenTypesOptions {
@@ -42,7 +46,8 @@ export async function irGenTypesHandler(options: IrGenTypesOptions): Promise<voi
 
   const { minSupportedVersion } = payload;
   const { latestVersion, minVersion } = resolveMinVersion(payload.chain, minSupportedVersion);
-  const resolved = { chain: payload.chain, latestVersion, minVersion };
+  const chain = stripDeprecatedFieldsForSdk(payload.chain);
+  const resolved = { chain, latestVersion, minVersion };
 
   const resolvedOutputDir = path.resolve(outputDir);
   await writeAllSdkFiles(resolved, resolvedOutputDir, minSupportedVersion);

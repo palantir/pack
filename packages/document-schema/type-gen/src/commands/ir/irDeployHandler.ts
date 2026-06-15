@@ -21,9 +21,9 @@ import { CommanderError } from "commander";
 import { consola } from "consola";
 import { readFileSync } from "fs";
 import { resolve } from "path";
-import type { IRealTimeDocumentSchema } from "../../lib/pack-docschema-api/pack-docschema-ir/index.js";
 import { convertIrToWireSchema } from "../../utils/ir/convertIrToWireSchema.js";
 import type { FileSystemType } from "../types.js";
+import { resolveIrInput } from "./resolveIrInput.js";
 
 interface DeployOptions {
   readonly ir: string;
@@ -41,8 +41,7 @@ export async function irDeployHandler(options: DeployOptions): Promise<void> {
 
     const irContent = readFileSync(irPath, "utf8");
 
-    // TODO: conjureToZod based validation that IR content matches the conjure IR shape
-    const ir = JSON.parse(irContent) as IRealTimeDocumentSchema;
+    const { ir } = resolveIrInput(JSON.parse(irContent) as unknown, irPath);
 
     const osdkClient = createPlatformClient(
       options.baseUrl,

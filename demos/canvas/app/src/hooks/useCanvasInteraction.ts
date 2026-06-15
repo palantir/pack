@@ -39,11 +39,13 @@ export interface UseCanvasInteractionResult {
     onMouseUp: (e: MouseEvent<SVGSVGElement>) => void;
   };
   readonly currentColor: string;
+  readonly currentOpacity: number | undefined;
   readonly currentTool: ToolMode;
   deleteSelected: () => void;
   readonly penPoints: readonly [number, number, number][] | undefined;
   readonly selectedShapeId: string | undefined;
   setColor: (color: string) => void;
+  setOpacity: (opacity: number) => void;
   setTool: (tool: ToolMode) => void;
   readonly shapeRefs: readonly RecordRef<typeof NodeShapeModel>[];
   readonly strokeRefs: readonly RecordRef<typeof FreehandStrokeModel>[];
@@ -59,6 +61,7 @@ export function useCanvasInteraction(
   const { clearSelection, selectedShapeRef, selectShape } = useShapeSelection();
   const [currentTool, setCurrentTool] = useState<ToolMode>("select");
   const [currentColor, setCurrentColor] = useState<string>(getDefaultColor());
+  const [currentOpacity, setCurrentOpacity] = useState<number | undefined>();
 
   const creationStateRef = useRef<{ startX: number; startY: number } | undefined>(undefined);
   const [penPoints, setPenPoints] = useState<[number, number, number][] | undefined>(undefined);
@@ -67,6 +70,14 @@ export function useCanvasInteraction(
     (ref: RecordRef<typeof NodeShapeModel> | undefined) => {
       selectShape(ref);
       broadcastSelection(ref != null ? [ref.id] : []);
+      if (ref == null) {
+        setCurrentOpacity(undefined);
+        return;
+      }
+      setCurrentOpacity(undefined);
+      void ref.getSnapshot().then(shape => {
+        setCurrentOpacity(shape?.opacity);
+      });
     },
     [broadcastSelection, selectShape],
   );
@@ -115,6 +126,7 @@ export function useCanvasInteraction(
       });
       clearSelection();
       broadcastSelection([]);
+      setCurrentOpacity(undefined);
     }
   }, [broadcastSelection, clearSelection, doc, selectedShapeRef]);
 
@@ -187,6 +199,55 @@ export function useCanvasInteraction(
           },
         });
       }
+    },
+    [doc, selectedShapeRef],
+  );
+
+  const setOpacity = useCallback(
+    async (opacity: number) => {
+      if (selectedShapeRef == null) {
+        return;
+      }
+
+      const normalizedOpacity = normalizeOpacity(opacity);
+      setCurrentOpacity(normalizedOpacity);
+
+      const oldShape = await selectedShapeRef.getSnapshot();
+      if (oldShape == null) return;
+
+      matchVersion(doc, {
+        1: () => {},
+        2: doc => {
+          const oldShapeV2 = toNodeShapeV2(oldShape);
+          const newShapeV2 = toNodeShapeV2({ ...oldShape, opacity: normalizedOpacity });
+          doc.withTransaction(
+            () => {
+              void doc.updateRecord(selectedShapeRef, { opacity: normalizedOpacity });
+            },
+            doc.describeEdit(CanvasActivityModel, {
+              activityType: "shapeUpdated",
+              nodeId: selectedShapeRef.id,
+              oldShape: oldShapeV2,
+              newShape: newShapeV2,
+            }),
+          );
+        },
+        3: doc => {
+          const oldShapeV3 = toNodeShapeV3(oldShape);
+          const newShapeV3 = toNodeShapeV3({ ...oldShape, opacity: normalizedOpacity });
+          doc.withTransaction(
+            () => {
+              void doc.updateRecord(selectedShapeRef, { opacity: normalizedOpacity });
+            },
+            doc.describeEdit(CanvasActivityModel, {
+              activityType: "shapeUpdated",
+              nodeId: selectedShapeRef.id,
+              oldShape: oldShapeV3,
+              newShape: newShapeV3,
+            }),
+          );
+        },
+      });
     },
     [doc, selectedShapeRef],
   );
@@ -309,13 +370,19 @@ export function useCanvasInteraction(
       onMouseUp,
     },
     currentColor,
+    currentOpacity,
     currentTool,
     deleteSelected,
     penPoints,
     selectedShapeId: selectedShapeRef?.id,
     setColor,
+    setOpacity,
     setTool,
     shapeRefs,
     strokeRefs,
   };
+}
+
+function normalizeOpacity(opacity: number): number {
+  return Math.min(1, Math.max(0.1, Math.round(opacity * 100) / 100));
 }

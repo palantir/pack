@@ -27,20 +27,24 @@ import { EditCanvasDialog } from "./EditCanvasDialog.js";
 export interface CanvasToolbarProps {
   readonly canDelete: boolean;
   readonly currentColor: string;
+  readonly currentOpacity: number | undefined;
   readonly currentTool: ToolMode;
   readonly doc: VersionedDocRef;
   onColorChange: (color: string) => void;
   onDelete: () => void;
+  onOpacityChange: (opacity: number) => void;
   onToolChange: (tool: ToolMode) => void;
 }
 
 export const CanvasToolbar = memo(function CanvasToolbar({
   canDelete,
   currentColor,
+  currentOpacity,
   currentTool,
   doc,
   onColorChange,
   onDelete,
+  onOpacityChange,
   onToolChange,
 }: CanvasToolbarProps) {
   const { metadata } = useDocMetadata(doc);
@@ -48,6 +52,10 @@ export const CanvasToolbar = memo(function CanvasToolbar({
 
   const handleColorChange = (e: ChangeEvent<HTMLSelectElement>) => {
     onColorChange(e.target.value);
+  };
+
+  const handleOpacityChange = (e: ChangeEvent<HTMLInputElement>) => {
+    onOpacityChange(Number(e.target.value));
   };
 
   return (
@@ -107,6 +115,25 @@ export const CanvasToolbar = memo(function CanvasToolbar({
           </select>
         </label>
       </div>
+
+      {doc.version >= 2 && currentOpacity != null && (
+        <div className={styles.toolGroup}>
+          <label className={styles.label}>
+            Opacity:
+            <input
+              className={styles.slider}
+              disabled={!canDelete}
+              max={1}
+              min={0.1}
+              onChange={handleOpacityChange}
+              step={0.05}
+              type="range"
+              value={currentOpacity}
+            />
+            <span className={styles.opacityValue}>{Math.round(currentOpacity * 100)}%</span>
+          </label>
+        </div>
+      )}
 
       <div className={styles.toolGroup}>
         <button

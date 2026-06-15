@@ -90,7 +90,7 @@ const ConnectedShapeRenderer = memo(function ShapeRenderer({
   // For migrated v1 records, the lens derives them from `color`.
   const fill = shape.fillColor ?? DEFAULT_SHAPE_COLOR;
   const strokeColor = shape.strokeColor ?? DEFAULT_SHAPE_COLOR;
-  const opacity = shape.opacity ?? 1.0;
+  const { opacity } = shape;
   const svgFill = `${fill}4D`;
 
   const remoteSelectingUserIds = useMemo(

@@ -1,5 +1,11 @@
 # @palantir/pack.sdkgen.demo-template
 
+## 0.2.0
+
+### Minor Changes
+
+- 98803f7: Add version-safe update methods to DocumentRef
+
 ## 0.1.2
 
 ### Patch Changes

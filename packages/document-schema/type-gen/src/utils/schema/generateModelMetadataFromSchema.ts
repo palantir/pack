@@ -19,7 +19,7 @@ import { formatVariantName } from "../formatVariantName.js";
 import { GENERATED_FILE_HEADER } from "../generatedFileHeader.js";
 import { findExternalRefType } from "../ir/irFieldHelpers.js";
 import type { ResolvedIrChain } from "./resolveSchemaChain.js";
-import { chainHasDerivedFields, resolveMinVersion } from "./resolveSchemaChain.js";
+import { chainNeedsUpgradeFns, resolveMinVersion } from "./resolveSchemaChain.js";
 import {
   INTERNAL_UPGRADE_FNS_PATH,
   INTERNAL_UPGRADES_PATH,
@@ -57,7 +57,7 @@ export function generateModelMetadataFromChain(
   const { chain } = resolved;
   const { latestVersion, minVersion } = resolveMinVersion(chain, minSupportedVersion);
   const latestIr = chain[chain.length - 1]!.ir;
-  const hasDerivedFields = chainHasDerivedFields(chain);
+  const needsUpgradeFns = chainNeedsUpgradeFns(chain);
 
   // --- Generate models.ts ---
   let output = GENERATED_FILE_HEADER;
@@ -84,7 +84,7 @@ export function generateModelMetadataFromChain(
   const modelTypesImports: string[] = ["DocumentSchema"];
   if (recordNames.length > 0) modelTypesImports.push("RecordModel");
   if (unionNames.length > 0) modelTypesImports.push("UnionModel");
-  if (hasDerivedFields) modelTypesImports.push("UpgradeFns");
+  if (needsUpgradeFns) modelTypesImports.push("UpgradeFns");
 
   output += `import type { ${
     modelTypesImports.sort().join(", ")
@@ -108,7 +108,7 @@ export function generateModelMetadataFromChain(
   }
 
   // DocumentUpgradeFns type is needed by the factory's parameter signature.
-  if (hasDerivedFields) {
+  if (needsUpgradeFns) {
     output += `import type { DocumentUpgradeFns } from "${INTERNAL_UPGRADE_FNS_PATH}";\n`;
   }
 
@@ -206,13 +206,14 @@ export function generateModelMetadataFromChain(
 
   const modelEntriesBody = modelEntries.map(e => `  ${e}`).join(",\n");
 
-  if (hasDerivedFields) {
-    // Factory form: schema has derived fields, so the runtime requires the app
-    // to supply typed upgrade functions. The factory makes this a compile-time
-    // requirement — apps can't get a DocumentSchema value without passing them.
+  if (needsUpgradeFns) {
+    // Factory form: schema has at least one derived field or required additive
+    // field, so the runtime requires the app to supply typed upgrade functions.
+    // The factory makes this a compile-time requirement — apps can't get a
+    // DocumentSchema value without passing them.
     output += `/**\n`;
     output += ` * Construct the DocumentModel for this SDK, wiring in the typed forward\n`;
-    output += ` * functions the runtime needs to materialize derived fields.\n`;
+    output += ` * functions the runtime needs to materialize fields added past v1.\n`;
     output += ` */\n`;
     output += `export function DocumentModel(upgradeFns: DocumentUpgradeFns): DocumentSchema {\n`;
     output += `  return {\n`;
@@ -224,7 +225,8 @@ export function generateModelMetadataFromChain(
     output += `}\n\n`;
     output += `export type DocumentModel = ReturnType<typeof DocumentModel>;\n`;
   } else {
-    // Const form: no derived fields means no upgrade functions are required.
+    // Const form: no field added past v1 needs lens treatment, so no upgrade
+    // functions are required.
     output += `export const DocumentModel = {\n`;
     output += `${modelEntriesBody},\n`;
     // Const form indents one level less than the factory body.

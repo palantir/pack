@@ -25,6 +25,7 @@ interface SchemaIrOptions {
   input: string;
   output: string;
   config: string;
+  maxVersion?: string;
 }
 
 interface PackConfigLike {
@@ -96,6 +97,20 @@ export async function readPackConfig(configPath: string): Promise<PackConfigValu
   return { documentTypeName, documentTypeDescription, minSupportedVersion };
 }
 
+function parseMaxVersion(maxVersion: string | undefined): number | undefined {
+  if (maxVersion == null) {
+    return undefined;
+  }
+
+  if (!/^[1-9]\d*$/.test(maxVersion)) {
+    throw new Error(
+      `--max-version must be a positive integer, got: ${JSON.stringify(maxVersion)}`,
+    );
+  }
+
+  return Number(maxVersion);
+}
+
 /**
  * Resolve a TypeScript schema module to a versioned IR chain JSON file.
  *
@@ -119,12 +134,13 @@ export async function readPackConfig(configPath: string): Promise<PackConfigValu
  *    downstream tools default to supporting only the latest schema version.
  *
  * Note: this is distinct from the legacy single-version IR JSON consumed by
- * `ir deploy` / `ir zod`, which is a bare `IRealTimeDocumentSchema` (no chain,
- * no migrations). Tools that previously read that format should pick the
- * entry matching `latestVersion` from `chain` and use its `ir` field.
+ * `ir zod`, which is a bare `IRealTimeDocumentSchema` (no chain, no migrations).
+ * Tools that previously read that format should pick the entry matching
+ * `latestVersion` from `chain` and use its `ir` field.
  */
 export async function schemaIrHandler(options: SchemaIrOptions): Promise<void> {
   const { input, output, config } = options;
+  const maxVersion = parseMaxVersion(options.maxVersion);
   const { documentTypeName, documentTypeDescription, minSupportedVersion } = await readPackConfig(
     config,
   );
@@ -141,10 +157,15 @@ export async function schemaIrHandler(options: SchemaIrOptions): Promise<void> {
   const schema = await loadSchemaModule(input);
 
   consola.info("Resolving versioned IR chain...");
-  const { chain, latestVersion } = resolveSchemaChain(schema, minSupportedVersion, {
-    name: documentTypeName,
-    description: documentTypeDescription,
-  });
+  const { chain, latestVersion } = resolveSchemaChain(
+    schema,
+    minSupportedVersion,
+    {
+      name: documentTypeName,
+      description: documentTypeDescription,
+    },
+    maxVersion,
+  );
 
   const outputPath = path.resolve(output);
   await fs.ensureDir(path.dirname(outputPath));

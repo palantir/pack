@@ -15,7 +15,12 @@
  */
 
 import type { SchemaDefinition, VersionMigrations } from "@palantir/pack.schema";
-import type { IRealTimeDocumentSchema } from "../../lib/pack-docschema-api/pack-docschema-ir/index.js";
+import type {
+  IModelDef,
+  IRealTimeDocumentSchema,
+} from "../../lib/pack-docschema-api/pack-docschema-ir/index.js";
+import { IModelDef as IModelDefCtor } from "../../lib/pack-docschema-api/pack-docschema-ir/index.js";
+import type { SchemaProvenance } from "../steps/convertStepsToIr.js";
 import { convertSchemaToIr } from "../steps/convertStepsToIr.js";
 
 /** JSON-serializable form of a single field migration. */
@@ -57,31 +62,79 @@ function collectVersionedIrChain(
   input: SchemaDefinition,
   identity: SchemaIdentity,
 ): VersionedIrEntry[] {
-  const chain: VersionedIrEntry[] = [];
+  const schemas = collectSchemaDefinitions(input);
+  const provenances = deriveProvenance(schemas);
+
+  return schemas.map((schema, index): VersionedIrEntry => ({
+    version: schema.version,
+    ir: convertSchemaToIr(
+      schema.models,
+      { version: schema.version, name: identity.name, description: identity.description },
+      provenances[index]!,
+    ),
+    ...(schema.type === "versioned" ? { migrations: serializeMigrations(schema.migrations) } : {}),
+  }));
+}
+
+function collectSchemaDefinitions(input: SchemaDefinition): SchemaDefinition[] {
+  const schemas: SchemaDefinition[] = [];
   let current: SchemaDefinition = input;
 
   while (current.type === "versioned") {
-    chain.unshift({
-      version: current.version,
-      ir: convertSchemaToIr(current.models, {
-        version: current.version,
-        name: identity.name,
-        description: identity.description,
-      }),
-      migrations: serializeMigrations(current.migrations),
-    });
+    schemas.unshift(current);
     current = current.previous;
   }
-  chain.unshift({
-    version: current.version,
-    ir: convertSchemaToIr(current.models, {
-      version: current.version,
-      name: identity.name,
-      description: identity.description,
-    }),
-  });
+  schemas.unshift(current);
 
-  return chain;
+  return schemas;
+}
+
+/**
+ * Build field/model provenance by walking the version chain from oldest to
+ * newest. The first version where a model key or record field appears is the
+ * version stamped into IR metadata.
+ */
+function deriveProvenance(schemas: readonly SchemaDefinition[]): SchemaProvenance[] {
+  const firstModelVersions = new Map<string, number>();
+  const firstFieldVersions = new Map<string, Map<string, number>>();
+
+  return schemas.map(schema => {
+    const modelVersions: Record<string, number> = {};
+    const fieldVersions: Record<string, Record<string, number>> = {};
+
+    for (const [modelKey, modelDef] of Object.entries(schema.models)) {
+      if (!firstModelVersions.has(modelKey)) {
+        firstModelVersions.set(modelKey, schema.version);
+      }
+      modelVersions[modelKey] = firstModelVersions.get(modelKey)!;
+
+      if (modelDef.type !== "record") continue;
+
+      let fieldVersionsForModel = firstFieldVersions.get(modelKey);
+      if (fieldVersionsForModel == null) {
+        fieldVersionsForModel = new Map<string, number>();
+        firstFieldVersions.set(modelKey, fieldVersionsForModel);
+      }
+
+      const fields: Record<string, number> = {};
+      for (const fieldKey of Object.keys(modelDef.fields)) {
+        if (!fieldVersionsForModel.has(fieldKey)) {
+          fieldVersionsForModel.set(fieldKey, schema.version);
+        }
+        fields[fieldKey] = fieldVersionsForModel.get(fieldKey)!;
+      }
+
+      if (Object.keys(fields).length > 0) {
+        fieldVersions[modelKey] = fields;
+      }
+    }
+
+    return {
+      fieldVersions,
+      modelVersions,
+      deprecations: "deprecations" in schema ? schema.deprecations : undefined,
+    };
+  });
 }
 
 /** Convert schema-builder migrations to their JSON-serializable form. */
@@ -129,6 +182,24 @@ export function resolveMinVersion(
   };
 }
 
+function capVersionedIrChain(
+  chain: VersionedIrEntry[],
+  maxVersion: number | undefined,
+): VersionedIrEntry[] {
+  if (maxVersion == null) {
+    return chain;
+  }
+
+  if (!chain.some(c => c.version === maxVersion)) {
+    throw new Error(
+      `maxVersion ${maxVersion} is not in the schema chain `
+        + `(available versions: ${chain.map(c => c.version).join(", ")})`,
+    );
+  }
+
+  return chain.filter(c => c.version <= maxVersion);
+}
+
 /**
  * Collect the version chain and resolve min/latest versions.
  * Each version's models are converted to IR (IRealTimeDocumentSchema).
@@ -141,23 +212,70 @@ export function resolveSchemaChain(
   schema: SchemaDefinition,
   minSupportedVersion?: number,
   identity: SchemaIdentity = {},
+  maxVersion?: number,
 ): ResolvedIrChain {
-  const chain = collectVersionedIrChain(schema, identity);
+  const chain = capVersionedIrChain(collectVersionedIrChain(schema, identity), maxVersion);
   const { latestVersion, minVersion } = resolveMinVersion(chain, minSupportedVersion);
   return { chain, latestVersion, minVersion };
 }
 
 /**
- * True if any migration in the chain declares a non-empty `derivedFrom`. Drives
- * whether the generated SDK emits `DocumentModel` as a factory (requires the
- * app to supply typed upgrade functions) or as a const (no upgrade functions needed).
+ * Return a copy of the chain with deprecated fields removed from every version
+ * at or after the version in which they were deprecated.
+ *
+ * The SDK type generators (`writeAllSdkFiles` and friends) must treat a
+ * deprecated field exactly as a removed field: it disappears from that version's
+ * public read/write types and per-version internal types, and the prev/curr diff
+ * records it as a `removedField` (driving the upgrade lens). The field is still
+ * collected into the all-versions `__Internal` type from earlier versions, which
+ * are left untouched.
  */
-export function chainHasDerivedFields(chain: VersionedIrEntry[]): boolean {
-  for (const entry of chain) {
-    if (entry.migrations == null) continue;
-    for (const recordMigrations of Object.values(entry.migrations)) {
-      for (const fieldMigration of Object.values(recordMigrations)) {
-        if (fieldMigration.derivedFrom.length > 0) return true;
+export function stripDeprecatedFieldsForSdk(chain: VersionedIrEntry[]): VersionedIrEntry[] {
+  return chain.map((entry): VersionedIrEntry => {
+    const models: Record<string, IModelDef> = {};
+    for (const [modelKey, modelDef] of Object.entries(entry.ir.models)) {
+      if (modelDef.type === "record") {
+        const fields = modelDef.record.fields.filter(field => {
+          const dep = field.metadata.deprecatedFromVersion;
+          return dep == null || entry.version < dep;
+        });
+        models[modelKey] = IModelDefCtor.record({ ...modelDef.record, fields });
+      } else {
+        models[modelKey] = modelDef;
+      }
+    }
+    return { ...entry, ir: { ...entry.ir, models } };
+  });
+}
+
+/**
+ * True if the chain has any field that requires a runtime upgrade function.
+ * Drives whether the generated SDK emits `DocumentModel` as a factory
+ * (requires the app to supply typed upgrade functions) or as a const.
+ *
+ * Two cases trigger this:
+ *  - A field declares `derivedFrom` with one or more source fields — the app
+ *    must supply a forward function.
+ *  - A required field is added in a version past v1 (no `derivedFrom`) — the
+ *    app must supply a zero-arg thunk; `undefined` is not a legal value.
+ *
+ * Optional additive fields don't trigger it; the lens leaves them alone.
+ */
+export function chainNeedsUpgradeFns(chain: VersionedIrEntry[]): boolean {
+  for (let i = 1; i < chain.length; i++) {
+    const prevEntry = chain[i - 1]!;
+    const currEntry = chain[i]!;
+    for (const [modelKey, currModelDef] of Object.entries(currEntry.ir.models)) {
+      if (currModelDef.type !== "record") continue;
+      const prevModelDef = prevEntry.ir.models[modelKey];
+      if (prevModelDef == null || prevModelDef.type !== "record") continue;
+      const prevFields = new Set(prevModelDef.record.fields.map(f => f.key));
+      const recordMigrations = currEntry.migrations?.[modelKey];
+      for (const field of currModelDef.record.fields) {
+        if (prevFields.has(field.key)) continue;
+        const derivedFrom = recordMigrations?.[field.key]?.derivedFrom ?? [];
+        if (derivedFrom.length > 0) return true;
+        if (field.isOptional !== true) return true;
       }
     }
   }

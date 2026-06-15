@@ -20,6 +20,13 @@ export {
   type BaseYjsDocumentServiceOptions,
   type InternalYjsDoc,
 } from "./service/BaseYjsDocumentService.js";
+export {
+  addDocumentUpdateSchemaVersionToTransaction,
+  DOCUMENT_UPDATE_SCHEMA_VERSION_META_KEY,
+  getDocumentUpdateSchemaVersionFromTransaction,
+  getModelDataSchemaVersion,
+  getPartialModelDataSchemaVersion,
+} from "./service/DocumentUpdateSchemaVersion.js";
 export { createInMemoryDocumentServiceConfig } from "./service/InMemoryDocumentService.js";
 export { FileSystemType } from "./types/CreateDocumentMetadata.js";
 export type { CreateDocumentMetadata } from "./types/CreateDocumentMetadata.js";
@@ -32,6 +39,7 @@ export type {
   DocumentStatus,
   DocumentStatusChangeCallback,
   DocumentSyncStatus,
+  DocumentType,
   SearchDocumentsResult,
   UpdateDocumentMetadata,
 } from "./types/DocumentService.js";

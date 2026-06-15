@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-import { asVersioned, DocumentModel } from "@demo/canvas.sdk";
 import type { SupportedVersions, VersionedDocRef } from "@demo/canvas.sdk";
+import { asVersioned, DocumentModel } from "@demo/canvas.sdk";
 import type { PackApp } from "@palantir/pack.core";
 import type { DocumentId } from "@palantir/pack.document-schema.model-types";
 import type { WithStateModule } from "@palantir/pack.state.core";
@@ -31,12 +31,14 @@ export const CanvasSchema = DocumentModel({
     v2: {
       fillColor: ({ color }) => color,
       strokeColor: ({ color }) => color,
+      opacity: () => 0.5,
     },
   },
   ShapeCircle: {
     v2: {
       fillColor: ({ color }) => color,
       strokeColor: ({ color }) => color,
+      opacity: () => 0.5,
     },
   },
 });

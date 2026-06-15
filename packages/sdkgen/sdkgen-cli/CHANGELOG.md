@@ -1,5 +1,11 @@
 # @palantir/pack.sdkgen
 
+## 0.3.0
+
+### Minor Changes
+
+- 98803f7: Add version-safe update methods to DocumentRef
+
 ## 0.2.2
 
 ### Patch Changes

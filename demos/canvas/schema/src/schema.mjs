@@ -135,27 +135,30 @@ const splitShapeColorIntoFillAndStroke = S.defineSchemaUpdate(
     const ShapeBox = schema.ShapeBox
       .addField("fillColor", S.Optional(S.String), { derivedFrom: ["color"] })
       .addField("strokeColor", S.Optional(S.String), { derivedFrom: ["color"] })
-      .removeField("color")
+      .deprecateField("color", "Use fillColor and strokeColor instead.")
       .build();
 
     const ShapeCircle = schema.ShapeCircle
       .addField("fillColor", S.Optional(S.String), { derivedFrom: ["color"] })
       .addField("strokeColor", S.Optional(S.String), { derivedFrom: ["color"] })
-      .removeField("color")
+      .deprecateField("color", "Use fillColor and strokeColor instead.")
       .build();
 
     return { ShapeBox, ShapeCircle };
   },
 );
 
-// --- Schema change: add opacity (additive) ---
+// --- Schema change: add opacity (additive, required) ---
+// The field is required at v2 — its value can never be undefined under the v2
+// type. The app provides `opacity: () => 1.0` at boot so the read lens
+// back-fills v1 documents.
 const addShapeOpacity = S.defineSchemaUpdate("addShapeOpacity", schema => {
   const ShapeBox = schema.ShapeBox
-    .addField("opacity", S.Optional(S.Double), { default: 1.0 })
+    .addField("opacity", S.Double)
     .build();
 
   const ShapeCircle = schema.ShapeCircle
-    .addField("opacity", S.Optional(S.Double), { default: 1.0 })
+    .addField("opacity", S.Double)
     .build();
 
   return { ShapeBox, ShapeCircle };

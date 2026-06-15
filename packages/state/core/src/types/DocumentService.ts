@@ -33,7 +33,7 @@ import type {
   RecordId,
   RecordRef,
 } from "@palantir/pack.document-schema.model-types";
-import type { CreateDocumentMetadata } from "./CreateDocumentMetadata.js";
+import type { CreateDocumentMetadata, FileSystemType } from "./CreateDocumentMetadata.js";
 
 export const DocumentLoadStatus = {
   UNLOADED: "unloaded", // Not yet loaded
@@ -104,6 +104,16 @@ export interface SearchDocumentsResult {
 }
 
 /**
+ * Metadata for a document type, as loaded from the platform.
+ */
+export interface DocumentType {
+  readonly rid: string;
+  readonly name: string;
+  readonly operationalVersion?: number;
+  readonly fileSystemType?: FileSystemType;
+}
+
+/**
  * Fields that can be updated on a document's metadata.
  */
 export interface UpdateDocumentMetadata {
@@ -162,6 +172,32 @@ export interface DocumentService {
   readonly getDocumentSchemaVersion: (
     docRef: DocumentRef,
   ) => number;
+
+  /**
+   * Loads a document type's metadata by its name. The ontology defaults to the
+   * app's bound ontology when not provided.
+   */
+  readonly loadDocumentTypeByName: (
+    documentTypeName: string,
+    ontologyRid?: string,
+  ) => Promise<DocumentType>;
+
+  /**
+   * Loads a document type's metadata by its rid.
+   */
+  readonly getDocumentType: (
+    documentTypeRid: string,
+  ) => Promise<DocumentType>;
+
+  /**
+   * Returns the computed operational version for a document type: the highest schema
+   * version all deployed asset tracks can support. The ontology defaults to the app's
+   * bound ontology when not provided.
+   */
+  readonly getDocumentTypeOperationalVersion: (
+    documentTypeName: string,
+    ontologyRid?: string,
+  ) => Promise<number | undefined>;
 
   readonly createDocRef: <const T extends DocumentSchema>(
     id: DocumentId,

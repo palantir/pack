@@ -1,5 +1,18 @@
 # @palantir/pack.sdkgen.pack-template
 
+## 0.11.0
+
+### Minor Changes
+
+- 98803f7: Add version-safe update methods to DocumentRef
+
+### Patch Changes
+
+- Updated dependencies [1cc9a09]
+- Updated dependencies [98803f7]
+  - @palantir/pack.document-schema.type-gen@0.13.0
+  - @palantir/pack.document-schema.model-types@0.12.0
+
 ## 0.10.0
 
 ### Minor Changes

@@ -36,7 +36,11 @@ import {
   getMetadata,
   hasMetadata,
 } from "@palantir/pack.document-schema.model-types";
-import { DocumentLoadStatus, type DocumentSyncStatus } from "@palantir/pack.state.core";
+import {
+  DocumentLoadStatus,
+  type DocumentSyncStatus,
+  getDocumentUpdateSchemaVersionFromTransaction,
+} from "@palantir/pack.state.core";
 import { Base64 } from "js-base64";
 import * as y from "yjs";
 import { type CometDLoader, EventServiceCometD } from "./cometd/EventServiceCometD.js";
@@ -103,7 +107,12 @@ interface SyncSessionInternal extends SyncSession {
   activitySubscriptionId?: SubscriptionId;
   documentSubscriptionId?: SubscriptionId;
   lastRevisionId?: number;
-  localYDocUpdateHandler?: (update: Uint8Array, origin: unknown) => void;
+  localYDocUpdateHandler?: (
+    update: Uint8Array,
+    origin: unknown,
+    doc: y.Doc,
+    transaction: y.Transaction,
+  ) => void;
   metadataSubscriptionId?: SubscriptionId;
   presenceSubscriptionId?: SubscriptionId;
   yDoc?: y.Doc;
@@ -200,7 +209,12 @@ class FoundryEventServiceImpl implements FoundryEventService {
       throw new Error(`Document data sync already active for document ${documentId}`);
     }
 
-    const localYDocUpdateHandler = (update: Uint8Array, origin: unknown) => {
+    const localYDocUpdateHandler = (
+      update: Uint8Array,
+      origin: unknown,
+      _doc: y.Doc,
+      transaction: y.Transaction,
+    ) => {
       if (origin === UPDATE_ORIGIN_REMOTE) {
         return;
       }
@@ -219,17 +233,21 @@ class FoundryEventServiceImpl implements FoundryEventService {
       const description = isEditDescription(origin)
         ? createDocumentEditDescription(origin)
         : undefined;
+      const documentUpdateSchemaVersion = getDocumentUpdateSchemaVersionFromTransaction(transaction)
+        ?? getFallbackDocumentUpdateSchemaVersion(clientSupportedVersionRange);
+      const publishMessage: DocumentPublishMessage = {
+        clientId: session.clientId,
+        clientSupportedVersionRange,
+        description,
+        documentUpdateSchemaVersion,
+        editId,
+        yjsUpdate: {
+          data: Base64.fromUint8Array(update),
+        },
+      };
       void this.eventService.publish(
         publishChannelId,
-        {
-          clientId: session.clientId,
-          clientSupportedVersionRange,
-          description,
-          editId,
-          yjsUpdate: {
-            data: Base64.fromUint8Array(update),
-          },
-        },
+        publishMessage,
       ).catch((error: unknown) => {
         this.logger.error("Failed to publish document update", error, {
           docId: documentId,
@@ -605,4 +623,14 @@ function createDocumentEditDescription(editDescription: EditDescription): Docume
     // TODO: remove duplicate after updating platform sdk
     eventType,
   };
+}
+
+function getFallbackDocumentUpdateSchemaVersion(
+  clientSupportedVersionRange: ClientSupportedVersionRange,
+): number {
+  const { maxVersion } = clientSupportedVersionRange;
+  if (Number.isFinite(maxVersion)) {
+    return maxVersion;
+  }
+  return clientSupportedVersionRange.minVersion;
 }

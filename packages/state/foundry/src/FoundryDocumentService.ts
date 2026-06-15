@@ -20,9 +20,10 @@ import type {
   DiscretionaryPrincipal,
   DiscretionaryPrincipal as WireDiscretionaryPrincipal,
   DocumentSecurity as WireDocumentSecurity,
+  DocumentType as WireDocumentType,
   SearchDocumentsRequest,
 } from "@osdk/foundry.pack";
-import { Documents } from "@osdk/foundry.pack";
+import { Documents, DocumentTypes } from "@osdk/foundry.pack";
 import {
   assertNever,
   getOntologyRid,
@@ -47,6 +48,8 @@ import { getMetadata } from "@palantir/pack.document-schema.model-types";
 import type {
   CreateDocumentMetadata,
   DocumentService,
+  DocumentType,
+  FileSystemType,
   InternalYjsDoc,
   SearchDocumentsResult,
   UpdateDocumentMetadata,
@@ -252,6 +255,54 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
       },
     );
     this.documents.delete(docRef.id);
+  };
+
+  readonly loadDocumentTypeByName = async (
+    documentTypeName: string,
+    ontologyRid?: string,
+  ): Promise<DocumentType> => {
+    const resolvedOntologyRid = ontologyRid ?? await getOntologyRid(this.app);
+
+    const documentType = await DocumentTypes.loadByName(
+      this.app.config.osdkClient,
+      { documentTypeName, ontologyRid: resolvedOntologyRid },
+      {
+        preview: this.config.usePreviewApi ?? DEFAULT_USE_PREVIEW_API,
+      },
+    );
+
+    return getLocalDocumentType(documentType);
+  };
+
+  readonly getDocumentType = async (
+    documentTypeRid: string,
+  ): Promise<DocumentType> => {
+    const documentType = await DocumentTypes.get(
+      this.app.config.osdkClient,
+      documentTypeRid,
+      {
+        preview: this.config.usePreviewApi ?? DEFAULT_USE_PREVIEW_API,
+      },
+    );
+
+    return getLocalDocumentType(documentType);
+  };
+
+  readonly getDocumentTypeOperationalVersion = async (
+    documentTypeName: string,
+    ontologyRid?: string,
+  ): Promise<number | undefined> => {
+    const resolvedOntologyRid = ontologyRid ?? await getOntologyRid(this.app);
+
+    const response = await DocumentTypes.getOperationalVersion(
+      this.app.config.osdkClient,
+      { documentTypeName, ontologyRid: resolvedOntologyRid },
+      {
+        preview: this.config.usePreviewApi ?? DEFAULT_USE_PREVIEW_API,
+      },
+    );
+
+    return response.operationalVersion;
   };
 
   protected onMetadataSubscriptionOpened(
@@ -471,9 +522,11 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
 }
 
 function getClientSupportedVersionRange(schema: DocumentSchema): ClientSupportedVersionRange {
-  const version = getMetadata(schema).version;
-  // TODO: Placeholder versions from schema now, update when migration story is complete and implemented
-  return { minVersion: version, maxVersion: version };
+  const schemaMeta = getMetadata(schema);
+  return {
+    minVersion: schemaMeta.minSupportedVersion ?? schemaMeta.version,
+    maxVersion: schemaMeta.version,
+  };
 }
 
 function getWireSecurity({
@@ -537,4 +590,13 @@ function getLocalPrincipal(
     default:
       assertNever(wirePrincipal);
   }
+}
+
+function getLocalDocumentType(wireDocumentType: WireDocumentType): DocumentType {
+  return {
+    rid: wireDocumentType.rid,
+    name: wireDocumentType.name,
+    operationalVersion: wireDocumentType.operationalVersion,
+    fileSystemType: wireDocumentType.fileSystemType as FileSystemType | undefined,
+  };
 }

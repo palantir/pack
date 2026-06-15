@@ -39,9 +39,9 @@ export function toNodeShapeV2(shape: NodeShape): NodeShape_v2 {
     left: shape.left,
     right: shape.right,
     top: shape.top,
+    opacity: shape.opacity,
     ...(fillColor != null ? { fillColor } : {}),
     ...(strokeColor != null ? { strokeColor } : {}),
-    ...(shape.opacity != null ? { opacity: shape.opacity } : {}),
   };
 
   return shape.shapeType === "box"

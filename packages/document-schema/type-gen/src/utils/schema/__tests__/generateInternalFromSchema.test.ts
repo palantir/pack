@@ -25,6 +25,7 @@ import {
   singleVersionSchema,
   twoVersionDerivedFieldsSchema,
   twoVersionFieldRemovalSchema,
+  twoVersionRequiredAdditiveSchema,
 } from "./fixtures.js";
 import { formatInternalTypesSnapshot } from "./snapshotUtils.js";
 
@@ -56,6 +57,16 @@ describe("generateInternalFromChain", () => {
     const result = generateInternalFromChain(resolveSchemaChain(twoVersionDerivedFieldsSchema));
     await expect(await formatInternalTypesSnapshot(result)).toMatchFileSnapshot(
       path.join(snapshotDir, "two-version-derived-fields.snap"),
+    );
+  });
+
+  it("two-version required additive field emits a zero-arg upgrade fn signature", async () => {
+    const result = generateInternalFromChain(
+      resolveSchemaChain(twoVersionRequiredAdditiveSchema),
+    );
+    expect(result.internalUpgradeFns).toContain("opacity: () => ShapeBox__v2[\"opacity\"]");
+    await expect(await formatInternalTypesSnapshot(result)).toMatchFileSnapshot(
+      path.join(snapshotDir, "two-version-required-additive.snap"),
     );
   });
 

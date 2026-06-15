@@ -66,7 +66,10 @@ export function registerIrCommands(program: Command): void {
   irCmd
     .command("deploy")
     .description("Create a document type on a Foundry stack using an IR document schema")
-    .requiredOption("-i, --ir <file>", "Path to IR JSON file")
+    .requiredOption(
+      "-i, --ir <file>",
+      "Path to IR JSON file (chain payload from 'schema ir', or legacy single-version IR)",
+    )
     .requiredOption("-b, --base-url <url>", "Base URL for Foundry API")
     .requiredOption("-a, --auth <token>", "Authentication token for Foundry API")
     .requiredOption("-p, --parent-folder <rid>", "Parent folder RID for the document type")

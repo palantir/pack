@@ -38,6 +38,7 @@ import { DOCUMENT_SERVICE_MODULE_KEY } from "../DocumentServiceModule.js";
 import type { CreateDocumentMetadata } from "./CreateDocumentMetadata.js";
 import type {
   DocumentService,
+  DocumentType,
   RecordChangeCallback,
   RecordCollectionChangeCallback,
   RecordDeleteCallback,
@@ -99,6 +100,20 @@ export interface StateModule {
   readonly deleteDocument: (
     docRef: DocumentRef,
   ) => Promise<void>;
+
+  readonly loadDocumentTypeByName: (
+    documentTypeName: string,
+    ontologyRid?: string,
+  ) => Promise<DocumentType>;
+
+  readonly getDocumentType: (
+    documentTypeRid: string,
+  ) => Promise<DocumentType>;
+
+  readonly getDocumentTypeOperationalVersion: (
+    documentTypeName: string,
+    ontologyRid?: string,
+  ) => Promise<number | undefined>;
 
   readonly getDocumentSnapshot: <T extends DocumentSchema>(
     docRef: DocumentRef<T>,
@@ -267,6 +282,26 @@ export class StateModuleImpl implements StateModule {
     docRef: DocumentRef,
   ): Promise<void> {
     return this.documentService.deleteDocument(docRef);
+  }
+
+  async loadDocumentTypeByName(
+    documentTypeName: string,
+    ontologyRid?: string,
+  ): Promise<DocumentType> {
+    return this.documentService.loadDocumentTypeByName(documentTypeName, ontologyRid);
+  }
+
+  async getDocumentType(
+    documentTypeRid: string,
+  ): Promise<DocumentType> {
+    return this.documentService.getDocumentType(documentTypeRid);
+  }
+
+  async getDocumentTypeOperationalVersion(
+    documentTypeName: string,
+    ontologyRid?: string,
+  ): Promise<number | undefined> {
+    return this.documentService.getDocumentTypeOperationalVersion(documentTypeName, ontologyRid);
   }
 
   async getDocumentSnapshot<T extends DocumentSchema>(
