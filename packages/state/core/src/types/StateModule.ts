@@ -226,8 +226,8 @@ export class StateModuleImpl implements StateModule {
     private readonly documentService: DocumentService,
   ) {}
 
-  getDocumentSchemaVersion(docRef: DocumentRef): number {
-    return this.documentService.getDocumentSchemaVersion(docRef);
+  getDocumentSchemaOperationalVersion(docRef: DocumentRef): number {
+    return this.documentService.getDocumentSchemaOperationalVersion(docRef);
   }
 
   createDocRef<const T extends DocumentSchema>(

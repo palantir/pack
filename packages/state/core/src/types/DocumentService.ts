@@ -119,7 +119,7 @@ export interface DocumentType {
 export interface UpdateDocumentMetadata {
   readonly name?: string;
   readonly description?: string;
-  readonly schemaVersion?: number;
+  readonly operationalVersion?: number;
   readonly security?: DocumentSecurity;
 }
 
@@ -165,11 +165,11 @@ export interface DocumentService {
   ) => Promise<void>;
 
   /**
-   * Get the schema version a document is currently operating at.
-   * Returns the version from the document's metadata if available,
-   * falling back to minSupportedVersion from the schema.
+   * Get the schema operational version a document is currently operating at.
+   * Returns the version from the document's metadata if available, falling back
+   * to minSupportedVersion from the schema.
    */
-  readonly getDocumentSchemaVersion: (
+  readonly getDocumentSchemaOperationalVersion: (
     docRef: DocumentRef,
   ) => number;
 

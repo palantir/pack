@@ -115,7 +115,7 @@ export class DemoDocumentService extends BaseYjsDocumentService<DemoInternalDoc>
    * localStorage is used because the metadata from IndexedDB is loaded
    * asynchronously and not available on first render.
    */
-  override readonly getDocumentSchemaVersion = (
+  override readonly getDocumentSchemaOperationalVersion = (
     docRef: DocumentRef,
   ): number => {
     try {
@@ -128,8 +128,8 @@ export class DemoDocumentService extends BaseYjsDocumentService<DemoInternalDoc>
     }
     // Inline the base class logic — class fields can't call `super`.
     const internalDoc = this.documents.get(docRef.id);
-    if (internalDoc?.metadata?.schemaVersion != null) {
-      return internalDoc.metadata.schemaVersion;
+    if (internalDoc?.metadata?.operationalVersion != null) {
+      return internalDoc.metadata.operationalVersion;
     }
     const schemaMeta = getMetadata(docRef.schema);
     return schemaMeta.minSupportedVersion ?? schemaMeta.version;
@@ -151,7 +151,9 @@ export class DemoDocumentService extends BaseYjsDocumentService<DemoInternalDoc>
     } catch {
       // localStorage may be unavailable
     }
-    void this.updateDocument(docRef, { schemaVersion: version });
+    void this.updateDocument(docRef, {
+      operationalVersion: version,
+    });
   };
 
   override createInternalDoc(
@@ -247,13 +249,13 @@ export class DemoDocumentService extends BaseYjsDocumentService<DemoInternalDoc>
     const docRef = createDocRef(this.app, id, schema);
 
     const schemaMeta = getMetadata(schema);
-    const schemaVersion = schemaMeta.minSupportedVersion ?? schemaMeta.version;
+    const operationalVersion = schemaMeta.minSupportedVersion ?? schemaMeta.version;
 
     const metadata: DocumentMetadata = {
       documentTypeName,
       name,
+      operationalVersion,
       ontologyRid,
-      schemaVersion,
       security, // TODO: may want to add in auth.getUserId() as owner here
     };
 
@@ -295,8 +297,7 @@ export class DemoDocumentService extends BaseYjsDocumentService<DemoInternalDoc>
 
     this.logger.debug("updateDocument", {
       docId: docRef.id,
-      existingSchemaVersion: existing.schemaVersion,
-      newSchemaVersion: metadata.schemaVersion,
+      newOperationalVersion: metadata.operationalVersion,
       updateKeys: Object.keys(update),
     });
 

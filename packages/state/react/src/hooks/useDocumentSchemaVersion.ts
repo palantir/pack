@@ -19,13 +19,17 @@ import { isValidDocRef } from "@palantir/pack.state.core";
 import { useEffect, useState } from "react";
 
 /**
- * Returns the schema version the document is currently operating at.
+ * Returns the document's schema operational version.
  *
- * Subscribes to metadata changes so callers update when the backend ratchets a
- * document to a new schema version.
+ * This reflects the current loaded metadata. Foundry does not send metadata
+ * update events for operational-version-only bumps, so this hook will not live
+ * update for those changes.
  *
- * @param docRef The document reference to read the schema version from.
- * @returns The document's current operating schema version number.
+ * TODO: Revisit this hook when the backend evicts document subscribers on
+ * operational version bumps and clients must refresh their document state.
+ *
+ * @param docRef The document reference to read the schema operational version from.
+ * @returns The document's current schema operational version number.
  */
 export function useDocumentSchemaVersion<D extends DocumentSchema>(
   docRef: DocumentRef<D>,
@@ -40,7 +44,7 @@ export function useDocumentSchemaVersion<D extends DocumentSchema>(
     }
 
     return docRef.onMetadataChange((_docRef, metadata) => {
-      setVersion(metadata.schemaVersion ?? docRef.version);
+      setVersion(metadata.operationalVersion ?? docRef.version);
     });
   }, [docRef]);
 
