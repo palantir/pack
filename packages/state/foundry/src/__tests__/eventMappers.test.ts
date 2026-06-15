@@ -58,12 +58,18 @@ const schemaWithUpgradedModel = {
             addedInVersion: 2,
             fields: {
               fillColor: {
-                default: "black",
                 derivedFrom: [],
               },
             },
           },
         ],
+      },
+    },
+    upgradeFns: {
+      TestModel: {
+        v2: {
+          fillColor: () => "black",
+        },
       },
     },
   },
