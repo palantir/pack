@@ -64,6 +64,20 @@ describe("resolveSchemaChain provenance", () => {
     expect(v2Fields.strokeColor!.metadata.addedInVersion).toBe(2);
   });
 
+  it("caps the chain at maxVersion", () => {
+    const { chain, latestVersion, minVersion } = resolveSchemaChain(v2, 1, {}, 1);
+
+    expect(chain.map(entry => entry.version)).toEqual([1]);
+    expect(latestVersion).toBe(1);
+    expect(minVersion).toBe(1);
+  });
+
+  it("rejects a maxVersion that is not in the chain", () => {
+    expect(() => resolveSchemaChain(v2, undefined, {}, 3)).toThrow(
+      "maxVersion 3 is not in the schema chain",
+    );
+  });
+
   it("keeps a deprecated field present and stamps deprecatedFromVersion + message", () => {
     const { chain } = resolveSchemaChain(v2);
     const v2Fields = fieldsByKey(chain.find(c => c.version === 2)!, "ShapeBox");
