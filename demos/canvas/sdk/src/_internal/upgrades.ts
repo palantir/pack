@@ -117,8 +117,17 @@ export const ShapeUpdatedActivityUpgrades: UpgradeRegistry<"ShapeUpdatedActivity
     newShape: { type: { kind: "modelRef", model: "NodeShape" }, addedInVersion: 1 },
     nodeId: { type: { kind: "primitive" }, addedInVersion: 1 },
     oldShape: { type: { kind: "modelRef", model: "NodeShape" }, addedInVersion: 1 },
+    summary: { type: { kind: "primitive" }, addedInVersion: 3 },
   },
   steps: [
+    {
+      addedInVersion: 3,
+      fields: {
+        summary: {
+          derivedFrom: ["nodeId"],
+        },
+      },
+    },
   ],
 };
 

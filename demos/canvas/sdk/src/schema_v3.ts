@@ -35,7 +35,8 @@ export const ShapeDeletedActivitySchema_v3 = z.object({
 export const ShapeUpdatedActivitySchema_v3 = z.object({
   nodeId: z.string(),
   oldShape: z.lazy((): ZodType<NodeShape_v3> => NodeShapeSchema_v3),
-  newShape: z.lazy((): ZodType<NodeShape_v3> => NodeShapeSchema_v3)
+  newShape: z.lazy((): ZodType<NodeShape_v3> => NodeShapeSchema_v3),
+  summary: z.string()
 }).passthrough() satisfies ZodType<ShapeUpdatedActivity_v3>;
 
 export const CursorPresenceSchema_v3 = z.object({

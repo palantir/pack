@@ -1257,7 +1257,7 @@
             "record": {
               "key": "ShapeUpdatedActivity",
               "name": "ShapeUpdatedActivity",
-              "description": "Activity payload for a shape update.",
+              "description": "",
               "fields": [
                 {
                   "key": "nodeId",
@@ -1307,6 +1307,20 @@
                   },
                   "metadata": {
                     "addedInVersion": 1
+                  }
+                },
+                {
+                  "key": "summary",
+                  "name": "summary",
+                  "fieldType": {
+                    "value": {
+                      "string": {},
+                      "type": "string"
+                    },
+                    "type": "value"
+                  },
+                  "metadata": {
+                    "addedInVersion": 3
                   }
                 }
               ]
@@ -1416,6 +1430,15 @@
               ]
             },
             "type": "record"
+          }
+        }
+      },
+      "migrations": {
+        "ShapeUpdatedActivity": {
+          "summary": {
+            "derivedFrom": [
+              "nodeId"
+            ]
           }
         }
       }

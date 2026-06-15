@@ -20,6 +20,7 @@ import type { PackApp } from "@palantir/pack.core";
 import type { DocumentId } from "@palantir/pack.document-schema.model-types";
 import type { WithStateModule } from "@palantir/pack.state.core";
 import { useDocRef } from "@palantir/pack.state.react";
+import { getShapeUpdatedActivitySummary } from "./utils/activityMessages.js";
 
 /**
  * Single, shared `DocumentSchema` instance for the canvas demo. Built by
@@ -39,6 +40,11 @@ export const CanvasSchema = DocumentModel({
       fillColor: ({ color }) => color,
       strokeColor: ({ color }) => color,
       opacity: () => 0.5,
+    },
+  },
+  ShapeUpdatedActivity: {
+    v3: {
+      summary: ({ nodeId }) => getShapeUpdatedActivitySummary(nodeId),
     },
   },
 });

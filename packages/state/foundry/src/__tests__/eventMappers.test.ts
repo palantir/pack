@@ -75,6 +75,81 @@ const schemaWithUpgradedModel = {
   },
 } as unknown as DocumentSchema;
 
+const shapeSnapshotModel = {
+  __type: {} as {
+    color?: string;
+    fillColor?: string;
+    nodeId: string;
+    strokeColor?: string;
+  },
+  zodSchema: {} as Model["zodSchema"],
+  [Metadata]: { name: "ShapeSnapshot" },
+} as unknown as Model;
+
+const shapeUpdateActivityModel = {
+  __type: {} as {
+    activityType: "shapeUpdated";
+    newShape: typeof shapeSnapshotModel.__type;
+    nodeId: string;
+    oldShape: typeof shapeSnapshotModel.__type;
+  },
+  zodSchema: {} as Model["zodSchema"],
+  [Metadata]: { name: "ShapeUpdateActivity" },
+} as unknown as Model;
+
+const schemaWithActivityContainingUpgradedRecord = {
+  ...emptySchema,
+  ShapeSnapshot: shapeSnapshotModel,
+  ShapeUpdateActivity: shapeUpdateActivityModel,
+  [Metadata]: {
+    name: "TestSchema",
+    version: 2,
+    minSupportedVersion: 1,
+    upgrades: {
+      ShapeSnapshot: {
+        modelName: "ShapeSnapshot",
+        allFields: {
+          color: { type: { kind: "primitive" } },
+          fillColor: { type: { kind: "primitive" } },
+          nodeId: { type: { kind: "primitive" } },
+          strokeColor: { type: { kind: "primitive" } },
+        },
+        steps: [
+          {
+            addedInVersion: 2,
+            fields: {
+              fillColor: {
+                derivedFrom: ["color"],
+              },
+              strokeColor: {
+                derivedFrom: ["color"],
+              },
+            },
+          },
+        ],
+      },
+      ShapeUpdateActivity: {
+        modelName: "ShapeUpdateActivity",
+        allFields: {
+          activityType: { type: { kind: "primitive" } },
+          newShape: { type: { kind: "modelRef", model: "ShapeSnapshot" } },
+          nodeId: { type: { kind: "primitive" } },
+          oldShape: { type: { kind: "modelRef", model: "ShapeSnapshot" } },
+        },
+        steps: [],
+      },
+    },
+    upgradeFns: {
+      ShapeSnapshot: {
+        v2: {
+          fillColor: ({ color }: { readonly color: unknown }) => color,
+          strokeColor: ({ color }: { readonly color: unknown }) => color,
+        },
+      },
+    },
+  },
+} as unknown as DocumentSchema;
+
 function makeActivityUpdate(
   eventData: unknown,
 ): ActivityCollaborativeUpdate {
@@ -279,6 +354,52 @@ describe("getActivityEvent", () => {
       data: {
         fillColor: "black",
         someField: "node-1",
+      },
+    });
+  });
+
+  it("lenses record snapshots embedded in documentCustomEvent payloads", () => {
+    const result = getActivityEvent(
+      schemaWithActivityContainingUpgradedRecord,
+      makeActivityUpdate({
+        type: "documentCustomEvent",
+        eventType: "ShapeUpdateActivity",
+        data: {
+          activityType: "shapeUpdated",
+          nodeId: "shape-1",
+          oldShape: {
+            color: "blue",
+            nodeId: "shape-1",
+          },
+          newShape: {
+            color: "red",
+            nodeId: "shape-1",
+          },
+        },
+        version: 1,
+      }),
+    );
+
+    expect(result!.eventData).toEqual({
+      type: ActivityEventDataType.CUSTOM_EVENT,
+      model: shapeUpdateActivityModel,
+      eventType: "ShapeUpdateActivity",
+      schemaVersion: 1,
+      data: {
+        activityType: "shapeUpdated",
+        nodeId: "shape-1",
+        oldShape: {
+          color: "blue",
+          fillColor: "blue",
+          nodeId: "shape-1",
+          strokeColor: "blue",
+        },
+        newShape: {
+          color: "red",
+          fillColor: "red",
+          nodeId: "shape-1",
+          strokeColor: "red",
+        },
       },
     });
   });

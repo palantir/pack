@@ -19,6 +19,7 @@ import { CanvasActivityModel, matchVersion } from "@demo/canvas.sdk";
 import type { RecordRef } from "@palantir/pack.document-schema.model-types";
 import type { MouseEvent } from "react";
 import { useCallback, useState } from "react";
+import { getShapeUpdatedActivitySummary } from "../utils/activityMessages.js";
 import { boundsToCenter } from "../utils/boundsToCenter.js";
 import { centerToBounds } from "../utils/centerToBounds.js";
 import type { ResizeHandle } from "../utils/getResizeHandles.js";
@@ -246,6 +247,7 @@ export function useShapeDrag(
                 newShape,
                 nodeId: dragState.shapeRef.id,
                 oldShape,
+                summary: getShapeUpdatedActivitySummary(dragState.shapeRef.id),
               }),
             );
           },

@@ -19,6 +19,7 @@ import { CanvasActivityModel, matchVersion } from "@demo/canvas.sdk";
 import type { RecordRef } from "@palantir/pack.document-schema.model-types";
 import type { MouseEvent } from "react";
 import { useCallback, useRef, useState } from "react";
+import { getShapeUpdatedActivitySummary } from "../utils/activityMessages.js";
 import { centerToBounds } from "../utils/centerToBounds.js";
 import { getDefaultColor } from "../utils/getDefaultColor.js";
 import { getDefaultShapeSize } from "../utils/getDefaultShapeSize.js";
@@ -194,6 +195,7 @@ export function useCanvasInteraction(
                 nodeId: selectedShapeRef.id,
                 oldShape: oldShapeV3,
                 newShape: newShapeV3,
+                summary: getShapeUpdatedActivitySummary(selectedShapeRef.id),
               }),
             );
           },
@@ -244,6 +246,7 @@ export function useCanvasInteraction(
               nodeId: selectedShapeRef.id,
               oldShape: oldShapeV3,
               newShape: newShapeV3,
+              summary: getShapeUpdatedActivitySummary(selectedShapeRef.id),
             }),
           );
         },
