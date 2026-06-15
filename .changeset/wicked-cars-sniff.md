@@ -4,6 +4,9 @@
 "@palantir/pack.state.foundry": minor
 "@palantir/pack.state.core": minor
 "@palantir/pack.state.demo": minor
+"@palantir/pack.state.react": patch
 ---
 
-use backend calculated operational version for schema versions
+Use backend-calculated document operational versions for schema version gating.
+
+Foundry document loads now provide the document's operational version, which Pack stores on document metadata and uses as the fallback version for writes that do not have a lower calculated update schema version.
