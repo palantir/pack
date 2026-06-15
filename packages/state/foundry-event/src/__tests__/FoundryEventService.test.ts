@@ -115,4 +115,77 @@ describe("FoundryEventService", () => {
     expect(typeof publishCall?.[1].yjsUpdate?.data).toBe("string");
     expect(statusUpdates.at(-1)?.error).toBeUndefined();
   });
+
+  it("uses the document operational version when a local Yjs update has no version metadata", async () => {
+    let updateCallback: ((message: DocumentUpdateMessage) => void) | undefined;
+    mocks.eventService.subscribe.mockImplementation((_channel, callback) => {
+      updateCallback = callback as (message: DocumentUpdateMessage) => void;
+      return Promise.resolve("sub-1" as SubscriptionId);
+    });
+
+    const yDoc = new Y.Doc();
+    const service = createFoundryEventService(app);
+
+    service.startDocumentSync(
+      "doc-1" as DocumentId,
+      yDoc,
+      { maxVersion: 3, minVersion: 1 },
+      () => {},
+      () => 2,
+    );
+
+    await Promise.resolve();
+    updateCallback?.({
+      baseRevisionId: "0",
+      clientId: "server",
+      editIds: [],
+      revisionId: "1",
+      type: "update",
+    });
+
+    yDoc.getMap("Shape").set("shape-1", new Y.Map());
+
+    const publishCall = mocks.eventService.publish.mock.calls[0] as
+      | [unknown, PublishedDocumentUpdate]
+      | undefined;
+    expect(publishCall?.[1].documentUpdateSchemaVersion).toBe(2);
+  });
+
+  it("preserves a calculated update schema version below the document operational version", async () => {
+    let updateCallback: ((message: DocumentUpdateMessage) => void) | undefined;
+    mocks.eventService.subscribe.mockImplementation((_channel, callback) => {
+      updateCallback = callback as (message: DocumentUpdateMessage) => void;
+      return Promise.resolve("sub-1" as SubscriptionId);
+    });
+
+    const yDoc = new Y.Doc();
+    const service = createFoundryEventService(app);
+
+    service.startDocumentSync(
+      "doc-1" as DocumentId,
+      yDoc,
+      { maxVersion: 3, minVersion: 1 },
+      () => {},
+      () => 2,
+    );
+
+    await Promise.resolve();
+    updateCallback?.({
+      baseRevisionId: "0",
+      clientId: "server",
+      editIds: [],
+      revisionId: "1",
+      type: "update",
+    });
+
+    yDoc.transact(transaction => {
+      addDocumentUpdateSchemaVersionToTransaction(transaction, 1);
+      yDoc.getMap("Shape").set("shape-1", new Y.Map());
+    });
+
+    const publishCall = mocks.eventService.publish.mock.calls[0] as
+      | [unknown, PublishedDocumentUpdate]
+      | undefined;
+    expect(publishCall?.[1].documentUpdateSchemaVersion).toBe(1);
+  });
 });

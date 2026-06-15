@@ -169,7 +169,7 @@ class DocumentRefImpl<T extends DocumentSchema> implements DocumentRef<T> {
   }
 
   get version(): number {
-    return this.#stateModule.getDocumentSchemaVersion(this);
+    return this.#stateModule.getDocumentSchemaOperationalVersion(this);
   }
 
   updateRecord(ref: RecordRef, data: unknown): Promise<void> {

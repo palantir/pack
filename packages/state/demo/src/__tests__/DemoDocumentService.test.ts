@@ -181,6 +181,26 @@ describe("DemoDocumentService", () => {
     expect(typeof docRef.id).toBe("string");
   });
 
+  it("should expose operationalVersion in demo metadata", async () => {
+    const stateModule = getStateModule(app);
+
+    const metadata: DocumentMetadata = {
+      documentTypeName: "TestType",
+      name: "Versioned Document",
+      ontologyRid: "test-ontology-rid",
+      security: TEST_SECURITY,
+    };
+
+    const schema = createTestSchema();
+    const docRef = await stateModule.createDocument(metadata, schema);
+    const updatedMetadata = await stateModule.updateDocument(docRef, {
+      operationalVersion: 2,
+    });
+
+    expect(updatedMetadata.operationalVersion).toBe(2);
+    expect(docRef.version).toBe(2);
+  });
+
   it("should persist document and load it across service instances", async () => {
     const stateModule1 = getStateModule(app);
 

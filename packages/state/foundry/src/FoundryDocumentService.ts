@@ -19,6 +19,7 @@ import type {
   CreateDocumentRequest,
   DiscretionaryPrincipal,
   DiscretionaryPrincipal as WireDiscretionaryPrincipal,
+  Document as WireDocument,
   DocumentSecurity as WireDocumentSecurity,
   DocumentType as WireDocumentType,
   SearchDocumentsRequest,
@@ -98,6 +99,11 @@ export function internalCreateFoundryDocumentService(
 interface FoundryInternalDoc extends InternalYjsDoc {
   metadataUpdateUnsubscribed?: boolean;
   syncSession?: SyncSession;
+}
+
+// TODO: remove once foundry sdk is updated.
+interface WireDocumentWithOperationalVersion extends WireDocument {
+  readonly operationalVersion?: number;
 }
 
 export class FoundryDocumentService extends BaseYjsDocumentService<FoundryInternalDoc> {
@@ -196,16 +202,8 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
 
     return {
       data: searchResponse.data.map(doc => ({
-        createdBy: doc.createdBy,
-        createdTime: doc.createdTime,
-        documentTypeName: doc.documentTypeName,
+        ...getLocalDocumentMetadata(doc),
         id: doc.id as DocumentId,
-        name: doc.name,
-        operations: doc.operations,
-        ontologyRid: doc.ontologyRid,
-        security: getLocalSecurity(doc.security),
-        updatedBy: doc.updatedBy,
-        updatedTime: doc.updatedTime,
       })),
       nextPageToken: searchResponse.nextPageToken,
     };
@@ -230,14 +228,7 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
       },
     );
 
-    const metadata: DocumentMetadata = {
-      description: document.description,
-      documentTypeName: document.documentTypeName,
-      name: document.name,
-      operations: document.operations,
-      ontologyRid: document.ontologyRid,
-      security: getLocalSecurity(document.security),
-    };
+    const metadata = getLocalDocumentMetadata(document);
 
     this.updateMetadata(docRef.id, metadata);
 
@@ -326,14 +317,7 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
         if (!this.documents.has(docRef.id)) {
           return;
         }
-        const metadata: DocumentMetadata = {
-          description: document.description,
-          documentTypeName: document.documentTypeName,
-          name: document.name,
-          operations: document.operations,
-          ontologyRid: document.ontologyRid,
-          security: getLocalSecurity(document.security),
-        };
+        const metadata = getLocalDocumentMetadata(document);
 
         internalDoc.metadata = metadata;
         this.notifyMetadataSubscribers(internalDoc, docRef, metadata);
@@ -341,6 +325,9 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
           load: DocumentLoadStatus.LOADED,
         });
 
+        // The metadata channel is for document metadata edits/deletion. Name
+        // and description changes arrive as generic updates; operationalVersion
+        // only refreshes here if it changed by the time this Document is loaded again.
         this.eventService
           .subscribeToMetadataUpdates(docRef.id, _event => {
             if (!internalDoc.metadataUpdateUnsubscribed) {
@@ -382,6 +369,7 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
       status => {
         this.updateDataStatus(internalDoc, docRef, status);
       },
+      () => this.getDocumentSchemaOperationalVersion(docRef),
     );
   }
 
@@ -444,14 +432,7 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
         if (!this.documents.has(docRef.id)) {
           return;
         }
-        const metadata: DocumentMetadata = {
-          description: document.description,
-          documentTypeName: document.documentTypeName,
-          name: document.name,
-          operations: document.operations,
-          ontologyRid: document.ontologyRid,
-          security: getLocalSecurity(document.security),
-        };
+        const metadata = getLocalDocumentMetadata(document);
 
         this.updateMetadata(docRef.id, metadata);
       })
@@ -589,6 +570,24 @@ function getLocalPrincipal(
     default:
       assertNever(wirePrincipal);
   }
+}
+
+function getLocalDocumentMetadata(
+  wireDocument: WireDocumentWithOperationalVersion,
+): DocumentMetadata {
+  return {
+    createdBy: wireDocument.createdBy,
+    createdTime: wireDocument.createdTime,
+    description: wireDocument.description,
+    documentTypeName: wireDocument.documentTypeName,
+    name: wireDocument.name,
+    operationalVersion: wireDocument.operationalVersion,
+    operations: wireDocument.operations,
+    ontologyRid: wireDocument.ontologyRid,
+    security: getLocalSecurity(wireDocument.security),
+    updatedBy: wireDocument.updatedBy,
+    updatedTime: wireDocument.updatedTime,
+  };
 }
 
 function getLocalDocumentType(wireDocumentType: WireDocumentType): DocumentType {

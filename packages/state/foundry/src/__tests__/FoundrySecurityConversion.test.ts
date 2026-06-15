@@ -73,11 +73,17 @@ const testSchema = {
   },
 } as const satisfies DocumentSchema;
 
-const WIRE_DOCUMENT_WITH_SECURITY: Document = {
+// TODO: remove once foundry sdk is updated.
+type WireDocumentWithOperationalVersion = Document & {
+  readonly operationalVersion?: number;
+};
+
+const WIRE_DOCUMENT_WITH_SECURITY: WireDocumentWithOperationalVersion = {
   id: "test-doc-security",
   name: "Secure Document",
   documentTypeName: "SecureType",
   ontologyRid: "ri.ontology..test-ontology-rid",
+  operationalVersion: 2,
   createdBy: "user-1",
   createdTime: "2025-01-01T00:00:00Z",
   updatedBy: "user-2",
@@ -171,6 +177,17 @@ describe("Foundry Security Conversion", () => {
 
       expect(result.data[0]?.ontologyRid).toBe("ri.ontology..test-ontology-rid");
     });
+
+    it("should preserve operationalVersion from response", async () => {
+      const searchResponse: DocumentSearchResponse = {
+        data: [WIRE_DOCUMENT_WITH_SECURITY],
+      };
+      vi.mocked(Documents.search).mockResolvedValue(searchResponse);
+
+      const result = await service.searchDocuments("SecureType", testSchema);
+
+      expect(result.data[0]?.operationalVersion).toBe(2);
+    });
   });
 
   describe("onMetadataSubscriptionOpened", () => {
@@ -227,6 +244,24 @@ describe("Foundry Security Conversion", () => {
 
       expect(metadataUpdates).toHaveLength(1);
       expect(metadataUpdates[0]?.ontologyRid).toBe("ri.ontology..test-ontology-rid");
+    });
+
+    it("should preserve operationalVersion in metadata", async () => {
+      const docRef = createDocRef(mockApp, "test-doc-security" as DocumentId, testSchema);
+
+      const metadataUpdates: DocumentMetadata[] = [];
+
+      unsubscribes.push(
+        service.onMetadataChange(docRef, (_, metadata) => {
+          metadataUpdates.push(metadata);
+        }),
+      );
+
+      await vi.runAllTimersAsync();
+
+      expect(metadataUpdates).toHaveLength(1);
+      expect(metadataUpdates[0]?.operationalVersion).toBe(2);
+      expect(service.getDocumentSchemaOperationalVersion(docRef)).toBe(2);
     });
   });
 });
