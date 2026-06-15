@@ -75,20 +75,45 @@ fi
 echo "Building type-gen CLI..."
 pnpm --filter @palantir/pack.document-schema.type-gen transpileEsm
 
+cd "$SCHEMA_DIR" || exit 1
+
+IR_PATH="build/ir.json"
+ASSET_PATH="build/asset.json"
+SCHEMA_IR_ARGS=(
+  schema ir
+  -i src/schema.mjs
+  -o "$IR_PATH"
+  --config pack-config.json
+)
+
+if [[ -n "$SCHEMA_VERSION" ]]; then
+  IR_PATH="build/upgrade-ir-v${SCHEMA_VERSION}.json"
+  ASSET_PATH="build/upgrade-asset-v${SCHEMA_VERSION}.json"
+  SCHEMA_IR_ARGS=(
+    schema ir
+    -i src/schema.mjs
+    -o "$IR_PATH"
+    --config pack-config.json
+    --max-version "$SCHEMA_VERSION"
+  )
+fi
+
+echo "Building canvas IR..."
+pnpm exec type-gen "${SCHEMA_IR_ARGS[@]}"
+
 echo "Building canvas document type asset..."
-pnpm --filter @demo/canvas.schema build:asset
+pnpm exec type-gen ir asset -i "$IR_PATH" -o "$ASSET_PATH"
 
 echo "Upgrading schema on $FOUNDRY_BASE_URL..."
-cd "$SCHEMA_DIR" || exit 1
 UPDATE_SCHEMA_ARGS=(
-  --input build/asset.json
+  --input "$ASSET_PATH"
   --ontology-rid "$ONTOLOGY_RID"
   --auth "$AUTH_TOKEN"
   --base-url "$FOUNDRY_BASE_URL"
 )
 
 if [[ -n "$SCHEMA_VERSION" ]]; then
-  UPDATE_SCHEMA_ARGS+=(--version "$SCHEMA_VERSION")
+  UPDATE_SCHEMA_ARGS+=(--force-overwrite)
 fi
 
 UPDATE_SCHEMA_ARGS+=("${PASSTHROUGH_ARGS[@]}")

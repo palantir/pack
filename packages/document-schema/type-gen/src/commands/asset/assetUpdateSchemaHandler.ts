@@ -29,28 +29,11 @@ interface AssetUpdateSchemaOptions {
   readonly baseUrl: string;
   readonly auth: string;
   readonly ontologyRid: string;
-  readonly version?: string;
   readonly forceOverwrite?: boolean;
   readonly firstPartyPrefix?: string;
 }
 
 const DEFAULT_API_PREFIX = "/api";
-
-function resolveSchemaVersion(assetVersion: number, versionOverride?: string): number {
-  if (versionOverride == null) {
-    return assetVersion;
-  }
-
-  if (!/^[1-9]\d*$/.test(versionOverride)) {
-    throw new CommanderError(
-      1,
-      "EINVAL",
-      `Invalid --version "${versionOverride}". Must be a positive integer.`,
-    );
-  }
-
-  return Number(versionOverride);
-}
 
 /** Updates the schema of an existing document type using a generated asset JSON file. */
 export async function assetUpdateSchemaHandler(
@@ -63,7 +46,7 @@ export async function assetUpdateSchemaHandler(
 
     const assetContent = readFileSync(assetPath, "utf8");
     const asset = JSON.parse(assetContent) as DocumentTypeAsset;
-    const schemaVersion = resolveSchemaVersion(asset.schemaVersion, options.version);
+    const schemaVersion = asset.schemaVersion;
 
     const fetchFn = options.firstPartyPrefix != null
       ? buildPrefixRewriteFetch(options.firstPartyPrefix)

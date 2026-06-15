@@ -182,6 +182,24 @@ export function resolveMinVersion(
   };
 }
 
+function capVersionedIrChain(
+  chain: VersionedIrEntry[],
+  maxVersion: number | undefined,
+): VersionedIrEntry[] {
+  if (maxVersion == null) {
+    return chain;
+  }
+
+  if (!chain.some(c => c.version === maxVersion)) {
+    throw new Error(
+      `maxVersion ${maxVersion} is not in the schema chain `
+        + `(available versions: ${chain.map(c => c.version).join(", ")})`,
+    );
+  }
+
+  return chain.filter(c => c.version <= maxVersion);
+}
+
 /**
  * Collect the version chain and resolve min/latest versions.
  * Each version's models are converted to IR (IRealTimeDocumentSchema).
@@ -194,8 +212,9 @@ export function resolveSchemaChain(
   schema: SchemaDefinition,
   minSupportedVersion?: number,
   identity: SchemaIdentity = {},
+  maxVersion?: number,
 ): ResolvedIrChain {
-  const chain = collectVersionedIrChain(schema, identity);
+  const chain = capVersionedIrChain(collectVersionedIrChain(schema, identity), maxVersion);
   const { latestVersion, minVersion } = resolveMinVersion(chain, minSupportedVersion);
   return { chain, latestVersion, minVersion };
 }

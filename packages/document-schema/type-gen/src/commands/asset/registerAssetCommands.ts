@@ -46,10 +46,6 @@ export function registerAssetCommands(program: Command): void {
     .requiredOption("-a, --auth <token>", "Authentication token for Foundry API")
     .requiredOption("-o, --ontology-rid <rid>", "Target ontology RID")
     .option(
-      "--version <version>",
-      "Override the schema version from the asset JSON",
-    )
-    .option(
       "--force-overwrite",
       "Skip backwards-compatibility validation when updating the schema",
       false,

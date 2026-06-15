@@ -39,5 +39,9 @@ export function registerSchemaCommands(program: Command): void {
       "--config <file>",
       "Path to the SDK's pack-config JSON file. Its optional 'minSupportedVersion' field declares the oldest schema version this SDK supports; omit the field to track latest only.",
     )
+    .option(
+      "--max-version <version>",
+      "Generate an IR chain capped at this schema version",
+    )
     .action(schemaIrHandler);
 }

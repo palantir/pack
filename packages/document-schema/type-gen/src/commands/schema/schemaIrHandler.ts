@@ -25,6 +25,7 @@ interface SchemaIrOptions {
   input: string;
   output: string;
   config: string;
+  maxVersion?: string;
 }
 
 interface PackConfigLike {
@@ -96,6 +97,20 @@ export async function readPackConfig(configPath: string): Promise<PackConfigValu
   return { documentTypeName, documentTypeDescription, minSupportedVersion };
 }
 
+function parseMaxVersion(maxVersion: string | undefined): number | undefined {
+  if (maxVersion == null) {
+    return undefined;
+  }
+
+  if (!/^[1-9]\d*$/.test(maxVersion)) {
+    throw new Error(
+      `--max-version must be a positive integer, got: ${JSON.stringify(maxVersion)}`,
+    );
+  }
+
+  return Number(maxVersion);
+}
+
 /**
  * Resolve a TypeScript schema module to a versioned IR chain JSON file.
  *
@@ -125,6 +140,7 @@ export async function readPackConfig(configPath: string): Promise<PackConfigValu
  */
 export async function schemaIrHandler(options: SchemaIrOptions): Promise<void> {
   const { input, output, config } = options;
+  const maxVersion = parseMaxVersion(options.maxVersion);
   const { documentTypeName, documentTypeDescription, minSupportedVersion } = await readPackConfig(
     config,
   );
@@ -141,10 +157,15 @@ export async function schemaIrHandler(options: SchemaIrOptions): Promise<void> {
   const schema = await loadSchemaModule(input);
 
   consola.info("Resolving versioned IR chain...");
-  const { chain, latestVersion } = resolveSchemaChain(schema, minSupportedVersion, {
-    name: documentTypeName,
-    description: documentTypeDescription,
-  });
+  const { chain, latestVersion } = resolveSchemaChain(
+    schema,
+    minSupportedVersion,
+    {
+      name: documentTypeName,
+      description: documentTypeDescription,
+    },
+    maxVersion,
+  );
 
   const outputPath = path.resolve(output);
   await fs.ensureDir(path.dirname(outputPath));
