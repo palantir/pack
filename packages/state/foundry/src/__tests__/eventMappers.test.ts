@@ -14,11 +14,15 @@
  * limitations under the License.
  */
 
-import type { ActivityCollaborativeUpdate } from "@osdk/foundry.pack";
+import type { ActivityCollaborativeUpdate, PresenceCollaborativeUpdate } from "@osdk/foundry.pack";
 import type { DocumentSchema, Model } from "@palantir/pack.document-schema.model-types";
-import { ActivityEventDataType, Metadata } from "@palantir/pack.document-schema.model-types";
+import {
+  ActivityEventDataType,
+  Metadata,
+  PresenceEventDataType,
+} from "@palantir/pack.document-schema.model-types";
 import { describe, expect, it } from "vitest";
-import { getActivityEvent } from "../eventMappers.js";
+import { getActivityEvent, getPresenceEvent } from "../eventMappers.js";
 
 const mockModel = {
   __type: {} as { someField: string },
@@ -27,12 +31,123 @@ const mockModel = {
 } as unknown as Model;
 
 const emptySchema = {
-  [Metadata]: { name: "TestSchema", version: 0, models: {} },
+  [Metadata]: { name: "TestSchema", version: 1, models: {} },
 } as unknown as DocumentSchema;
 
 const schemaWithModel = {
   ...emptySchema,
   TestModel: mockModel,
+} as unknown as DocumentSchema;
+
+const schemaWithUpgradedModel = {
+  ...emptySchema,
+  TestModel: mockModel,
+  [Metadata]: {
+    name: "TestSchema",
+    version: 2,
+    minSupportedVersion: 1,
+    upgrades: {
+      TestModel: {
+        modelName: "TestModel",
+        allFields: {
+          fillColor: { type: { kind: "primitive" } },
+          someField: { type: { kind: "primitive" } },
+        },
+        steps: [
+          {
+            addedInVersion: 2,
+            fields: {
+              fillColor: {
+                derivedFrom: [],
+              },
+            },
+          },
+        ],
+      },
+    },
+    upgradeFns: {
+      TestModel: {
+        v2: {
+          fillColor: () => "black",
+        },
+      },
+    },
+  },
+} as unknown as DocumentSchema;
+
+const shapeSnapshotModel = {
+  __type: {} as {
+    color?: string;
+    fillColor?: string;
+    nodeId: string;
+    strokeColor?: string;
+  },
+  zodSchema: {} as Model["zodSchema"],
+  [Metadata]: { name: "ShapeSnapshot" },
+} as unknown as Model;
+
+const shapeUpdateActivityModel = {
+  __type: {} as {
+    activityType: "shapeUpdated";
+    newShape: typeof shapeSnapshotModel.__type;
+    nodeId: string;
+    oldShape: typeof shapeSnapshotModel.__type;
+  },
+  zodSchema: {} as Model["zodSchema"],
+  [Metadata]: { name: "ShapeUpdateActivity" },
+} as unknown as Model;
+
+const schemaWithActivityContainingUpgradedRecord = {
+  ...emptySchema,
+  ShapeSnapshot: shapeSnapshotModel,
+  ShapeUpdateActivity: shapeUpdateActivityModel,
+  [Metadata]: {
+    name: "TestSchema",
+    version: 2,
+    minSupportedVersion: 1,
+    upgrades: {
+      ShapeSnapshot: {
+        modelName: "ShapeSnapshot",
+        allFields: {
+          color: { type: { kind: "primitive" } },
+          fillColor: { type: { kind: "primitive" } },
+          nodeId: { type: { kind: "primitive" } },
+          strokeColor: { type: { kind: "primitive" } },
+        },
+        steps: [
+          {
+            addedInVersion: 2,
+            fields: {
+              fillColor: {
+                derivedFrom: ["color"],
+              },
+              strokeColor: {
+                derivedFrom: ["color"],
+              },
+            },
+          },
+        ],
+      },
+      ShapeUpdateActivity: {
+        modelName: "ShapeUpdateActivity",
+        allFields: {
+          activityType: { type: { kind: "primitive" } },
+          newShape: { type: { kind: "modelRef", model: "ShapeSnapshot" } },
+          nodeId: { type: { kind: "primitive" } },
+          oldShape: { type: { kind: "modelRef", model: "ShapeSnapshot" } },
+        },
+        steps: [],
+      },
+    },
+    upgradeFns: {
+      ShapeSnapshot: {
+        v2: {
+          fillColor: ({ color }: { readonly color: unknown }) => color,
+          strokeColor: ({ color }: { readonly color: unknown }) => color,
+        },
+      },
+    },
+  },
 } as unknown as DocumentSchema;
 
 function makeActivityUpdate(
@@ -196,7 +311,96 @@ describe("getActivityEvent", () => {
       type: ActivityEventDataType.CUSTOM_EVENT,
       model: mockModel,
       eventType: "TestModel",
+      schemaVersion: 1,
       data: customData,
+    });
+  });
+
+  it("maps documentCustomEvent with invalid schema version to UNKNOWN", () => {
+    const customData = { eventType: "shapeAdd", nodeId: "node-1" };
+    const result = getActivityEvent(
+      schemaWithModel,
+      makeActivityUpdate({
+        type: "documentCustomEvent",
+        eventType: "TestModel",
+        data: customData,
+        version: "future",
+      }),
+    );
+
+    expect(result!.eventData).toEqual({
+      type: ActivityEventDataType.UNKNOWN,
+      rawType: "TestModel",
+      rawData: customData,
+    });
+  });
+
+  it("lenses documentCustomEvent payloads to the readable model view", () => {
+    const result = getActivityEvent(
+      schemaWithUpgradedModel,
+      makeActivityUpdate({
+        type: "documentCustomEvent",
+        eventType: "TestModel",
+        data: { someField: "node-1" },
+        version: 1,
+      }),
+    );
+
+    expect(result!.eventData).toEqual({
+      type: ActivityEventDataType.CUSTOM_EVENT,
+      model: mockModel,
+      eventType: "TestModel",
+      schemaVersion: 1,
+      data: {
+        fillColor: "black",
+        someField: "node-1",
+      },
+    });
+  });
+
+  it("lenses record snapshots embedded in documentCustomEvent payloads", () => {
+    const result = getActivityEvent(
+      schemaWithActivityContainingUpgradedRecord,
+      makeActivityUpdate({
+        type: "documentCustomEvent",
+        eventType: "ShapeUpdateActivity",
+        data: {
+          activityType: "shapeUpdated",
+          nodeId: "shape-1",
+          oldShape: {
+            color: "blue",
+            nodeId: "shape-1",
+          },
+          newShape: {
+            color: "red",
+            nodeId: "shape-1",
+          },
+        },
+        version: 1,
+      }),
+    );
+
+    expect(result!.eventData).toEqual({
+      type: ActivityEventDataType.CUSTOM_EVENT,
+      model: shapeUpdateActivityModel,
+      eventType: "ShapeUpdateActivity",
+      schemaVersion: 1,
+      data: {
+        activityType: "shapeUpdated",
+        nodeId: "shape-1",
+        oldShape: {
+          color: "blue",
+          fillColor: "blue",
+          nodeId: "shape-1",
+          strokeColor: "blue",
+        },
+        newShape: {
+          color: "red",
+          fillColor: "red",
+          nodeId: "shape-1",
+          strokeColor: "red",
+        },
+      },
     });
   });
 
@@ -254,5 +458,51 @@ describe("getActivityEvent", () => {
     expect(result!.createdInstant).toEqual(
       new Date("2026-01-01T00:00:00Z").getTime(),
     );
+  });
+});
+
+describe("getPresenceEvent", () => {
+  it("maps customPresenceEvent with known model to CUSTOM_EVENT", () => {
+    const customData = { eventType: "cursor", x: 1, y: 2 };
+    const result = getPresenceEvent(
+      schemaWithModel,
+      {
+        type: "customPresenceEvent",
+        clientId: "client-1",
+        eventData: customData,
+        eventType: "TestModel",
+        isEphemeral: true,
+        userId: "user-1",
+        version: 1,
+      } as PresenceCollaborativeUpdate,
+    );
+
+    expect(result.eventData).toEqual({
+      type: PresenceEventDataType.CUSTOM_EVENT,
+      model: mockModel,
+      schemaVersion: 1,
+      eventData: customData,
+    });
+  });
+
+  it("maps customPresenceEvent with invalid schema version to UNKNOWN", () => {
+    const customData = { eventType: "cursor", x: 1, y: 2 };
+    const result = getPresenceEvent(
+      schemaWithModel,
+      {
+        type: "customPresenceEvent",
+        clientId: "client-1",
+        eventData: customData,
+        eventType: "TestModel",
+        userId: "user-1",
+        version: 99,
+      } as PresenceCollaborativeUpdate,
+    );
+
+    expect(result.eventData).toEqual({
+      type: PresenceEventDataType.UNKNOWN,
+      rawType: "TestModel",
+      rawData: customData,
+    });
   });
 });

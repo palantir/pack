@@ -17,13 +17,14 @@
 import type { NodeShape, NodeShapeModel, VersionedDocRef } from "@demo/canvas.sdk";
 import { CanvasActivityModel, matchVersion } from "@demo/canvas.sdk";
 import type { RecordRef } from "@palantir/pack.document-schema.model-types";
-import { ActivityEvents } from "@palantir/pack.document-schema.model-types";
 import type { MouseEvent } from "react";
 import { useCallback, useState } from "react";
+import { getShapeUpdatedActivitySummary } from "../utils/activityMessages.js";
 import { boundsToCenter } from "../utils/boundsToCenter.js";
 import { centerToBounds } from "../utils/centerToBounds.js";
 import type { ResizeHandle } from "../utils/getResizeHandles.js";
 import { getResizeHandles } from "../utils/getResizeHandles.js";
+import { toNodeShapeV1, toNodeShapeV2, toNodeShapeV3 } from "../utils/versionedShapes.js";
 import type { ShapeIndex } from "./useShapeIndex.js";
 
 type DragMode = "move" | "resize";
@@ -179,7 +180,7 @@ export function useShapeDrag(
         });
       }
     },
-    [dragState],
+    [doc, dragState],
   );
 
   const onMouseUp = useCallback(async () => {
@@ -203,21 +204,54 @@ export function useShapeDrag(
           right: finalShape.right,
           top: finalShape.top,
         };
-        doc.withTransaction(
-          () => {
-            matchVersion(doc, {
-              1: doc => doc.updateRecord(dragState.shapeRef, finalBounds),
-              2: doc => doc.updateRecord(dragState.shapeRef, finalBounds),
-              3: doc => doc.updateRecord(dragState.shapeRef, finalBounds),
-            });
+        matchVersion(doc, {
+          1: doc => {
+            const oldShape = toNodeShapeV1(dragState.initialShape);
+            const newShape = toNodeShapeV1(finalShape);
+            doc.withTransaction(
+              () => {
+                void doc.updateRecord(dragState.shapeRef, finalBounds);
+              },
+              doc.describeEdit(CanvasActivityModel, {
+                activityType: "shapeUpdated",
+                newShape,
+                nodeId: dragState.shapeRef.id,
+                oldShape,
+              }),
+            );
           },
-          ActivityEvents.describeEdit(CanvasActivityModel, {
-            activityType: "shapeUpdated",
-            newShape: finalShape,
-            nodeId: dragState.shapeRef.id,
-            oldShape: dragState.initialShape,
-          }),
-        );
+          2: doc => {
+            const oldShape = toNodeShapeV2(dragState.initialShape);
+            const newShape = toNodeShapeV2(finalShape);
+            doc.withTransaction(
+              () => {
+                void doc.updateRecord(dragState.shapeRef, finalBounds);
+              },
+              doc.describeEdit(CanvasActivityModel, {
+                activityType: "shapeUpdated",
+                newShape,
+                nodeId: dragState.shapeRef.id,
+                oldShape,
+              }),
+            );
+          },
+          3: doc => {
+            const oldShape = toNodeShapeV3(dragState.initialShape);
+            const newShape = toNodeShapeV3(finalShape);
+            doc.withTransaction(
+              () => {
+                void doc.updateRecord(dragState.shapeRef, finalBounds);
+              },
+              doc.describeEdit(CanvasActivityModel, {
+                activityType: "shapeUpdated",
+                newShape,
+                nodeId: dragState.shapeRef.id,
+                oldShape,
+                summary: getShapeUpdatedActivitySummary(dragState.shapeRef.id),
+              }),
+            );
+          },
+        });
       }
     }
 

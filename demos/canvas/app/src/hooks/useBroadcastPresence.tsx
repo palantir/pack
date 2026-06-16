@@ -14,9 +14,8 @@
  * limitations under the License.
  */
 
-import type { DocumentModel } from "@demo/canvas.sdk";
-import { CursorPresenceModel, SelectionPresenceModel } from "@demo/canvas.sdk";
-import type { DocumentRef } from "@palantir/pack.document-schema.model-types";
+import type { VersionedDocRef } from "@demo/canvas.sdk";
+import { CursorPresenceModel, matchVersion, SelectionPresenceModel } from "@demo/canvas.sdk";
 import { useCallback, useRef } from "react";
 
 interface UseBroadcastPresenceResult {
@@ -27,7 +26,7 @@ interface UseBroadcastPresenceResult {
 const CURSOR_THROTTLE_MS = 16;
 
 export function useBroadcastPresence(
-  docRef: DocumentRef<DocumentModel>,
+  docRef: VersionedDocRef,
 ): UseBroadcastPresenceResult {
   const lastCursorBroadcastRef = useRef<number>(0);
   const pendingCursorRef = useRef<{ x: number; y: number } | null>(null);
@@ -50,7 +49,11 @@ export function useBroadcastPresence(
             rafIdRef.current = null;
             if (pendingCursorRef.current != null) {
               const { x, y } = pendingCursorRef.current;
-              docRef.updateCustomPresence(CursorPresenceModel, { x, y });
+              matchVersion(docRef, {
+                1: doc => doc.updateCustomPresence(CursorPresenceModel, { x, y }),
+                2: doc => doc.updateCustomPresence(CursorPresenceModel, { x, y }),
+                3: doc => doc.updateCustomPresence(CursorPresenceModel, { x, y }),
+              });
               lastCursorBroadcastRef.current = Date.now();
               pendingCursorRef.current = null;
             }
@@ -60,7 +63,11 @@ export function useBroadcastPresence(
 
         if (pendingCursorRef.current != null) {
           const { x, y } = pendingCursorRef.current;
-          docRef.updateCustomPresence(CursorPresenceModel, { x, y });
+          matchVersion(docRef, {
+            1: doc => doc.updateCustomPresence(CursorPresenceModel, { x, y }),
+            2: doc => doc.updateCustomPresence(CursorPresenceModel, { x, y }),
+            3: doc => doc.updateCustomPresence(CursorPresenceModel, { x, y }),
+          });
           lastCursorBroadcastRef.current = now;
           pendingCursorRef.current = null;
         }
@@ -71,8 +78,19 @@ export function useBroadcastPresence(
 
   const broadcastSelection = useCallback(
     (nodeIds: readonly string[]) => {
-      docRef.updateCustomPresence(SelectionPresenceModel, {
-        selectedNodeIds: [...nodeIds],
+      matchVersion(docRef, {
+        1: doc =>
+          doc.updateCustomPresence(SelectionPresenceModel, {
+            selectedNodeIds: [...nodeIds],
+          }),
+        2: doc =>
+          doc.updateCustomPresence(SelectionPresenceModel, {
+            selectedNodeIds: [...nodeIds],
+          }),
+        3: doc =>
+          doc.updateCustomPresence(SelectionPresenceModel, {
+            selectedNodeIds: [...nodeIds],
+          }),
       });
     },
     [docRef],

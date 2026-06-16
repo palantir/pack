@@ -44,7 +44,7 @@ function getActivityMessage(event: ActivityEvent): string | undefined {
           case "shapeDeleted":
             return "User deleted a shape";
           case "shapeUpdated":
-            return "User updated a shape";
+            return event.eventData.data.summary;
           default:
             return undefined;
         }

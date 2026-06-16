@@ -24,13 +24,19 @@ import type {
   UserId,
 } from "@palantir/pack.document-schema.model-types";
 import { getMetadata, hasMetadata } from "@palantir/pack.document-schema.model-types";
+import { resolveAndApplyLens } from "@palantir/pack.state.core";
 
 const HEARTBEAT_INTERVAL_MS = 5000;
 const STALE_CLIENT_TIMEOUT_MS = 15000;
 
 type SerializableActivityEvent = Omit<ActivityEvent, "eventData"> & {
   readonly eventData:
-    | { readonly type: "customEvent"; readonly data: unknown; readonly eventType: string }
+    | {
+      readonly type: "customEvent";
+      readonly data: unknown;
+      readonly eventType: string;
+      readonly schemaVersion?: number;
+    }
     | ActivityEvent["eventData"];
 };
 
@@ -50,7 +56,12 @@ type ActivityChannelMessage = {
 
 type SerializablePresenceEvent = Omit<PresenceEvent, "eventData"> & {
   readonly eventData:
-    | { readonly type: "customEvent"; readonly eventData: unknown; readonly modelName: string }
+    | {
+      readonly type: "customEvent";
+      readonly eventData: unknown;
+      readonly modelName: string;
+      readonly schemaVersion?: number;
+    }
     | PresenceEvent["eventData"];
 };
 
@@ -104,6 +115,7 @@ export class PresenceManager {
         ? {
           data: event.eventData.data,
           eventType: event.eventData.eventType,
+          schemaVersion: event.eventData.schemaVersion,
           type: "customEvent",
         }
         : event.eventData,
@@ -124,6 +136,7 @@ export class PresenceManager {
         ? {
           eventData: event.eventData.eventData,
           modelName: getMetadata(event.eventData.model).name,
+          schemaVersion: event.eventData.schemaVersion,
           type: "customEvent",
         }
         : event.eventData,
@@ -234,12 +247,19 @@ export class PresenceManager {
       }
 
       if (model != null) {
+        const data = getReadableCustomPayload(
+          this.schema,
+          eventType,
+          event.eventData.data,
+          event.eventData.schemaVersion,
+        );
         reconstructedEvent = {
           ...event,
           eventData: {
-            data: event.eventData.data,
+            data,
             eventType,
             model,
+            schemaVersion: event.eventData.schemaVersion,
             type: "customEvent",
           },
         };
@@ -278,11 +298,18 @@ export class PresenceManager {
       }
 
       if (model != null) {
+        const eventData = getReadableCustomPayload(
+          this.schema,
+          modelName,
+          event.eventData.eventData,
+          event.eventData.schemaVersion,
+        );
         reconstructedEvent = {
           ...event,
           eventData: {
-            eventData: event.eventData.eventData,
+            eventData,
             model,
+            schemaVersion: event.eventData.schemaVersion,
             type: "customEvent",
           },
         };
@@ -320,5 +347,42 @@ export class PresenceManager {
     for (const callback of this.presenceCallbacks) {
       callback(event);
     }
+  }
+}
+
+function getReadableCustomPayload(
+  schema: DocumentSchema,
+  modelName: string,
+  data: unknown,
+  schemaVersion = 1,
+): unknown {
+  if (!Number.isInteger(schemaVersion) || schemaVersion <= 0) {
+    return data;
+  }
+
+  const metadata = getMetadata(schema);
+  const minSupportedVersion = metadata.minSupportedVersion ?? metadata.version;
+  if (schemaVersion < minSupportedVersion || schemaVersion > metadata.version) {
+    return data;
+  }
+
+  const upgradeEntry = metadata.upgrades?.[modelName];
+  if (upgradeEntry == null) {
+    return data;
+  }
+
+  if (data == null || typeof data !== "object" || Array.isArray(data)) {
+    return data;
+  }
+
+  try {
+    return resolveAndApplyLens(
+      data as Record<string, unknown>,
+      upgradeEntry,
+      metadata.upgrades ?? {},
+      metadata.upgradeFns,
+    );
+  } catch {
+    return data;
   }
 }

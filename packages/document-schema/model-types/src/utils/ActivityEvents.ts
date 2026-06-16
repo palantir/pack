@@ -20,7 +20,7 @@ import type {
   ActivityEventDataUnknown,
 } from "../types/ActivityEvent.js";
 import { ActivityEventDataType } from "../types/ActivityEvent.js";
-import type { EditDescription, Model, ModelData } from "../types/Model.js";
+import type { EditDescription, Model } from "../types/Model.js";
 
 /**
  * Creates an edit description to describe an edit for activity purposes, for use with docRef.withTransaction.
@@ -39,7 +39,11 @@ import type { EditDescription, Model, ModelData } from "../types/Model.js";
  * }));
  * ```
  */
-export function describeEdit<M extends Model>(model: M, data: ModelData<M>): EditDescription<M> {
+/**
+ * @deprecated Narrow the document ref by version and use
+ * `doc.describeEdit(model, data)` instead.
+ */
+export function describeEdit<M extends Model>(model: M, data: never): EditDescription<M> {
   return {
     data,
     model,

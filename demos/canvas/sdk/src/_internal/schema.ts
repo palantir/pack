@@ -50,5 +50,6 @@ export const ShapeUpdatedActivityInternalSchema = z.object({
   newShape: z.unknown(),
   nodeId: z.string(),
   oldShape: z.unknown(),
+  summary: z.string().optional(),
 }).passthrough();
 

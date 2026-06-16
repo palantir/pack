@@ -52,6 +52,9 @@ const INVALID_DOC_REF: DocumentRef = Object.freeze(
     onPresence: () => () => {},
     onStateChange: () => () => {},
     updateCustomPresence: () => {},
+    describeEdit: () => {
+      throw new Error("Invalid document reference");
+    },
     withTransaction: () => {
       throw new Error("Invalid document reference");
     },
@@ -159,6 +162,17 @@ class DocumentRefImpl<T extends DocumentSchema> implements DocumentRef<T> {
     options?: PresencePublishOptions,
   ): void {
     this.#stateModule.updateCustomPresence(this, model, eventData, options);
+  }
+
+  describeEdit<M extends Model = Model>(
+    model: M,
+    data: ModelData<M>,
+  ): EditDescription<M> {
+    return {
+      data,
+      model,
+      schemaVersion: this.version,
+    };
   }
 
   withTransaction(

@@ -57,6 +57,7 @@ export interface ShapeUpdatedActivity__Internal {
   readonly newShape: unknown;
   readonly nodeId: string;
   readonly oldShape: unknown;
+  readonly summary?: string;
 }
 
 /** Internal representation of CursorPresence at schema version 1. */
@@ -209,5 +210,6 @@ export interface ShapeUpdatedActivity__v3 {
   readonly newShape: unknown;
   readonly nodeId: string;
   readonly oldShape: unknown;
+  readonly summary: string;
 }
 

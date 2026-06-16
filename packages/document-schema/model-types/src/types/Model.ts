@@ -52,6 +52,7 @@ export type ModelData<M extends Model> = M["__type"];
 export interface EditDescription<M extends Model = Model> {
   readonly data: ModelData<M>;
   readonly model: M;
+  readonly schemaVersion?: number;
 }
 
 export const ExternalRefType = {

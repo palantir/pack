@@ -182,9 +182,22 @@ const addFreehandStrokeModel = S.defineSchemaUpdate("addFreehandStrokeModel", ()
   return { FreehandStroke };
 });
 
+// --- Schema change: add a derived shape-update activity summary ---
+const addShapeUpdatedActivitySummary = S.defineSchemaUpdate(
+  "addShapeUpdatedActivitySummary",
+  schema => {
+    const ShapeUpdatedActivity = schema.ShapeUpdatedActivity
+      .addField("summary", S.String, { derivedFrom: ["nodeId"] })
+      .build();
+
+    return { ShapeUpdatedActivity };
+  },
+);
+
 // --- Schema v3: add pen tool support ---
 const schemaV3 = S.nextSchema(schemaV2)
   .addSchemaUpdate(addFreehandStrokeModel)
+  .addSchemaUpdate(addShapeUpdatedActivitySummary)
   .build();
 
 export default schemaV3;

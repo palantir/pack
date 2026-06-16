@@ -35,13 +35,11 @@ export interface ShapeDeletedActivity_v3 {
   readonly nodeId: string;
 }
 
-/**
- * Activity payload for a shape update.
- */
 export interface ShapeUpdatedActivity_v3 {
   readonly nodeId: string;
   readonly oldShape: NodeShape_v3;
   readonly newShape: NodeShape_v3;
+  readonly summary: string;
 }
 
 /**

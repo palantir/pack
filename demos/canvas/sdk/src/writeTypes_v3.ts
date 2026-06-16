@@ -34,6 +34,7 @@ export type ShapeUpdatedActivityUpdate_v3 = {
   readonly nodeId?: string;
   readonly oldShape?: NodeShape_v3;
   readonly newShape?: NodeShape_v3;
+  readonly summary?: string;
 };
 
 export type CursorPresenceUpdate_v3 = {

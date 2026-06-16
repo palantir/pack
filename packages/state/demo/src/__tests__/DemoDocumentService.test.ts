@@ -21,6 +21,7 @@ import type {
   ActivityEvent,
   DocumentMetadata,
   DocumentSchema,
+  EditDescription,
   Model,
   PresenceEvent,
   RecordId,
@@ -149,6 +150,78 @@ const createSchemaWithRecords = () => {
       version: 1,
     },
     User: UserModel,
+  } as const satisfies DocumentSchema;
+};
+
+const createSchemaWithLensedActivity = () => {
+  const recordSchema = z.object({
+    id: z.string(),
+  });
+
+  const TestRecordModel: Model<{ id: string }, typeof recordSchema> = {
+    __type: {} as { id: string },
+    [Metadata]: {
+      name: "TestRecord",
+    },
+    zodSchema: recordSchema,
+  };
+
+  const shapeUpdatedActivitySchema = z.object({
+    nodeId: z.string(),
+    summary: z.string(),
+  });
+
+  const ShapeUpdatedActivityModel: Model<
+    { nodeId: string; summary: string },
+    typeof shapeUpdatedActivitySchema
+  > = {
+    __type: {} as { nodeId: string; summary: string },
+    [Metadata]: {
+      name: "ShapeUpdatedActivity",
+    },
+    zodSchema: shapeUpdatedActivitySchema,
+  };
+
+  return {
+    [Metadata]: {
+      minSupportedVersion: 1,
+      upgradeFns: {
+        ShapeUpdatedActivity: {
+          v2: {
+            summary: ({ nodeId }: { readonly nodeId: string }) => `Updated shape ${nodeId}`,
+          },
+        },
+      },
+      upgrades: {
+        ShapeUpdatedActivity: {
+          allFields: {
+            nodeId: { type: { kind: "primitive" } },
+            summary: { type: { kind: "primitive" } },
+          },
+          modelName: "ShapeUpdatedActivity",
+          steps: [
+            {
+              addedInVersion: 2,
+              fields: {
+                summary: {
+                  derivedFrom: ["nodeId"],
+                },
+              },
+            },
+          ],
+        },
+        TestRecord: {
+          allFields: {
+            id: { type: { kind: "primitive" } },
+          },
+          modelName: "TestRecord",
+          steps: [],
+        },
+      },
+      version: 2,
+    },
+    ShapeUpdatedActivity: ShapeUpdatedActivityModel,
+    TestRecord: TestRecordModel,
   } as const satisfies DocumentSchema;
 };
 
@@ -394,6 +467,63 @@ describe("DemoDocumentService", () => {
     expect(firstEvent).toBeDefined();
     if (firstEvent?.eventData.type === "customEvent") {
       expect(getMetadata(firstEvent.eventData.model).name).toBe("User");
+    }
+
+    unsubscribe();
+  });
+
+  it("should lens custom activity payloads from older schema versions", async () => {
+    const stateModule = getStateModule(app);
+
+    const metadata: DocumentMetadata = {
+      documentTypeName: "TestType",
+      name: "Activity Lens Test",
+      ontologyRid: "test-ontology-rid",
+      security: TEST_SECURITY,
+    };
+
+    const schema = createSchemaWithLensedActivity();
+    const docRef = await stateModule.createDocument(metadata, schema);
+
+    const activityEvents: ActivityEvent[] = [];
+
+    const app2 = createTestApp();
+    const stateModule2 = getStateModule(app2);
+    const docRef2 = stateModule2.createDocRef(docRef.id, schema);
+
+    const unsubscribe = stateModule2.onActivity(docRef2, (_, event) => {
+      activityEvents.push(event);
+    });
+
+    await new Promise(resolve => setTimeout(resolve, 50));
+
+    const recordCollection = docRef.getRecords(schema.TestRecord);
+    const description = {
+      data: {
+        nodeId: "shape-1",
+      },
+      model: schema.ShapeUpdatedActivity,
+      schemaVersion: 1,
+    } as EditDescription;
+
+    void docRef.withTransaction(() => {
+      return stateModule.setCollectionRecord(recordCollection, "record-1" as RecordId, {
+        id: "record-1",
+      });
+    }, description);
+
+    await vi.waitFor(() => {
+      expect(activityEvents.length).toBeGreaterThan(0);
+    }, { timeout: 1000 });
+
+    const firstEvent = activityEvents[0];
+    expect(firstEvent).toBeDefined();
+    if (firstEvent?.eventData.type === "customEvent") {
+      expect(firstEvent.eventData.schemaVersion).toBe(1);
+      expect(firstEvent.eventData.data).toEqual({
+        nodeId: "shape-1",
+        summary: "Updated shape shape-1",
+      });
     }
 
     unsubscribe();
