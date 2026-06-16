@@ -1,5 +1,12 @@
 # @palantir/pack.sdkgen
 
+## 0.4.0
+
+### Minor Changes
+
+- a98cdbc: Add `max-version` parameter to schema IR generation to cap generation at a given version
+- d86ec14: Extend versioning to activity and presence events
+
 ## 0.3.0
 
 ### Minor Changes

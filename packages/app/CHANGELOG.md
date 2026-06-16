@@ -1,5 +1,26 @@
 # @palantir/pack.app
 
+## 0.17.0
+
+### Minor Changes
+
+- a98cdbc: Add `max-version` parameter to schema IR generation to cap generation at a given version
+- d86ec14: Extend versioning to activity and presence events
+
+### Patch Changes
+
+- Updated dependencies [a98cdbc]
+- Updated dependencies [d86ec14]
+- Updated dependencies [aac4760]
+- Updated dependencies [2026c0a]
+- Updated dependencies [c872dde]
+  - @palantir/pack.state.foundry@0.19.0
+  - @palantir/pack.auth.foundry@0.4.0
+  - @palantir/pack.state.core@0.16.0
+  - @palantir/pack.state.demo@0.14.0
+  - @palantir/pack.auth@0.4.0
+  - @palantir/pack.core@0.5.0
+
 ## 0.16.0
 
 ### Minor Changes
