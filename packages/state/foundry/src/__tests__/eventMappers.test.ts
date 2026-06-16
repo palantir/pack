@@ -485,6 +485,79 @@ describe("getPresenceEvent", () => {
     });
   });
 
+  it("lenses ephemeral customPresenceEvent payloads to the readable model view", () => {
+    const result = getPresenceEvent(
+      schemaWithUpgradedModel,
+      {
+        type: "customPresenceEvent",
+        clientId: "client-1",
+        eventData: { someField: "node-1" },
+        eventType: "TestModel",
+        isEphemeral: true,
+        userId: "user-1",
+        version: 1,
+      } as PresenceCollaborativeUpdate,
+    );
+
+    expect(result.eventData).toEqual({
+      type: PresenceEventDataType.CUSTOM_EVENT,
+      model: mockModel,
+      schemaVersion: 1,
+      eventData: {
+        fillColor: "black",
+        someField: "node-1",
+      },
+    });
+  });
+
+  it("lenses nested model refs in non-ephemeral customPresenceEvent payloads", () => {
+    const result = getPresenceEvent(
+      schemaWithActivityContainingUpgradedRecord,
+      {
+        type: "customPresenceEvent",
+        clientId: "client-1",
+        eventData: {
+          activityType: "shapeUpdated",
+          nodeId: "shape-1",
+          oldShape: {
+            color: "blue",
+            nodeId: "shape-1",
+          },
+          newShape: {
+            color: "red",
+            nodeId: "shape-1",
+          },
+        },
+        eventType: "ShapeUpdateActivity",
+        isEphemeral: false,
+        userId: "user-1",
+        version: 1,
+      } as PresenceCollaborativeUpdate,
+    );
+
+    expect(result.eventData).toEqual({
+      type: PresenceEventDataType.CUSTOM_EVENT,
+      model: shapeUpdateActivityModel,
+      schemaVersion: 1,
+      eventData: {
+        activityType: "shapeUpdated",
+        nodeId: "shape-1",
+        oldShape: {
+          color: "blue",
+          fillColor: "blue",
+          nodeId: "shape-1",
+          strokeColor: "blue",
+        },
+        newShape: {
+          color: "red",
+          fillColor: "red",
+          nodeId: "shape-1",
+          strokeColor: "red",
+        },
+      },
+    });
+  });
+
   it("maps customPresenceEvent with invalid schema version to UNKNOWN", () => {
     const customData = { eventType: "cursor", x: 1, y: 2 };
     const result = getPresenceEvent(
