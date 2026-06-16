@@ -21,6 +21,18 @@ export {
   type InternalYjsDoc,
 } from "./service/BaseYjsDocumentService.js";
 export {
+  CustomPayloadReadFailureReason,
+  LEGACY_CUSTOM_PAYLOAD_SCHEMA_VERSION,
+  parseCustomPayloadSchemaVersion,
+  readCustomPayload,
+} from "./service/CustomPayloadMapping.js";
+export type {
+  ReadableCustomPayload,
+  ReadCustomPayloadOptions,
+  ReadCustomPayloadResult,
+  UnreadableCustomPayload,
+} from "./service/CustomPayloadMapping.js";
+export {
   addDocumentUpdateSchemaVersionToTransaction,
   DOCUMENT_UPDATE_SCHEMA_VERSION_META_KEY,
   getDocumentUpdateSchemaVersionFromTransaction,
@@ -52,4 +64,3 @@ export {
 export { createRecordRef, invalidRecordRef, isValidRecordRef } from "./types/RecordRefImpl.js";
 export { getStateModule, STATE_MODULE_ACCESSOR } from "./types/StateModule.js";
 export type { StateModule, WithStateModule } from "./types/StateModule.js";
-export { applyLensToValue, applyReadLens, resolveAndApplyLens } from "./upgrade/UpgradeLens.js";

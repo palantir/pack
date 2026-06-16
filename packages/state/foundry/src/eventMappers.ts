@@ -29,8 +29,6 @@ import type {
   ActivityEventDataDocumentMandatorySecurityUpdate,
   ActivityEventDataDocumentRename,
   DocumentSchema,
-  Model,
-  ModelData,
   PresenceEvent,
   PresenceEventData,
   PresenceEventDataArrived,
@@ -39,13 +37,9 @@ import type {
 } from "@palantir/pack.document-schema.model-types";
 import {
   ActivityEventDataType,
-  getMetadata,
-  hasMetadata,
   PresenceEventDataType,
 } from "@palantir/pack.document-schema.model-types";
-import { resolveAndApplyLens } from "@palantir/pack.state.core";
-
-const LEGACY_CUSTOM_PAYLOAD_VERSION = 1;
+import { readCustomPayload } from "@palantir/pack.state.core";
 
 export function getActivityEvent(
   documentSchema: DocumentSchema,
@@ -114,22 +108,13 @@ function getActivityEventData(
 
     case "documentCustomEvent": {
       const { eventType, data } = eventData;
-      const schemaVersion = getCustomPayloadSchemaVersion(eventData);
-      if (schemaVersion == null) {
-        return {
-          rawData: data,
-          rawType: eventType,
-          type: ActivityEventDataType.UNKNOWN,
-        };
-      }
-
-      const customPayload = getReadableCustomPayload(
-        docSchema,
-        eventType,
+      const customPayload = readCustomPayload({
         data,
-        schemaVersion,
-      );
-      if (customPayload == null) {
+        docSchema,
+        modelName: eventType,
+        schemaVersion: eventData.version,
+      });
+      if (customPayload.type !== "readable") {
         return {
           rawData: data,
           rawType: eventType,
@@ -141,7 +126,7 @@ function getActivityEventData(
         data: customPayload.data,
         eventType,
         model: customPayload.model,
-        schemaVersion,
+        schemaVersion: customPayload.schemaVersion,
         type: ActivityEventDataType.CUSTOM_EVENT,
       };
     }
@@ -181,14 +166,12 @@ export function getPresenceEvent(
 
     case "customPresenceEvent": {
       const { userId, eventData, eventType } = foundryUpdate;
-      const schemaVersion = getCustomPayloadSchemaVersion(foundryUpdate);
-      const presenceEventData = schemaVersion == null
-        ? {
-          rawData: eventData,
-          rawType: eventType,
-          type: PresenceEventDataType.UNKNOWN,
-        }
-        : getPresenceEventData(documentSchema, eventType, eventData, schemaVersion);
+      const presenceEventData = getPresenceEventData(
+        documentSchema,
+        eventType,
+        eventData,
+        getEnvelopeSchemaVersion(foundryUpdate),
+      );
       return {
         eventData: presenceEventData,
         userId: userId as UserId,
@@ -214,15 +197,15 @@ function getPresenceEventData(
   docSchema: DocumentSchema,
   eventType: string,
   eventData: unknown,
-  schemaVersion: number,
+  schemaVersion: unknown,
 ): PresenceEventData {
-  const customPayload = getReadableCustomPayload(
+  const customPayload = readCustomPayload({
+    data: eventData,
     docSchema,
-    eventType,
-    eventData,
+    modelName: eventType,
     schemaVersion,
-  );
-  if (customPayload == null) {
+  });
+  if (customPayload.type !== "readable") {
     return {
       rawData: eventData,
       rawType: eventType,
@@ -233,90 +216,11 @@ function getPresenceEventData(
   return {
     eventData: customPayload.data,
     model: customPayload.model,
-    schemaVersion,
+    schemaVersion: customPayload.schemaVersion,
     type: PresenceEventDataType.CUSTOM_EVENT,
   };
 }
 
-function getCustomPayloadSchemaVersion(payload: object): number | undefined {
-  if (!("version" in payload) || payload.version == null) {
-    return LEGACY_CUSTOM_PAYLOAD_VERSION;
-  }
-
-  return typeof payload.version === "number"
-      && Number.isInteger(payload.version)
-      && payload.version > 0
-    ? payload.version
-    : undefined;
-}
-
-function getReadableCustomPayload(
-  docSchema: DocumentSchema,
-  modelName: string,
-  data: unknown,
-  schemaVersion: number,
-): { readonly data: ModelData<Model>; readonly model: Model } | undefined {
-  if (!isSupportedSchemaVersion(docSchema, schemaVersion)) {
-    return undefined;
-  }
-
-  const model = getModelByName(docSchema, modelName);
-  if (model == null) {
-    return undefined;
-  }
-
-  let readableData = data;
-  const schemaMetadata = getMetadata(docSchema);
-  const upgradeEntry = schemaMetadata.upgrades?.[modelName];
-  if (upgradeEntry != null) {
-    if (data == null || typeof data !== "object" || Array.isArray(data)) {
-      return undefined;
-    }
-    try {
-      readableData = resolveAndApplyLens(
-        data as Record<string, unknown>,
-        upgradeEntry,
-        schemaMetadata.upgrades ?? {},
-        schemaMetadata.upgradeFns,
-      );
-    } catch {
-      return undefined;
-    }
-  }
-
-  if (!isValidModelData(model, readableData)) {
-    return undefined;
-  }
-
-  return {
-    data: readableData as ModelData<Model>,
-    model,
-  };
-}
-
-function isSupportedSchemaVersion(docSchema: DocumentSchema, schemaVersion: number): boolean {
-  const schemaMetadata = getMetadata(docSchema);
-  const minSupportedVersion = schemaMetadata.minSupportedVersion ?? schemaMetadata.version;
-  return schemaVersion >= minSupportedVersion && schemaVersion <= schemaMetadata.version;
-}
-
-function getModelByName(docSchema: DocumentSchema, modelName: string): Model | undefined {
-  for (const candidate of Object.values(docSchema)) {
-    if (candidate != null && typeof candidate === "object" && hasMetadata(candidate)) {
-      const metadata = getMetadata(candidate);
-      if ("name" in metadata && metadata.name === modelName) {
-        return candidate;
-      }
-    }
-  }
-  return undefined;
-}
-
-function isValidModelData(model: Model, data: unknown): boolean {
-  const safeParse = model.zodSchema.safeParse;
-  if (typeof safeParse !== "function") {
-    return true;
-  }
-
-  return safeParse.call(model.zodSchema, data).success;
+function getEnvelopeSchemaVersion(envelope: object): unknown {
+  return "version" in envelope ? envelope.version : undefined;
 }
