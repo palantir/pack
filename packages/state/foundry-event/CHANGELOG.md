@@ -1,5 +1,28 @@
 # @palantir/pack.state.foundry-event
 
+## 0.18.0
+
+### Minor Changes
+
+- a98cdbc: Add `max-version` parameter to schema IR generation to cap generation at a given version
+- d86ec14: Extend versioning to activity and presence events
+- aac4760: calculate document maximum write version
+- c872dde: Use backend-calculated document operational versions for schema version gating.
+
+  Foundry document loads now provide the document's operational version, which Pack stores on document metadata and uses as the fallback version for writes that do not have a lower calculated update schema version.
+
+### Patch Changes
+
+- Updated dependencies [a98cdbc]
+- Updated dependencies [d86ec14]
+- Updated dependencies [aac4760]
+- Updated dependencies [2026c0a]
+- Updated dependencies [c872dde]
+  - @palantir/pack.document-schema.model-types@0.13.0
+  - @palantir/pack.state.core@0.16.0
+  - @palantir/pack.auth@0.4.0
+  - @palantir/pack.core@0.5.0
+
 ## 0.17.0
 
 ### Minor Changes
