@@ -18,7 +18,7 @@ import type { NodeShape, NodeShapeModel, VersionedDocRef } from "@demo/canvas.sd
 import { CanvasActivityModel, matchVersion } from "@demo/canvas.sdk";
 import type { RecordRef } from "@palantir/pack.document-schema.model-types";
 import type { MouseEvent } from "react";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { getShapeUpdatedActivitySummary } from "../utils/activityMessages.js";
 import { boundsToCenter } from "../utils/boundsToCenter.js";
 import { centerToBounds } from "../utils/centerToBounds.js";
@@ -46,6 +46,8 @@ interface UseShapeDragResult {
 
 const HANDLE_INTERACTION_RADIUS_PX = 10;
 
+const DRAG_UPDATE_INTERVAL_MS = 1000 / 60;
+
 export function useShapeDrag(
   doc: VersionedDocRef,
   shapeIndex: ShapeIndex,
@@ -53,6 +55,73 @@ export function useShapeDrag(
   onShapeSelect: (ref: RecordRef<typeof NodeShapeModel> | undefined) => void,
 ): UseShapeDragResult {
   const [dragState, setDragState] = useState<DragState | undefined>();
+
+  // Throttling state for drag updates. `lastUpdateTime` gates the 60fps interval;
+  // `pendingBounds`/`pendingTimer` hold the trailing update so the final position is
+  // never dropped when moves arrive faster than the interval.
+  const lastUpdateTime = useRef(0);
+  const pendingBounds = useRef<
+    { bottom: number; left: number; right: number; top: number } | undefined
+  >(undefined);
+  const pendingTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+
+  useEffect(
+    () => () => {
+      if (pendingTimer.current != null) {
+        clearTimeout(pendingTimer.current);
+        pendingTimer.current = undefined;
+      }
+      pendingBounds.current = undefined;
+    },
+    [],
+  );
+
+  const applyBounds = useCallback(
+    (
+      shapeRef: RecordRef<typeof NodeShapeModel>,
+      bounds: { bottom: number; left: number; right: number; top: number },
+    ) => {
+      matchVersion(doc, {
+        1: doc => doc.updateRecord(shapeRef, bounds),
+        2: doc => doc.updateRecord(shapeRef, bounds),
+        3: doc => doc.updateRecord(shapeRef, bounds),
+      });
+    },
+    [doc],
+  );
+
+  // Coalesces intermediate moves and schedules a trailing update
+  // so the latest position lands even if it was throttled.
+  const throttledApplyBounds = useCallback(
+    (
+      shapeRef: RecordRef<typeof NodeShapeModel>,
+      bounds: { bottom: number; left: number; right: number; top: number },
+    ) => {
+      const now = Date.now();
+      const elapsed = now - lastUpdateTime.current;
+
+      if (elapsed >= DRAG_UPDATE_INTERVAL_MS) {
+        lastUpdateTime.current = now;
+        pendingBounds.current = undefined;
+        applyBounds(shapeRef, bounds);
+        return;
+      }
+
+      pendingBounds.current = bounds;
+      if (pendingTimer.current == null) {
+        pendingTimer.current = setTimeout(() => {
+          pendingTimer.current = undefined;
+          const latest = pendingBounds.current;
+          pendingBounds.current = undefined;
+          if (latest != null) {
+            lastUpdateTime.current = Date.now();
+            applyBounds(shapeRef, latest);
+          }
+        }, DRAG_UPDATE_INTERVAL_MS - elapsed);
+      }
+    },
+    [applyBounds],
+  );
 
   const onMouseDown = useCallback(
     async (e: MouseEvent<SVGSVGElement>) => {
@@ -122,11 +191,7 @@ export function useShapeDrag(
           right: initial.right + dx,
           top: initial.top + dy,
         };
-        matchVersion(doc, {
-          1: doc => doc.updateRecord(dragState.shapeRef, newBounds),
-          2: doc => doc.updateRecord(dragState.shapeRef, newBounds),
-          3: doc => doc.updateRecord(dragState.shapeRef, newBounds),
-        });
+        throttledApplyBounds(dragState.shapeRef, newBounds);
       } else if (dragState.dragMode === "resize" && dragState.handle != null) {
         const initial = dragState.initialShape;
         const centerSize = boundsToCenter(initial);
@@ -173,20 +238,29 @@ export function useShapeDrag(
           width: newWidth,
         });
 
-        matchVersion(doc, {
-          1: doc => doc.updateRecord(dragState.shapeRef, newBounds),
-          2: doc => doc.updateRecord(dragState.shapeRef, newBounds),
-          3: doc => doc.updateRecord(dragState.shapeRef, newBounds),
-        });
+        throttledApplyBounds(dragState.shapeRef, newBounds);
       }
     },
-    [doc, dragState],
+    [dragState, throttledApplyBounds],
   );
 
   const onMouseUp = useCallback(async () => {
     if (dragState == null) {
       return;
     }
+
+    // Flush any trailing throttled update so the final position is committed
+    // before we read the snapshot below.
+    if (pendingTimer.current != null) {
+      clearTimeout(pendingTimer.current);
+      pendingTimer.current = undefined;
+    }
+    if (pendingBounds.current != null) {
+      const latest = pendingBounds.current;
+      pendingBounds.current = undefined;
+      applyBounds(dragState.shapeRef, latest);
+    }
+    lastUpdateTime.current = 0;
 
     const finalShape = await dragState.shapeRef.getSnapshot();
     if (finalShape != null) {
@@ -256,7 +330,7 @@ export function useShapeDrag(
     }
 
     setDragState(undefined);
-  }, [doc, dragState]);
+  }, [applyBounds, doc, dragState]);
 
   return {
     onMouseDown,
