@@ -16,28 +16,32 @@
 
 import type {
   ActivityEvent,
+  ActivityEventData,
   DocumentId,
   DocumentSchema,
-  Model,
   PresenceEvent,
-  PresenceEventDataType,
+  PresenceEventData,
   UserId,
 } from "@palantir/pack.document-schema.model-types";
-import { getMetadata, hasMetadata } from "@palantir/pack.document-schema.model-types";
-import { resolveAndApplyLens } from "@palantir/pack.state.core";
+import {
+  ActivityEventDataType,
+  getMetadata,
+  PresenceEventDataType,
+} from "@palantir/pack.document-schema.model-types";
+import { readCustomPayload } from "@palantir/pack.state.core";
 
 const HEARTBEAT_INTERVAL_MS = 5000;
 const STALE_CLIENT_TIMEOUT_MS = 15000;
 
+type SerializableActivityCustomEventData = {
+  readonly type: typeof ActivityEventDataType.CUSTOM_EVENT;
+  readonly data: unknown;
+  readonly eventType: string;
+  readonly schemaVersion?: unknown;
+};
+
 type SerializableActivityEvent = Omit<ActivityEvent, "eventData"> & {
-  readonly eventData:
-    | {
-      readonly type: "customEvent";
-      readonly data: unknown;
-      readonly eventType: string;
-      readonly schemaVersion?: number;
-    }
-    | ActivityEvent["eventData"];
+  readonly eventData: SerializableActivityCustomEventData | ActivityEvent["eventData"];
 };
 
 type PresenceChannelMessage =
@@ -54,15 +58,15 @@ type ActivityChannelMessage = {
   readonly event: SerializableActivityEvent;
 };
 
+type SerializablePresenceCustomEventData = {
+  readonly type: typeof PresenceEventDataType.CUSTOM_EVENT;
+  readonly eventData: unknown;
+  readonly modelName: string;
+  readonly schemaVersion?: unknown;
+};
+
 type SerializablePresenceEvent = Omit<PresenceEvent, "eventData"> & {
-  readonly eventData:
-    | {
-      readonly type: "customEvent";
-      readonly eventData: unknown;
-      readonly modelName: string;
-      readonly schemaVersion?: number;
-    }
-    | PresenceEvent["eventData"];
+  readonly eventData: SerializablePresenceCustomEventData | PresenceEvent["eventData"];
 };
 
 export class PresenceManager {
@@ -212,7 +216,7 @@ export class PresenceManager {
     if (!wasActive) {
       const event: PresenceEvent = {
         eventData: {
-          type: "presenceArrived" as typeof PresenceEventDataType.ARRIVED,
+          type: PresenceEventDataType.ARRIVED,
         },
         userId,
       };
@@ -226,44 +230,11 @@ export class PresenceManager {
     if (
       event.eventData.type === "customEvent"
       && "eventType" in event.eventData
-      && this.schema != null
     ) {
-      const { eventType } = event.eventData;
-      let model: Model | undefined;
-
-      for (const key of Object.keys(this.schema)) {
-        const candidate = this.schema[key as keyof DocumentSchema];
-        if (
-          candidate != null
-          && typeof candidate === "object"
-          && hasMetadata(candidate)
-        ) {
-          const metadata = getMetadata(candidate);
-          if ("name" in metadata && metadata.name === eventType) {
-            model = candidate as Model;
-            break;
-          }
-        }
-      }
-
-      if (model != null) {
-        const data = getReadableCustomPayload(
-          this.schema,
-          eventType,
-          event.eventData.data,
-          event.eventData.schemaVersion,
-        );
-        reconstructedEvent = {
-          ...event,
-          eventData: {
-            data,
-            eventType,
-            model,
-            schemaVersion: event.eventData.schemaVersion,
-            type: "customEvent",
-          },
-        };
-      }
+      reconstructedEvent = {
+        ...event,
+        eventData: this.getActivityCustomEventData(event.eventData),
+      };
     }
 
     for (const callback of this.activityCallbacks) {
@@ -277,43 +248,11 @@ export class PresenceManager {
     if (
       event.eventData.type === "customEvent"
       && "modelName" in event.eventData
-      && this.schema != null
     ) {
-      const modelName = event.eventData.modelName;
-      let model: Model | undefined;
-
-      for (const key of Object.keys(this.schema)) {
-        const candidate = this.schema[key as keyof DocumentSchema];
-        if (
-          candidate != null
-          && typeof candidate === "object"
-          && hasMetadata(candidate)
-        ) {
-          const metadata = getMetadata(candidate);
-          if ("name" in metadata && metadata.name === modelName) {
-            model = candidate as Model;
-            break;
-          }
-        }
-      }
-
-      if (model != null) {
-        const eventData = getReadableCustomPayload(
-          this.schema,
-          modelName,
-          event.eventData.eventData,
-          event.eventData.schemaVersion,
-        );
-        reconstructedEvent = {
-          ...event,
-          eventData: {
-            eventData,
-            model,
-            schemaVersion: event.eventData.schemaVersion,
-            type: "customEvent",
-          },
-        };
-      }
+      reconstructedEvent = {
+        ...event,
+        eventData: this.getPresenceCustomEventData(event.eventData),
+      };
     }
 
     for (const callback of this.presenceCallbacks) {
@@ -335,7 +274,7 @@ export class PresenceManager {
       this.activeClients.delete(userId);
       const event: PresenceEvent = {
         eventData: {
-          type: "presenceDeparted" as typeof PresenceEventDataType.DEPARTED,
+          type: PresenceEventDataType.DEPARTED,
         },
         userId,
       };
@@ -348,41 +287,73 @@ export class PresenceManager {
       callback(event);
     }
   }
-}
 
-function getReadableCustomPayload(
-  schema: DocumentSchema,
-  modelName: string,
-  data: unknown,
-  schemaVersion = 1,
-): unknown {
-  if (!Number.isInteger(schemaVersion) || schemaVersion <= 0) {
-    return data;
+  private getActivityCustomEventData(
+    eventData: SerializableActivityCustomEventData,
+  ): ActivityEventData {
+    const { data, eventType, schemaVersion } = eventData;
+    if (this.schema == null) {
+      return {
+        rawData: data,
+        rawType: eventType,
+        type: ActivityEventDataType.UNKNOWN,
+      };
+    }
+
+    const customPayload = readCustomPayload({
+      data,
+      docSchema: this.schema,
+      modelName: eventType,
+      schemaVersion,
+    });
+    if (customPayload.type !== "readable") {
+      return {
+        rawData: data,
+        rawType: eventType,
+        type: ActivityEventDataType.UNKNOWN,
+      };
+    }
+
+    return {
+      data: customPayload.data,
+      eventType,
+      model: customPayload.model,
+      schemaVersion: customPayload.schemaVersion,
+      type: ActivityEventDataType.CUSTOM_EVENT,
+    };
   }
 
-  const metadata = getMetadata(schema);
-  const minSupportedVersion = metadata.minSupportedVersion ?? metadata.version;
-  if (schemaVersion < minSupportedVersion || schemaVersion > metadata.version) {
-    return data;
-  }
+  private getPresenceCustomEventData(
+    eventData: SerializablePresenceCustomEventData,
+  ): PresenceEventData {
+    const { eventData: data, modelName, schemaVersion } = eventData;
+    if (this.schema == null) {
+      return {
+        rawData: data,
+        rawType: modelName,
+        type: PresenceEventDataType.UNKNOWN,
+      };
+    }
 
-  const upgradeEntry = metadata.upgrades?.[modelName];
-  if (upgradeEntry == null) {
-    return data;
-  }
+    const customPayload = readCustomPayload({
+      data,
+      docSchema: this.schema,
+      modelName,
+      schemaVersion,
+    });
+    if (customPayload.type !== "readable") {
+      return {
+        rawData: data,
+        rawType: modelName,
+        type: PresenceEventDataType.UNKNOWN,
+      };
+    }
 
-  if (data == null || typeof data !== "object" || Array.isArray(data)) {
-    return data;
-  }
-
-  try {
-    return resolveAndApplyLens(
-      data as Record<string, unknown>,
-      upgradeEntry,
-      metadata.upgrades ?? {},
-      metadata.upgradeFns,
-    );
-  } catch {
-    return data;
+    return {
+      eventData: customPayload.data,
+      model: customPayload.model,
+      schemaVersion: customPayload.schemaVersion,
+      type: PresenceEventDataType.CUSTOM_EVENT,
+    };
   }
 }

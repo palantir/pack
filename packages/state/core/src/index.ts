@@ -21,6 +21,19 @@ export {
   type InternalYjsDoc,
 } from "./service/BaseYjsDocumentService.js";
 export {
+  CustomPayloadReadFailureReason,
+  LEGACY_CUSTOM_PAYLOAD_SCHEMA_VERSION,
+  parseCustomPayloadSchemaVersion,
+  readCustomPayload,
+} from "./service/CustomPayloadMapping.js";
+export type {
+  CustomPayloadReadFailureReason as CustomPayloadReadFailureReasonType,
+  ReadableCustomPayload,
+  ReadCustomPayloadOptions,
+  ReadCustomPayloadResult,
+  UnreadableCustomPayload,
+} from "./service/CustomPayloadMapping.js";
+export {
   addDocumentUpdateSchemaVersionToTransaction,
   DOCUMENT_UPDATE_SCHEMA_VERSION_META_KEY,
   getDocumentUpdateSchemaVersionFromTransaction,
