@@ -1,5 +1,18 @@
 # @palantir/pack.sdkgen.pack-versioned-template
 
+## 0.6.0
+
+### Minor Changes
+
+- a1580ba: Deduplicate schema version / lense logic
+
+### Patch Changes
+
+- Updated dependencies [a1580ba]
+- Updated dependencies [a8432cf]
+  - @palantir/pack.document-schema.model-types@0.14.0
+  - @palantir/pack.document-schema.type-gen@0.15.0
+
 ## 0.5.0
 
 ### Minor Changes

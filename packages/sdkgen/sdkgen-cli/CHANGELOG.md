@@ -1,5 +1,11 @@
 # @palantir/pack.sdkgen
 
+## 0.5.0
+
+### Minor Changes
+
+- a1580ba: Deduplicate schema version / lense logic
+
 ## 0.4.0
 
 ### Minor Changes
