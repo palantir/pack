@@ -53,6 +53,25 @@ Generate schemas from Intermediate Representation format:
 type-gen ir zod -s <schema.json> -r <records.json> -o <output.ts>
 ```
 
+Deploy and update document types directly from an IR file (the wire schema and version are sourced
+from the IR):
+
+```bash
+# Create a third-party document type (default)
+type-gen ir deploy -i <ir.json> -b <base-url> -a <token> -p <parent-folder-rid> [-f ARTIFACTS|COMPASS]
+
+# Create a first-party document type
+type-gen ir deploy -i <ir.json> -b <base-url> -a <token> --first-party -o <ontology-rid> \
+  [-f ARTIFACTS|COMPASS] [--first-party-prefix /api/gotham]
+
+# Update an existing document type's schema
+type-gen ir update-schema -i <ir.json> -b <base-url> -a <token> -o <ontology-rid> \
+  [--force-overwrite] [--first-party-prefix /api/gotham]
+```
+
+`ir asset` (generate an asset JSON consumed by backpack's asset-track loader) remains available;
+the deploy/update-schema REST commands are IR-sourced.
+
 ### Examples
 
 #### Generating TypeScript Types from YAML
