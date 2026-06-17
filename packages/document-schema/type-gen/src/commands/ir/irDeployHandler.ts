@@ -95,8 +95,8 @@ async function deployThirdParty(
   };
 
   consola.info("Creating document type with schema", request);
-  await DocumentTypes.create(osdkClient, request, { preview: true });
-  consola.success("Successfully created document type");
+  const result = await DocumentTypes.create(osdkClient, request, { preview: true });
+  consola.success("Successfully created document type", result);
 }
 
 async function deployFirstParty(
