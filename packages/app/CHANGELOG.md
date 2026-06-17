@@ -1,5 +1,21 @@
 # @palantir/pack.app
 
+## 0.18.0
+
+### Minor Changes
+
+- a1580ba: Deduplicate schema version / lense logic
+
+### Patch Changes
+
+- Updated dependencies [a1580ba]
+  - @palantir/pack.state.foundry@0.20.0
+  - @palantir/pack.auth.foundry@0.5.0
+  - @palantir/pack.state.core@0.17.0
+  - @palantir/pack.state.demo@0.15.0
+  - @palantir/pack.auth@0.5.0
+  - @palantir/pack.core@0.6.0
+
 ## 0.17.0
 
 ### Minor Changes

@@ -1,5 +1,11 @@
 # @palantir/pack.schema
 
+## 0.10.0
+
+### Minor Changes
+
+- a1580ba: Deduplicate schema version / lense logic
+
 ## 0.9.0
 
 ### Minor Changes

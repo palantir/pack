@@ -1,5 +1,16 @@
 # @palantir/pack.document-schema.model-types
 
+## 0.14.0
+
+### Minor Changes
+
+- a1580ba: Deduplicate schema version / lense logic
+
+### Patch Changes
+
+- Updated dependencies [a1580ba]
+  - @palantir/pack.core@0.6.0
+
 ## 0.13.0
 
 ### Minor Changes
