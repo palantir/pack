@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 Palantir Technologies, Inc. All rights reserved.
+ * Copyright 2026 Palantir Technologies, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,18 +14,19 @@
  * limitations under the License.
  */
 
-import { createPlatformClient, PalantirApiError } from "@osdk/client";
+import { createPlatformClient } from "@osdk/client";
 import type { UpdateSchemaDocumentTypeRequest } from "@osdk/foundry.pack";
 import { DocumentTypes } from "@osdk/foundry.pack";
 import { CommanderError } from "commander";
 import { consola } from "consola";
 import { readFileSync } from "fs";
 import { resolve } from "path";
-import type { DocumentTypeAsset } from "../types.js";
-import { buildPrefixRewriteFetch } from "./assetDeployHandler.js";
+import { convertIrToWireSchema } from "../../utils/ir/convertIrToWireSchema.js";
+import { buildPrefixRewriteFetch, DEFAULT_API_PREFIX } from "../utils/firstPartyPrefix.js";
+import { resolveIrInput } from "./resolveIrInput.js";
 
-interface AssetUpdateSchemaOptions {
-  readonly input: string;
+interface IrUpdateSchemaOptions {
+  readonly ir: string;
   readonly baseUrl: string;
   readonly auth: string;
   readonly ontologyRid: string;
@@ -33,20 +34,20 @@ interface AssetUpdateSchemaOptions {
   readonly firstPartyPrefix?: string;
 }
 
-const DEFAULT_API_PREFIX = "/api";
-
-/** Updates the schema of an existing document type using a generated asset JSON file. */
-export async function assetUpdateSchemaHandler(
-  options: AssetUpdateSchemaOptions,
-): Promise<void> {
+/**
+ * Updates the schema of an existing document type from an IR file. Sources the wire schema and version directly from
+ * the IR (the same single source of truth used by `ir deploy`), avoiding a separately-generated asset file.
+ */
+export async function irUpdateSchemaHandler(options: IrUpdateSchemaOptions): Promise<void> {
   try {
-    const assetPath = resolve(options.input);
+    const irPath = resolve(options.ir);
+    consola.info(`Reading schema from: ${irPath}`);
 
-    consola.info(`Reading asset file from: ${assetPath}`);
-
-    const assetContent = readFileSync(assetPath, "utf8");
-    const asset = JSON.parse(assetContent) as DocumentTypeAsset;
-    const schemaVersion = asset.schemaVersion;
+    const { ir, latestVersion } = resolveIrInput(
+      JSON.parse(readFileSync(irPath, "utf8")) as unknown,
+      irPath,
+    );
+    const schema = convertIrToWireSchema(ir);
 
     const fetchFn = options.firstPartyPrefix != null
       ? buildPrefixRewriteFetch(options.firstPartyPrefix)
@@ -63,11 +64,11 @@ export async function assetUpdateSchemaHandler(
     );
 
     const request: UpdateSchemaDocumentTypeRequest = {
-      documentTypeName: asset.documentTypeName,
+      documentTypeName: ir.name,
       requestBody: {
         ontologyRid: options.ontologyRid,
-        schema: asset.documentStorageType.yjs.schema,
-        version: schemaVersion,
+        schema,
+        version: latestVersion,
         ...(options.forceOverwrite ? { forceOverwrite: true } : {}),
       },
     };
@@ -75,10 +76,7 @@ export async function assetUpdateSchemaHandler(
     if (options.forceOverwrite) {
       consola.warn("--force-overwrite is set: backwards-compatibility validation will be skipped.");
     }
-
-    consola.info(
-      `Updating schema for document type "${asset.documentTypeName}" -> version ${schemaVersion}`,
-    );
+    consola.info(`Updating schema for document type "${ir.name}" -> version ${latestVersion}`);
 
     const result = await DocumentTypes.updateSchema(osdkClient, request, { preview: true });
 
@@ -89,27 +87,16 @@ export async function assetUpdateSchemaHandler(
 
     consola.error(`Schema validation failed with ${result.violations.length} violation(s):`);
     for (const violation of result.violations) {
-      consola.error(`  - ${violation.fieldPath}\t${violation.violationType}\t${violation.message}`);
+      consola.error(
+        `  - ${violation.fieldPath}: ${violation.message} (${violation.violationType})`,
+      );
     }
-    consola.info("Hint: re-run with --force-overwrite to skip validation.");
-    throw new CommanderError(
-      1,
-      "ERRSCHEMAVALIDATION",
-      "Schema validation failed during update",
-    );
+    throw new CommanderError(1, "ERRIRUPDATESCHEMA", "Schema validation failed");
   } catch (error) {
     if (error instanceof CommanderError) {
       throw error;
     }
-    if (error instanceof PalantirApiError) {
-      const { message, errorName, errorCode } = error;
-      const details = [errorName, errorCode].filter(Boolean).join(" ");
-      consola.error(
-        `❌ Error during schema update: ${message}${details ? ` [${details}]` : ""}`,
-      );
-    } else {
-      consola.error("❌ Error during schema update:", error);
-    }
-    throw new CommanderError(1, "ERRASSETUPDATESCHEMA", "Error updating document type schema");
+    consola.error("❌ Error during update-schema:", error);
+    throw new CommanderError(1, "ERRIRUPDATESCHEMA", "Error updating schema from IR");
   }
 }

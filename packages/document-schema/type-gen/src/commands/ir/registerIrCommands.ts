@@ -20,6 +20,7 @@ import { irGenAssetHandler } from "./irGenAssetHandler.js";
 import { irGenModelsHandler } from "./irGenModelsHandler.js";
 import { irGenTypesHandler } from "./irGenTypesHandler.js";
 import { irGenZodHandler } from "./irGenZodHandler.js";
+import { irUpdateSchemaHandler } from "./irUpdateSchemaHandler.js";
 
 export function registerIrCommands(program: Command): void {
   const irCmd = program
@@ -65,19 +66,59 @@ export function registerIrCommands(program: Command): void {
 
   irCmd
     .command("deploy")
-    .description("Create a document type on a Foundry stack using an IR document schema")
+    .description(
+      "Create a document type on a Foundry stack using an IR document schema. Deploys via the general "
+        + "(third-party) path by default, or the first-party path with --first-party.",
+    )
     .requiredOption(
       "-i, --ir <file>",
       "Path to IR JSON file (chain payload from 'schema ir', or legacy single-version IR)",
     )
     .requiredOption("-b, --base-url <url>", "Base URL for Foundry API")
     .requiredOption("-a, --auth <token>", "Authentication token for Foundry API")
-    .requiredOption("-p, --parent-folder <rid>", "Parent folder RID for the document type")
-    .requiredOption(
+    .option(
+      "-p, --parent-folder <rid>",
+      "Parent folder RID for the document type (required for third-party deploys)",
+    )
+    .option(
+      "--first-party",
+      "Deploy as a first-party document type (uses the first-party endpoint; requires --ontology-rid)",
+      false,
+    )
+    .option(
+      "-o, --ontology-rid <rid>",
+      "Target ontology RID (required for first-party deploys)",
+    )
+    .option(
       "-f, --file-system-type <type>",
       "File system type for the document type (ARTIFACTS or COMPASS)",
     )
+    .option(
+      "--first-party-prefix <path>",
+      "Override the API prefix used for first-party requests (e.g. /api/gotham). Defaults to /api.",
+    )
     .action(irDeployHandler);
+
+  irCmd
+    .command("update-schema")
+    .description("Update the schema of an existing document type using an IR document schema")
+    .requiredOption(
+      "-i, --ir <file>",
+      "Path to IR JSON file (chain payload from 'schema ir', or legacy single-version IR)",
+    )
+    .requiredOption("-b, --base-url <url>", "Base URL for Foundry API")
+    .requiredOption("-a, --auth <token>", "Authentication token for Foundry API")
+    .requiredOption("-o, --ontology-rid <rid>", "Target ontology RID")
+    .option(
+      "--force-overwrite",
+      "Skip backwards-compatibility validation when updating the schema",
+      false,
+    )
+    .option(
+      "--first-party-prefix <path>",
+      "Override the API prefix used for first-party requests (e.g. /api/gotham). Defaults to /api.",
+    )
+    .action(irUpdateSchemaHandler);
 
   irCmd
     .command("asset")

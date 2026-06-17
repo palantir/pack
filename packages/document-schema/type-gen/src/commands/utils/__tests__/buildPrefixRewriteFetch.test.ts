@@ -15,7 +15,7 @@
  */
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { buildPrefixRewriteFetch } from "../assetDeployHandler.js";
+import { buildPrefixRewriteFetch } from "../firstPartyPrefix.js";
 
 describe("buildPrefixRewriteFetch", () => {
   const originalFetch = globalThis.fetch;

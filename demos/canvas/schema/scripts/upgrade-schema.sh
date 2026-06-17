@@ -78,7 +78,6 @@ pnpm --filter @palantir/pack.document-schema.type-gen transpileEsm
 cd "$SCHEMA_DIR" || exit 1
 
 IR_PATH="build/ir.json"
-ASSET_PATH="build/asset.json"
 SCHEMA_IR_ARGS=(
   schema ir
   -i src/schema.mjs
@@ -88,7 +87,6 @@ SCHEMA_IR_ARGS=(
 
 if [[ -n "$SCHEMA_VERSION" ]]; then
   IR_PATH="build/upgrade-ir-v${SCHEMA_VERSION}.json"
-  ASSET_PATH="build/upgrade-asset-v${SCHEMA_VERSION}.json"
   SCHEMA_IR_ARGS=(
     schema ir
     -i src/schema.mjs
@@ -101,12 +99,9 @@ fi
 echo "Building canvas IR..."
 pnpm exec type-gen "${SCHEMA_IR_ARGS[@]}"
 
-echo "Building canvas document type asset..."
-pnpm exec type-gen ir asset -i "$IR_PATH" -o "$ASSET_PATH"
-
 echo "Upgrading schema on $FOUNDRY_BASE_URL..."
 UPDATE_SCHEMA_ARGS=(
-  --input "$ASSET_PATH"
+  --ir "$IR_PATH"
   --ontology-rid "$ONTOLOGY_RID"
   --auth "$AUTH_TOKEN"
   --base-url "$FOUNDRY_BASE_URL"
@@ -118,6 +113,6 @@ fi
 
 UPDATE_SCHEMA_ARGS+=("${PASSTHROUGH_ARGS[@]}")
 
-pnpm exec type-gen asset update-schema "${UPDATE_SCHEMA_ARGS[@]}"
+pnpm exec type-gen ir update-schema "${UPDATE_SCHEMA_ARGS[@]}"
 
 echo "Schema upgrade submitted."
