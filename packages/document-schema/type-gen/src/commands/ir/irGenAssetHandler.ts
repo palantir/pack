@@ -101,7 +101,7 @@ export function irGenAssetHandler(options: IrGenAssetOptions): void {
     if (!existsSync(outputDir)) {
       mkdirSync(outputDir, { recursive: true });
     }
-    const output = { __comment: GENERATED_JSON_COMMENT, ...asset };
+    const output = { comment: GENERATED_JSON_COMMENT, ...asset };
     writeFileSync(outputPath, JSON.stringify(output, null, 2), "utf8");
 
     const compatibilityRange: SchemaCompatibilityRangeFile = {
@@ -116,7 +116,7 @@ export function irGenAssetHandler(options: IrGenAssetOptions): void {
       mkdirSync(compatibilityRangeDir, { recursive: true });
     }
     const compatibilityRangeOutput = {
-      __comment: GENERATED_JSON_COMMENT,
+      comment: GENERATED_JSON_COMMENT,
       ...compatibilityRange,
     };
     writeFileSync(

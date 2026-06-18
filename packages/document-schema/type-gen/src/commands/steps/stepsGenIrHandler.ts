@@ -77,7 +77,7 @@ export function stepsGenIrHandler(options: StepsGenIrOptions): void {
     if (!existsSync(outputDir)) {
       mkdirSync(outputDir, { recursive: true });
     }
-    const output = { __comment: GENERATED_JSON_COMMENT, ...schema };
+    const output = { comment: GENERATED_JSON_COMMENT, ...schema };
     writeFileSync(outputFile, JSON.stringify(output, null, 2), "utf8");
 
     consola.success("✅ Successfully converted migration steps to IR format");
