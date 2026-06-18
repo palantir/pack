@@ -47,7 +47,7 @@ export interface ResolvedIrChain {
 }
 
 export interface IrChainPayload {
-  __comment?: string;
+  comment?: string;
   latestVersion: number;
   minSupportedVersion?: number;
   chain: VersionedIrEntry[];

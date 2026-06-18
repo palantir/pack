@@ -171,7 +171,7 @@ export async function schemaIrHandler(options: SchemaIrOptions): Promise<void> {
   await fs.ensureDir(path.dirname(outputPath));
 
   const payload = {
-    __comment: GENERATED_JSON_COMMENT,
+    comment: GENERATED_JSON_COMMENT,
     latestVersion,
     ...(minSupportedVersion != null ? { minSupportedVersion } : {}),
     chain,
