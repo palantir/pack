@@ -1,5 +1,11 @@
 # @palantir/pack.document-schema.type-gen
 
+## 0.16.0
+
+### Minor Changes
+
+- ba9fa6a: change comment field name
+
 ## 0.15.0
 
 ### Minor Changes
