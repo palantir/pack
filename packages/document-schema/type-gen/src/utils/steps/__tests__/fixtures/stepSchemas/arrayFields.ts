@@ -1,4 +1,4 @@
-import { Schema } from "@palantir/pack.schema";
+import type { ModelDefs } from "@palantir/pack.schema";
 
 const arrayFields = {
   "Container": {
@@ -19,6 +19,6 @@ const arrayFields = {
       },
     },
   },
-} satisfies Schema<any>;
+} satisfies ModelDefs;
 
 export default arrayFields;

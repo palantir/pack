@@ -1,4 +1,4 @@
-import { Schema } from "@palantir/pack.schema";
+import type { ModelDefs } from "@palantir/pack.schema";
 
 const simpleRecord = {
   "Person": {
@@ -20,6 +20,6 @@ const simpleRecord = {
       },
     },
   },
-} satisfies Schema<any>;
+} satisfies ModelDefs;
 
 export default simpleRecord;
