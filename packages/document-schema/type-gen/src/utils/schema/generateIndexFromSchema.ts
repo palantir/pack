@@ -42,6 +42,9 @@ import {
  * - `DocumentUpgradeFns` type (the typed shape the factory accepts)
  * - Per supported version: explicit named type exports from `types_vN.js`
  *   (not star exports, to avoid polluting autocomplete for read-only consumers)
+ * - Per supported version: the union variant type guard *functions* from
+ *   `types_vN.js` as values (e.g. `isFooBar_v1`), so consumers can narrow a
+ *   union without re-deriving the discriminant check
  */
 export function generateIndexFromChain(
   resolved: ResolvedIrChain,
@@ -67,6 +70,8 @@ export function generateIndexFromChain(
     if (version < minVersion) continue;
 
     const typeNames: string[] = [];
+    // Union variant type guard functions (values, not types).
+    const guardNames: string[] = [];
 
     for (const [modelKey, modelDef] of Object.entries(ir.models)) {
       if (modelDef.type === "record") {
@@ -74,10 +79,12 @@ export function generateIndexFromChain(
       } else if (modelDef.type === "union") {
         typeNames.push(versionedTypeName(modelKey, version));
 
-        // Union variant types
+        // Union variant types and their generated `is<Variant>` guards.
         for (const variantName of Object.keys(modelDef.union.variants)) {
           const formattedVariant = formatVariantName(variantName);
-          typeNames.push(`${versionedTypeName(modelKey, version)}${formattedVariant}`);
+          const variantTypeName = `${versionedTypeName(modelKey, version)}${formattedVariant}`;
+          typeNames.push(variantTypeName);
+          guardNames.push(`is${variantTypeName}`);
         }
       }
     }
@@ -86,6 +93,10 @@ export function generateIndexFromChain(
       output += `export type { ${typeNames.sort().join(", ")} } from "${
         typesFilePath(version)
       }";\n`;
+    }
+
+    if (guardNames.length > 0) {
+      output += `export { ${guardNames.sort().join(", ")} } from "${typesFilePath(version)}";\n`;
     }
   }
 
