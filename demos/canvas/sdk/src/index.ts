@@ -7,5 +7,8 @@ export * from "./versionedDocRef.js";
 export * from "./documentType.js";
 export { type DocumentUpgradeFns } from "./_internal/upgradeFns.js";
 export type { CanvasActivity_v1, CanvasActivity_v1ShapeAdded, CanvasActivity_v1ShapeDeleted, CanvasActivity_v1ShapeUpdated, CursorPresence_v1, NodeShape_v1, NodeShape_v1Box, NodeShape_v1Circle, SelectionPresence_v1, ShapeAddedActivity_v1, ShapeBox_v1, ShapeCircle_v1, ShapeDeletedActivity_v1, ShapeUpdatedActivity_v1 } from "./types_v1.js";
+export { isCanvasActivity_v1ShapeAdded, isCanvasActivity_v1ShapeDeleted, isCanvasActivity_v1ShapeUpdated, isNodeShape_v1Box, isNodeShape_v1Circle } from "./types_v1.js";
 export type { CanvasActivity_v2, CanvasActivity_v2ShapeAdded, CanvasActivity_v2ShapeDeleted, CanvasActivity_v2ShapeUpdated, CursorPresence_v2, NodeShape_v2, NodeShape_v2Box, NodeShape_v2Circle, SelectionPresence_v2, ShapeAddedActivity_v2, ShapeBox_v2, ShapeCircle_v2, ShapeDeletedActivity_v2, ShapeUpdatedActivity_v2 } from "./types_v2.js";
+export { isCanvasActivity_v2ShapeAdded, isCanvasActivity_v2ShapeDeleted, isCanvasActivity_v2ShapeUpdated, isNodeShape_v2Box, isNodeShape_v2Circle } from "./types_v2.js";
 export type { CanvasActivity_v3, CanvasActivity_v3ShapeAdded, CanvasActivity_v3ShapeDeleted, CanvasActivity_v3ShapeUpdated, CursorPresence_v3, FreehandStroke_v3, NodeShape_v3, NodeShape_v3Box, NodeShape_v3Circle, SelectionPresence_v3, ShapeAddedActivity_v3, ShapeBox_v3, ShapeCircle_v3, ShapeDeletedActivity_v3, ShapeUpdatedActivity_v3 } from "./types_v3.js";
+export { isCanvasActivity_v3ShapeAdded, isCanvasActivity_v3ShapeDeleted, isCanvasActivity_v3ShapeUpdated, isNodeShape_v3Box, isNodeShape_v3Circle } from "./types_v3.js";
