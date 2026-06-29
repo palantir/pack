@@ -181,7 +181,6 @@ export function getPresenceEvent(
       };
     }
     case "error":
-      // TODO: Handle error
       return undefined;
     default: {
       foundryUpdate satisfies never;
