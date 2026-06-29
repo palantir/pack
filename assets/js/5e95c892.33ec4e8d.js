@@ -1,0 +1,1 @@
+"use strict";(self.webpackChunk_palantir_pack_docs=self.webpackChunk_palantir_pack_docs||[]).push([["668"],{28(a,e,r){r.r(e),r.d(e,{default:()=>l});var s=r(6106);r(7378);var c=r(3372),n=r(8402),p=r(3101),t=r(8041),u=r(9028);function l(a){return(0,s.jsx)(n.e3,{className:(0,c.A)(p.G.wrapper.docsPages),children:(0,s.jsx)(u.A,{children:(0,t.v)(a.route.routes)})})}}}]);
