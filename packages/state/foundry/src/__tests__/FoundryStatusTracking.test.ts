@@ -286,7 +286,14 @@ describe("Foundry Document Status Tracking", () => {
       expect(finalStatus?.data.error).toBeUndefined();
     });
 
-    it("should handle fast unsubscribe before websocket subscription completes", async () => {
+    it("should wait for metadata before starting websocket data sync", async () => {
+      let resolveMetadata: (document: Document) => void = () => {};
+      vi.mocked(Documents.get).mockReturnValueOnce(
+        new Promise<Document>(resolve => {
+          resolveMetadata = resolve;
+        }),
+      );
+
       const docRef = createDocRef(mockApp, "test-doc-8" as DocumentId, testSchema);
 
       const statusUpdates: DocumentStatus[] = [];
@@ -294,13 +301,55 @@ describe("Foundry Document Status Tracking", () => {
         statusUpdates.push(status);
       }));
 
+      unsubscribes.push(service.onStateChange(docRef, () => {}));
+
+      expect(Documents.get).toHaveBeenCalled();
+      expect(mockEventService.startDocumentSync).not.toHaveBeenCalled();
+      expect(statusUpdates.at(-1)?.data.load).toBe(DocumentLoadStatus.LOADING);
+
+      resolveMetadata({ ...mockDocument, operationalVersion: 3 } as Document);
+      await vi.runAllTimersAsync();
+
+      expect(mockEventService.startDocumentSync).toHaveBeenCalled();
+      const getOperationalVersion = mockEventService.startDocumentSync.mock.calls[0]?.[4];
+      expect(getOperationalVersion?.()).toBe(3);
+    });
+
+    it("should handle fast unsubscribe before websocket data sync starts", async () => {
+      const docRef = createDocRef(mockApp, "test-doc-13" as DocumentId, testSchema);
+
       const unsubscribeState = service.onStateChange(docRef, () => {});
 
       unsubscribeState();
 
       await vi.runAllTimersAsync();
 
-      expect(mockEventService.stopDocumentSync).toHaveBeenCalled();
+      expect(mockEventService.startDocumentSync).not.toHaveBeenCalled();
+      expect(mockEventService.stopDocumentSync).not.toHaveBeenCalled();
+
+      unsubscribes.push(service.onStateChange(docRef, () => {}));
+      await vi.runAllTimersAsync();
+
+      expect(mockEventService.startDocumentSync).toHaveBeenCalled();
+    });
+
+    it("should reopen websocket data sync after loaded subscription closes", async () => {
+      const docRef = createDocRef(mockApp, "test-doc-14" as DocumentId, testSchema);
+
+      const unsubscribeState = service.onStateChange(docRef, () => {});
+
+      await vi.runAllTimersAsync();
+
+      expect(mockEventService.startDocumentSync).toHaveBeenCalledTimes(1);
+
+      unsubscribeState();
+
+      expect(mockEventService.stopDocumentSync).toHaveBeenCalledTimes(1);
+
+      unsubscribes.push(service.onStateChange(docRef, () => {}));
+      await vi.runAllTimersAsync();
+
+      expect(mockEventService.startDocumentSync).toHaveBeenCalledTimes(2);
     });
 
     it("should handle websocket subscription errors and update data status to ERROR", async () => {

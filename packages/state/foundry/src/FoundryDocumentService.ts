@@ -362,17 +362,42 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
       throw new Error("Document data subscription already opened");
     }
 
+    this.updateDataStatus(internalDoc, docRef, {
+      load: DocumentLoadStatus.LOADING,
+    });
     this.ensureMetadataLoaded(internalDoc, docRef);
 
-    internalDoc.syncSession = this.eventService.startDocumentSync(
-      docRef.id,
-      internalDoc.yDoc,
-      getClientSupportedVersionRange(docRef.schema),
-      status => {
-        this.updateDataStatus(internalDoc, docRef, status);
-      },
-      () => this.getDocumentSchemaOperationalVersion(docRef),
-    );
+    void this.waitForMetadataLoad(docRef)
+      .then(() => {
+        if (
+          !this.documents.has(docRef.id)
+          || !internalDoc.hasDataSubscriptions
+          || internalDoc.syncSession != null
+        ) {
+          return;
+        }
+
+        internalDoc.syncSession = this.eventService.startDocumentSync(
+          docRef.id,
+          internalDoc.yDoc,
+          getClientSupportedVersionRange(docRef.schema),
+          status => {
+            this.updateDataStatus(internalDoc, docRef, status);
+          },
+          () => this.getDocumentSchemaOperationalVersion(docRef),
+        );
+      })
+      .catch((e: unknown) => {
+        if (!this.documents.has(docRef.id) || !internalDoc.hasDataSubscriptions) {
+          return;
+        }
+        this.updateDataStatus(internalDoc, docRef, {
+          error: toUnknownChannelError(
+            new Error("Failed to load document metadata before data sync", { cause: e }),
+          ),
+          load: DocumentLoadStatus.ERROR,
+        });
+      });
   }
 
   protected onMetadataSubscriptionClosed(
@@ -384,11 +409,20 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
 
   protected onDataSubscriptionClosed(
     internalDoc: FoundryInternalDoc,
-    _docRef: DocumentRef,
+    docRef: DocumentRef,
   ): void {
     if (internalDoc.syncSession) {
       this.eventService.stopDocumentSync(internalDoc.syncSession);
       internalDoc.syncSession = undefined;
+      this.updateDataStatus(internalDoc, docRef, {
+        live: DocumentLiveStatus.DISCONNECTED,
+        load: DocumentLoadStatus.UNLOADED,
+      });
+    } else if (internalDoc.dataStatus.load === DocumentLoadStatus.LOADING) {
+      this.updateDataStatus(internalDoc, docRef, {
+        live: DocumentLiveStatus.DISCONNECTED,
+        load: DocumentLoadStatus.UNLOADED,
+      });
     }
   }
 
