@@ -25,6 +25,21 @@ These capabilities are in ALPHA state and not intended for production use.
    > Full docs on the `changesets` tool can be found at the [changesets/changesets github repo](https://github.com/changesets/changesets).
 7. If you're curious what the final build output might look like you can run `pnpm build` from root.
 
+## Documentation
+
+The documentation site lives in [`docs/`](./docs) and is built with [Docusaurus](https://docusaurus.io/)
+(package `@palantir/pack.docs`). Pages are Markdown under `docs/`; the navigation is defined in
+`docs/sidebars.ts`.
+
+1. `pnpm install`
+2. Edit or add Markdown pages in `docs/` (register new pages in `docs/sidebars.ts`).
+3. Preview locally with hot reload: `pnpm --filter @palantir/pack.docs start` (serves at http://localhost:3000/pack/).
+4. Produce a production build: `pnpm --filter @palantir/pack.docs build`, then preview it with `pnpm --filter @palantir/pack.docs serve`.
+   The build fails on broken internal links, so run it before opening a PR.
+
+Docs are deployed to GitHub Pages automatically by [`.github/workflows/deploy-docs.yml`](./.github/workflows/deploy-docs.yml)
+when changes under `docs/**` land on `develop`.
+
 ## Publishing
 
 1. Install the [GitHub CLI](https://cli.github.com/)
