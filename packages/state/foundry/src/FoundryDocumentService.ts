@@ -362,6 +362,8 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
       throw new Error("Document data subscription already opened");
     }
 
+    this.ensureMetadataLoaded(internalDoc, docRef);
+
     internalDoc.syncSession = this.eventService.startDocumentSync(
       docRef.id,
       internalDoc.yDoc,

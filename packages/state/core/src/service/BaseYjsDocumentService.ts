@@ -194,10 +194,24 @@ export abstract class BaseYjsDocumentService<TDoc extends InternalYjsDoc = Inter
   ): number => {
     const { internalDoc } = this.getCreateInternalDoc(docRef);
     const schemaMeta = getMetadata(internalDoc.schema);
+    console.log("ytt-schema", internalDoc);
     return internalDoc.metadata?.operationalVersion
       ?? schemaMeta.minSupportedVersion
       ?? schemaMeta.version;
   };
+
+  /**
+   * Ensures document metadata (the source of `operationalVersion`, and thus
+   * `docRef.version`) is loaded whenever document data is loaded. Without this,
+   * a component that only subscribes to data (e.g. via useRecords) would leave
+   * docRef.version stuck on the bundled schema fallback. Idempotent: gated on
+   * load status, so it's a no-op if a metadata subscriber already triggered it.
+   */
+  protected ensureMetadataLoaded(internalDoc: TDoc, docRef: DocumentRef): void {
+    if (internalDoc.metadataStatus.load === DocumentLoadStatus.UNLOADED) {
+      this.onMetadataSubscriptionOpened(internalDoc, docRef);
+    }
+  }
 
   readonly createDocRef = <const T extends DocumentSchema>(
     id: DocumentId,

@@ -390,6 +390,10 @@ export class DemoDocumentService extends BaseYjsDocumentService<DemoInternalDoc>
     internalDoc: DemoInternalDoc,
     docRef: DocumentRef,
   ): void {
+    // Couple metadata loading to data loading so docRef.version (operationalVersion)
+    // is correct whenever document state is loaded, even without a metadata subscriber.
+    this.ensureMetadataLoaded(internalDoc, docRef);
+
     this.updateDataStatus(internalDoc, docRef, {
       load: DocumentLoadStatus.LOADING,
       live: DocumentLiveStatus.CONNECTING,

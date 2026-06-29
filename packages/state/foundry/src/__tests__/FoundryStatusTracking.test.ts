@@ -275,7 +275,9 @@ describe("Foundry Document Status Tracking", () => {
 
       await vi.runAllTimersAsync();
 
-      expect(Documents.get).not.toHaveBeenCalled();
+      // Opening a data subscription also loads metadata so docRef.version
+      // (operationalVersion) is correct whenever document state is loaded.
+      expect(Documents.get).toHaveBeenCalled();
       expect(mockEventService.startDocumentSync).toHaveBeenCalled();
 
       const finalStatus = statusUpdates.at(-1);
