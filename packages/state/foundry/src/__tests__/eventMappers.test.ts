@@ -303,7 +303,7 @@ describe("getActivityEvent", () => {
         type: "documentCustomEvent",
         eventType: "TestModel",
         data: customData,
-        version: 1,
+        schemaVersion: 1,
       }),
     );
 
@@ -324,7 +324,7 @@ describe("getActivityEvent", () => {
         type: "documentCustomEvent",
         eventType: "TestModel",
         data: customData,
-        version: "future",
+        schemaVersion: 99,
       }),
     );
 
@@ -342,7 +342,7 @@ describe("getActivityEvent", () => {
         type: "documentCustomEvent",
         eventType: "TestModel",
         data: { someField: "node-1" },
-        version: 1,
+        schemaVersion: 1,
       }),
     );
 
@@ -376,7 +376,7 @@ describe("getActivityEvent", () => {
             nodeId: "shape-1",
           },
         },
-        version: 1,
+        schemaVersion: 1,
       }),
     );
 
@@ -412,7 +412,7 @@ describe("getActivityEvent", () => {
         type: "documentCustomEvent",
         eventType: "NonExistentModel",
         data: customData,
-        version: 1,
+        schemaVersion: 1,
       }),
     );
 
