@@ -1,4 +1,4 @@
-import { Schema } from "@palantir/pack.schema";
+import type { ModelDefs } from "@palantir/pack.schema";
 
 const generateTypeScriptInterfaces = {
   "Node": {
@@ -75,6 +75,6 @@ const generateTypeScriptInterfaces = {
       },
     },
   },
-} satisfies Schema<any>;
+} satisfies ModelDefs;
 
 export default generateTypeScriptInterfaces;

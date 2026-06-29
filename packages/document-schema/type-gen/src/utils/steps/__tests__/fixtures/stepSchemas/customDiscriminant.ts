@@ -1,4 +1,4 @@
-import { Schema } from "@palantir/pack.schema";
+import type { ModelDefs } from "@palantir/pack.schema";
 
 const customDiscriminant = {
   "Animal": {
@@ -44,6 +44,6 @@ const customDiscriminant = {
       },
     },
   },
-} satisfies Schema<any>;
+} satisfies ModelDefs;
 
 export default customDiscriminant;

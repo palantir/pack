@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import type { ReturnedSchema, Schema } from "@palantir/pack.schema";
+import type { ModelDefs } from "@palantir/pack.schema";
 import { TypeKind as SchemaTypeKind } from "@palantir/pack.schema";
 import { formatVariantName } from "../formatVariantName.js";
 import { GENERATED_FILE_HEADER } from "../generatedFileHeader.js";
@@ -179,8 +179,8 @@ function detectUsedRefTypes(schema: RuntimeSchema): Set<string> {
   return refTypes;
 }
 
-export function generateTypesFromSchema<T extends ReturnedSchema>(
-  schema: Schema<T>,
+export function generateTypesFromSchema<T extends ModelDefs>(
+  schema: T,
 ): string {
   const runtimeSchema = schema as unknown as RuntimeSchema;
 
