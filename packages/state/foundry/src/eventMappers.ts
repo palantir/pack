@@ -17,6 +17,7 @@
 import type {
   ActivityCollaborativeUpdate,
   ActivityEvent as FoundryActivityEvent,
+  ErrorMessage,
   PresenceCollaborativeUpdate,
 } from "@osdk/foundry.pack";
 import { invalidUserRef } from "@palantir/pack.auth";
@@ -28,6 +29,7 @@ import type {
   ActivityEventDataDocumentDiscretionarySecurityUpdate,
   ActivityEventDataDocumentMandatorySecurityUpdate,
   ActivityEventDataDocumentRename,
+  ChannelError,
   DocumentSchema,
   PresenceEvent,
   PresenceEventData,
@@ -38,6 +40,7 @@ import type {
 import {
   ActivityEventDataType,
   PresenceEventDataType,
+  toChannelError as toDomainChannelError,
 } from "@palantir/pack.document-schema.model-types";
 import { readCustomPayload } from "@palantir/pack.state.core";
 
@@ -222,4 +225,11 @@ function getPresenceEventData(
     schemaVersion: customPayload.schemaVersion,
     type: PresenceEventDataType.CUSTOM_EVENT,
   };
+}
+
+/**
+ * Maps a platform channel ErrorMessage to the domain ChannelError.
+ */
+export function toChannelError(message: ErrorMessage): ChannelError {
+  return toDomainChannelError(message.code, message.errorInstanceId);
 }

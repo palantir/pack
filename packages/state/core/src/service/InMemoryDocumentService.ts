@@ -28,6 +28,7 @@ import type {
   PresencePublishOptions,
   PresenceSubscriptionOptions,
 } from "@palantir/pack.document-schema.model-types";
+import { toUnknownChannelError } from "@palantir/pack.document-schema.model-types";
 import { createDocumentServiceConfig } from "../DocumentServiceModule.js";
 import type { CreateDocumentMetadata } from "../types/CreateDocumentMetadata.js";
 import { createDocRef } from "../types/DocumentRefImpl.js";
@@ -210,7 +211,9 @@ class InMemoryDocumentService extends BaseYjsDocumentService {
 
     if (this.config.autoCreateDocuments === false && internalDoc.metadata == null) {
       this.updateMetadataStatus(internalDoc, docRef, {
-        error: new Error("Document not found and autoCreateDocuments is disabled"),
+        error: toUnknownChannelError(
+          new Error("Document not found and autoCreateDocuments is disabled"),
+        ),
         load: DocumentLoadStatus.ERROR,
       });
       return;
@@ -231,7 +234,9 @@ class InMemoryDocumentService extends BaseYjsDocumentService {
 
     if (this.config.autoCreateDocuments === false && internalDoc.metadata == null) {
       this.updateDataStatus(internalDoc, docRef, {
-        error: new Error("Document not found and autoCreateDocuments is disabled"),
+        error: toUnknownChannelError(
+          new Error("Document not found and autoCreateDocuments is disabled"),
+        ),
         load: DocumentLoadStatus.ERROR,
       });
       return;

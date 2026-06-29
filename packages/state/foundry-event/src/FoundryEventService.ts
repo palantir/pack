@@ -35,6 +35,8 @@ import {
   type EditDescription,
   getMetadata,
   hasMetadata,
+  toChannelError,
+  toUnknownChannelError,
 } from "@palantir/pack.document-schema.model-types";
 import {
   DocumentLoadStatus,
@@ -289,9 +291,10 @@ class FoundryEventServiceImpl implements FoundryEventService {
       }
     }).catch((e: unknown) => {
       if (session.localYDocUpdateHandler === localYDocUpdateHandler) {
-        const error = new Error("Failed to setup document data subscription", { cause: e });
         onStatusChange({
-          error,
+          error: toUnknownChannelError(
+            new Error("Failed to setup document data subscription", { cause: e }),
+          ),
           load: DocumentLoadStatus.ERROR,
         });
       } else {
@@ -383,21 +386,16 @@ class FoundryEventServiceImpl implements FoundryEventService {
     return this.eventService.subscribe(
       channelId,
       (update: PresenceCollaborativeUpdate) => {
-        // TODO: api should provide clientId so we filter on our presence messages only,
-        // but allow apps to decide what they do with same-user-different-client messages ie
-        // from different tabs or devices.
-
-        // A channel error is not a presence update; log and drop it before
-        // any further presence handling.
+        // A channel error carries no user; forward it directly (the consumer
+        // surfaces it as channel status) and skip self-presence filtering.
         if (update.type === "error") {
-          this.logger.warn("Received error on presence channel", {
-            docId: documentId,
-            code: update.code,
-            errorInstanceId: update.errorInstanceId,
-          });
+          callback(update);
           return;
         }
 
+        // TODO: api should provide clientId so we filter on our presence messages only,
+        // but allow apps to decide what they do with same-user-different-client messages ie
+        // from different tabs or devices.
         const localUserId = getAuthModule(this.app).getCurrentUser(true)?.userId;
         if (ignoreSelfUpdates && localUserId != null) {
           switch (update.type) {
@@ -532,7 +530,7 @@ class FoundryEventServiceImpl implements FoundryEventService {
           args,
         });
         onStatusChange({
-          error: new Error(`Subscription in error state [${errorInstanceId}]`, { cause: message }),
+          error: toChannelError(code, errorInstanceId),
           load: DocumentLoadStatus.ERROR,
         });
         break;
@@ -582,7 +580,9 @@ class FoundryEventServiceImpl implements FoundryEventService {
           deletionMethod: message.deletionMethod,
         });
         onStatusChange({
-          error: new Error(`Document was deleted [${message.deletionMethod}]`),
+          error: toUnknownChannelError(
+            new Error(`Document was deleted [${message.deletionMethod}]`),
+          ),
           load: DocumentLoadStatus.ERROR,
         });
         break;

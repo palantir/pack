@@ -18,7 +18,7 @@ import type { Document } from "@osdk/foundry.pack";
 import { Documents } from "@osdk/foundry.pack";
 import type { PackAppInternal } from "@palantir/pack.core";
 import type { DocumentId, DocumentSchema } from "@palantir/pack.document-schema.model-types";
-import { Metadata } from "@palantir/pack.document-schema.model-types";
+import { ChannelErrorCode, Metadata } from "@palantir/pack.document-schema.model-types";
 import { createDocRef, DocumentLoadStatus, type DocumentStatus } from "@palantir/pack.state.core";
 import type {
   FoundryEventService,
@@ -175,7 +175,7 @@ describe("Foundry Document Status Tracking", () => {
       const finalStatus = statusUpdates.at(-1);
       expect(finalStatus).toBeDefined();
       expect(finalStatus?.metadata.load).toBe(DocumentLoadStatus.LOADED);
-      expect(finalStatus?.metadataError).toBeUndefined();
+      expect(finalStatus?.metadata.error).toBeUndefined();
     });
 
     it("should handle backend loading errors", async () => {
@@ -197,8 +197,8 @@ describe("Foundry Document Status Tracking", () => {
       const finalStatus = statusUpdates.at(-1);
       expect(finalStatus).toBeDefined();
       expect(finalStatus?.metadata.load).toBe(DocumentLoadStatus.ERROR);
-      expect(finalStatus?.metadataError).toMatchObject({
-        cause: error,
+      expect(finalStatus?.metadata.error).toMatchObject({
+        code: ChannelErrorCode.UNKNOWN,
         message: "Failed to load document metadata",
       });
     });
@@ -283,7 +283,7 @@ describe("Foundry Document Status Tracking", () => {
       const finalStatus = statusUpdates.at(-1);
       expect(finalStatus).toBeDefined();
       expect(finalStatus?.data.load).toBe(DocumentLoadStatus.LOADED);
-      expect(finalStatus?.dataError).toBeUndefined();
+      expect(finalStatus?.data.error).toBeUndefined();
     });
 
     it("should handle fast unsubscribe before websocket subscription completes", async () => {
@@ -313,7 +313,7 @@ describe("Foundry Document Status Tracking", () => {
 
           void Promise.resolve().then(() => {
             onStatusChange({
-              error: new Error("WebSocket subscription failed"),
+              error: { code: ChannelErrorCode.UNKNOWN, errorInstanceId: "" },
               load: DocumentLoadStatus.ERROR,
             });
           });
@@ -336,7 +336,7 @@ describe("Foundry Document Status Tracking", () => {
       const finalStatus = statusUpdates.at(-1);
       expect(finalStatus).toBeDefined();
       expect(finalStatus?.data.load).toBe(DocumentLoadStatus.ERROR);
-      expect(finalStatus?.dataError).toBeDefined();
+      expect(finalStatus?.data.error).toBeDefined();
     });
 
     it("should handle error messages from websocket and update data status", async () => {
@@ -353,7 +353,7 @@ describe("Foundry Document Status Tracking", () => {
             });
           }).then(() => {
             onStatusChange({
-              error: new Error("Sync failed"),
+              error: { code: ChannelErrorCode.UNKNOWN, errorInstanceId: "" },
               load: DocumentLoadStatus.ERROR,
             });
           });
@@ -376,7 +376,7 @@ describe("Foundry Document Status Tracking", () => {
       const finalStatus = statusUpdates.at(-1);
       expect(finalStatus).toBeDefined();
       expect(finalStatus?.data.load).toBe(DocumentLoadStatus.ERROR);
-      expect(finalStatus?.dataError).toBeDefined();
+      expect(finalStatus?.data.error).toBeDefined();
     });
 
     it("should update data status to LOADED after successful websocket subscription", async () => {
@@ -394,7 +394,7 @@ describe("Foundry Document Status Tracking", () => {
       const statusAfterSubscribe = statusUpdates.at(-1);
       expect(statusAfterSubscribe).toBeDefined();
       expect(statusAfterSubscribe?.data.load).toBe(DocumentLoadStatus.LOADED);
-      expect(statusAfterSubscribe?.dataError).toBeUndefined();
+      expect(statusAfterSubscribe?.data.error).toBeUndefined();
     });
   });
 
