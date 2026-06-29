@@ -463,7 +463,9 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
         foundryUpdate => {
           if (!unsubscribed) {
             const localEvent = getPresenceEvent(docRef.schema, foundryUpdate);
-            callback(docRef, localEvent);
+            if (localEvent != null) {
+              callback(docRef, localEvent);
+            }
           }
         },
         options,

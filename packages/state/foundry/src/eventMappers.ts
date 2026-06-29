@@ -112,7 +112,7 @@ function getActivityEventData(
         data,
         docSchema,
         modelName: eventType,
-        schemaVersion: eventData.version,
+        schemaVersion: eventData.schemaVersion,
       });
       if (customPayload.type !== "readable") {
         return {
@@ -153,7 +153,7 @@ const DEPARTED_DATA: PresenceEventDataDeparted = {
 export function getPresenceEvent(
   documentSchema: DocumentSchema,
   foundryUpdate: PresenceCollaborativeUpdate,
-): PresenceEvent {
+): PresenceEvent | undefined {
   switch (foundryUpdate.type) {
     case "presenceChangeEvent": {
       const { userId, status } = foundryUpdate;
@@ -165,18 +165,21 @@ export function getPresenceEvent(
     }
 
     case "customPresenceEvent": {
-      const { userId, eventData, eventType } = foundryUpdate;
+      const { userId, eventData, eventType, schemaVersion } = foundryUpdate;
       const presenceEventData = getPresenceEventData(
         documentSchema,
         eventType,
         eventData,
-        getEnvelopeSchemaVersion(foundryUpdate),
+        schemaVersion,
       );
       return {
         eventData: presenceEventData,
         userId: userId as UserId,
       };
     }
+    case "error":
+      // TODO: Handle error
+      return undefined;
     default: {
       foundryUpdate satisfies never;
       const unknownUpdate = foundryUpdate as Record<string, unknown>;
@@ -219,8 +222,4 @@ function getPresenceEventData(
     schemaVersion: customPayload.schemaVersion,
     type: PresenceEventDataType.CUSTOM_EVENT,
   };
-}
-
-function getEnvelopeSchemaVersion(envelope: object): unknown {
-  return "version" in envelope ? envelope.version : undefined;
 }

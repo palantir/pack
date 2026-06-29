@@ -386,6 +386,18 @@ class FoundryEventServiceImpl implements FoundryEventService {
         // TODO: api should provide clientId so we filter on our presence messages only,
         // but allow apps to decide what they do with same-user-different-client messages ie
         // from different tabs or devices.
+
+        // A channel error is not a presence update; log and drop it before
+        // any further presence handling.
+        if (update.type === "error") {
+          this.logger.warn("Received error on presence channel", {
+            docId: documentId,
+            code: update.code,
+            errorInstanceId: update.errorInstanceId,
+          });
+          return;
+        }
+
         const localUserId = getAuthModule(this.app).getCurrentUser(true)?.userId;
         if (ignoreSelfUpdates && localUserId != null) {
           switch (update.type) {

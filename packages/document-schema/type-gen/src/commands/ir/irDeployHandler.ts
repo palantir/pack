@@ -18,6 +18,7 @@ import { createPlatformClient, PalantirApiError } from "@osdk/client";
 import type {
   CreateDocumentTypeRequest,
   CreateFirstPartyDocumentTypeRequest,
+  FileSystemType,
 } from "@osdk/foundry.pack";
 import { DocumentTypes } from "@osdk/foundry.pack";
 import { CommanderError } from "commander";
@@ -25,7 +26,6 @@ import { consola } from "consola";
 import { readFileSync } from "fs";
 import { resolve } from "path";
 import { convertIrToWireSchema } from "../../utils/ir/convertIrToWireSchema.js";
-import type { FileSystemType } from "../types.js";
 import { buildPrefixRewriteFetch, DEFAULT_API_PREFIX } from "../utils/firstPartyPrefix.js";
 import { resolveIrInput } from "./resolveIrInput.js";
 

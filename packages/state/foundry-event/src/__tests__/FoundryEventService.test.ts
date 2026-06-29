@@ -94,6 +94,7 @@ describe("FoundryEventService", () => {
     updateCallback?.({
       baseRevisionId: "0",
       clientId: "server",
+      clientSupportedVersionRange: { minVersion: 1, maxVersion: 1 },
       editIds: [],
       revisionId: "1",
       type: "update",
@@ -138,6 +139,7 @@ describe("FoundryEventService", () => {
     updateCallback?.({
       baseRevisionId: "0",
       clientId: "server",
+      clientSupportedVersionRange: { minVersion: 1, maxVersion: 1 },
       editIds: [],
       revisionId: "1",
       type: "update",
@@ -173,6 +175,7 @@ describe("FoundryEventService", () => {
     updateCallback?.({
       baseRevisionId: "0",
       clientId: "server",
+      clientSupportedVersionRange: { minVersion: 1, maxVersion: 1 },
       editIds: [],
       revisionId: "1",
       type: "update",
