@@ -282,7 +282,6 @@ export async function getExistingPr(
   branch: string,
   octokit: Octokit,
 ): Promise<PR> {
-  // eslint-disable-next-line @typescript-eslint/no-deprecated
   const { data } = await octokit.rest.search.issuesAndPullRequests(
     {
       q: `repo:${repo}+state:open+head:${versionBranch}+base:${branch}+is:pull-request`,

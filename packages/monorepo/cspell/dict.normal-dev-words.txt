@@ -3,3 +3,4 @@ CRDT
 webapi
 nodir
 indexeddb
+hideable

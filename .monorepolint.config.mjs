@@ -29,6 +29,7 @@ const REPOSITORY_URL = "https://github.com/palantir/pack.git";
  * @property {boolean} [isCli]
  * @property {boolean} [isSdkgenTemplate]
  * @property {boolean} [isBuildTools]
+ * @property {boolean} [isDocs]
  * @property {boolean} [hasSdkgenTemplates]
  * @property {boolean} [isPrivate]
  * @property {boolean} [isDemo]
@@ -255,6 +256,17 @@ const archetypeConfig = archetypes(
       },
     });
 
+    // Docusaurus docs site: a private workspace package with its own build
+    // tooling. It is not a library/CLI, so it skips the transpile/test/tsconfig/
+    // exports rules and only enforces the shared package-hygiene rules.
+    if (rules.isDocs) {
+      return [
+        licenseAndRepositoryRule,
+        noExportsRule,
+        ...baseRules,
+      ];
+    }
+
     if (rules.isBuildTools) {
       if (!rules.isCli) {
         return [
@@ -467,6 +479,9 @@ const packages = {
   "@palantir/pack.monorepo.release": { isBuildTools: true, isCli: true, isPrivate: true },
   "@palantir/pack.monorepo.transpile": { isBuildTools: true, isCli: true, isPrivate: true },
   "@palantir/pack.monorepo.tsconfig": { isBuildTools: true, isPrivate: true },
+
+  // Docs
+  "@palantir/pack.docs": { isDocs: true, isPrivate: true },
 
   // CLI packages
   "@palantir/pack.document-schema.type-gen": { isCli: true },

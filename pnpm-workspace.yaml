@@ -1,6 +1,7 @@
 prefer-workspace-packages: true
 packages:
   - demos/*/*
+  - docs
   - packages/*
   - packages/*/*
 catalog:
