@@ -48,21 +48,26 @@ export function getActivityEvent(
   documentSchema: DocumentSchema,
   foundryEvent: ActivityCollaborativeUpdate,
 ): ActivityEvent | undefined {
-  // TODO: need to handle deletes and ensure exhaustive handling
-  if (foundryEvent.type !== "activityCreated") {
-    return undefined;
+  switch (foundryEvent.type) {
+    case "activityCreated": {
+      const { activityEvent } = foundryEvent;
+      const eventData = getActivityEventData(documentSchema, activityEvent);
+      return {
+        aggregationKey: activityEvent.aggregationKey,
+        createdBy: activityEvent.createdBy as UserId,
+        createdInstant: new Date(activityEvent.createdTime).getTime(),
+        eventData,
+        eventId: activityEvent.eventId,
+        isRead: activityEvent.isRead,
+      };
+    }
+    case "error":
+    case "activityDeleted":
+      return undefined;
+    default:
+      foundryEvent satisfies never;
+      return undefined;
   }
-  const { activityEvent } = foundryEvent;
-  const eventData = getActivityEventData(documentSchema, activityEvent);
-
-  return {
-    aggregationKey: activityEvent.aggregationKey,
-    createdBy: activityEvent.createdBy as UserId,
-    createdInstant: new Date(activityEvent.createdTime).getTime(),
-    eventData,
-    eventId: activityEvent.eventId,
-    isRead: activityEvent.isRead,
-  };
 }
 
 function getActivityEventData(
