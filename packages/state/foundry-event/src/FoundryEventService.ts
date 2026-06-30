@@ -465,11 +465,9 @@ class FoundryEventServiceImpl implements FoundryEventService {
         eventType,
         isEphemeral,
         userId,
-        version: payloadSchemaVersion,
+        schemaVersion: payloadSchemaVersion,
       },
-    } satisfies PresencePublishMessage & {
-      readonly messageType: PresencePublishMessage["messageType"] & { readonly version: number };
-    };
+    } satisfies PresencePublishMessage;
 
     return this.eventService.publish(channelId, message).catch((error: unknown) => {
       this.logger.error("Failed to publish custom presence", error, {
@@ -633,6 +631,8 @@ function createDocumentEditDescription(editDescription: EditDescription): Docume
     eventData: {
       data: editDescription.data,
       eventType,
+      schemaVersion: editDescription.schemaVersion ?? 1,
+      // TODO: remove `version` once the platform no longer reads it (SDK keeps it required).
       version: editDescription.schemaVersion ?? 1,
     },
     // TODO: remove duplicate after updating platform sdk
