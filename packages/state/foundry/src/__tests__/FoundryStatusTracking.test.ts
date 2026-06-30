@@ -513,7 +513,7 @@ describe("Foundry Document Status Tracking", () => {
       unsubscribes.length = 0;
     });
 
-    it("should error then self-heal activity status when a valid event follows an error", async () => {
+    it("should set activity status to ERROR on an in-band error event", async () => {
       let activityCallback: (event: ActivityCollaborativeUpdate) => void = () => {};
       mockEventService.subscribeToActivityUpdates.mockImplementationOnce(
         (_documentId, _range, callback) => {
@@ -534,6 +534,8 @@ describe("Foundry Document Status Tracking", () => {
 
       expect(statusUpdates.at(-1)?.activity.load).toBe(DocumentLoadStatus.LOADED);
 
+      // Backend errors (e.g. CLIENT_VERSION_TOO_LOW) arrive in-band, but backpack
+      // unsubscribes the channel alongside the error, so the status stays ERROR.
       activityCallback({
         type: "error",
         code: ChannelErrorCode.UNKNOWN,
@@ -542,20 +544,32 @@ describe("Foundry Document Status Tracking", () => {
 
       expect(statusUpdates.at(-1)?.activity.load).toBe(DocumentLoadStatus.ERROR);
       expect(statusUpdates.at(-1)?.activity.error).toBeDefined();
+    });
 
-      activityCallback({
-        type: "activityCreated",
-        activityEvent: {
-          eventId: "event-1",
-          eventData: { type: "unknownType" },
-          isRead: false,
-          aggregationKey: "agg-1",
-          createdBy: "user-1",
-          createdTime: "2026-01-01T00:00:00Z",
-        },
-      } as unknown as ActivityCollaborativeUpdate);
+    it("should reset activity status to UNLOADED on unsubscribe", async () => {
+      mockEventService.subscribeToActivityUpdates.mockResolvedValueOnce(
+        "activity-sub-id" as SubscriptionId,
+      );
+
+      const docRef = createDocRef(
+        mockApp,
+        "test-doc-activity-unsubscribe" as DocumentId,
+        testSchema,
+      );
+
+      const statusUpdates: DocumentStatus[] = [];
+      unsubscribes.push(service.onStatusChange(docRef, (_, status) => {
+        statusUpdates.push(status);
+      }));
+
+      const unsubscribeActivity = service.onActivity(docRef, () => {});
+      await vi.runAllTimersAsync();
 
       expect(statusUpdates.at(-1)?.activity.load).toBe(DocumentLoadStatus.LOADED);
+
+      unsubscribeActivity();
+
+      expect(statusUpdates.at(-1)?.activity.load).toBe(DocumentLoadStatus.UNLOADED);
       expect(statusUpdates.at(-1)?.activity.error).toBeUndefined();
     });
   });
@@ -570,7 +584,7 @@ describe("Foundry Document Status Tracking", () => {
       unsubscribes.length = 0;
     });
 
-    it("should error then self-heal presence status when a valid event follows an error", async () => {
+    it("should set presence status to ERROR on an in-band error event", async () => {
       let presenceCallback: (update: PresenceCollaborativeUpdate) => void = () => {};
       mockEventService.subscribeToPresenceUpdates.mockImplementationOnce(
         (_documentId, _range, callback) => {
@@ -591,6 +605,8 @@ describe("Foundry Document Status Tracking", () => {
 
       expect(statusUpdates.at(-1)?.presence.load).toBe(DocumentLoadStatus.LOADED);
 
+      // Backend errors (e.g. CLIENT_VERSION_TOO_LOW) arrive in-band, but backpack
+      // unsubscribes the channel alongside the error, so the status stays ERROR.
       presenceCallback({
         type: "error",
         code: ChannelErrorCode.UNKNOWN,
@@ -599,13 +615,32 @@ describe("Foundry Document Status Tracking", () => {
 
       expect(statusUpdates.at(-1)?.presence.load).toBe(DocumentLoadStatus.ERROR);
       expect(statusUpdates.at(-1)?.presence.error).toBeDefined();
+    });
 
-      presenceCallback({
-        type: "presenceChangeEvent",
-        userId: "other-user",
-      } as unknown as PresenceCollaborativeUpdate);
+    it("should reset presence status to UNLOADED on unsubscribe", async () => {
+      mockEventService.subscribeToPresenceUpdates.mockResolvedValueOnce(
+        "presence-sub-id" as SubscriptionId,
+      );
+
+      const docRef = createDocRef(
+        mockApp,
+        "test-doc-presence-unsubscribe" as DocumentId,
+        testSchema,
+      );
+
+      const statusUpdates: DocumentStatus[] = [];
+      unsubscribes.push(service.onStatusChange(docRef, (_, status) => {
+        statusUpdates.push(status);
+      }));
+
+      const unsubscribePresence = service.onPresence(docRef, () => {});
+      await vi.runAllTimersAsync();
 
       expect(statusUpdates.at(-1)?.presence.load).toBe(DocumentLoadStatus.LOADED);
+
+      unsubscribePresence();
+
+      expect(statusUpdates.at(-1)?.presence.load).toBe(DocumentLoadStatus.UNLOADED);
       expect(statusUpdates.at(-1)?.presence.error).toBeUndefined();
     });
   });

@@ -444,6 +444,11 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
     }
   }
 
+  // TODO: refcount activity subscribers like data (onStateChange). Each call opens
+  // its own backend subscription, overwriting session.activitySubscriptionId (leaking
+  // the prior subscription), and the shared activityStatus is last-writer-wins so one
+  // subscriber's unsubscribe/error clobbers the status others still rely on. Should
+  // share one backend subscription per doc and only open/close + reset status on first/last subscriber.
   onActivity<T extends DocumentSchema>(
     docRef: DocumentRef<T>,
     callback: (docRef: DocumentRef<T>, event: ActivityEvent) => void,
@@ -451,6 +456,15 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
     let unsubscribed = false;
     const unsubscribeFn = () => {
       unsubscribed = true;
+      // Reset status so a later re-subscribe (e.g. after a version upgrade that
+      // cleared a CLIENT_VERSION_TOO_LOW error) starts clean from UNLOADED.
+      const internalDoc = this.documents.get(docRef.id);
+      if (internalDoc != null) {
+        this.updateActivityStatus(internalDoc, docRef, {
+          load: DocumentLoadStatus.UNLOADED,
+          live: DocumentLiveStatus.DISCONNECTED,
+        });
+      }
     };
 
     this.eventService
@@ -530,6 +544,11 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
       });
   }
 
+  // TODO: refcount presence subscribers like data (onStateChange). Each call opens
+  // its own backend subscription, overwriting session.presenceSubscriptionId (leaking
+  // the prior subscription), and the shared presenceStatus is last-writer-wins so one
+  // subscriber's unsubscribe/error clobbers the status others still rely on. Should
+  // share one backend subscription per doc and only open/close + reset status on first/last subscriber.
   onPresence<T extends DocumentSchema>(
     docRef: DocumentRef<T>,
     callback: (docRef: DocumentRef<T>, event: PresenceEvent) => void,
@@ -538,6 +557,15 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
     let unsubscribed = false;
     const unsubscribeFn = () => {
       unsubscribed = true;
+      // Reset status so a later re-subscribe (e.g. after a version upgrade that
+      // cleared a CLIENT_VERSION_TOO_LOW error) starts clean from UNLOADED.
+      const internalDoc = this.documents.get(docRef.id);
+      if (internalDoc != null) {
+        this.updatePresenceStatus(internalDoc, docRef, {
+          load: DocumentLoadStatus.UNLOADED,
+          live: DocumentLiveStatus.DISCONNECTED,
+        });
+      }
     };
 
     this.eventService
