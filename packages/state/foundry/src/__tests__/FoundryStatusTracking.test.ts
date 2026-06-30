@@ -14,7 +14,11 @@
  * limitations under the License.
  */
 
-import type { Document } from "@osdk/foundry.pack";
+import type {
+  ActivityCollaborativeUpdate,
+  Document,
+  PresenceCollaborativeUpdate,
+} from "@osdk/foundry.pack";
 import { Documents } from "@osdk/foundry.pack";
 import type { PackAppInternal } from "@palantir/pack.core";
 import type { DocumentId, DocumentSchema } from "@palantir/pack.document-schema.model-types";
@@ -496,6 +500,113 @@ describe("Foundry Document Status Tracking", () => {
       expect(statusAfterSubscribe).toBeDefined();
       expect(statusAfterSubscribe?.data.load).toBe(DocumentLoadStatus.LOADED);
       expect(statusAfterSubscribe?.data.error).toBeUndefined();
+    });
+  });
+
+  describe("activity channel status", () => {
+    const unsubscribes: Array<() => void> = [];
+
+    afterEach(() => {
+      unsubscribes.forEach(fn => {
+        fn();
+      });
+      unsubscribes.length = 0;
+    });
+
+    it("should error then self-heal activity status when a valid event follows an error", async () => {
+      let activityCallback: (event: ActivityCollaborativeUpdate) => void = () => {};
+      mockEventService.subscribeToActivityUpdates.mockImplementationOnce(
+        (_documentId, _range, callback) => {
+          activityCallback = callback;
+          return Promise.resolve("activity-sub-id" as SubscriptionId);
+        },
+      );
+
+      const docRef = createDocRef(mockApp, "test-doc-activity" as DocumentId, testSchema);
+
+      const statusUpdates: DocumentStatus[] = [];
+      unsubscribes.push(service.onStatusChange(docRef, (_, status) => {
+        statusUpdates.push(status);
+      }));
+
+      unsubscribes.push(service.onActivity(docRef, () => {}));
+      await vi.runAllTimersAsync();
+
+      expect(statusUpdates.at(-1)?.activity.load).toBe(DocumentLoadStatus.LOADED);
+
+      activityCallback({
+        type: "error",
+        code: ChannelErrorCode.UNKNOWN,
+        errorInstanceId: "",
+      } as unknown as ActivityCollaborativeUpdate);
+
+      expect(statusUpdates.at(-1)?.activity.load).toBe(DocumentLoadStatus.ERROR);
+      expect(statusUpdates.at(-1)?.activity.error).toBeDefined();
+
+      activityCallback({
+        type: "activityCreated",
+        activityEvent: {
+          eventId: "event-1",
+          eventData: { type: "unknownType" },
+          isRead: false,
+          aggregationKey: "agg-1",
+          createdBy: "user-1",
+          createdTime: "2026-01-01T00:00:00Z",
+        },
+      } as unknown as ActivityCollaborativeUpdate);
+
+      expect(statusUpdates.at(-1)?.activity.load).toBe(DocumentLoadStatus.LOADED);
+      expect(statusUpdates.at(-1)?.activity.error).toBeUndefined();
+    });
+  });
+
+  describe("presence channel status", () => {
+    const unsubscribes: Array<() => void> = [];
+
+    afterEach(() => {
+      unsubscribes.forEach(fn => {
+        fn();
+      });
+      unsubscribes.length = 0;
+    });
+
+    it("should error then self-heal presence status when a valid event follows an error", async () => {
+      let presenceCallback: (update: PresenceCollaborativeUpdate) => void = () => {};
+      mockEventService.subscribeToPresenceUpdates.mockImplementationOnce(
+        (_documentId, _range, callback) => {
+          presenceCallback = callback;
+          return Promise.resolve("presence-sub-id" as SubscriptionId);
+        },
+      );
+
+      const docRef = createDocRef(mockApp, "test-doc-presence" as DocumentId, testSchema);
+
+      const statusUpdates: DocumentStatus[] = [];
+      unsubscribes.push(service.onStatusChange(docRef, (_, status) => {
+        statusUpdates.push(status);
+      }));
+
+      unsubscribes.push(service.onPresence(docRef, () => {}));
+      await vi.runAllTimersAsync();
+
+      expect(statusUpdates.at(-1)?.presence.load).toBe(DocumentLoadStatus.LOADED);
+
+      presenceCallback({
+        type: "error",
+        code: ChannelErrorCode.UNKNOWN,
+        errorInstanceId: "",
+      } as unknown as PresenceCollaborativeUpdate);
+
+      expect(statusUpdates.at(-1)?.presence.load).toBe(DocumentLoadStatus.ERROR);
+      expect(statusUpdates.at(-1)?.presence.error).toBeDefined();
+
+      presenceCallback({
+        type: "presenceChangeEvent",
+        userId: "other-user",
+      } as unknown as PresenceCollaborativeUpdate);
+
+      expect(statusUpdates.at(-1)?.presence.load).toBe(DocumentLoadStatus.LOADED);
+      expect(statusUpdates.at(-1)?.presence.error).toBeUndefined();
     });
   });
 
