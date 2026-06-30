@@ -35,6 +35,7 @@ import { internalCreateFoundryDocumentService } from "../FoundryDocumentService.
 
 vi.mock("@osdk/foundry.pack", () => ({
   Documents: {
+    deleteDocument: vi.fn(),
     get: vi.fn(),
   },
 }));
@@ -136,12 +137,14 @@ describe("Foundry Document Status Tracking", () => {
 
     mockEventService.stopDocumentSync.mockImplementation(() => {});
     mockEventService.subscribeToMetadataUpdates.mockResolvedValue("mock-sub-id" as SubscriptionId);
+    vi.mocked(Documents.deleteDocument).mockResolvedValue(undefined);
 
     service = internalCreateFoundryDocumentService(mockApp, {}, mockEventService);
   });
 
   afterEach(() => {
     vi.useRealTimers();
+    vi.mocked(Documents.deleteDocument).mockClear();
     vi.mocked(Documents.get).mockClear();
   });
 
@@ -350,6 +353,55 @@ describe("Foundry Document Status Tracking", () => {
       await vi.runAllTimersAsync();
 
       expect(mockEventService.startDocumentSync).toHaveBeenCalledTimes(2);
+    });
+
+    it("should retry metadata load after data-open metadata failure", async () => {
+      vi.mocked(Documents.get).mockRejectedValueOnce(new Error("Metadata failed"));
+
+      const docRef = createDocRef(mockApp, "test-doc-15" as DocumentId, testSchema);
+      const statusUpdates: DocumentStatus[] = [];
+      unsubscribes.push(service.onStatusChange(docRef, (_, status) => {
+        statusUpdates.push(status);
+      }));
+
+      const unsubscribeState = service.onStateChange(docRef, () => {});
+
+      await vi.runAllTimersAsync();
+
+      expect(Documents.get).toHaveBeenCalledTimes(1);
+      expect(mockEventService.startDocumentSync).not.toHaveBeenCalled();
+      expect(statusUpdates.at(-1)?.metadata.load).toBe(DocumentLoadStatus.ERROR);
+      expect(statusUpdates.at(-1)?.data.load).toBe(DocumentLoadStatus.ERROR);
+
+      unsubscribeState();
+
+      unsubscribes.push(service.onStateChange(docRef, () => {}));
+      await vi.runAllTimersAsync();
+
+      expect(Documents.get).toHaveBeenCalledTimes(2);
+      expect(mockEventService.startDocumentSync).toHaveBeenCalled();
+      expect(statusUpdates.at(-1)?.metadata.load).toBe(DocumentLoadStatus.LOADED);
+      expect(statusUpdates.at(-1)?.data.load).toBe(DocumentLoadStatus.LOADED);
+    });
+
+    it("should not start stale websocket data sync after document is recreated", async () => {
+      let resolveMetadata: (document: Document) => void = () => {};
+      vi.mocked(Documents.get).mockReturnValueOnce(
+        new Promise<Document>(resolve => {
+          resolveMetadata = resolve;
+        }),
+      );
+
+      const docRef = createDocRef(mockApp, "test-doc-16" as DocumentId, testSchema);
+      service.onStateChange(docRef, () => {});
+
+      await service.deleteDocument(docRef);
+      service.createDocRef(docRef.id, testSchema);
+
+      resolveMetadata(mockDocument);
+      await vi.runAllTimersAsync();
+
+      expect(mockEventService.startDocumentSync).not.toHaveBeenCalled();
     });
 
     it("should handle websocket subscription errors and update data status to ERROR", async () => {

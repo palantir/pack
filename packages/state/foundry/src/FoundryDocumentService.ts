@@ -365,14 +365,20 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
     this.updateDataStatus(internalDoc, docRef, {
       load: DocumentLoadStatus.LOADING,
     });
+    if (internalDoc.metadataStatus.load === DocumentLoadStatus.ERROR) {
+      this.updateMetadataStatus(internalDoc, docRef, {
+        load: DocumentLoadStatus.UNLOADED,
+      });
+    }
     this.ensureMetadataLoaded(internalDoc, docRef);
 
     void this.waitForMetadataLoad(docRef)
       .then(() => {
+        const currentDoc = this.documents.get(docRef.id);
         if (
-          !this.documents.has(docRef.id)
-          || !internalDoc.hasDataSubscriptions
-          || internalDoc.syncSession != null
+          currentDoc !== internalDoc
+          || !currentDoc.hasDataSubscriptions
+          || currentDoc.syncSession != null
         ) {
           return;
         }
@@ -388,7 +394,8 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
         );
       })
       .catch((e: unknown) => {
-        if (!this.documents.has(docRef.id) || !internalDoc.hasDataSubscriptions) {
+        const currentDoc = this.documents.get(docRef.id);
+        if (currentDoc !== internalDoc || !currentDoc.hasDataSubscriptions) {
           return;
         }
         this.updateDataStatus(internalDoc, docRef, {
@@ -418,9 +425,20 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
         live: DocumentLiveStatus.DISCONNECTED,
         load: DocumentLoadStatus.UNLOADED,
       });
-    } else if (internalDoc.dataStatus.load === DocumentLoadStatus.LOADING) {
+    } else if (
+      internalDoc.dataStatus.load === DocumentLoadStatus.LOADING
+      || internalDoc.dataStatus.load === DocumentLoadStatus.ERROR
+    ) {
       this.updateDataStatus(internalDoc, docRef, {
         live: DocumentLiveStatus.DISCONNECTED,
+        load: DocumentLoadStatus.UNLOADED,
+      });
+    }
+    if (
+      internalDoc.metadataStatus.load === DocumentLoadStatus.ERROR
+      && internalDoc.metadataSubscribers.size === 0
+    ) {
+      this.updateMetadataStatus(internalDoc, docRef, {
         load: DocumentLoadStatus.UNLOADED,
       });
     }
@@ -444,7 +462,10 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
             return;
           }
           if (foundryEvent.type === "error") {
-            const { internalDoc } = this.getCreateInternalDoc(docRef);
+            const internalDoc = this.documents.get(docRef.id);
+            if (internalDoc == null) {
+              return;
+            }
             this.updateActivityStatus(internalDoc, docRef, {
               error: toChannelError(foundryEvent),
               load: DocumentLoadStatus.ERROR,
@@ -458,7 +479,10 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
         },
       )
       .then(() => {
-        const { internalDoc } = this.getCreateInternalDoc(docRef);
+        const internalDoc = this.documents.get(docRef.id);
+        if (unsubscribed || internalDoc == null) {
+          return;
+        }
         this.updateActivityStatus(internalDoc, docRef, {
           load: DocumentLoadStatus.LOADED,
           live: DocumentLiveStatus.CONNECTED,
@@ -468,7 +492,10 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
         this.logger.error("Failed to subscribe to activity updates", e, {
           docId: docRef.id,
         });
-        const { internalDoc } = this.getCreateInternalDoc(docRef);
+        const internalDoc = this.documents.get(docRef.id);
+        if (unsubscribed || internalDoc == null) {
+          return;
+        }
         this.updateActivityStatus(internalDoc, docRef, {
           error: toUnknownChannelError(e),
           load: DocumentLoadStatus.ERROR,
@@ -522,7 +549,10 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
             return;
           }
           if (foundryUpdate.type === "error") {
-            const { internalDoc } = this.getCreateInternalDoc(docRef);
+            const internalDoc = this.documents.get(docRef.id);
+            if (internalDoc == null) {
+              return;
+            }
             this.updatePresenceStatus(internalDoc, docRef, {
               error: toChannelError(foundryUpdate),
               load: DocumentLoadStatus.ERROR,
@@ -537,7 +567,10 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
         options,
       )
       .then(() => {
-        const { internalDoc } = this.getCreateInternalDoc(docRef);
+        const internalDoc = this.documents.get(docRef.id);
+        if (unsubscribed || internalDoc == null) {
+          return;
+        }
         this.updatePresenceStatus(internalDoc, docRef, {
           load: DocumentLoadStatus.LOADED,
           live: DocumentLiveStatus.CONNECTED,
@@ -547,7 +580,10 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
         this.logger.error("Failed to subscribe to presence updates", e, {
           docId: docRef.id,
         });
-        const { internalDoc } = this.getCreateInternalDoc(docRef);
+        const internalDoc = this.documents.get(docRef.id);
+        if (unsubscribed || internalDoc == null) {
+          return;
+        }
         this.updatePresenceStatus(internalDoc, docRef, {
           error: toUnknownChannelError(e),
           load: DocumentLoadStatus.ERROR,

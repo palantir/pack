@@ -395,7 +395,7 @@ export abstract class BaseYjsDocumentService<TDoc extends InternalYjsDoc = Inter
 
   /**
    * Update one channel's status. The error (if any) is stored on the channel's
-   * DocumentSyncStatus; it is cleared on a successful (LOADED) load.
+   * DocumentSyncStatus; it is cleared when the channel is reset or loaded.
    */
   private updateChannelStatus(
     internalDoc: TDoc,
@@ -409,7 +409,9 @@ export abstract class BaseYjsDocumentService<TDoc extends InternalYjsDoc = Inter
   ): void {
     const current = internalDoc[channel];
     const error = update.error
-      ?? (update.load === DocumentLoadStatus.LOADED ? undefined : current.error);
+      ?? (update.load === DocumentLoadStatus.LOADED || update.load === DocumentLoadStatus.UNLOADED
+        ? undefined
+        : current.error);
     internalDoc[channel] = {
       isDemo: this.isDemo,
       load: update.load ?? current.load,
