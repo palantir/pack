@@ -27,6 +27,8 @@ export type {
   ActivityEventDataUnknown,
   ActivityEventId,
 } from "./types/ActivityEvent.js";
+export { ChannelErrorCode, toChannelError, toUnknownChannelError } from "./types/ChannelError.js";
+export type { ChannelError } from "./types/ChannelError.js";
 export type {
   DiscretionaryPrincipal,
   DiscretionaryPrincipal_All,

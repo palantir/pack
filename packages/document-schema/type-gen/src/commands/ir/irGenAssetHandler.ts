@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
+import type { DocumentTypeAsset, FileSystemType } from "@osdk/foundry.pack";
 import { CommanderError } from "commander";
 import { consola } from "consola";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "fs";
 import { basename, dirname, extname, join, resolve } from "path";
 import { GENERATED_JSON_COMMENT } from "../../utils/generatedFileHeader.js";
 import { convertIrToWireSchema } from "../../utils/ir/convertIrToWireSchema.js";
-import type { DocumentTypeAsset, FileSystemType } from "../types.js";
 import { resolveIrInput } from "./resolveIrInput.js";
 
 interface IrGenAssetOptions {
@@ -88,6 +88,7 @@ export function irGenAssetHandler(options: IrGenAssetOptions): void {
     }
 
     const asset: DocumentTypeAsset = {
+      comment: GENERATED_JSON_COMMENT,
       documentTypeName,
       documentStorageType: {
         type: "yjs",
@@ -101,8 +102,7 @@ export function irGenAssetHandler(options: IrGenAssetOptions): void {
     if (!existsSync(outputDir)) {
       mkdirSync(outputDir, { recursive: true });
     }
-    const output = { comment: GENERATED_JSON_COMMENT, ...asset };
-    writeFileSync(outputPath, JSON.stringify(output, null, 2), "utf8");
+    writeFileSync(outputPath, JSON.stringify(asset, null, 2), "utf8");
 
     const compatibilityRange: SchemaCompatibilityRangeFile = {
       min: minSupportedVersion,

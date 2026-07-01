@@ -27,6 +27,7 @@ import { useActivityToast } from "../../hooks/useActivityToast.js";
 import { useBroadcastPresence } from "../../hooks/useBroadcastPresence.js";
 import { useCanvasInteraction } from "../../hooks/useCanvasInteraction.js";
 import { useRemotePresence } from "../../hooks/useRemotePresence.js";
+import { useStatusErrorToast } from "../../hooks/useStatusErrorToast.js";
 import { useCanvasDocRef } from "../../pack.js";
 import { CanvasContent } from "./CanvasContent.js";
 import styles from "./CanvasPage.module.css";
@@ -46,6 +47,7 @@ export const CanvasPage = () => {
     versionOverride,
   );
   const [toaster, setToaster] = useState<Toaster | null>(null);
+  const [statusToaster, setStatusToaster] = useState<Toaster | null>(null);
 
   useEffect(() => {
     let mounted = true;
@@ -58,9 +60,21 @@ export const CanvasPage = () => {
       }
     });
 
+    OverlayToaster.create({
+      position: Position.TOP,
+    }).then(createdToaster => {
+      if (mounted) {
+        setStatusToaster(createdToaster);
+      }
+    });
+
     return () => {
       mounted = false;
       setToaster(prev => {
+        prev?.clear();
+        return null;
+      });
+      setStatusToaster(prev => {
         prev?.clear();
         return null;
       });
@@ -87,6 +101,7 @@ export const CanvasPage = () => {
   const { remoteUsersByUserId, userIdsBySelectedNodeId } = useRemotePresence(doc);
   const interaction = useCanvasInteraction(doc, broadcastSelection);
   useActivityToast(doc, toaster);
+  useStatusErrorToast(app, doc, statusToaster);
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {

@@ -34,6 +34,7 @@ import {
   ActivityEventDataType,
   getMetadata,
   hasMetadata,
+  toUnknownChannelError,
 } from "@palantir/pack.document-schema.model-types";
 import type {
   CreateDocumentMetadata,
@@ -360,7 +361,7 @@ export class DemoDocumentService extends BaseYjsDocumentService<DemoInternalDoc>
 
       if (metadata == null) {
         this.updateMetadataStatus(internalDoc, docRef, {
-          error: new Error("Document not found"),
+          error: toUnknownChannelError(new Error("Document not found")),
           load: DocumentLoadStatus.ERROR,
         });
         return;
@@ -380,7 +381,7 @@ export class DemoDocumentService extends BaseYjsDocumentService<DemoInternalDoc>
       });
     }).catch((error: unknown) => {
       this.updateMetadataStatus(internalDoc, docRef, {
-        error,
+        error: toUnknownChannelError(error),
         load: DocumentLoadStatus.ERROR,
       });
     });
@@ -390,6 +391,10 @@ export class DemoDocumentService extends BaseYjsDocumentService<DemoInternalDoc>
     internalDoc: DemoInternalDoc,
     docRef: DocumentRef,
   ): void {
+    // Couple metadata loading to data loading so docRef.version (operationalVersion)
+    // is correct whenever document state is loaded, even without a metadata subscriber.
+    this.ensureMetadataLoaded(internalDoc, docRef);
+
     this.updateDataStatus(internalDoc, docRef, {
       load: DocumentLoadStatus.LOADING,
       live: DocumentLiveStatus.CONNECTING,
@@ -414,7 +419,7 @@ export class DemoDocumentService extends BaseYjsDocumentService<DemoInternalDoc>
           });
         }).catch((error: unknown) => {
           this.updateDataStatus(internalDoc, docRef, {
-            error,
+            error: toUnknownChannelError(error),
             load: DocumentLoadStatus.ERROR,
             live: DocumentLiveStatus.ERROR,
           });
@@ -428,7 +433,7 @@ export class DemoDocumentService extends BaseYjsDocumentService<DemoInternalDoc>
       }
     } catch (error) {
       this.updateDataStatus(internalDoc, docRef, {
-        error,
+        error: toUnknownChannelError(error),
         load: DocumentLoadStatus.ERROR,
         live: DocumentLiveStatus.ERROR,
       });
@@ -476,6 +481,11 @@ export class DemoDocumentService extends BaseYjsDocumentService<DemoInternalDoc>
       internalDoc.presenceManager = new PresenceManager(docRef.id, this.clientId, docRef.schema);
     }
 
+    this.updateActivityStatus(internalDoc, docRef, {
+      load: DocumentLoadStatus.LOADED,
+      live: DocumentLiveStatus.CONNECTED,
+    });
+
     const unsubscribe = internalDoc.presenceManager.onActivity(event => {
       callback(docRef, event);
     });
@@ -494,6 +504,11 @@ export class DemoDocumentService extends BaseYjsDocumentService<DemoInternalDoc>
     if (!internalDoc.presenceManager) {
       internalDoc.presenceManager = new PresenceManager(docRef.id, this.clientId, docRef.schema);
     }
+
+    this.updatePresenceStatus(internalDoc, docRef, {
+      load: DocumentLoadStatus.LOADED,
+      live: DocumentLiveStatus.CONNECTED,
+    });
 
     const unsubscribe = internalDoc.presenceManager.onPresence(event => {
       callback(docRef, event);

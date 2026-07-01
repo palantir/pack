@@ -14,11 +14,15 @@
  * limitations under the License.
  */
 
-import type { Document } from "@osdk/foundry.pack";
+import type {
+  ActivityCollaborativeUpdate,
+  Document,
+  PresenceCollaborativeUpdate,
+} from "@osdk/foundry.pack";
 import { Documents } from "@osdk/foundry.pack";
 import type { PackAppInternal } from "@palantir/pack.core";
 import type { DocumentId, DocumentSchema } from "@palantir/pack.document-schema.model-types";
-import { Metadata } from "@palantir/pack.document-schema.model-types";
+import { ChannelErrorCode, Metadata } from "@palantir/pack.document-schema.model-types";
 import { createDocRef, DocumentLoadStatus, type DocumentStatus } from "@palantir/pack.state.core";
 import type {
   FoundryEventService,
@@ -35,6 +39,7 @@ import { internalCreateFoundryDocumentService } from "../FoundryDocumentService.
 
 vi.mock("@osdk/foundry.pack", () => ({
   Documents: {
+    deleteDocument: vi.fn(),
     get: vi.fn(),
   },
 }));
@@ -136,12 +141,14 @@ describe("Foundry Document Status Tracking", () => {
 
     mockEventService.stopDocumentSync.mockImplementation(() => {});
     mockEventService.subscribeToMetadataUpdates.mockResolvedValue("mock-sub-id" as SubscriptionId);
+    vi.mocked(Documents.deleteDocument).mockResolvedValue(undefined);
 
     service = internalCreateFoundryDocumentService(mockApp, {}, mockEventService);
   });
 
   afterEach(() => {
     vi.useRealTimers();
+    vi.mocked(Documents.deleteDocument).mockClear();
     vi.mocked(Documents.get).mockClear();
   });
 
@@ -175,7 +182,7 @@ describe("Foundry Document Status Tracking", () => {
       const finalStatus = statusUpdates.at(-1);
       expect(finalStatus).toBeDefined();
       expect(finalStatus?.metadata.load).toBe(DocumentLoadStatus.LOADED);
-      expect(finalStatus?.metadataError).toBeUndefined();
+      expect(finalStatus?.metadata.error).toBeUndefined();
     });
 
     it("should handle backend loading errors", async () => {
@@ -197,8 +204,8 @@ describe("Foundry Document Status Tracking", () => {
       const finalStatus = statusUpdates.at(-1);
       expect(finalStatus).toBeDefined();
       expect(finalStatus?.metadata.load).toBe(DocumentLoadStatus.ERROR);
-      expect(finalStatus?.metadataError).toMatchObject({
-        cause: error,
+      expect(finalStatus?.metadata.error).toMatchObject({
+        code: ChannelErrorCode.UNKNOWN,
         message: "Failed to load document metadata",
       });
     });
@@ -275,16 +282,25 @@ describe("Foundry Document Status Tracking", () => {
 
       await vi.runAllTimersAsync();
 
-      expect(Documents.get).not.toHaveBeenCalled();
+      // Opening a data subscription also loads metadata so docRef.version
+      // (operationalVersion) is correct whenever document state is loaded.
+      expect(Documents.get).toHaveBeenCalled();
       expect(mockEventService.startDocumentSync).toHaveBeenCalled();
 
       const finalStatus = statusUpdates.at(-1);
       expect(finalStatus).toBeDefined();
       expect(finalStatus?.data.load).toBe(DocumentLoadStatus.LOADED);
-      expect(finalStatus?.dataError).toBeUndefined();
+      expect(finalStatus?.data.error).toBeUndefined();
     });
 
-    it("should handle fast unsubscribe before websocket subscription completes", async () => {
+    it("should wait for metadata before starting websocket data sync", async () => {
+      let resolveMetadata: (document: Document) => void = () => {};
+      vi.mocked(Documents.get).mockReturnValueOnce(
+        new Promise<Document>(resolve => {
+          resolveMetadata = resolve;
+        }),
+      );
+
       const docRef = createDocRef(mockApp, "test-doc-8" as DocumentId, testSchema);
 
       const statusUpdates: DocumentStatus[] = [];
@@ -292,13 +308,104 @@ describe("Foundry Document Status Tracking", () => {
         statusUpdates.push(status);
       }));
 
+      unsubscribes.push(service.onStateChange(docRef, () => {}));
+
+      expect(Documents.get).toHaveBeenCalled();
+      expect(mockEventService.startDocumentSync).not.toHaveBeenCalled();
+      expect(statusUpdates.at(-1)?.data.load).toBe(DocumentLoadStatus.LOADING);
+
+      resolveMetadata({ ...mockDocument, operationalVersion: 3 } as Document);
+      await vi.runAllTimersAsync();
+
+      expect(mockEventService.startDocumentSync).toHaveBeenCalled();
+      const getOperationalVersion = mockEventService.startDocumentSync.mock.calls[0]?.[4];
+      expect(getOperationalVersion?.()).toBe(3);
+    });
+
+    it("should handle fast unsubscribe before websocket data sync starts", async () => {
+      const docRef = createDocRef(mockApp, "test-doc-13" as DocumentId, testSchema);
+
       const unsubscribeState = service.onStateChange(docRef, () => {});
 
       unsubscribeState();
 
       await vi.runAllTimersAsync();
 
-      expect(mockEventService.stopDocumentSync).toHaveBeenCalled();
+      expect(mockEventService.startDocumentSync).not.toHaveBeenCalled();
+      expect(mockEventService.stopDocumentSync).not.toHaveBeenCalled();
+
+      unsubscribes.push(service.onStateChange(docRef, () => {}));
+      await vi.runAllTimersAsync();
+
+      expect(mockEventService.startDocumentSync).toHaveBeenCalled();
+    });
+
+    it("should reopen websocket data sync after loaded subscription closes", async () => {
+      const docRef = createDocRef(mockApp, "test-doc-14" as DocumentId, testSchema);
+
+      const unsubscribeState = service.onStateChange(docRef, () => {});
+
+      await vi.runAllTimersAsync();
+
+      expect(mockEventService.startDocumentSync).toHaveBeenCalledTimes(1);
+
+      unsubscribeState();
+
+      expect(mockEventService.stopDocumentSync).toHaveBeenCalledTimes(1);
+
+      unsubscribes.push(service.onStateChange(docRef, () => {}));
+      await vi.runAllTimersAsync();
+
+      expect(mockEventService.startDocumentSync).toHaveBeenCalledTimes(2);
+    });
+
+    it("should retry metadata load after data-open metadata failure", async () => {
+      vi.mocked(Documents.get).mockRejectedValueOnce(new Error("Metadata failed"));
+
+      const docRef = createDocRef(mockApp, "test-doc-15" as DocumentId, testSchema);
+      const statusUpdates: DocumentStatus[] = [];
+      unsubscribes.push(service.onStatusChange(docRef, (_, status) => {
+        statusUpdates.push(status);
+      }));
+
+      const unsubscribeState = service.onStateChange(docRef, () => {});
+
+      await vi.runAllTimersAsync();
+
+      expect(Documents.get).toHaveBeenCalledTimes(1);
+      expect(mockEventService.startDocumentSync).not.toHaveBeenCalled();
+      expect(statusUpdates.at(-1)?.metadata.load).toBe(DocumentLoadStatus.ERROR);
+      expect(statusUpdates.at(-1)?.data.load).toBe(DocumentLoadStatus.ERROR);
+
+      unsubscribeState();
+
+      unsubscribes.push(service.onStateChange(docRef, () => {}));
+      await vi.runAllTimersAsync();
+
+      expect(Documents.get).toHaveBeenCalledTimes(2);
+      expect(mockEventService.startDocumentSync).toHaveBeenCalled();
+      expect(statusUpdates.at(-1)?.metadata.load).toBe(DocumentLoadStatus.LOADED);
+      expect(statusUpdates.at(-1)?.data.load).toBe(DocumentLoadStatus.LOADED);
+    });
+
+    it("should not start stale websocket data sync after document is recreated", async () => {
+      let resolveMetadata: (document: Document) => void = () => {};
+      vi.mocked(Documents.get).mockReturnValueOnce(
+        new Promise<Document>(resolve => {
+          resolveMetadata = resolve;
+        }),
+      );
+
+      const docRef = createDocRef(mockApp, "test-doc-16" as DocumentId, testSchema);
+      service.onStateChange(docRef, () => {});
+
+      await service.deleteDocument(docRef);
+      service.createDocRef(docRef.id, testSchema);
+
+      resolveMetadata(mockDocument);
+      await vi.runAllTimersAsync();
+
+      expect(mockEventService.startDocumentSync).not.toHaveBeenCalled();
     });
 
     it("should handle websocket subscription errors and update data status to ERROR", async () => {
@@ -311,7 +418,7 @@ describe("Foundry Document Status Tracking", () => {
 
           void Promise.resolve().then(() => {
             onStatusChange({
-              error: new Error("WebSocket subscription failed"),
+              error: { code: ChannelErrorCode.UNKNOWN, errorInstanceId: "" },
               load: DocumentLoadStatus.ERROR,
             });
           });
@@ -334,7 +441,7 @@ describe("Foundry Document Status Tracking", () => {
       const finalStatus = statusUpdates.at(-1);
       expect(finalStatus).toBeDefined();
       expect(finalStatus?.data.load).toBe(DocumentLoadStatus.ERROR);
-      expect(finalStatus?.dataError).toBeDefined();
+      expect(finalStatus?.data.error).toBeDefined();
     });
 
     it("should handle error messages from websocket and update data status", async () => {
@@ -351,7 +458,7 @@ describe("Foundry Document Status Tracking", () => {
             });
           }).then(() => {
             onStatusChange({
-              error: new Error("Sync failed"),
+              error: { code: ChannelErrorCode.UNKNOWN, errorInstanceId: "" },
               load: DocumentLoadStatus.ERROR,
             });
           });
@@ -374,7 +481,7 @@ describe("Foundry Document Status Tracking", () => {
       const finalStatus = statusUpdates.at(-1);
       expect(finalStatus).toBeDefined();
       expect(finalStatus?.data.load).toBe(DocumentLoadStatus.ERROR);
-      expect(finalStatus?.dataError).toBeDefined();
+      expect(finalStatus?.data.error).toBeDefined();
     });
 
     it("should update data status to LOADED after successful websocket subscription", async () => {
@@ -392,7 +499,149 @@ describe("Foundry Document Status Tracking", () => {
       const statusAfterSubscribe = statusUpdates.at(-1);
       expect(statusAfterSubscribe).toBeDefined();
       expect(statusAfterSubscribe?.data.load).toBe(DocumentLoadStatus.LOADED);
-      expect(statusAfterSubscribe?.dataError).toBeUndefined();
+      expect(statusAfterSubscribe?.data.error).toBeUndefined();
+    });
+  });
+
+  describe("activity channel status", () => {
+    const unsubscribes: Array<() => void> = [];
+
+    afterEach(() => {
+      unsubscribes.forEach(fn => {
+        fn();
+      });
+      unsubscribes.length = 0;
+    });
+
+    it("should set activity status to ERROR on an in-band error event", async () => {
+      let activityCallback: (event: ActivityCollaborativeUpdate) => void = () => {};
+      mockEventService.subscribeToActivityUpdates.mockImplementationOnce(
+        (_documentId, _range, callback) => {
+          activityCallback = callback;
+          return Promise.resolve("activity-sub-id" as SubscriptionId);
+        },
+      );
+
+      const docRef = createDocRef(mockApp, "test-doc-activity" as DocumentId, testSchema);
+
+      const statusUpdates: DocumentStatus[] = [];
+      unsubscribes.push(service.onStatusChange(docRef, (_, status) => {
+        statusUpdates.push(status);
+      }));
+
+      unsubscribes.push(service.onActivity(docRef, () => {}));
+      await vi.runAllTimersAsync();
+
+      expect(statusUpdates.at(-1)?.activity.load).toBe(DocumentLoadStatus.LOADED);
+
+      // Backend errors (e.g. CLIENT_VERSION_TOO_LOW) arrive in-band, but backpack
+      // unsubscribes the channel alongside the error, so the status stays ERROR.
+      activityCallback({
+        type: "error",
+        code: ChannelErrorCode.UNKNOWN,
+        errorInstanceId: "",
+      } as unknown as ActivityCollaborativeUpdate);
+
+      expect(statusUpdates.at(-1)?.activity.load).toBe(DocumentLoadStatus.ERROR);
+      expect(statusUpdates.at(-1)?.activity.error).toBeDefined();
+    });
+
+    it("should reset activity status to UNLOADED on unsubscribe", async () => {
+      mockEventService.subscribeToActivityUpdates.mockResolvedValueOnce(
+        "activity-sub-id" as SubscriptionId,
+      );
+
+      const docRef = createDocRef(
+        mockApp,
+        "test-doc-activity-unsubscribe" as DocumentId,
+        testSchema,
+      );
+
+      const statusUpdates: DocumentStatus[] = [];
+      unsubscribes.push(service.onStatusChange(docRef, (_, status) => {
+        statusUpdates.push(status);
+      }));
+
+      const unsubscribeActivity = service.onActivity(docRef, () => {});
+      await vi.runAllTimersAsync();
+
+      expect(statusUpdates.at(-1)?.activity.load).toBe(DocumentLoadStatus.LOADED);
+
+      unsubscribeActivity();
+
+      expect(statusUpdates.at(-1)?.activity.load).toBe(DocumentLoadStatus.UNLOADED);
+      expect(statusUpdates.at(-1)?.activity.error).toBeUndefined();
+    });
+  });
+
+  describe("presence channel status", () => {
+    const unsubscribes: Array<() => void> = [];
+
+    afterEach(() => {
+      unsubscribes.forEach(fn => {
+        fn();
+      });
+      unsubscribes.length = 0;
+    });
+
+    it("should set presence status to ERROR on an in-band error event", async () => {
+      let presenceCallback: (update: PresenceCollaborativeUpdate) => void = () => {};
+      mockEventService.subscribeToPresenceUpdates.mockImplementationOnce(
+        (_documentId, _range, callback) => {
+          presenceCallback = callback;
+          return Promise.resolve("presence-sub-id" as SubscriptionId);
+        },
+      );
+
+      const docRef = createDocRef(mockApp, "test-doc-presence" as DocumentId, testSchema);
+
+      const statusUpdates: DocumentStatus[] = [];
+      unsubscribes.push(service.onStatusChange(docRef, (_, status) => {
+        statusUpdates.push(status);
+      }));
+
+      unsubscribes.push(service.onPresence(docRef, () => {}));
+      await vi.runAllTimersAsync();
+
+      expect(statusUpdates.at(-1)?.presence.load).toBe(DocumentLoadStatus.LOADED);
+
+      // Backend errors (e.g. CLIENT_VERSION_TOO_LOW) arrive in-band, but backpack
+      // unsubscribes the channel alongside the error, so the status stays ERROR.
+      presenceCallback({
+        type: "error",
+        code: ChannelErrorCode.UNKNOWN,
+        errorInstanceId: "",
+      } as unknown as PresenceCollaborativeUpdate);
+
+      expect(statusUpdates.at(-1)?.presence.load).toBe(DocumentLoadStatus.ERROR);
+      expect(statusUpdates.at(-1)?.presence.error).toBeDefined();
+    });
+
+    it("should reset presence status to UNLOADED on unsubscribe", async () => {
+      mockEventService.subscribeToPresenceUpdates.mockResolvedValueOnce(
+        "presence-sub-id" as SubscriptionId,
+      );
+
+      const docRef = createDocRef(
+        mockApp,
+        "test-doc-presence-unsubscribe" as DocumentId,
+        testSchema,
+      );
+
+      const statusUpdates: DocumentStatus[] = [];
+      unsubscribes.push(service.onStatusChange(docRef, (_, status) => {
+        statusUpdates.push(status);
+      }));
+
+      const unsubscribePresence = service.onPresence(docRef, () => {});
+      await vi.runAllTimersAsync();
+
+      expect(statusUpdates.at(-1)?.presence.load).toBe(DocumentLoadStatus.LOADED);
+
+      unsubscribePresence();
+
+      expect(statusUpdates.at(-1)?.presence.load).toBe(DocumentLoadStatus.UNLOADED);
+      expect(statusUpdates.at(-1)?.presence.error).toBeUndefined();
     });
   });
 

@@ -35,6 +35,8 @@ import {
   type EditDescription,
   getMetadata,
   hasMetadata,
+  toChannelError,
+  toUnknownChannelError,
 } from "@palantir/pack.document-schema.model-types";
 import {
   DocumentLoadStatus,
@@ -289,9 +291,10 @@ class FoundryEventServiceImpl implements FoundryEventService {
       }
     }).catch((e: unknown) => {
       if (session.localYDocUpdateHandler === localYDocUpdateHandler) {
-        const error = new Error("Failed to setup document data subscription", { cause: e });
         onStatusChange({
-          error,
+          error: toUnknownChannelError(
+            new Error("Failed to setup document data subscription", { cause: e }),
+          ),
           load: DocumentLoadStatus.ERROR,
         });
       } else {
@@ -383,6 +386,13 @@ class FoundryEventServiceImpl implements FoundryEventService {
     return this.eventService.subscribe(
       channelId,
       (update: PresenceCollaborativeUpdate) => {
+        // A channel error carries no user; forward it directly (the consumer
+        // surfaces it as channel status) and skip self-presence filtering.
+        if (update.type === "error") {
+          callback(update);
+          return;
+        }
+
         // TODO: api should provide clientId so we filter on our presence messages only,
         // but allow apps to decide what they do with same-user-different-client messages ie
         // from different tabs or devices.
@@ -455,11 +465,9 @@ class FoundryEventServiceImpl implements FoundryEventService {
         eventType,
         isEphemeral,
         userId,
-        version: payloadSchemaVersion,
+        schemaVersion: payloadSchemaVersion,
       },
-    } satisfies PresencePublishMessage & {
-      readonly messageType: PresencePublishMessage["messageType"] & { readonly version: number };
-    };
+    } satisfies PresencePublishMessage;
 
     return this.eventService.publish(channelId, message).catch((error: unknown) => {
       this.logger.error("Failed to publish custom presence", error, {
@@ -520,7 +528,7 @@ class FoundryEventServiceImpl implements FoundryEventService {
           args,
         });
         onStatusChange({
-          error: new Error(`Subscription in error state [${errorInstanceId}]`, { cause: message }),
+          error: toChannelError(code, errorInstanceId),
           load: DocumentLoadStatus.ERROR,
         });
         break;
@@ -570,7 +578,9 @@ class FoundryEventServiceImpl implements FoundryEventService {
           deletionMethod: message.deletionMethod,
         });
         onStatusChange({
-          error: new Error(`Document was deleted [${message.deletionMethod}]`),
+          error: toUnknownChannelError(
+            new Error(`Document was deleted [${message.deletionMethod}]`),
+          ),
           load: DocumentLoadStatus.ERROR,
         });
         break;
@@ -621,6 +631,8 @@ function createDocumentEditDescription(editDescription: EditDescription): Docume
     eventData: {
       data: editDescription.data,
       eventType,
+      schemaVersion: editDescription.schemaVersion ?? 1,
+      // TODO: remove `version` once the platform no longer reads it (SDK keeps it required).
       version: editDescription.schemaVersion ?? 1,
     },
     // TODO: remove duplicate after updating platform sdk

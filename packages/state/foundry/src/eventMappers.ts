@@ -17,6 +17,7 @@
 import type {
   ActivityCollaborativeUpdate,
   ActivityEvent as FoundryActivityEvent,
+  ErrorMessage,
   PresenceCollaborativeUpdate,
 } from "@osdk/foundry.pack";
 import { invalidUserRef } from "@palantir/pack.auth";
@@ -28,6 +29,7 @@ import type {
   ActivityEventDataDocumentDiscretionarySecurityUpdate,
   ActivityEventDataDocumentMandatorySecurityUpdate,
   ActivityEventDataDocumentRename,
+  ChannelError,
   DocumentSchema,
   PresenceEvent,
   PresenceEventData,
@@ -38,6 +40,7 @@ import type {
 import {
   ActivityEventDataType,
   PresenceEventDataType,
+  toChannelError as toDomainChannelError,
 } from "@palantir/pack.document-schema.model-types";
 import { readCustomPayload } from "@palantir/pack.state.core";
 
@@ -45,21 +48,26 @@ export function getActivityEvent(
   documentSchema: DocumentSchema,
   foundryEvent: ActivityCollaborativeUpdate,
 ): ActivityEvent | undefined {
-  // TODO: need to handle deletes and ensure exhaustive handling
-  if (foundryEvent.type !== "activityCreated") {
-    return undefined;
+  switch (foundryEvent.type) {
+    case "activityCreated": {
+      const { activityEvent } = foundryEvent;
+      const eventData = getActivityEventData(documentSchema, activityEvent);
+      return {
+        aggregationKey: activityEvent.aggregationKey,
+        createdBy: activityEvent.createdBy as UserId,
+        createdInstant: new Date(activityEvent.createdTime).getTime(),
+        eventData,
+        eventId: activityEvent.eventId,
+        isRead: activityEvent.isRead,
+      };
+    }
+    case "error":
+    case "activityDeleted":
+      return undefined;
+    default:
+      foundryEvent satisfies never;
+      return undefined;
   }
-  const { activityEvent } = foundryEvent;
-  const eventData = getActivityEventData(documentSchema, activityEvent);
-
-  return {
-    aggregationKey: activityEvent.aggregationKey,
-    createdBy: activityEvent.createdBy as UserId,
-    createdInstant: new Date(activityEvent.createdTime).getTime(),
-    eventData,
-    eventId: activityEvent.eventId,
-    isRead: activityEvent.isRead,
-  };
 }
 
 function getActivityEventData(
@@ -112,7 +120,7 @@ function getActivityEventData(
         data,
         docSchema,
         modelName: eventType,
-        schemaVersion: eventData.version,
+        schemaVersion: eventData.schemaVersion,
       });
       if (customPayload.type !== "readable") {
         return {
@@ -153,7 +161,7 @@ const DEPARTED_DATA: PresenceEventDataDeparted = {
 export function getPresenceEvent(
   documentSchema: DocumentSchema,
   foundryUpdate: PresenceCollaborativeUpdate,
-): PresenceEvent {
+): PresenceEvent | undefined {
   switch (foundryUpdate.type) {
     case "presenceChangeEvent": {
       const { userId, status } = foundryUpdate;
@@ -165,18 +173,20 @@ export function getPresenceEvent(
     }
 
     case "customPresenceEvent": {
-      const { userId, eventData, eventType } = foundryUpdate;
+      const { userId, eventData, eventType, schemaVersion } = foundryUpdate;
       const presenceEventData = getPresenceEventData(
         documentSchema,
         eventType,
         eventData,
-        getEnvelopeSchemaVersion(foundryUpdate),
+        schemaVersion,
       );
       return {
         eventData: presenceEventData,
         userId: userId as UserId,
       };
     }
+    case "error":
+      return undefined;
     default: {
       foundryUpdate satisfies never;
       const unknownUpdate = foundryUpdate as Record<string, unknown>;
@@ -221,6 +231,9 @@ function getPresenceEventData(
   };
 }
 
-function getEnvelopeSchemaVersion(envelope: object): unknown {
-  return "version" in envelope ? envelope.version : undefined;
+/**
+ * Maps a platform channel ErrorMessage to the domain ChannelError.
+ */
+export function toChannelError(message: ErrorMessage): ChannelError {
+  return toDomainChannelError(message.code, message.errorInstanceId);
 }

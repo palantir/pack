@@ -20,6 +20,7 @@ import type { Logger } from "@osdk/api";
 import type { PackAppInternal, Unsubscribe } from "@palantir/pack.core";
 import {
   type ActivityEvent,
+  type ChannelError,
   type DocumentId,
   type DocumentMetadata,
   type DocumentRef,
@@ -92,11 +93,11 @@ export interface InternalYjsDoc {
   readonly yDoc: Y.Doc;
   yDocUpdateHandler?: () => void;
 
-  // Status tracking
+  // Status tracking (error, if any, lives on each DocumentSyncStatus)
   metadataStatus: DocumentSyncStatus;
   dataStatus: DocumentSyncStatus;
-  metadataError?: unknown;
-  dataError?: unknown;
+  presenceStatus: DocumentSyncStatus;
+  activityStatus: DocumentSyncStatus;
 
   // Track if we have active subscriptions
   // TODO: ref counts instead? Are these even necessary on the doc or should just be service calls?
@@ -198,6 +199,19 @@ export abstract class BaseYjsDocumentService<TDoc extends InternalYjsDoc = Inter
       ?? schemaMeta.minSupportedVersion
       ?? schemaMeta.version;
   };
+
+  /**
+   * Ensures document metadata (the source of `operationalVersion`, and thus
+   * `docRef.version`) is loaded whenever document data is loaded. Without this,
+   * a component that only subscribes to data (e.g. via useRecords) would leave
+   * docRef.version stuck on the bundled schema fallback. Idempotent: gated on
+   * load status, so it's a no-op if a metadata subscriber already triggered it.
+   */
+  protected ensureMetadataLoaded(internalDoc: TDoc, docRef: DocumentRef): void {
+    if (internalDoc.metadataStatus.load === DocumentLoadStatus.UNLOADED) {
+      this.onMetadataSubscriptionOpened(internalDoc, docRef);
+    }
+  }
 
   readonly createDocRef = <const T extends DocumentSchema>(
     id: DocumentId,
@@ -319,8 +333,14 @@ export abstract class BaseYjsDocumentService<TDoc extends InternalYjsDoc = Inter
         load: DocumentLoadStatus.UNLOADED,
         live: DocumentLiveStatus.DISCONNECTED,
       },
-      metadataError: undefined,
-      dataError: undefined,
+      presenceStatus: {
+        load: DocumentLoadStatus.UNLOADED,
+        live: DocumentLiveStatus.DISCONNECTED,
+      },
+      activityStatus: {
+        load: DocumentLoadStatus.UNLOADED,
+        live: DocumentLiveStatus.DISCONNECTED,
+      },
       statusSubscribers: new Set(),
       hasMetadataSubscriptions: false,
       hasDataSubscriptions: false,
@@ -354,69 +374,83 @@ export abstract class BaseYjsDocumentService<TDoc extends InternalYjsDoc = Inter
   }
 
   // Status helper methods
+  private buildStatus(internalDoc: TDoc): DocumentStatus {
+    return {
+      metadata: internalDoc.metadataStatus,
+      data: internalDoc.dataStatus,
+      presence: internalDoc.presenceStatus,
+      activity: internalDoc.activityStatus,
+    };
+  }
+
   protected notifyStatusSubscribers(
     internalDoc: TDoc,
     docRef: DocumentRef,
   ): void {
-    const status: DocumentStatus = {
-      metadata: internalDoc.metadataStatus,
-      data: internalDoc.dataStatus,
-      metadataError: internalDoc.metadataError,
-      dataError: internalDoc.dataError,
-    };
+    const status = this.buildStatus(internalDoc);
     for (const callback of internalDoc.statusSubscribers) {
       callback(docRef, status);
     }
   }
 
-  protected updateMetadataStatus(
+  /**
+   * Update one channel's status. The error (if any) is stored on the channel's
+   * DocumentSyncStatus; it is cleared when the channel is reset or loaded.
+   */
+  private updateChannelStatus(
     internalDoc: TDoc,
     docRef: DocumentRef,
+    channel: "metadataStatus" | "dataStatus" | "presenceStatus" | "activityStatus",
     update: {
       load?: DocumentLoadStatus;
       live?: DocumentLiveStatus;
-      error?: unknown;
+      error?: ChannelError;
     },
   ): void {
-    if (update.load != null || update.live != null) {
-      internalDoc.metadataStatus = {
-        isDemo: this.isDemo,
-        load: update.load ?? internalDoc.metadataStatus.load,
-        live: update.live ?? internalDoc.metadataStatus.live,
-      };
-    }
-    if (update.error != null) {
-      internalDoc.metadataError = update.error;
-    } else if (update.load === DocumentLoadStatus.LOADED) {
-      // Clear error on successful load
-      internalDoc.metadataError = undefined;
-    }
+    const current = internalDoc[channel];
+    const error = update.error
+      ?? (update.load === DocumentLoadStatus.LOADED || update.load === DocumentLoadStatus.UNLOADED
+        ? undefined
+        : current.error);
+    internalDoc[channel] = {
+      isDemo: this.isDemo,
+      load: update.load ?? current.load,
+      live: update.live ?? current.live,
+      error,
+    };
     this.notifyStatusSubscribers(internalDoc, docRef);
+  }
+
+  protected updateMetadataStatus(
+    internalDoc: TDoc,
+    docRef: DocumentRef,
+    update: { load?: DocumentLoadStatus; live?: DocumentLiveStatus; error?: ChannelError },
+  ): void {
+    this.updateChannelStatus(internalDoc, docRef, "metadataStatus", update);
   }
 
   protected updateDataStatus(
     internalDoc: TDoc,
     docRef: DocumentRef,
-    update: {
-      load?: DocumentLoadStatus;
-      live?: DocumentLiveStatus;
-      error?: unknown;
-    },
+    update: { load?: DocumentLoadStatus; live?: DocumentLiveStatus; error?: ChannelError },
   ): void {
-    if (update.load != null || update.live != null) {
-      internalDoc.dataStatus = {
-        isDemo: this.isDemo,
-        load: update.load ?? internalDoc.dataStatus.load,
-        live: update.live ?? internalDoc.dataStatus.live,
-      };
-    }
-    if (update.error != null) {
-      internalDoc.dataError = update.error;
-    } else if (update.load === DocumentLoadStatus.LOADED) {
-      // Clear error on successful load
-      internalDoc.dataError = undefined;
-    }
-    this.notifyStatusSubscribers(internalDoc, docRef);
+    this.updateChannelStatus(internalDoc, docRef, "dataStatus", update);
+  }
+
+  protected updatePresenceStatus(
+    internalDoc: TDoc,
+    docRef: DocumentRef,
+    update: { load?: DocumentLoadStatus; live?: DocumentLiveStatus; error?: ChannelError },
+  ): void {
+    this.updateChannelStatus(internalDoc, docRef, "presenceStatus", update);
+  }
+
+  protected updateActivityStatus(
+    internalDoc: TDoc,
+    docRef: DocumentRef,
+    update: { load?: DocumentLoadStatus; live?: DocumentLiveStatus; error?: ChannelError },
+  ): void {
+    this.updateChannelStatus(internalDoc, docRef, "activityStatus", update);
   }
 
   /**
@@ -1326,12 +1360,7 @@ export abstract class BaseYjsDocumentService<TDoc extends InternalYjsDoc = Inter
     docRef: DocumentRef<T>,
   ): DocumentStatus => {
     const { internalDoc } = this.getCreateInternalDoc(docRef);
-    return {
-      metadata: internalDoc.metadataStatus,
-      data: internalDoc.dataStatus,
-      metadataError: internalDoc.metadataError,
-      dataError: internalDoc.dataError,
-    };
+    return this.buildStatus(internalDoc);
   };
 
   readonly onStatusChange = <T extends DocumentSchema>(
@@ -1342,13 +1371,7 @@ export abstract class BaseYjsDocumentService<TDoc extends InternalYjsDoc = Inter
     internalDoc.statusSubscribers.add(callback);
 
     // Call callback immediately with current status
-    const status: DocumentStatus = {
-      metadata: internalDoc.metadataStatus,
-      data: internalDoc.dataStatus,
-      metadataError: internalDoc.metadataError,
-      dataError: internalDoc.dataError,
-    };
-    callback(docRef, status);
+    callback(docRef, this.buildStatus(internalDoc));
 
     return () => {
       const currentDoc = this.documents.get(docRef.id);
@@ -1368,7 +1391,9 @@ export abstract class BaseYjsDocumentService<TDoc extends InternalYjsDoc = Inter
     }
 
     if (internalDoc.metadataStatus.load === DocumentLoadStatus.ERROR) {
-      return Promise.reject(new Error("Metadata load error", { cause: internalDoc.metadataError }));
+      return Promise.reject(
+        new Error("Metadata load error", { cause: internalDoc.metadataStatus.error }),
+      );
     }
 
     // Wait for status to change to LOADED or ERROR
@@ -1379,7 +1404,7 @@ export abstract class BaseYjsDocumentService<TDoc extends InternalYjsDoc = Inter
           resolve();
         } else if (status.metadata.load === DocumentLoadStatus.ERROR) {
           unsubscribe();
-          reject(new Error("Metadata load error", { cause: status.metadataError }));
+          reject(new Error("Metadata load error", { cause: status.metadata.error }));
         }
       });
     });
@@ -1395,7 +1420,7 @@ export abstract class BaseYjsDocumentService<TDoc extends InternalYjsDoc = Inter
     }
 
     if (internalDoc.dataStatus.load === DocumentLoadStatus.ERROR) {
-      return Promise.reject(new Error("Data load error", { cause: internalDoc.dataError }));
+      return Promise.reject(new Error("Data load error", { cause: internalDoc.dataStatus.error }));
     }
 
     // Wait for status to change to LOADED or ERROR
@@ -1406,7 +1431,7 @@ export abstract class BaseYjsDocumentService<TDoc extends InternalYjsDoc = Inter
           resolve();
         } else if (status.data.load === DocumentLoadStatus.ERROR) {
           unsubscribe();
-          reject(new Error("Data load error", { cause: status.dataError }));
+          reject(new Error("Data load error", { cause: status.data.error }));
         }
       });
     });

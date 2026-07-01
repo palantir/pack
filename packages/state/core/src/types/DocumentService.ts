@@ -17,6 +17,7 @@
 import type { Unsubscribe } from "@palantir/pack.core";
 import type {
   ActivityEvent,
+  ChannelError,
   DocumentId,
   DocumentMetadata,
   DocumentRef,
@@ -52,7 +53,7 @@ export const DocumentLiveStatus = {
 export type DocumentLiveStatus = typeof DocumentLiveStatus[keyof typeof DocumentLiveStatus];
 
 export type DocumentSyncStatus = {
-  readonly error?: unknown;
+  readonly error?: ChannelError;
   /**
    * When true, indicates this is a demo/test service not connected to real Foundry.
    * UI can use this to display a badge or indicator that data is local-only.
@@ -65,8 +66,8 @@ export type DocumentSyncStatus = {
 export type DocumentStatus = {
   readonly metadata: DocumentSyncStatus;
   readonly data: DocumentSyncStatus;
-  readonly metadataError?: unknown;
-  readonly dataError?: unknown;
+  readonly presence: DocumentSyncStatus;
+  readonly activity: DocumentSyncStatus;
 };
 
 export type DocumentStatusChangeCallback = (

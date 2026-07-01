@@ -45,7 +45,7 @@ import type {
   PresencePublishOptions,
   PresenceSubscriptionOptions,
 } from "@palantir/pack.document-schema.model-types";
-import { getMetadata } from "@palantir/pack.document-schema.model-types";
+import { getMetadata, toUnknownChannelError } from "@palantir/pack.document-schema.model-types";
 import type {
   CreateDocumentMetadata,
   DocumentService,
@@ -58,11 +58,12 @@ import type {
 import {
   BaseYjsDocumentService,
   createDocumentServiceConfig,
+  DocumentLiveStatus,
   DocumentLoadStatus,
 } from "@palantir/pack.state.core";
 import type { FoundryEventService, SyncSession } from "@palantir/pack.state.foundry-event";
 import { createFoundryEventService } from "@palantir/pack.state.foundry-event";
-import { getActivityEvent, getPresenceEvent } from "./eventMappers.js";
+import { getActivityEvent, getPresenceEvent, toChannelError } from "./eventMappers.js";
 
 const DEFAULT_USE_PREVIEW_API = true;
 const EMPTY_DOCUMENT_SECURITY: DocumentSecurity = Object.freeze({
@@ -344,11 +345,10 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
         if (!this.documents.has(docRef.id)) {
           return;
         }
-        const error = new Error("Failed to load document metadata", {
-          cause: e,
-        });
         this.updateMetadataStatus(internalDoc, docRef, {
-          error,
+          error: toUnknownChannelError(
+            new Error("Failed to load document metadata", { cause: e }),
+          ),
           load: DocumentLoadStatus.ERROR,
         });
       });
@@ -362,15 +362,49 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
       throw new Error("Document data subscription already opened");
     }
 
-    internalDoc.syncSession = this.eventService.startDocumentSync(
-      docRef.id,
-      internalDoc.yDoc,
-      getClientSupportedVersionRange(docRef.schema),
-      status => {
-        this.updateDataStatus(internalDoc, docRef, status);
-      },
-      () => this.getDocumentSchemaOperationalVersion(docRef),
-    );
+    this.updateDataStatus(internalDoc, docRef, {
+      load: DocumentLoadStatus.LOADING,
+    });
+    if (internalDoc.metadataStatus.load === DocumentLoadStatus.ERROR) {
+      this.updateMetadataStatus(internalDoc, docRef, {
+        load: DocumentLoadStatus.UNLOADED,
+      });
+    }
+    this.ensureMetadataLoaded(internalDoc, docRef);
+
+    void this.waitForMetadataLoad(docRef)
+      .then(() => {
+        const currentDoc = this.documents.get(docRef.id);
+        if (
+          currentDoc !== internalDoc
+          || !currentDoc.hasDataSubscriptions
+          || currentDoc.syncSession != null
+        ) {
+          return;
+        }
+
+        internalDoc.syncSession = this.eventService.startDocumentSync(
+          docRef.id,
+          internalDoc.yDoc,
+          getClientSupportedVersionRange(docRef.schema),
+          status => {
+            this.updateDataStatus(internalDoc, docRef, status);
+          },
+          () => this.getDocumentSchemaOperationalVersion(docRef),
+        );
+      })
+      .catch((e: unknown) => {
+        const currentDoc = this.documents.get(docRef.id);
+        if (currentDoc !== internalDoc || !currentDoc.hasDataSubscriptions) {
+          return;
+        }
+        this.updateDataStatus(internalDoc, docRef, {
+          error: toUnknownChannelError(
+            new Error("Failed to load document metadata before data sync", { cause: e }),
+          ),
+          load: DocumentLoadStatus.ERROR,
+        });
+      });
   }
 
   protected onMetadataSubscriptionClosed(
@@ -382,14 +416,39 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
 
   protected onDataSubscriptionClosed(
     internalDoc: FoundryInternalDoc,
-    _docRef: DocumentRef,
+    docRef: DocumentRef,
   ): void {
     if (internalDoc.syncSession) {
       this.eventService.stopDocumentSync(internalDoc.syncSession);
       internalDoc.syncSession = undefined;
+      this.updateDataStatus(internalDoc, docRef, {
+        live: DocumentLiveStatus.DISCONNECTED,
+        load: DocumentLoadStatus.UNLOADED,
+      });
+    } else if (
+      internalDoc.dataStatus.load === DocumentLoadStatus.LOADING
+      || internalDoc.dataStatus.load === DocumentLoadStatus.ERROR
+    ) {
+      this.updateDataStatus(internalDoc, docRef, {
+        live: DocumentLiveStatus.DISCONNECTED,
+        load: DocumentLoadStatus.UNLOADED,
+      });
+    }
+    if (
+      internalDoc.metadataStatus.load === DocumentLoadStatus.ERROR
+      && internalDoc.metadataSubscribers.size === 0
+    ) {
+      this.updateMetadataStatus(internalDoc, docRef, {
+        load: DocumentLoadStatus.UNLOADED,
+      });
     }
   }
 
+  // TODO: refcount activity subscribers like data (onStateChange). Each call opens
+  // its own backend subscription, overwriting session.activitySubscriptionId (leaking
+  // the prior subscription), and the shared activityStatus is last-writer-wins so one
+  // subscriber's unsubscribe/error clobbers the status others still rely on. Should
+  // share one backend subscription per doc and only open/close + reset status on first/last subscriber.
   onActivity<T extends DocumentSchema>(
     docRef: DocumentRef<T>,
     callback: (docRef: DocumentRef<T>, event: ActivityEvent) => void,
@@ -397,6 +456,15 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
     let unsubscribed = false;
     const unsubscribeFn = () => {
       unsubscribed = true;
+      // Reset status so a later re-subscribe (e.g. after a version upgrade that
+      // cleared a CLIENT_VERSION_TOO_LOW error) starts clean from UNLOADED.
+      const internalDoc = this.documents.get(docRef.id);
+      if (internalDoc != null) {
+        this.updateActivityStatus(internalDoc, docRef, {
+          load: DocumentLoadStatus.UNLOADED,
+          live: DocumentLiveStatus.DISCONNECTED,
+        });
+      }
     };
 
     this.eventService
@@ -404,17 +472,47 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
         docRef.id,
         getClientSupportedVersionRange(docRef.schema),
         foundryEvent => {
-          if (!unsubscribed) {
-            const localEvent = getActivityEvent(docRef.schema, foundryEvent);
-            if (localEvent != null) {
-              callback(docRef, localEvent);
+          if (unsubscribed) {
+            return;
+          }
+          if (foundryEvent.type === "error") {
+            const internalDoc = this.documents.get(docRef.id);
+            if (internalDoc == null) {
+              return;
             }
+            this.updateActivityStatus(internalDoc, docRef, {
+              error: toChannelError(foundryEvent),
+              load: DocumentLoadStatus.ERROR,
+            });
+            return;
+          }
+          const localEvent = getActivityEvent(docRef.schema, foundryEvent);
+          if (localEvent != null) {
+            callback(docRef, localEvent);
           }
         },
       )
+      .then(() => {
+        const internalDoc = this.documents.get(docRef.id);
+        if (unsubscribed || internalDoc == null) {
+          return;
+        }
+        this.updateActivityStatus(internalDoc, docRef, {
+          load: DocumentLoadStatus.LOADED,
+          live: DocumentLiveStatus.CONNECTED,
+        });
+      })
       .catch((e: unknown) => {
         this.logger.error("Failed to subscribe to activity updates", e, {
           docId: docRef.id,
+        });
+        const internalDoc = this.documents.get(docRef.id);
+        if (unsubscribed || internalDoc == null) {
+          return;
+        }
+        this.updateActivityStatus(internalDoc, docRef, {
+          error: toUnknownChannelError(e),
+          load: DocumentLoadStatus.ERROR,
         });
       });
 
@@ -446,6 +544,11 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
       });
   }
 
+  // TODO: refcount presence subscribers like data (onStateChange). Each call opens
+  // its own backend subscription, overwriting session.presenceSubscriptionId (leaking
+  // the prior subscription), and the shared presenceStatus is last-writer-wins so one
+  // subscriber's unsubscribe/error clobbers the status others still rely on. Should
+  // share one backend subscription per doc and only open/close + reset status on first/last subscriber.
   onPresence<T extends DocumentSchema>(
     docRef: DocumentRef<T>,
     callback: (docRef: DocumentRef<T>, event: PresenceEvent) => void,
@@ -454,6 +557,15 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
     let unsubscribed = false;
     const unsubscribeFn = () => {
       unsubscribed = true;
+      // Reset status so a later re-subscribe (e.g. after a version upgrade that
+      // cleared a CLIENT_VERSION_TOO_LOW error) starts clean from UNLOADED.
+      const internalDoc = this.documents.get(docRef.id);
+      if (internalDoc != null) {
+        this.updatePresenceStatus(internalDoc, docRef, {
+          load: DocumentLoadStatus.UNLOADED,
+          live: DocumentLiveStatus.DISCONNECTED,
+        });
+      }
     };
 
     this.eventService
@@ -461,16 +573,48 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
         docRef.id,
         getClientSupportedVersionRange(docRef.schema),
         foundryUpdate => {
-          if (!unsubscribed) {
-            const localEvent = getPresenceEvent(docRef.schema, foundryUpdate);
+          if (unsubscribed) {
+            return;
+          }
+          if (foundryUpdate.type === "error") {
+            const internalDoc = this.documents.get(docRef.id);
+            if (internalDoc == null) {
+              return;
+            }
+            this.updatePresenceStatus(internalDoc, docRef, {
+              error: toChannelError(foundryUpdate),
+              load: DocumentLoadStatus.ERROR,
+            });
+            return;
+          }
+          const localEvent = getPresenceEvent(docRef.schema, foundryUpdate);
+          if (localEvent != null) {
             callback(docRef, localEvent);
           }
         },
         options,
       )
+      .then(() => {
+        const internalDoc = this.documents.get(docRef.id);
+        if (unsubscribed || internalDoc == null) {
+          return;
+        }
+        this.updatePresenceStatus(internalDoc, docRef, {
+          load: DocumentLoadStatus.LOADED,
+          live: DocumentLiveStatus.CONNECTED,
+        });
+      })
       .catch((e: unknown) => {
         this.logger.error("Failed to subscribe to presence updates", e, {
           docId: docRef.id,
+        });
+        const internalDoc = this.documents.get(docRef.id);
+        if (unsubscribed || internalDoc == null) {
+          return;
+        }
+        this.updatePresenceStatus(internalDoc, docRef, {
+          error: toUnknownChannelError(e),
+          load: DocumentLoadStatus.ERROR,
         });
       });
 

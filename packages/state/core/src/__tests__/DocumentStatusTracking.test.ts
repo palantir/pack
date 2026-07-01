@@ -43,8 +43,8 @@ describe("Document Status Tracking", () => {
     expect(status.metadata.live).toBe(DocumentLiveStatus.DISCONNECTED);
     expect(status.data.load).toBe(DocumentLoadStatus.UNLOADED);
     expect(status.data.live).toBe(DocumentLiveStatus.DISCONNECTED);
-    expect(status.metadataError).toBeUndefined();
-    expect(status.dataError).toBeUndefined();
+    expect(status.metadata.error).toBeUndefined();
+    expect(status.data.error).toBeUndefined();
   });
 
   it("should trigger metadata loading on first metadata subscription", async () => {
