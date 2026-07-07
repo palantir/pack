@@ -1,0 +1,19 @@
+repo-type:
+  type: lernaMonoRepo
+  lernaMonoRepo:
+    changelogDirectories:
+      - packages/app
+      - packages/auth/core
+      - packages/auth/foundry
+      - packages/core
+      - packages/document-schema/model-types
+      - packages/document-schema/type-gen
+      - packages/schema
+      - packages/sdkgen/sdkgen-cli
+      - packages/sdkgen/sdkgen-pack-template
+      - packages/sdkgen/sdkgen-pack-versioned-template
+      - packages/state/core
+      - packages/state/demo
+      - packages/state/foundry
+      - packages/state/foundry-event
+      - packages/state/react
