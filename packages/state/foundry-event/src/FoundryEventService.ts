@@ -632,11 +632,7 @@ function createDocumentEditDescription(editDescription: EditDescription): Docume
       data: editDescription.data,
       eventType,
       schemaVersion: editDescription.schemaVersion ?? 1,
-      // TODO: remove `version` once the platform no longer reads it (SDK keeps it required).
-      version: editDescription.schemaVersion ?? 1,
     },
-    // TODO: remove duplicate after updating platform sdk
-    eventType,
   };
 }
 
