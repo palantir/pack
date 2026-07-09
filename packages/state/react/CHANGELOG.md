@@ -1,5 +1,12 @@
 # @palantir/pack.state.react
 
+## 0.20.0
+
+### Patch Changes
+
+- Updated dependencies [9d0c61a]
+  - @palantir/pack.state.core@0.19.0
+
 ## 0.19.0
 
 ### Minor Changes
