@@ -182,6 +182,7 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
       documentName?: string;
       pageSize?: number;
       pageToken?: string;
+      ontologyRid?: string;
     },
   ): Promise<SearchDocumentsResult> => {
     const request: SearchDocumentsRequest = {
@@ -190,6 +191,7 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
         query: options?.documentName != null ? { documentName: options.documentName } : undefined,
         pageSize: options?.pageSize,
         pageToken: options?.pageToken,
+        ontologyRid: options?.ontologyRid,
       },
     };
 

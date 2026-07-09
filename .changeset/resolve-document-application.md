@@ -20,3 +20,7 @@ when none is configured. Unsupported on the in-memory and demo services.
 `createDocumentEditDescription` no longer sends the deprecated `eventData.version` or top-level
 `eventType` fields (both are now optional in the SDK/API and superseded by `eventData.schemaVersion`
 and `eventData.eventType`).
+
+`searchDocuments` accepts an optional `ontologyRid` in its options, forwarded to the search
+request to scope results to a specific ontology. Not defaulted — omitted when unset, in which
+case the document type name is searched across all ontologies.

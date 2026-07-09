@@ -89,6 +89,7 @@ export interface StateModule {
       documentName?: string;
       pageSize?: number;
       pageToken?: string;
+      ontologyRid?: string;
     },
   ) => Promise<SearchDocumentsResult>;
 
@@ -270,6 +271,7 @@ export class StateModuleImpl implements StateModule {
       documentName?: string;
       pageSize?: number;
       pageToken?: string;
+      ontologyRid?: string;
     },
   ): Promise<SearchDocumentsResult> {
     return this.documentService.searchDocuments(documentTypeName, schema, options);

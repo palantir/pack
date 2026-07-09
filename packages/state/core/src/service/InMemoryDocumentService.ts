@@ -117,6 +117,7 @@ class InMemoryDocumentService extends BaseYjsDocumentService {
       documentName?: string;
       pageSize?: number;
       pageToken?: string;
+      ontologyRid?: string;
     },
   ): Promise<SearchDocumentsResult> => {
     const results: Array<DocumentMetadata & { readonly id: DocumentId }> = [];

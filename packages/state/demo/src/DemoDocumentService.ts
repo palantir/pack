@@ -275,6 +275,7 @@ export class DemoDocumentService extends BaseYjsDocumentService<DemoInternalDoc>
       documentName?: string;
       pageSize?: number;
       pageToken?: string;
+      ontologyRid?: string;
     },
   ): Promise<SearchDocumentsResult> => {
     await this.metadataStore.whenReady();

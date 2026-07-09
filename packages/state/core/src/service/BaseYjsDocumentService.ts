@@ -164,6 +164,7 @@ export abstract class BaseYjsDocumentService<TDoc extends InternalYjsDoc = Inter
       documentName?: string;
       pageSize?: number;
       pageToken?: string;
+      ontologyRid?: string;
     },
   ) => Promise<SearchDocumentsResult>;
 
