@@ -1,5 +1,35 @@
 # @palantir/pack.state.foundry
 
+## 0.22.0
+
+### Minor Changes
+
+- 9d0c61a: Bump `@osdk/foundry.pack` to `^2.68.0`, surface `owningApplicationId` on document types, and add document-to-application resolution.
+
+  The SDK adds `owningApplicationId` to the wire `DocumentType`, populated from the type's
+  metadata. `DocumentType` (state.core) now carries `owningApplicationId?: string` and
+  `FoundryDocumentService` maps it through, so it rides along on every
+  `loadDocumentTypeByName` / `getDocumentType` call.
+
+  Adds `resolveDocumentApplication(docRef)` to `DocumentService` (and `app.state`), backed by
+  the new `GET /v2/pack/documents/{documentId}/resolveApplication` endpoint. Given a document,
+  it resolves the owning application id from the document's type metadata, returning `undefined`
+  when none is configured. Unsupported on the in-memory and demo services.
+
+  `createDocumentEditDescription` no longer sends the deprecated `eventData.version` or top-level
+  `eventType` fields (both are now optional in the SDK/API and superseded by `eventData.schemaVersion`
+  and `eventData.eventType`).
+
+  `searchDocuments` accepts an optional `ontologyRid` in its options, forwarded to the search
+  request to scope results to a specific ontology. Not defaulted — omitted when unset, in which
+  case the document type name is searched across all ontologies.
+
+### Patch Changes
+
+- Updated dependencies [9d0c61a]
+  - @palantir/pack.state.core@0.19.0
+  - @palantir/pack.state.foundry-event@0.21.0
+
 ## 0.21.0
 
 ### Minor Changes
