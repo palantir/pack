@@ -275,6 +275,7 @@ export class DemoDocumentService extends BaseYjsDocumentService<DemoInternalDoc>
       documentName?: string;
       pageSize?: number;
       pageToken?: string;
+      ontologyRid?: string;
     },
   ): Promise<SearchDocumentsResult> => {
     await this.metadataStore.whenReady();
@@ -344,6 +345,16 @@ export class DemoDocumentService extends BaseYjsDocumentService<DemoInternalDoc>
     return Promise.reject(
       new Error(
         "getDocumentTypeOperationalVersion is not supported by the demo document service",
+      ),
+    );
+  };
+
+  readonly resolveDocumentApplication = (
+    _docRef: DocumentRef,
+  ): Promise<string | undefined> => {
+    return Promise.reject(
+      new Error(
+        "resolveDocumentApplication is not supported by the demo document service",
       ),
     );
   };

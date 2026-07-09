@@ -164,6 +164,7 @@ export abstract class BaseYjsDocumentService<TDoc extends InternalYjsDoc = Inter
       documentName?: string;
       pageSize?: number;
       pageToken?: string;
+      ontologyRid?: string;
     },
   ) => Promise<SearchDocumentsResult>;
 
@@ -189,6 +190,10 @@ export abstract class BaseYjsDocumentService<TDoc extends InternalYjsDoc = Inter
     documentTypeName: string,
     ontologyRid?: string,
   ) => Promise<number | undefined>;
+
+  abstract readonly resolveDocumentApplication: (
+    docRef: DocumentRef,
+  ) => Promise<string | undefined>;
 
   readonly getDocumentSchemaOperationalVersion = (
     docRef: DocumentRef,

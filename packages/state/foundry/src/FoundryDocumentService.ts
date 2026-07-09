@@ -182,6 +182,7 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
       documentName?: string;
       pageSize?: number;
       pageToken?: string;
+      ontologyRid?: string;
     },
   ): Promise<SearchDocumentsResult> => {
     const request: SearchDocumentsRequest = {
@@ -190,6 +191,7 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
         query: options?.documentName != null ? { documentName: options.documentName } : undefined,
         pageSize: options?.pageSize,
         pageToken: options?.pageToken,
+        ontologyRid: options?.ontologyRid,
       },
     };
 
@@ -295,6 +297,20 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
     );
 
     return response.operationalVersion;
+  };
+
+  readonly resolveDocumentApplication = async (
+    docRef: DocumentRef,
+  ): Promise<string | undefined> => {
+    const response = await Documents.resolveApplication(
+      this.app.config.osdkClient,
+      docRef.id,
+      {
+        preview: this.config.usePreviewApi ?? DEFAULT_USE_PREVIEW_API,
+      },
+    );
+
+    return response.owningApplicationId;
   };
 
   protected onMetadataSubscriptionOpened(
@@ -741,5 +757,6 @@ function getLocalDocumentType(wireDocumentType: WireDocumentType): DocumentType 
     name: wireDocumentType.name,
     operationalVersion: wireDocumentType.operationalVersion,
     fileSystemType: wireDocumentType.fileSystemType as FileSystemType | undefined,
+    owningApplicationId: wireDocumentType.owningApplicationId,
   };
 }
