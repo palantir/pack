@@ -297,6 +297,20 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
     return response.operationalVersion;
   };
 
+  readonly resolveDocumentApplication = async (
+    docRef: DocumentRef,
+  ): Promise<string | undefined> => {
+    const response = await Documents.resolveApplication(
+      this.app.config.osdkClient,
+      docRef.id,
+      {
+        preview: this.config.usePreviewApi ?? DEFAULT_USE_PREVIEW_API,
+      },
+    );
+
+    return response.owningApplicationId;
+  };
+
   protected onMetadataSubscriptionOpened(
     internalDoc: FoundryInternalDoc,
     docRef: DocumentRef,
@@ -741,5 +755,6 @@ function getLocalDocumentType(wireDocumentType: WireDocumentType): DocumentType 
     name: wireDocumentType.name,
     operationalVersion: wireDocumentType.operationalVersion,
     fileSystemType: wireDocumentType.fileSystemType as FileSystemType | undefined,
+    owningApplicationId: wireDocumentType.owningApplicationId,
   };
 }

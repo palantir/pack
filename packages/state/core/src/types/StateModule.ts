@@ -115,6 +115,10 @@ export interface StateModule {
     ontologyRid?: string,
   ) => Promise<number | undefined>;
 
+  readonly resolveDocumentApplication: (
+    docRef: DocumentRef,
+  ) => Promise<string | undefined>;
+
   readonly getDocumentSnapshot: <T extends DocumentSchema>(
     docRef: DocumentRef<T>,
   ) => Promise<DocumentState<T>>;
@@ -302,6 +306,12 @@ export class StateModuleImpl implements StateModule {
     ontologyRid?: string,
   ): Promise<number | undefined> {
     return this.documentService.getDocumentTypeOperationalVersion(documentTypeName, ontologyRid);
+  }
+
+  async resolveDocumentApplication(
+    docRef: DocumentRef,
+  ): Promise<string | undefined> {
+    return this.documentService.resolveDocumentApplication(docRef);
   }
 
   async getDocumentSnapshot<T extends DocumentSchema>(

@@ -190,6 +190,10 @@ export abstract class BaseYjsDocumentService<TDoc extends InternalYjsDoc = Inter
     ontologyRid?: string,
   ) => Promise<number | undefined>;
 
+  abstract readonly resolveDocumentApplication: (
+    docRef: DocumentRef,
+  ) => Promise<string | undefined>;
+
   readonly getDocumentSchemaOperationalVersion = (
     docRef: DocumentRef,
   ): number => {

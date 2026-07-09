@@ -348,6 +348,16 @@ export class DemoDocumentService extends BaseYjsDocumentService<DemoInternalDoc>
     );
   };
 
+  readonly resolveDocumentApplication = (
+    _docRef: DocumentRef,
+  ): Promise<string | undefined> => {
+    return Promise.reject(
+      new Error(
+        "resolveDocumentApplication is not supported by the demo document service",
+      ),
+    );
+  };
+
   protected onMetadataSubscriptionOpened(
     internalDoc: DemoInternalDoc,
     docRef: DocumentRef,
