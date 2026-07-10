@@ -1,5 +1,11 @@
 # @palantir/pack.document-schema.type-gen
 
+## 0.18.0
+
+### Minor Changes
+
+- 4fef953: Include `owningApplicationId` in the generated document type asset. When set in `pack-config.json`, the value flows through `schema ir` into the IR chain payload and `ir asset` writes it onto the `DocumentTypeAsset`.
+
 ## 0.17.0
 
 ### Minor Changes
