@@ -47,6 +47,7 @@ describe("readPackConfig", () => {
       documentTypeName: "Canvas Document Type",
       documentTypeDescription: "Document type description for demo canvas",
       minSupportedVersion: 1,
+      owningApplicationId: undefined,
     });
   });
 
@@ -59,7 +60,33 @@ describe("readPackConfig", () => {
       documentTypeName: "Canvas Document Type",
       documentTypeDescription: "Document type description for demo canvas",
       minSupportedVersion: undefined,
+      owningApplicationId: undefined,
     });
+  });
+
+  it("reads owningApplicationId when present", async () => {
+    const configPath = await writeConfig({
+      documentTypeName: "Canvas Document Type",
+      documentTypeDescription: "Document type description for demo canvas",
+      owningApplicationId: "app-123",
+    });
+    await expect(readPackConfig(configPath)).resolves.toEqual({
+      documentTypeName: "Canvas Document Type",
+      documentTypeDescription: "Document type description for demo canvas",
+      minSupportedVersion: undefined,
+      owningApplicationId: "app-123",
+    });
+  });
+
+  it("throws when owningApplicationId is an empty string", async () => {
+    const configPath = await writeConfig({
+      documentTypeName: "Canvas Document Type",
+      documentTypeDescription: "Document type description for demo canvas",
+      owningApplicationId: "   ",
+    });
+    await expect(readPackConfig(configPath)).rejects.toThrow(
+      "'owningApplicationId' in",
+    );
   });
 
   it("throws when the config file does not exist", async () => {

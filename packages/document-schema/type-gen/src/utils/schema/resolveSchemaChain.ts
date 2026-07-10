@@ -50,6 +50,7 @@ export interface IrChainPayload {
   comment?: string;
   latestVersion: number;
   minSupportedVersion?: number;
+  owningApplicationId?: string;
   chain: VersionedIrEntry[];
 }
 
