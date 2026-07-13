@@ -48,7 +48,7 @@ export async function irDeployHandler(options: DeployOptions): Promise<void> {
     const irPath = resolve(options.ir);
     consola.info(`Reading schema from: ${irPath}`);
 
-    const { ir, latestVersion } = resolveIrInput(
+    const { ir, latestVersion, owningApplicationId } = resolveIrInput(
       JSON.parse(readFileSync(irPath, "utf8")) as unknown,
       irPath,
     );
@@ -56,7 +56,14 @@ export async function irDeployHandler(options: DeployOptions): Promise<void> {
     const fileSystemType = options.fileSystemType ?? "ARTIFACTS";
 
     if (options.firstParty) {
-      await deployFirstParty(options, ir.name, schema, latestVersion, fileSystemType);
+      await deployFirstParty(
+        options,
+        ir.name,
+        schema,
+        latestVersion,
+        fileSystemType,
+        owningApplicationId,
+      );
     } else {
       await deployThirdParty(options, ir.name, schema, fileSystemType);
     }
@@ -105,6 +112,7 @@ async function deployFirstParty(
   schema: DocumentTypeSchema,
   version: number,
   fileSystemType: FileSystemType,
+  owningApplicationId: string | undefined,
 ): Promise<void> {
   if (options.ontologyRid == null) {
     throw new CommanderError(
@@ -135,6 +143,7 @@ async function deployFirstParty(
       schema,
       version,
       fileSystemType,
+      ...(owningApplicationId != null ? { owningApplicationId } : {}),
     },
   };
 
