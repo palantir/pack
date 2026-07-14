@@ -102,7 +102,7 @@ const cspell = {
     "normal-dev-words",
     "oauth",
   ],
-  words: ["todoapp"],
+  words: ["codegen", "todoapp"],
   suggestWords: [],
   ignoreWords: [],
   import: [],

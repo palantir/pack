@@ -483,6 +483,10 @@ const packages = {
   // Docs
   "@palantir/pack.docs": { isDocs: true, isPrivate: true },
 
+  // Code generation engine (node-only library; uses the CLI archetype so it is not
+  // built for the browser)
+  "@palantir/pack.codegen.core": { isCli: true },
+
   // CLI packages
   "@palantir/pack.document-schema.type-gen": { isCli: true },
   "@palantir/pack.sdkgen": { isCli: true, hasSdkgenTemplates: true },
