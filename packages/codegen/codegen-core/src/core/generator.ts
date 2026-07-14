@@ -168,7 +168,7 @@ export class Generator {
           if (!await fs.pathExists(hookRunnerPath)) {
             throw new Error(
               `Hook runner not found at ${hookRunnerPath}. `
-                + `Please run 'pnpm build' in the sdkgen-cli package.`,
+                + `Please run 'pnpm build' in the @palantir/pack.codegen.core package.`,
             );
           }
 

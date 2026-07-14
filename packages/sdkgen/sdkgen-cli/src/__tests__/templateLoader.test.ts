@@ -14,11 +14,10 @@
  * limitations under the License.
  */
 
+import { Logger, TemplateLoader } from "@palantir/pack.codegen.core";
 import path from "path";
 import { fileURLToPath } from "url";
 import { describe, expect, it } from "vitest";
-import { TemplateLoader } from "../core/templateLoader.js";
-import { Logger } from "../utils/logger.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -42,8 +41,10 @@ describe("TemplateLoader", () => {
     expect(templateDir).toBe(templatePath);
   });
 
-  it("should load default template", async () => {
-    const { config, templateDir } = await loader.loadTemplate("default");
+  it("should load the built-in default template from local path", async () => {
+    const packageRoot = path.resolve(__dirname, "../..");
+    const templatePath = path.resolve(packageRoot, "templates/default");
+    const { config, templateDir } = await loader.loadTemplate(templatePath);
 
     expect(config).toBeDefined();
     expect(config.name).toBe("default-template");
