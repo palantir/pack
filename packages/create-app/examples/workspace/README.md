@@ -1,0 +1,60 @@
+# workspace
+
+Example todo application
+
+A [Palantir PACK](https://github.com/palantir/pack) starter workspace made of three
+packages that build on each other:
+
+| Package | Description |
+| --- | --- |
+| `packages/schema` | The document schema (`@palantir/pack.schema`), plus scripts to build its IR and generate the SDK. |
+| `packages/sdk` | The generated, typed SDK. **Generated from the schema** — see below. |
+| `packages/app` | A minimal Vite + React app that wires up the PACK libraries and consumes the SDK. |
+
+This workspace uses plain [npm workspaces](https://docs.npmjs.com/cli/using-npm/workspaces)
+— there is no build orchestrator, so the steps below are coordinated manually.
+
+## 1. Install
+
+```bash
+npm install
+```
+
+## 2. Generate the SDK from the schema
+
+`packages/sdk` ships as a stub. Populate it from the schema before building or
+running the app:
+
+```bash
+npm run sdk-gen
+```
+
+This compiles `packages/schema/src/schema.mjs` to an IR and runs the SDK generator,
+writing the typed SDK into `packages/sdk/src`. Re-run it whenever you change the schema.
+
+## 3. Build the SDK
+
+```bash
+npm run build:sdk
+```
+
+## 4. Run the app
+
+Copy `packages/app/.env.example` to `packages/app/.env.local` and fill in your
+Foundry client id, API URL, and ontology RID, then:
+
+```bash
+npm run dev
+```
+
+## Typical loop
+
+Because there is no orchestrator, remember the dependency order whenever the schema
+changes:
+
+```
+edit packages/schema/src/schema.mjs
+  -> npm run sdk-gen      (regenerate packages/sdk)
+  -> npm run build:sdk    (compile the SDK)
+  -> npm run dev          (the app picks up the new types)
+```

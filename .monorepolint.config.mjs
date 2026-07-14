@@ -488,6 +488,7 @@ const packages = {
   "@palantir/pack.codegen.core": { isCli: true },
 
   // CLI packages
+  "@palantir/pack.create-app": { isCli: true, hasSdkgenTemplates: true },
   "@palantir/pack.document-schema.type-gen": { isCli: true },
   "@palantir/pack.sdkgen": { isCli: true, hasSdkgenTemplates: true },
 

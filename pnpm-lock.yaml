@@ -599,6 +599,43 @@ importers:
         specifier: 'catalog:'
         version: 5.9.3
 
+  packages/create-app/create-app-cli:
+    dependencies:
+      '@palantir/pack.codegen.core':
+        specifier: workspace:*
+        version: link:../../codegen/codegen-core
+      commander:
+        specifier: 'catalog:'
+        version: 14.0.2
+      find-up:
+        specifier: 'catalog:'
+        version: 8.0.0
+    devDependencies:
+      '@palantir/pack.monorepo.tsconfig':
+        specifier: workspace:~
+        version: link:../../monorepo/tsconfig
+      '@types/fs-extra':
+        specifier: 'catalog:'
+        version: 11.0.4
+      '@types/node':
+        specifier: 'catalog:'
+        version: 20.19.19
+      fs-extra:
+        specifier: 'catalog:'
+        version: 11.3.2
+      prettier:
+        specifier: 'catalog:'
+        version: 3.7.3
+      rimraf:
+        specifier: 'catalog:'
+        version: 6.1.2
+      tslib:
+        specifier: 'catalog:'
+        version: 2.8.1
+      typescript:
+        specifier: 'catalog:'
+        version: 5.9.3
+
   packages/document-schema/model-types:
     dependencies:
       '@palantir/pack.core':

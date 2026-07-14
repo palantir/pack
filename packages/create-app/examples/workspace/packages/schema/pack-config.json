@@ -1,0 +1,7 @@
+{
+  "packageName": "@example/todo.sdk",
+  "description": "Example todo application SDK",
+  "documentTypeName": "Todo Document Type",
+  "documentTypeDescription": "Example todo application",
+  "minSupportedVersion": 1
+}

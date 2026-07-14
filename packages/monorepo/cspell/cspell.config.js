@@ -82,6 +82,9 @@ const cspell = {
     "examples-extra/*/{build,dist}/**/*",
     "packages/*/build/**",
     "CHANGELOG.md",
+
+    // generated reference output of @palantir/pack.create-app
+    "packages/create-app/examples/**",
   ],
   dictionaryDefinitions: [
     ...getDictionaryDefinitions(),
