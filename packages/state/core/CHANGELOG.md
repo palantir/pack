@@ -1,5 +1,11 @@
 # @palantir/pack.state.core
 
+## 0.20.0
+
+### Minor Changes
+
+- 1c9e1f2: Fix document subscription ownership so activity, presence, metadata, and data channels are shared and cleaned up according to their own subscribers. Preserve client identity across data restarts, safely discard canceled asynchronous opens, and apply presence self-update filtering per subscriber.
+
 ## 0.19.0
 
 ### Minor Changes
