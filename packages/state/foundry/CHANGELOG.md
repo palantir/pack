@@ -1,5 +1,18 @@
 # @palantir/pack.state.foundry
 
+## 0.23.0
+
+### Minor Changes
+
+- 1c9e1f2: Fix document subscription ownership so activity, presence, metadata, and data channels are shared and cleaned up according to their own subscribers. Preserve client identity across data restarts, safely discard canceled asynchronous opens, and apply presence self-update filtering per subscriber.
+
+### Patch Changes
+
+- Updated dependencies [1c9e1f2]
+- Updated dependencies [a5a8c7f]
+  - @palantir/pack.state.core@0.20.0
+  - @palantir/pack.state.foundry-event@0.22.0
+
 ## 0.22.0
 
 ### Minor Changes

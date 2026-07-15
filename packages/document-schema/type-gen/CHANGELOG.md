@@ -1,5 +1,11 @@
 # @palantir/pack.document-schema.type-gen
 
+## 0.19.0
+
+### Minor Changes
+
+- 9e9b29d: Include `owningApplicationId` when deploying a first-party document type via `ir deploy --first-party`. When set in `pack-config.json`, the value now flows through the IR chain payload into the `createFirstParty` request body, matching the existing `ir asset` behavior.
+
 ## 0.18.0
 
 ### Minor Changes
