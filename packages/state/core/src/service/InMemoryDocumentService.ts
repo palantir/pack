@@ -216,6 +216,9 @@ class InMemoryDocumentService extends BaseYjsDocumentService {
     internalDoc: InternalYjsDoc,
     docRef: DocumentRef,
   ): void {
+    if (internalDoc.metadataStatus.load !== DocumentLoadStatus.UNLOADED) {
+      return;
+    }
     this.updateMetadataStatus(internalDoc, docRef, {
       load: DocumentLoadStatus.LOADING,
     });

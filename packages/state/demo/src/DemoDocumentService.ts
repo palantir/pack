@@ -363,6 +363,9 @@ export class DemoDocumentService extends BaseYjsDocumentService<DemoInternalDoc>
     internalDoc: DemoInternalDoc,
     docRef: DocumentRef,
   ): void {
+    if (internalDoc.metadataStatus.load !== DocumentLoadStatus.UNLOADED) {
+      return;
+    }
     this.updateMetadataStatus(internalDoc, docRef, {
       load: DocumentLoadStatus.LOADING,
     });
