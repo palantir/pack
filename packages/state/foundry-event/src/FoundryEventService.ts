@@ -106,7 +106,6 @@ export interface SyncSession {
 }
 
 interface SyncSessionInternal extends SyncSession {
-  activitySubscriptionId?: SubscriptionId;
   documentSubscriptionId?: SubscriptionId;
   lastRevisionId?: number;
   localYDocUpdateHandler?: (
@@ -115,8 +114,6 @@ interface SyncSessionInternal extends SyncSession {
     doc: y.Doc,
     transaction: y.Transaction,
   ) => void;
-  metadataSubscriptionId?: SubscriptionId;
-  presenceSubscriptionId?: SubscriptionId;
   yDoc?: y.Doc;
 }
 
@@ -125,6 +122,8 @@ interface SyncSessionInternal extends SyncSession {
  * our PACK Foundry backend's cometd service.
  */
 export interface FoundryEventService {
+  disposeDocument(documentId: DocumentId): void;
+
   publishCustomPresence(
     documentId: DocumentId,
     eventType: string,
@@ -161,6 +160,8 @@ export interface FoundryEventService {
     callback: (update: PresenceCollaborativeUpdate) => void,
     options?: PresenceSubscriptionOptions,
   ): Promise<SubscriptionId>;
+
+  unsubscribe(subscriptionId: SubscriptionId): void;
 }
 
 class FoundryEventServiceImpl implements FoundryEventService {
@@ -179,20 +180,18 @@ class FoundryEventServiceImpl implements FoundryEventService {
     });
   }
 
-  private getOrCreateSession(documentId: DocumentId, yDoc?: y.Doc): SyncSessionInternal {
+  private getOrCreateSession(documentId: DocumentId): SyncSessionInternal {
     const sessionId = this.getSessionId(documentId);
     let session = this.sessions.get(sessionId);
 
     if (!session) {
       session = {
-        activitySubscriptionId: undefined,
         clientId: crypto.randomUUID(),
         documentId,
         documentSubscriptionId: undefined,
         lastRevisionId: undefined,
         localYDocUpdateHandler: undefined,
-        presenceSubscriptionId: undefined,
-        yDoc,
+        yDoc: undefined,
       };
       this.sessions.set(sessionId, session);
     }
@@ -207,11 +206,15 @@ class FoundryEventServiceImpl implements FoundryEventService {
     onStatusChange: (status: Partial<DocumentSyncStatus>) => void,
     getDocumentSchemaOperationalVersion?: () => number,
   ): SyncSession {
-    const session = this.getOrCreateSession(documentId, yDoc);
+    const session = this.getOrCreateSession(documentId);
 
-    if (session.documentSubscriptionId != null) {
+    if (
+      session.localYDocUpdateHandler != null
+      || session.documentSubscriptionId != null
+    ) {
       throw new Error(`Document data sync already active for document ${documentId}`);
     }
+    session.yDoc = yDoc;
 
     const localYDocUpdateHandler = (
       update: Uint8Array,
@@ -287,7 +290,6 @@ class FoundryEventServiceImpl implements FoundryEventService {
         session.documentSubscriptionId = subscriptionId;
       } else {
         this.eventService.unsubscribe(subscriptionId);
-        this.sessions.delete(this.getSessionId(documentId));
       }
     }).catch((e: unknown) => {
       if (session.localYDocUpdateHandler === localYDocUpdateHandler) {
@@ -333,10 +335,7 @@ class FoundryEventServiceImpl implements FoundryEventService {
         clientId: session.clientId,
         clientSupportedVersionRange,
       } satisfies DocumentActivitySubscriptionRequest),
-    ).then(subscriptionId => {
-      session.activitySubscriptionId = subscriptionId;
-      return subscriptionId;
-    }).catch((e: unknown) => {
+    ).catch((e: unknown) => {
       this.logger.error("Failed to subscribe to activity updates", e, {
         docId: documentId,
       });
@@ -348,8 +347,6 @@ class FoundryEventServiceImpl implements FoundryEventService {
     documentId: DocumentId,
     callback: (event: DocumentMetadataUpdate) => void,
   ): Promise<SubscriptionId> {
-    const session = this.getOrCreateSession(documentId);
-
     const channelId = getDocumentMetadataUpdatesChannelId(documentId);
 
     return this.eventService.subscribe(
@@ -361,10 +358,7 @@ class FoundryEventServiceImpl implements FoundryEventService {
         });
         callback(event);
       },
-    ).then(subscriptionId => {
-      session.metadataSubscriptionId = subscriptionId;
-      return subscriptionId;
-    }).catch((e: unknown) => {
+    ).catch((e: unknown) => {
       this.logger.error("Failed to subscribe to metadata updates", e, {
         docId: documentId,
       });
@@ -425,10 +419,7 @@ class FoundryEventServiceImpl implements FoundryEventService {
         clientId: session.clientId,
         clientSupportedVersionRange,
       } satisfies DocumentPresenceSubscriptionRequest),
-    ).then(subscriptionId => {
-      session.presenceSubscriptionId = subscriptionId;
-      return subscriptionId;
-    }).catch((e: unknown) => {
+    ).catch((e: unknown) => {
       this.logger.error("Failed to subscribe to presence updates", e, {
         docId: documentId,
       });
@@ -494,22 +485,26 @@ class FoundryEventServiceImpl implements FoundryEventService {
       internalSession.localYDocUpdateHandler = undefined;
     }
 
-    if (internalSession.activitySubscriptionId) {
-      this.eventService.unsubscribe(internalSession.activitySubscriptionId);
-    }
-
-    if (internalSession.metadataSubscriptionId) {
-      this.eventService.unsubscribe(internalSession.metadataSubscriptionId);
-    }
-
-    if (internalSession.presenceSubscriptionId) {
-      this.eventService.unsubscribe(internalSession.presenceSubscriptionId);
-    }
-
     if (internalSession.documentSubscriptionId) {
       this.eventService.unsubscribe(internalSession.documentSubscriptionId);
-      this.sessions.delete(sessionId);
+      internalSession.documentSubscriptionId = undefined;
     }
+    internalSession.lastRevisionId = undefined;
+    internalSession.yDoc = undefined;
+  }
+
+  unsubscribe(subscriptionId: SubscriptionId): void {
+    this.eventService.unsubscribe(subscriptionId);
+  }
+
+  disposeDocument(documentId: DocumentId): void {
+    const sessionId = this.getSessionId(documentId);
+    const session = this.sessions.get(sessionId);
+    if (session == null) {
+      return;
+    }
+    this.stopDocumentSync(session);
+    this.sessions.delete(sessionId);
   }
 
   private handleDocumentUpdateMessage(

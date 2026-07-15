@@ -25,6 +25,7 @@ import type {
   SearchDocumentsRequest,
 } from "@osdk/foundry.pack";
 import { Documents, DocumentTypes } from "@osdk/foundry.pack";
+import { getAuthModule } from "@palantir/pack.auth";
 import {
   assertNever,
   getOntologyRid,
@@ -61,7 +62,11 @@ import {
   DocumentLiveStatus,
   DocumentLoadStatus,
 } from "@palantir/pack.state.core";
-import type { FoundryEventService, SyncSession } from "@palantir/pack.state.foundry-event";
+import type {
+  FoundryEventService,
+  SubscriptionId,
+  SyncSession,
+} from "@palantir/pack.state.foundry-event";
 import { createFoundryEventService } from "@palantir/pack.state.foundry-event";
 import { getActivityEvent, getPresenceEvent, toChannelError } from "./eventMappers.js";
 
@@ -73,6 +78,15 @@ const EMPTY_DOCUMENT_SECURITY: DocumentSecurity = Object.freeze({
 
 interface FoundryDocumentServiceConfig {
   readonly usePreviewApi?: boolean;
+}
+
+interface ActivitySubscriber {
+  readonly callback: (event: ActivityEvent) => void;
+}
+
+interface PresenceSubscriber {
+  readonly callback: (event: PresenceEvent) => void;
+  readonly ignoreSelfUpdates: boolean;
 }
 
 export function createFoundryDocumentServiceConfig(
@@ -98,7 +112,13 @@ export function internalCreateFoundryDocumentService(
 }
 
 interface FoundryInternalDoc extends InternalYjsDoc {
-  metadataUpdateUnsubscribed?: boolean;
+  activitySubscribers?: Set<ActivitySubscriber>;
+  activitySubscriptionId?: SubscriptionId;
+  dataSubscriptionOpenToken?: object;
+  metadataSubscriptionId?: SubscriptionId;
+  metadataSubscriptionOpenToken?: object;
+  presenceSubscribers?: Set<PresenceSubscriber>;
+  presenceSubscriptionId?: SubscriptionId;
   syncSession?: SyncSession;
 }
 
@@ -248,6 +268,24 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
         preview: this.config.usePreviewApi ?? DEFAULT_USE_PREVIEW_API,
       },
     );
+    const internalDoc = this.documents.get(docRef.id);
+    if (internalDoc != null) {
+      internalDoc.activitySubscribers = undefined;
+      internalDoc.presenceSubscribers = undefined;
+      internalDoc.metadataSubscriptionOpenToken = undefined;
+      for (
+        const subscriptionId of [
+          internalDoc.activitySubscriptionId,
+          internalDoc.metadataSubscriptionId,
+          internalDoc.presenceSubscriptionId,
+        ]
+      ) {
+        if (subscriptionId != null) {
+          this.eventService.unsubscribe(subscriptionId);
+        }
+      }
+    }
+    this.eventService.disposeDocument(docRef.id);
     this.documents.delete(docRef.id);
   };
 
@@ -317,11 +355,15 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
     internalDoc: FoundryInternalDoc,
     docRef: DocumentRef,
   ): void {
-    if (internalDoc.metadataStatus.load !== DocumentLoadStatus.UNLOADED) {
-      throw new Error(
-        `Cannot subscribe to document metadata when status is ${internalDoc.metadataStatus.load}`,
-      );
+    if (
+      internalDoc.metadataSubscriptionOpenToken != null
+      || !this.hasMetadataDemand(internalDoc)
+    ) {
+      return;
     }
+
+    const openToken = {};
+    internalDoc.metadataSubscriptionOpenToken = openToken;
 
     this.updateMetadataStatus(internalDoc, docRef, {
       load: DocumentLoadStatus.LOADING,
@@ -331,7 +373,7 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
       preview: this.config.usePreviewApi ?? DEFAULT_USE_PREVIEW_API,
     })
       .then(document => {
-        if (!this.documents.has(docRef.id)) {
+        if (!this.isMetadataOpenGeneration(internalDoc, docRef, openToken)) {
           return;
         }
         const metadata = getLocalDocumentMetadata(document);
@@ -342,25 +384,13 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
           load: DocumentLoadStatus.LOADED,
         });
 
-        // The metadata channel is for document metadata edits/deletion. Name
-        // and description changes arrive as generic updates; operationalVersion
-        // only refreshes here if it changed by the time this Document is loaded again.
-        this.eventService
-          .subscribeToMetadataUpdates(docRef.id, _event => {
-            if (!internalDoc.metadataUpdateUnsubscribed) {
-              this.refetchMetadata(docRef);
-            }
-          })
-          .catch((e: unknown) => {
-            this.logger.error("Failed to subscribe to metadata updates", e, {
-              docId: docRef.id,
-            });
-          });
+        this.openMetadataUpdatesSubscription(internalDoc, docRef, openToken);
       })
       .catch((e: unknown) => {
-        if (!this.documents.has(docRef.id)) {
+        if (!this.isMetadataOpenGeneration(internalDoc, docRef, openToken)) {
           return;
         }
+        internalDoc.metadataSubscriptionOpenToken = undefined;
         this.updateMetadataStatus(internalDoc, docRef, {
           error: toUnknownChannelError(
             new Error("Failed to load document metadata", { cause: e }),
@@ -370,13 +400,64 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
       });
   }
 
+  private openMetadataUpdatesSubscription(
+    internalDoc: FoundryInternalDoc,
+    docRef: DocumentRef,
+    openToken: object,
+  ): void {
+    this.eventService
+      .subscribeToMetadataUpdates(docRef.id, _event => {
+        if (this.isMetadataOpenGeneration(internalDoc, docRef, openToken)) {
+          this.refetchMetadata(internalDoc, docRef);
+        }
+      })
+      .then(subscriptionId => {
+        if (!this.isMetadataOpenGeneration(internalDoc, docRef, openToken)) {
+          this.eventService.unsubscribe(subscriptionId);
+          return;
+        }
+        internalDoc.metadataSubscriptionId = subscriptionId;
+      })
+      .catch((e: unknown) => {
+        if (!this.isMetadataOpenGeneration(internalDoc, docRef, openToken)) {
+          return;
+        }
+        this.logger.error("Failed to subscribe to metadata updates", e, {
+          docId: docRef.id,
+        });
+      });
+  }
+
+  private hasMetadataDemand(internalDoc: FoundryInternalDoc): boolean {
+    return internalDoc.hasDataSubscriptions || internalDoc.hasMetadataSubscriptions;
+  }
+
+  /**
+   * Checks whether a metadata request's result is still safe to use. It is not safe if the
+   * request was replaced, nobody needs metadata anymore, or the document was recreated.
+   */
+  private isMetadataOpenGeneration(
+    internalDoc: FoundryInternalDoc,
+    docRef: DocumentRef,
+    openToken: object,
+  ): boolean {
+    return this.documents.get(docRef.id) === internalDoc
+      && internalDoc.metadataSubscriptionOpenToken === openToken
+      && this.hasMetadataDemand(internalDoc);
+  }
+
   protected onDataSubscriptionOpened(
     internalDoc: FoundryInternalDoc,
     docRef: DocumentRef,
   ): void {
-    if (internalDoc.syncSession != null) {
+    if (
+      internalDoc.dataSubscriptionOpenToken != null
+      || internalDoc.syncSession != null
+    ) {
       throw new Error("Document data subscription already opened");
     }
+    const openToken = {};
+    internalDoc.dataSubscriptionOpenToken = openToken;
 
     this.updateDataStatus(internalDoc, docRef, {
       load: DocumentLoadStatus.LOADING,
@@ -393,6 +474,7 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
         const currentDoc = this.documents.get(docRef.id);
         if (
           currentDoc !== internalDoc
+          || currentDoc.dataSubscriptionOpenToken !== openToken
           || !currentDoc.hasDataSubscriptions
           || currentDoc.syncSession != null
         ) {
@@ -411,7 +493,11 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
       })
       .catch((e: unknown) => {
         const currentDoc = this.documents.get(docRef.id);
-        if (currentDoc !== internalDoc || !currentDoc.hasDataSubscriptions) {
+        if (
+          currentDoc !== internalDoc
+          || currentDoc.dataSubscriptionOpenToken !== openToken
+          || !currentDoc.hasDataSubscriptions
+        ) {
           return;
         }
         this.updateDataStatus(internalDoc, docRef, {
@@ -425,15 +511,16 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
 
   protected onMetadataSubscriptionClosed(
     internalDoc: FoundryInternalDoc,
-    _docRef: DocumentRef,
+    docRef: DocumentRef,
   ): void {
-    internalDoc.metadataUpdateUnsubscribed = true;
+    this.closeMetadataUpdatesSubscription(internalDoc, docRef);
   }
 
   protected onDataSubscriptionClosed(
     internalDoc: FoundryInternalDoc,
     docRef: DocumentRef,
   ): void {
+    internalDoc.dataSubscriptionOpenToken = undefined;
     if (internalDoc.syncSession) {
       this.eventService.stopDocumentSync(internalDoc.syncSession);
       internalDoc.syncSession = undefined;
@@ -458,62 +545,106 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
         load: DocumentLoadStatus.UNLOADED,
       });
     }
+    this.closeMetadataUpdatesSubscription(internalDoc, docRef);
   }
 
-  // TODO: refcount activity subscribers like data (onStateChange). Each call opens
-  // its own backend subscription, overwriting session.activitySubscriptionId (leaking
-  // the prior subscription), and the shared activityStatus is last-writer-wins so one
-  // subscriber's unsubscribe/error clobbers the status others still rely on. Should
-  // share one backend subscription per doc and only open/close + reset status on first/last subscriber.
+  private closeMetadataUpdatesSubscription(
+    internalDoc: FoundryInternalDoc,
+    docRef: DocumentRef,
+  ): void {
+    if (this.hasMetadataDemand(internalDoc)) {
+      return;
+    }
+    internalDoc.metadataSubscriptionOpenToken = undefined;
+    if (internalDoc.metadataSubscriptionId != null) {
+      this.eventService.unsubscribe(internalDoc.metadataSubscriptionId);
+      internalDoc.metadataSubscriptionId = undefined;
+    }
+    if (internalDoc.metadataStatus.load === DocumentLoadStatus.LOADING) {
+      this.updateMetadataStatus(internalDoc, docRef, {
+        load: DocumentLoadStatus.UNLOADED,
+      });
+    }
+  }
+
   onActivity<T extends DocumentSchema>(
     docRef: DocumentRef<T>,
     callback: (docRef: DocumentRef<T>, event: ActivityEvent) => void,
   ): Unsubscribe {
-    let unsubscribed = false;
-    const unsubscribeFn = () => {
-      unsubscribed = true;
-      // Reset status so a later re-subscribe (e.g. after a version upgrade that
-      // cleared a CLIENT_VERSION_TOO_LOW error) starts clean from UNLOADED.
-      const internalDoc = this.documents.get(docRef.id);
-      if (internalDoc != null) {
-        this.updateActivityStatus(internalDoc, docRef, {
-          load: DocumentLoadStatus.UNLOADED,
-          live: DocumentLiveStatus.DISCONNECTED,
-        });
+    const { internalDoc } = this.getCreateInternalDoc(docRef);
+    const subscriber: ActivitySubscriber = {
+      callback: event => callback(docRef, event),
+    };
+    const subscribers = (internalDoc.activitySubscribers ??= new Set());
+    const isFirstSubscriber = subscribers.size === 0;
+    subscribers.add(subscriber);
+
+    if (isFirstSubscriber) {
+      this.openActivitySubscription(internalDoc, docRef);
+    }
+
+    return () => {
+      const currentDoc = this.documents.get(docRef.id);
+      if (currentDoc?.activitySubscribers == null) {
+        return;
+      }
+      currentDoc.activitySubscribers.delete(subscriber);
+      if (currentDoc.activitySubscribers.size === 0) {
+        this.closeActivitySubscription(currentDoc, docRef);
       }
     };
+  }
+
+  private openActivitySubscription(
+    internalDoc: FoundryInternalDoc,
+    docRef: DocumentRef,
+  ): void {
+    const expectedSubscribers = internalDoc.activitySubscribers;
+    this.updateActivityStatus(internalDoc, docRef, {
+      load: DocumentLoadStatus.LOADING,
+      live: DocumentLiveStatus.CONNECTING,
+    });
 
     this.eventService
       .subscribeToActivityUpdates(
         docRef.id,
         getClientSupportedVersionRange(docRef.schema),
         foundryEvent => {
-          if (unsubscribed) {
+          const currentDoc = this.documents.get(docRef.id);
+          if (
+            expectedSubscribers == null
+            || currentDoc?.activitySubscribers !== expectedSubscribers
+          ) {
             return;
           }
           if (foundryEvent.type === "error") {
-            const internalDoc = this.documents.get(docRef.id);
-            if (internalDoc == null) {
-              return;
-            }
-            this.updateActivityStatus(internalDoc, docRef, {
+            this.updateActivityStatus(currentDoc, docRef, {
               error: toChannelError(foundryEvent),
               load: DocumentLoadStatus.ERROR,
+              live: DocumentLiveStatus.ERROR,
             });
             return;
           }
           const localEvent = getActivityEvent(docRef.schema, foundryEvent);
           if (localEvent != null) {
-            callback(docRef, localEvent);
+            for (const subscriber of currentDoc.activitySubscribers) {
+              subscriber.callback(localEvent);
+            }
           }
         },
       )
-      .then(() => {
-        const internalDoc = this.documents.get(docRef.id);
-        if (unsubscribed || internalDoc == null) {
+      .then(subscriptionId => {
+        const currentDoc = this.documents.get(docRef.id);
+        if (
+          expectedSubscribers == null
+          || expectedSubscribers.size === 0
+          || currentDoc?.activitySubscribers !== expectedSubscribers
+        ) {
+          this.eventService.unsubscribe(subscriptionId);
           return;
         }
-        this.updateActivityStatus(internalDoc, docRef, {
+        currentDoc.activitySubscriptionId = subscriptionId;
+        this.updateActivityStatus(currentDoc, docRef, {
           load: DocumentLoadStatus.LOADED,
           live: DocumentLiveStatus.CONNECTED,
         });
@@ -522,28 +653,48 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
         this.logger.error("Failed to subscribe to activity updates", e, {
           docId: docRef.id,
         });
-        const internalDoc = this.documents.get(docRef.id);
-        if (unsubscribed || internalDoc == null) {
+        const currentDoc = this.documents.get(docRef.id);
+        if (
+          expectedSubscribers == null
+          || currentDoc?.activitySubscribers !== expectedSubscribers
+        ) {
           return;
         }
-        this.updateActivityStatus(internalDoc, docRef, {
+        this.updateActivityStatus(currentDoc, docRef, {
           error: toUnknownChannelError(e),
           load: DocumentLoadStatus.ERROR,
+          live: DocumentLiveStatus.ERROR,
         });
       });
-
-    return unsubscribeFn;
   }
 
-  private refetchMetadata(docRef: DocumentRef): void {
-    if (!this.documents.has(docRef.id)) {
+  private closeActivitySubscription(
+    internalDoc: FoundryInternalDoc,
+    docRef: DocumentRef,
+  ): void {
+    if (internalDoc.activitySubscriptionId != null) {
+      this.eventService.unsubscribe(internalDoc.activitySubscriptionId);
+      internalDoc.activitySubscriptionId = undefined;
+    }
+    internalDoc.activitySubscribers = undefined;
+    this.updateActivityStatus(internalDoc, docRef, {
+      load: DocumentLoadStatus.UNLOADED,
+      live: DocumentLiveStatus.DISCONNECTED,
+    });
+  }
+
+  private refetchMetadata(
+    internalDoc: FoundryInternalDoc,
+    docRef: DocumentRef,
+  ): void {
+    if (this.documents.get(docRef.id) !== internalDoc) {
       return;
     }
     Documents.get(this.app.config.osdkClient, docRef.id, {
       preview: this.config.usePreviewApi ?? DEFAULT_USE_PREVIEW_API,
     })
       .then(document => {
-        if (!this.documents.has(docRef.id)) {
+        if (this.documents.get(docRef.id) !== internalDoc) {
           return;
         }
         const metadata = getLocalDocumentMetadata(document);
@@ -551,7 +702,7 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
         this.updateMetadata(docRef.id, metadata);
       })
       .catch((e: unknown) => {
-        if (!this.documents.has(docRef.id)) {
+        if (this.documents.get(docRef.id) !== internalDoc) {
           return;
         }
         this.logger.error("Failed to refetch document metadata", e, {
@@ -560,62 +711,91 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
       });
   }
 
-  // TODO: refcount presence subscribers like data (onStateChange). Each call opens
-  // its own backend subscription, overwriting session.presenceSubscriptionId (leaking
-  // the prior subscription), and the shared presenceStatus is last-writer-wins so one
-  // subscriber's unsubscribe/error clobbers the status others still rely on. Should
-  // share one backend subscription per doc and only open/close + reset status on first/last subscriber.
   onPresence<T extends DocumentSchema>(
     docRef: DocumentRef<T>,
     callback: (docRef: DocumentRef<T>, event: PresenceEvent) => void,
     options?: PresenceSubscriptionOptions,
   ): Unsubscribe {
-    let unsubscribed = false;
-    const unsubscribeFn = () => {
-      unsubscribed = true;
-      // Reset status so a later re-subscribe (e.g. after a version upgrade that
-      // cleared a CLIENT_VERSION_TOO_LOW error) starts clean from UNLOADED.
-      const internalDoc = this.documents.get(docRef.id);
-      if (internalDoc != null) {
-        this.updatePresenceStatus(internalDoc, docRef, {
-          load: DocumentLoadStatus.UNLOADED,
-          live: DocumentLiveStatus.DISCONNECTED,
-        });
+    const { internalDoc } = this.getCreateInternalDoc(docRef);
+    const subscriber: PresenceSubscriber = {
+      callback: event => callback(docRef, event),
+      ignoreSelfUpdates: options?.ignoreSelfUpdates ?? true,
+    };
+    const subscribers = (internalDoc.presenceSubscribers ??= new Set());
+    const isFirstSubscriber = subscribers.size === 0;
+    subscribers.add(subscriber);
+
+    if (isFirstSubscriber) {
+      this.openPresenceSubscription(internalDoc, docRef);
+    }
+
+    return () => {
+      const currentDoc = this.documents.get(docRef.id);
+      if (currentDoc?.presenceSubscribers == null) {
+        return;
+      }
+      currentDoc.presenceSubscribers.delete(subscriber);
+      if (currentDoc.presenceSubscribers.size === 0) {
+        this.closePresenceSubscription(currentDoc, docRef);
       }
     };
+  }
+
+  private openPresenceSubscription(
+    internalDoc: FoundryInternalDoc,
+    docRef: DocumentRef,
+  ): void {
+    const expectedSubscribers = internalDoc.presenceSubscribers;
+    this.updatePresenceStatus(internalDoc, docRef, {
+      load: DocumentLoadStatus.LOADING,
+      live: DocumentLiveStatus.CONNECTING,
+    });
 
     this.eventService
       .subscribeToPresenceUpdates(
         docRef.id,
         getClientSupportedVersionRange(docRef.schema),
         foundryUpdate => {
-          if (unsubscribed) {
+          const currentDoc = this.documents.get(docRef.id);
+          if (
+            expectedSubscribers == null
+            || currentDoc?.presenceSubscribers !== expectedSubscribers
+          ) {
             return;
           }
           if (foundryUpdate.type === "error") {
-            const internalDoc = this.documents.get(docRef.id);
-            if (internalDoc == null) {
-              return;
-            }
-            this.updatePresenceStatus(internalDoc, docRef, {
+            this.updatePresenceStatus(currentDoc, docRef, {
               error: toChannelError(foundryUpdate),
               load: DocumentLoadStatus.ERROR,
+              live: DocumentLiveStatus.ERROR,
             });
             return;
           }
           const localEvent = getPresenceEvent(docRef.schema, foundryUpdate);
           if (localEvent != null) {
-            callback(docRef, localEvent);
+            const localUserId = getAuthModule(this.app).getCurrentUser(true)?.userId;
+            const isSelfUpdate = localUserId != null && localEvent.userId === localUserId;
+            for (const subscriber of currentDoc.presenceSubscribers) {
+              if (!isSelfUpdate || !subscriber.ignoreSelfUpdates) {
+                subscriber.callback(localEvent);
+              }
+            }
           }
         },
-        options,
+        { ignoreSelfUpdates: false },
       )
-      .then(() => {
-        const internalDoc = this.documents.get(docRef.id);
-        if (unsubscribed || internalDoc == null) {
+      .then(subscriptionId => {
+        const currentDoc = this.documents.get(docRef.id);
+        if (
+          expectedSubscribers == null
+          || expectedSubscribers.size === 0
+          || currentDoc?.presenceSubscribers !== expectedSubscribers
+        ) {
+          this.eventService.unsubscribe(subscriptionId);
           return;
         }
-        this.updatePresenceStatus(internalDoc, docRef, {
+        currentDoc.presenceSubscriptionId = subscriptionId;
+        this.updatePresenceStatus(currentDoc, docRef, {
           load: DocumentLoadStatus.LOADED,
           live: DocumentLiveStatus.CONNECTED,
         });
@@ -624,17 +804,34 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
         this.logger.error("Failed to subscribe to presence updates", e, {
           docId: docRef.id,
         });
-        const internalDoc = this.documents.get(docRef.id);
-        if (unsubscribed || internalDoc == null) {
+        const currentDoc = this.documents.get(docRef.id);
+        if (
+          expectedSubscribers == null
+          || currentDoc?.presenceSubscribers !== expectedSubscribers
+        ) {
           return;
         }
-        this.updatePresenceStatus(internalDoc, docRef, {
+        this.updatePresenceStatus(currentDoc, docRef, {
           error: toUnknownChannelError(e),
           load: DocumentLoadStatus.ERROR,
+          live: DocumentLiveStatus.ERROR,
         });
       });
+  }
 
-    return unsubscribeFn;
+  private closePresenceSubscription(
+    internalDoc: FoundryInternalDoc,
+    docRef: DocumentRef,
+  ): void {
+    if (internalDoc.presenceSubscriptionId != null) {
+      this.eventService.unsubscribe(internalDoc.presenceSubscriptionId);
+      internalDoc.presenceSubscriptionId = undefined;
+    }
+    internalDoc.presenceSubscribers = undefined;
+    this.updatePresenceStatus(internalDoc, docRef, {
+      load: DocumentLoadStatus.UNLOADED,
+      live: DocumentLiveStatus.DISCONNECTED,
+    });
   }
 
   updateCustomPresence<M extends Model>(
