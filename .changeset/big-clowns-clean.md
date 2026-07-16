@@ -1,5 +1,5 @@
 ---
-"@palantir/pack.state.foundry-event": minor
+"@palantir/pack.state.foundry-event": patch
 ---
 
-reduce max message size slightly
+secrets variable name change and regenerate headers
