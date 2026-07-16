@@ -26,6 +26,14 @@ export function cli(args: string[]): void {
     .version("0.0.1")
     .argument("[project-name]", "directory to create the project in")
     .option("-t, --template <template>", "template to use (schema or workspace)")
+    .option(
+      "--first-party",
+      "scaffold a first-party pack (asset-based, com.palantir.pack.* document type)",
+    )
+    .option(
+      "--owning-application-id <id>",
+      "owning application id, written into pack-config.json (first-party only)",
+    )
     .option("--skip-install", "skip dependency installation")
     .option("--verbose", "enable verbose logging")
     .option("--dry-run", "preview without writing files")

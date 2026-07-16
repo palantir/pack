@@ -19,12 +19,32 @@ typed SDK.
 npm install
 ```
 
-## Build the schema IR and asset
+## Build the schema IR
 
 ```bash
 npm run build:ir      # -> build/ir.json
+```
+
+<% if (answers.firstParty) { -%>
+This is a **first-party** pack (document type `<%= answers.documentTypeName %>`). Build the
+document type asset to bundle with your first-party application:
+
+```bash
 npm run build:asset   # -> build/asset.json
 ```
+<% } else { -%>
+This is a **third-party** pack. Deploy the document type to a Foundry stack — set the
+required environment variables first:
+
+```bash
+export FOUNDRY_URL=https://your-stack.palantirfoundry.com
+export FOUNDRY_TOKEN=...                  # a Foundry auth token
+export PARENT_FOLDER_RID=ri.compass...    # target folder for the document type
+# optional: export FILE_SYSTEM_TYPE=ARTIFACTS   # or COMPASS
+
+npm run deploy
+```
+<% } -%>
 
 ## Generate an SDK
 

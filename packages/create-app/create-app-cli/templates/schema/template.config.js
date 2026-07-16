@@ -21,12 +21,6 @@ export default {
       message: "Description?",
       default: "My PACK schema",
     },
-    {
-      type: "input",
-      name: "documentTypeName",
-      message: "Document type name?",
-      default: "My Document Type",
-    },
   ],
 
   templateFiles: ["**/*.ejs"],

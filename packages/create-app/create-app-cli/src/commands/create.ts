@@ -16,6 +16,7 @@
 
 import { createProject, Logger, promptUser } from "@palantir/pack.codegen.core";
 import { findUp } from "find-up";
+import { readFile } from "node:fs/promises";
 import path from "path";
 import { fileURLToPath } from "url";
 
@@ -38,6 +39,8 @@ type TemplateName = (typeof TEMPLATES)[number]["value"];
 
 export interface CreateAppOptions {
   readonly template?: string;
+  readonly firstParty?: boolean;
+  readonly owningApplicationId?: string;
   readonly skipInstall?: boolean;
   readonly verbose?: boolean;
   readonly dryRun?: boolean;
@@ -49,6 +52,15 @@ export interface CreateAppOptions {
 const DEFAULT_PROJECT_NAME = "my-pack-app";
 const DEFAULT_TEMPLATE: TemplateName = "workspace";
 
+/** First-party document types must be named as a `com.palantir.pack.*` reverse-DNS identifier. */
+const FIRST_PARTY_DOC_TYPE_PATTERN = /^com\.palantir\.pack\.[a-z0-9]+(?:\.[a-z0-9]+)*$/;
+const FIRST_PARTY_DOC_TYPE_HINT =
+  "first-party document type names must look like com.palantir.pack.<name> (lowercase, dot-separated)";
+
+function defaultDocumentTypeName(firstParty: boolean): string {
+  return firstParty ? "com.palantir.pack.example.document" : "My Document Type";
+}
+
 async function resolveTemplateDir(template: TemplateName): Promise<string> {
   const packageJsonPath = await findUp("package.json", { cwd: __dirname });
   if (!packageJsonPath) {
@@ -57,20 +69,109 @@ async function resolveTemplateDir(template: TemplateName): Promise<string> {
   return path.join(path.dirname(packageJsonPath), "templates", template);
 }
 
-function nextSteps(template: TemplateName) {
+function nextSteps(template: TemplateName, firstParty: boolean) {
   return ({ projectName, skipInstall }: { projectName: string; skipInstall?: boolean }) => {
     const steps = [`cd ${projectName}`];
     if (skipInstall) {
       steps.push("npm install");
     }
     if (template === "workspace") {
-      steps.push("npm run sdk-gen   # generate the SDK from packages/schema");
-      steps.push("npm run dev       # start the example app");
+      steps.push("npm run sdk-gen    # generate the SDK from packages/schema");
+      steps.push("npm run build:sdk  # compile the generated SDK");
+      steps.push("npm run dev        # start the example app");
+    } else if (firstParty) {
+      steps.push("npm run build:asset   # build the document type asset for your app");
     } else {
-      steps.push("npm run build:asset   # compile the schema to an IR + asset");
+      steps.push(
+        "npm run deploy   # deploy the document type (set FOUNDRY_URL, FOUNDRY_TOKEN, PARENT_FOLDER_RID)",
+      );
     }
     return steps;
   };
+}
+
+async function loadConfigAnswers(configPath: string | undefined): Promise<Record<string, unknown>> {
+  if (!configPath) {
+    return {};
+  }
+  const contents = await readFile(path.resolve(configPath), "utf-8");
+  return JSON.parse(contents) as Record<string, unknown>;
+}
+
+async function resolveFirstParty(
+  options: CreateAppOptions,
+  configAnswers: Record<string, unknown>,
+  nonInteractive: boolean,
+): Promise<boolean> {
+  if (options.firstParty != null) {
+    return options.firstParty;
+  }
+  if (typeof configAnswers.firstParty === "boolean") {
+    return configAnswers.firstParty;
+  }
+  if (nonInteractive) {
+    return false;
+  }
+  const answers = await promptUser([{
+    type: "confirm",
+    name: "firstParty",
+    message: "Is this a first-party pack?",
+    default: false,
+  }]);
+  return answers.firstParty === true;
+}
+
+async function resolveDocumentTypeName(
+  configAnswers: Record<string, unknown>,
+  firstParty: boolean,
+  nonInteractive: boolean,
+): Promise<string> {
+  const provided = configAnswers.documentTypeName;
+  if (typeof provided === "string" && provided.length > 0) {
+    if (firstParty && !FIRST_PARTY_DOC_TYPE_PATTERN.test(provided)) {
+      throw new Error(`Invalid documentTypeName "${provided}": ${FIRST_PARTY_DOC_TYPE_HINT}`);
+    }
+    return provided;
+  }
+  if (nonInteractive) {
+    return defaultDocumentTypeName(firstParty);
+  }
+  const answers = await promptUser([{
+    type: "input",
+    name: "documentTypeName",
+    message: firstParty ? "Document type name (com.palantir.pack.*)?" : "Document type name?",
+    default: defaultDocumentTypeName(firstParty),
+    validate: firstParty
+      ? (input: unknown) =>
+        FIRST_PARTY_DOC_TYPE_PATTERN.test(String(input)) || FIRST_PARTY_DOC_TYPE_HINT
+      : undefined,
+  }]);
+  return String(answers.documentTypeName);
+}
+
+async function resolveOwningApplicationId(
+  options: CreateAppOptions,
+  configAnswers: Record<string, unknown>,
+  nonInteractive: boolean,
+): Promise<string | undefined> {
+  const provided = options.owningApplicationId
+    ?? (typeof configAnswers.owningApplicationId === "string"
+      ? configAnswers.owningApplicationId
+      : undefined);
+  if (provided != null) {
+    return provided.length > 0 ? provided : undefined;
+  }
+  if (nonInteractive) {
+    return undefined;
+  }
+  const answers = await promptUser([{
+    type: "input",
+    name: "owningApplicationId",
+    message: "Owning application id (optional, press enter to skip)?",
+    default: "",
+  }]);
+  const value = String(answers.owningApplicationId).trim();
+  return value.length > 0 ? value : undefined;
 }
 
 export async function createCommand(
@@ -122,19 +223,44 @@ export async function createCommand(
       );
     }
 
+    // Resolve first-party vs third-party inputs. First-party packs build a document
+    // type asset (and may declare an owning application); third-party packs deploy the
+    // document type to a Foundry stack.
+    const configAnswers = await loadConfigAnswers(options.config);
+    const firstParty = await resolveFirstParty(options, configAnswers, nonInteractive);
+    const documentTypeName = await resolveDocumentTypeName(
+      configAnswers,
+      firstParty,
+      nonInteractive,
+    );
+    const owningApplicationId = firstParty
+      ? await resolveOwningApplicationId(options, configAnswers, nonInteractive)
+      : undefined;
+
+    const answers: Record<string, unknown> = {
+      ...configAnswers,
+      firstParty,
+      documentTypeName,
+    };
+    if (owningApplicationId != null) {
+      answers.owningApplicationId = owningApplicationId;
+    } else {
+      delete answers.owningApplicationId;
+    }
+
     const templateDir = await resolveTemplateDir(selected.value);
 
     await createProject(project, {
       template: templateDir,
+      config: answers,
       skipInstall: options.skipInstall,
       verbose: options.verbose,
       dryRun: options.dryRun,
       nonInteractive: options.nonInteractive,
-      config: options.config,
       overwrite: options.overwrite,
       messaging: {
         entity: selected.entity,
-        nextSteps: nextSteps(selected.value),
+        nextSteps: nextSteps(selected.value, firstParty),
       },
     });
   } catch (error) {

@@ -3,5 +3,6 @@
   "description": "<%= answers.description %> SDK",
   "documentTypeName": "<%= answers.documentTypeName %>",
   "documentTypeDescription": "<%= answers.description %>",
-  "minSupportedVersion": 1
+  "minSupportedVersion": 1<% if (answers.owningApplicationId) { %>,
+  "owningApplicationId": "<%= answers.owningApplicationId %>"<% } %>
 }

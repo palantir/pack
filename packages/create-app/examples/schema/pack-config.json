@@ -1,7 +1,0 @@
-{
-  "packageName": "@example/todo.sdk",
-  "description": "Example todo schema SDK",
-  "documentTypeName": "Todo Document Type",
-  "documentTypeDescription": "Example todo schema",
-  "minSupportedVersion": 1
-}

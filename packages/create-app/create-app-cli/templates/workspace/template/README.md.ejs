@@ -47,6 +47,26 @@ Foundry client id, API URL, and ontology RID, then:
 npm run dev
 ```
 
+<% if (answers.firstParty) { -%>
+## Build the document type asset
+
+This is a first-party pack (document type `<%= answers.documentTypeName %>`). Build the asset
+to bundle with your application:
+
+```bash
+npm run build:asset
+```
+<% } else { -%>
+## Deploy the document type
+
+This is a third-party pack. Deploy the document type to a Foundry stack — set
+`FOUNDRY_URL`, `FOUNDRY_TOKEN`, and `PARENT_FOLDER_RID` in your environment first:
+
+```bash
+npm run deploy
+```
+<% } -%>
+
 ## Typical loop
 
 Because there is no orchestrator, remember the dependency order whenever the schema
