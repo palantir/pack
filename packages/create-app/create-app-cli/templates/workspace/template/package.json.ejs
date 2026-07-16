@@ -11,10 +11,9 @@
   "scripts": {
 <% if (answers.firstParty) { -%>
     "build:asset": "npm --workspace packages/schema run build:asset",
-<% } else { -%>
-    "deploy": "npm --workspace packages/schema run deploy",
 <% } -%>
     "build:sdk": "npm --workspace packages/sdk run build",
+    "deploy": "npm --workspace packages/schema run deploy",
     "dev": "npm --workspace packages/app run dev",
     "sdk-gen": "npm --workspace packages/schema run sdk-gen",
     "typecheck": "npm --workspace packages/sdk run typecheck && npm --workspace packages/app run typecheck"

@@ -32,6 +32,18 @@ document type asset to bundle with your first-party application:
 ```bash
 npm run build:asset   # -> build/asset.json
 ```
+
+To iterate against a dev stack before the asset ships, you can deploy the document type
+directly (set the environment variables first):
+
+```bash
+export FOUNDRY_URL=https://your-stack.palantirfoundry.com
+export FOUNDRY_TOKEN=...                # a Foundry auth token
+export ONTOLOGY_RID=ri.ontology...      # target ontology for the first-party deploy
+# optional: export FILE_SYSTEM_TYPE=ARTIFACTS   # or COMPASS
+
+npm run deploy
+```
 <% } else { -%>
 This is a **third-party** pack. Deploy the document type to a Foundry stack — set the
 required environment variables first:

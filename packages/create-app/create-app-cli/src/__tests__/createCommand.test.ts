@@ -220,11 +220,15 @@ describe("create-app createCommand", () => {
     expect(exitSpy).toHaveBeenCalledWith(1);
   });
 
-  it("exits with an error for an invalid first-party document type name", async () => {
+  it.each([
+    "Not Reverse Dns",
+    "com.palantir.pack.task", // only one segment after the prefix
+    "com.example.pack.a.b", // wrong prefix
+  ])("exits with an error for an invalid first-party document type name (%s)", async name => {
     const answersFile = path.join(tmpRoot, "bad-answers.json");
     fs.writeFileSync(
       answersFile,
-      JSON.stringify({ firstParty: true, documentTypeName: "Not Reverse Dns" }),
+      JSON.stringify({ firstParty: true, documentTypeName: name }),
     );
     await createCommand("bad-fp", {
       template: "schema",
@@ -268,13 +272,16 @@ describe("create-app createCommand", () => {
         const schemaPkg = fs.readJSONSync(
           path.join(projectDir, testCase.schemaDir, "package.json"),
         ) as PackageJson;
+        // Every pack can deploy the document type; first-party packs additionally build
+        // an asset (and deploy via the first-party endpoint).
         const schemaScripts = schemaPkg.scripts ?? {};
+        expect(schemaScripts).toHaveProperty("deploy");
         if (testCase.firstParty) {
           expect(schemaScripts).toHaveProperty("build:asset");
-          expect(schemaScripts).not.toHaveProperty("deploy");
+          expect(schemaScripts.deploy).toContain("--first-party");
         } else {
-          expect(schemaScripts).toHaveProperty("deploy");
           expect(schemaScripts).not.toHaveProperty("build:asset");
+          expect(schemaScripts.deploy).toContain("--parent-folder");
         }
 
         // owningApplicationId is written into pack-config.json only for first-party packs.

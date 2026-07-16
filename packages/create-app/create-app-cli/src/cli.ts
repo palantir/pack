@@ -28,7 +28,7 @@ export function cli(args: string[]): void {
     .option("-t, --template <template>", "template to use (schema or workspace)")
     .option(
       "--first-party",
-      "scaffold a first-party pack (asset-based, com.palantir.pack.* document type)",
+      "scaffold a first-party pack (asset-based, com.palantir.pack.<asset>.<name> document type)",
     )
     .option(
       "--owning-application-id <id>",

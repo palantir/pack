@@ -52,10 +52,15 @@ export interface CreateAppOptions {
 const DEFAULT_PROJECT_NAME = "my-pack-app";
 const DEFAULT_TEMPLATE: TemplateName = "workspace";
 
-/** First-party document types must be named as a `com.palantir.pack.*` reverse-DNS identifier. */
-const FIRST_PARTY_DOC_TYPE_PATTERN = /^com\.palantir\.pack\.[a-z0-9]+(?:\.[a-z0-9]+)*$/;
+/**
+ * First-party document types follow the backpack `com.palantir.pack.<asset>.<name>`
+ * convention: the `com.palantir.pack.` prefix plus at least two dot-separated segments.
+ */
+const FIRST_PARTY_DOC_TYPE_PATTERN = /^com\.palantir\.pack\.[a-z0-9-]+(?:\.[a-z0-9-]+)+$/;
 const FIRST_PARTY_DOC_TYPE_HINT =
-  "first-party document type names must look like com.palantir.pack.<name> (lowercase, dot-separated)";
+  "first-party document type names must look like com.palantir.pack.<asset>.<name> "
+  + "(e.g. com.palantir.pack.example.document; lowercase, dot-separated, at least two "
+  + "segments after the prefix)";
 
 function defaultDocumentTypeName(firstParty: boolean): string {
   return firstParty ? "com.palantir.pack.example.document" : "My Document Type";
@@ -139,7 +144,9 @@ async function resolveDocumentTypeName(
   const answers = await promptUser([{
     type: "input",
     name: "documentTypeName",
-    message: firstParty ? "Document type name (com.palantir.pack.*)?" : "Document type name?",
+    message: firstParty
+      ? "Document type name (com.palantir.pack.<asset>.<name>)?"
+      : "Document type name?",
     default: defaultDocumentTypeName(firstParty),
     validate: firstParty
       ? (input: unknown) =>

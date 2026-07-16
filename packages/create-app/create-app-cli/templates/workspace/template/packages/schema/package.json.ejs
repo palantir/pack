@@ -9,6 +9,7 @@
     "build:ir": "type-gen schema ir -i src/schema.mjs -o build/ir.json --config pack-config.json",
 <% if (answers.firstParty) { -%>
     "build:asset": "npm run build:ir && type-gen ir asset -i build/ir.json -o build/asset.json",
+    "deploy": "npm run build:ir && type-gen ir deploy --ir build/ir.json --base-url $FOUNDRY_URL --auth $FOUNDRY_TOKEN --first-party --ontology-rid $ONTOLOGY_RID --file-system-type ${FILE_SYSTEM_TYPE:-ARTIFACTS}",
 <% } else { -%>
     "deploy": "npm run build:ir && type-gen ir deploy --ir build/ir.json --base-url $FOUNDRY_URL --auth $FOUNDRY_TOKEN --parent-folder $PARENT_FOLDER_RID --file-system-type ${FILE_SYSTEM_TYPE:-ARTIFACTS}",
 <% } -%>
