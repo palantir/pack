@@ -1,5 +1,11 @@
 # @palantir/pack.document-schema.type-gen
 
+## 0.20.0
+
+### Minor Changes
+
+- 931c9a4: regenerate headers
+
 ## 0.19.0
 
 ### Minor Changes
