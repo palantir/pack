@@ -17,6 +17,7 @@
 import type {
   ActivityCollaborativeUpdate,
   Document,
+  DocumentMetadataUpdate,
   PresenceCollaborativeUpdate,
 } from "@osdk/foundry.pack";
 import { Documents } from "@osdk/foundry.pack";
@@ -45,6 +46,7 @@ vi.mock("@osdk/foundry.pack", () => ({
 }));
 
 const mockAuthModule = {
+  getCurrentUser: vi.fn().mockReturnValue({ userId: "local-user" }),
   onTokenChange: vi.fn(),
   getToken: vi.fn().mockReturnValue("mock-token"),
 };
@@ -257,6 +259,83 @@ describe("Foundry Document Status Tracking", () => {
 
       await expect(service.waitForMetadataLoad(docRef)).resolves.toBeUndefined();
     });
+
+    it("should refresh and reopen metadata when a new subscriber joins", async () => {
+      mockEventService.subscribeToMetadataUpdates
+        .mockResolvedValueOnce("metadata-sub-1" as SubscriptionId)
+        .mockResolvedValueOnce("metadata-sub-2" as SubscriptionId);
+      const docRef = createDocRef(mockApp, "test-doc-metadata-reopen" as DocumentId, testSchema);
+
+      const unsubscribeFirst = service.onMetadataChange(docRef, () => {});
+      await vi.runAllTimersAsync();
+      unsubscribeFirst();
+
+      expect(mockEventService.unsubscribe).toHaveBeenCalledWith("metadata-sub-1");
+
+      vi.mocked(Documents.get).mockClear();
+      const unsubscribeSecond = service.onMetadataChange(docRef, () => {});
+      await vi.runAllTimersAsync();
+
+      expect(Documents.get).toHaveBeenCalledTimes(1);
+      expect(mockEventService.subscribeToMetadataUpdates).toHaveBeenCalledTimes(2);
+
+      unsubscribeSecond();
+      expect(mockEventService.unsubscribe).toHaveBeenCalledWith("metadata-sub-2");
+    });
+
+    it("should discard a metadata subscription that resolves after demand closes", async () => {
+      let resolveSubscription: (subscriptionId: SubscriptionId) => void = () => {};
+      mockEventService.subscribeToMetadataUpdates.mockImplementationOnce(
+        () =>
+          new Promise(resolve => {
+            resolveSubscription = resolve;
+          }),
+      );
+      const docRef = createDocRef(mockApp, "test-doc-metadata-stale" as DocumentId, testSchema);
+
+      const unsubscribe = service.onMetadataChange(docRef, () => {});
+      await vi.runAllTimersAsync();
+      unsubscribe();
+
+      resolveSubscription("stale-metadata-sub" as SubscriptionId);
+      await vi.runAllTimersAsync();
+
+      expect(mockEventService.unsubscribe).toHaveBeenCalledWith("stale-metadata-sub");
+    });
+
+    it("should discard a metadata refetch from a deleted document generation", async () => {
+      let metadataUpdateCallback: (update: DocumentMetadataUpdate) => void = () => {};
+      mockEventService.subscribeToMetadataUpdates.mockImplementation(
+        (_documentId, callback) => {
+          metadataUpdateCallback = callback;
+          return Promise.resolve("metadata-sub" as SubscriptionId);
+        },
+      );
+      const docRef = createDocRef(mockApp, "test-doc-metadata-refetch" as DocumentId, testSchema);
+      service.onMetadataChange(docRef, () => {});
+      await vi.runAllTimersAsync();
+
+      let resolveRefetch: (document: Document) => void = () => {};
+      vi.mocked(Documents.get).mockReturnValueOnce(
+        new Promise(resolve => {
+          resolveRefetch = resolve;
+        }),
+      );
+      metadataUpdateCallback({} as DocumentMetadataUpdate);
+
+      await service.deleteDocument(docRef);
+      const recreatedDocRef = service.createDocRef(docRef.id, testSchema);
+      const names: string[] = [];
+      service.onMetadataChange(recreatedDocRef, (_ref, metadata) => {
+        names.push(metadata.name);
+      });
+      await vi.runAllTimersAsync();
+
+      resolveRefetch({ ...mockDocument, name: "Stale name" });
+      await vi.runAllTimersAsync();
+
+      expect(names).not.toContain("Stale name");
+    });
   });
 
   describe("websocket data loading", () => {
@@ -323,12 +402,27 @@ describe("Foundry Document Status Tracking", () => {
     });
 
     it("should handle fast unsubscribe before websocket data sync starts", async () => {
+      let resolveMetadata: (document: Document) => void = () => {};
+      vi.mocked(Documents.get).mockReturnValueOnce(
+        new Promise(resolve => {
+          resolveMetadata = resolve;
+        }),
+      );
       const docRef = createDocRef(mockApp, "test-doc-13" as DocumentId, testSchema);
+      const statusUpdates: DocumentStatus[] = [];
+      unsubscribes.push(service.onStatusChange(docRef, (_, status) => {
+        statusUpdates.push(status);
+      }));
 
       const unsubscribeState = service.onStateChange(docRef, () => {});
+      const metadataWait = service.waitForMetadataLoad(docRef);
 
       unsubscribeState();
 
+      expect(statusUpdates.at(-1)?.metadata.load).toBe(DocumentLoadStatus.UNLOADED);
+      await expect(metadataWait).rejects.toThrow("Metadata load canceled");
+
+      resolveMetadata(mockDocument);
       await vi.runAllTimersAsync();
 
       expect(mockEventService.startDocumentSync).not.toHaveBeenCalled();
@@ -338,6 +432,45 @@ describe("Foundry Document Status Tracking", () => {
       await vi.runAllTimersAsync();
 
       expect(mockEventService.startDocumentSync).toHaveBeenCalled();
+    });
+
+    it("should not let a canceled metadata wait fail reopened data", async () => {
+      let resolveFirst: (document: Document) => void = () => {};
+      let resolveSecond: (document: Document) => void = () => {};
+      vi.mocked(Documents.get)
+        .mockImplementationOnce(() =>
+          new Promise(resolve => {
+            resolveFirst = resolve;
+          })
+        )
+        .mockImplementationOnce(() =>
+          new Promise(resolve => {
+            resolveSecond = resolve;
+          })
+        );
+      const docRef = createDocRef(mockApp, "test-doc-data-reopen-race" as DocumentId, testSchema);
+      const statusUpdates: DocumentStatus[] = [];
+      unsubscribes.push(service.onStatusChange(docRef, (_, status) => {
+        statusUpdates.push(status);
+      }));
+
+      const unsubscribeFirst = service.onStateChange(docRef, () => {});
+      unsubscribeFirst();
+      unsubscribes.push(service.onStateChange(docRef, () => {}));
+      await vi.runAllTimersAsync();
+
+      expect(statusUpdates.at(-1)?.data.load).toBe(DocumentLoadStatus.LOADING);
+
+      resolveSecond(mockDocument);
+      await vi.runAllTimersAsync();
+
+      expect(mockEventService.startDocumentSync).toHaveBeenCalledTimes(1);
+      expect(statusUpdates.at(-1)?.data.load).toBe(DocumentLoadStatus.LOADED);
+
+      resolveFirst(mockDocument);
+      await vi.runAllTimersAsync();
+
+      expect(mockEventService.startDocumentSync).toHaveBeenCalledTimes(1);
     });
 
     it("should reopen websocket data sync after loaded subscription closes", async () => {
@@ -357,6 +490,39 @@ describe("Foundry Document Status Tracking", () => {
       await vi.runAllTimersAsync();
 
       expect(mockEventService.startDocumentSync).toHaveBeenCalledTimes(2);
+    });
+
+    it("should close data-owned metadata updates with the last data subscriber", async () => {
+      mockEventService.subscribeToMetadataUpdates.mockResolvedValueOnce(
+        "data-metadata-sub" as SubscriptionId,
+      );
+      const docRef = createDocRef(mockApp, "test-doc-data-metadata" as DocumentId, testSchema);
+
+      const unsubscribeState = service.onStateChange(docRef, () => {});
+      await vi.runAllTimersAsync();
+      unsubscribeState();
+
+      expect(mockEventService.unsubscribe).toHaveBeenCalledWith("data-metadata-sub");
+    });
+
+    it("should keep metadata updates while an explicit subscriber remains", async () => {
+      mockEventService.subscribeToMetadataUpdates.mockResolvedValueOnce(
+        "shared-metadata-sub" as SubscriptionId,
+      );
+      const docRef = createDocRef(mockApp, "test-doc-shared-metadata" as DocumentId, testSchema);
+
+      const unsubscribeMetadata = service.onMetadataChange(docRef, () => {});
+      const unsubscribeState = service.onStateChange(docRef, () => {});
+      await vi.runAllTimersAsync();
+
+      mockEventService.unsubscribe.mockClear();
+      unsubscribeState();
+
+      expect(mockEventService.stopDocumentSync).toHaveBeenCalled();
+      expect(mockEventService.unsubscribe).not.toHaveBeenCalledWith("shared-metadata-sub");
+
+      unsubscribeMetadata();
+      expect(mockEventService.unsubscribe).toHaveBeenCalledWith("shared-metadata-sub");
     });
 
     it("should retry metadata load after data-open metadata failure", async () => {
@@ -406,6 +572,31 @@ describe("Foundry Document Status Tracking", () => {
       await vi.runAllTimersAsync();
 
       expect(mockEventService.startDocumentSync).not.toHaveBeenCalled();
+    });
+
+    it("should dispose every active document channel after deletion", async () => {
+      mockEventService.subscribeToMetadataUpdates.mockResolvedValueOnce(
+        "delete-metadata-sub" as SubscriptionId,
+      );
+      mockEventService.subscribeToActivityUpdates.mockResolvedValueOnce(
+        "delete-activity-sub" as SubscriptionId,
+      );
+      mockEventService.subscribeToPresenceUpdates.mockResolvedValueOnce(
+        "delete-presence-sub" as SubscriptionId,
+      );
+      const docRef = createDocRef(mockApp, "test-doc-delete-active" as DocumentId, testSchema);
+
+      service.onStateChange(docRef, () => {});
+      service.onActivity(docRef, () => {});
+      service.onPresence(docRef, () => {});
+      await vi.runAllTimersAsync();
+
+      await service.deleteDocument(docRef);
+
+      expect(mockEventService.unsubscribe).toHaveBeenCalledWith("delete-metadata-sub");
+      expect(mockEventService.unsubscribe).toHaveBeenCalledWith("delete-activity-sub");
+      expect(mockEventService.unsubscribe).toHaveBeenCalledWith("delete-presence-sub");
+      expect(mockEventService.disposeDocument).toHaveBeenCalledWith(docRef.id);
     });
 
     it("should handle websocket subscription errors and update data status to ERROR", async () => {
@@ -572,6 +763,103 @@ describe("Foundry Document Status Tracking", () => {
       expect(statusUpdates.at(-1)?.activity.load).toBe(DocumentLoadStatus.UNLOADED);
       expect(statusUpdates.at(-1)?.activity.error).toBeUndefined();
     });
+
+    it("should share activity updates until the last subscriber leaves", async () => {
+      let activityCallback: (event: ActivityCollaborativeUpdate) => void = () => {};
+      mockEventService.subscribeToActivityUpdates.mockImplementationOnce(
+        (_documentId, _range, callback) => {
+          activityCallback = callback;
+          return Promise.resolve("activity-sub-id" as SubscriptionId);
+        },
+      );
+
+      const docRef = createDocRef(mockApp, "test-doc-activity-shared" as DocumentId, testSchema);
+      const callbackA = vi.fn();
+      const callbackB = vi.fn();
+      const unsubscribeA = service.onActivity(docRef, callbackA);
+      const unsubscribeB = service.onActivity(docRef, callbackB);
+      await vi.runAllTimersAsync();
+
+      expect(mockEventService.subscribeToActivityUpdates).toHaveBeenCalledTimes(1);
+
+      const activityUpdate = {
+        type: "activityCreated",
+        activityEvent: {
+          aggregationKey: "test-doc-activity-shared",
+          createdBy: "other-user",
+          createdTime: "2025-01-01T00:00:00Z",
+          eventData: { type: "documentCreate", name: "Test Document" },
+          eventId: "activity-event-1",
+          isRead: false,
+        },
+      } as unknown as ActivityCollaborativeUpdate;
+      activityCallback(activityUpdate);
+
+      expect(callbackA).toHaveBeenCalledTimes(1);
+      expect(callbackB).toHaveBeenCalledTimes(1);
+
+      unsubscribeA();
+      expect(mockEventService.unsubscribe).not.toHaveBeenCalled();
+
+      activityCallback(activityUpdate);
+      expect(callbackA).toHaveBeenCalledTimes(1);
+      expect(callbackB).toHaveBeenCalledTimes(2);
+
+      unsubscribeB();
+      expect(mockEventService.unsubscribe).toHaveBeenCalledWith("activity-sub-id");
+    });
+
+    it("should discard an activity subscription from an obsolete subscriber generation", async () => {
+      let resolveFirst: (subscriptionId: SubscriptionId) => void = () => {};
+      let resolveSecond: (subscriptionId: SubscriptionId) => void = () => {};
+      const activityCallbacks: Array<(event: ActivityCollaborativeUpdate) => void> = [];
+      mockEventService.subscribeToActivityUpdates
+        .mockImplementationOnce((_documentId, _range, callback) => {
+          activityCallbacks.push(callback);
+          return new Promise(resolve => {
+            resolveFirst = resolve;
+          });
+        })
+        .mockImplementationOnce((_documentId, _range, callback) => {
+          activityCallbacks.push(callback);
+          return new Promise(resolve => {
+            resolveSecond = resolve;
+          });
+        });
+
+      const docRef = createDocRef(mockApp, "test-doc-activity-stale" as DocumentId, testSchema);
+      const callback = vi.fn();
+      const unsubscribeFirst = service.onActivity(docRef, callback);
+      unsubscribeFirst();
+      const unsubscribeSecond = service.onActivity(docRef, callback);
+
+      resolveFirst("old-activity-sub-id" as SubscriptionId);
+      await vi.runAllTimersAsync();
+
+      expect(mockEventService.unsubscribe).toHaveBeenCalledWith("old-activity-sub-id");
+
+      const activityUpdate = {
+        type: "activityCreated",
+        activityEvent: {
+          aggregationKey: "test-doc-activity-stale",
+          createdBy: "other-user",
+          createdTime: "2025-01-01T00:00:00Z",
+          eventData: { type: "documentCreate", name: "Test Document" },
+          eventId: "activity-event-1",
+          isRead: false,
+        },
+      } as unknown as ActivityCollaborativeUpdate;
+      activityCallbacks[0]?.(activityUpdate);
+      expect(callback).not.toHaveBeenCalled();
+
+      resolveSecond("new-activity-sub-id" as SubscriptionId);
+      await vi.runAllTimersAsync();
+      activityCallbacks[1]?.(activityUpdate);
+      expect(callback).toHaveBeenCalledTimes(1);
+
+      unsubscribeSecond();
+      expect(mockEventService.unsubscribe).toHaveBeenCalledWith("new-activity-sub-id");
+    });
   });
 
   describe("presence channel status", () => {
@@ -642,6 +930,87 @@ describe("Foundry Document Status Tracking", () => {
 
       expect(statusUpdates.at(-1)?.presence.load).toBe(DocumentLoadStatus.UNLOADED);
       expect(statusUpdates.at(-1)?.presence.error).toBeUndefined();
+    });
+
+    it("should share presence updates with per-subscriber self filtering", async () => {
+      let presenceCallback: (update: PresenceCollaborativeUpdate) => void = () => {};
+      mockEventService.subscribeToPresenceUpdates.mockImplementationOnce(
+        (_documentId, _range, callback, options) => {
+          presenceCallback = callback;
+          expect(options?.ignoreSelfUpdates).toBe(false);
+          return Promise.resolve("presence-sub-id" as SubscriptionId);
+        },
+      );
+
+      const docRef = createDocRef(mockApp, "test-doc-presence-shared" as DocumentId, testSchema);
+      const callbackA = vi.fn();
+      const callbackB = vi.fn();
+      const unsubscribeA = service.onPresence(docRef, callbackA);
+      const unsubscribeB = service.onPresence(docRef, callbackB, { ignoreSelfUpdates: false });
+      await vi.runAllTimersAsync();
+
+      expect(mockEventService.subscribeToPresenceUpdates).toHaveBeenCalledTimes(1);
+
+      presenceCallback({
+        type: "presenceChangeEvent",
+        userId: "local-user",
+        status: "PRESENT",
+      } as unknown as PresenceCollaborativeUpdate);
+
+      expect(callbackA).not.toHaveBeenCalled();
+      expect(callbackB).toHaveBeenCalledTimes(1);
+
+      unsubscribeA();
+      expect(mockEventService.unsubscribe).not.toHaveBeenCalled();
+
+      unsubscribeB();
+      expect(mockEventService.unsubscribe).toHaveBeenCalledWith("presence-sub-id");
+    });
+
+    it("should discard a presence subscription from an obsolete subscriber generation", async () => {
+      let resolveFirst: (subscriptionId: SubscriptionId) => void = () => {};
+      let resolveSecond: (subscriptionId: SubscriptionId) => void = () => {};
+      const presenceCallbacks: Array<(update: PresenceCollaborativeUpdate) => void> = [];
+      mockEventService.subscribeToPresenceUpdates
+        .mockImplementationOnce((_documentId, _range, callback) => {
+          presenceCallbacks.push(callback);
+          return new Promise(resolve => {
+            resolveFirst = resolve;
+          });
+        })
+        .mockImplementationOnce((_documentId, _range, callback) => {
+          presenceCallbacks.push(callback);
+          return new Promise(resolve => {
+            resolveSecond = resolve;
+          });
+        });
+
+      const docRef = createDocRef(mockApp, "test-doc-presence-stale" as DocumentId, testSchema);
+      const callback = vi.fn();
+      const unsubscribeFirst = service.onPresence(docRef, callback);
+      unsubscribeFirst();
+      const unsubscribeSecond = service.onPresence(docRef, callback);
+
+      resolveFirst("old-presence-sub-id" as SubscriptionId);
+      await vi.runAllTimersAsync();
+
+      expect(mockEventService.unsubscribe).toHaveBeenCalledWith("old-presence-sub-id");
+
+      const presenceUpdate = {
+        type: "presenceChangeEvent",
+        userId: "other-user",
+        status: "PRESENT",
+      } as unknown as PresenceCollaborativeUpdate;
+      presenceCallbacks[0]?.(presenceUpdate);
+      expect(callback).not.toHaveBeenCalled();
+
+      resolveSecond("new-presence-sub-id" as SubscriptionId);
+      await vi.runAllTimersAsync();
+      presenceCallbacks[1]?.(presenceUpdate);
+      expect(callback).toHaveBeenCalledTimes(1);
+
+      unsubscribeSecond();
+      expect(mockEventService.unsubscribe).toHaveBeenCalledWith("new-presence-sub-id");
     });
   });
 

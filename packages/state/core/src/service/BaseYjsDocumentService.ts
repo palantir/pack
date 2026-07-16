@@ -205,17 +205,9 @@ export abstract class BaseYjsDocumentService<TDoc extends InternalYjsDoc = Inter
       ?? schemaMeta.version;
   };
 
-  /**
-   * Ensures document metadata (the source of `operationalVersion`, and thus
-   * `docRef.version`) is loaded whenever document data is loaded. Without this,
-   * a component that only subscribes to data (e.g. via useRecords) would leave
-   * docRef.version stuck on the bundled schema fallback. Idempotent: gated on
-   * load status, so it's a no-op if a metadata subscriber already triggered it.
-   */
+  /** Ensures metadata loading and any backing subscription needed by data. */
   protected ensureMetadataLoaded(internalDoc: TDoc, docRef: DocumentRef): void {
-    if (internalDoc.metadataStatus.load === DocumentLoadStatus.UNLOADED) {
-      this.onMetadataSubscriptionOpened(internalDoc, docRef);
-    }
+    this.onMetadataSubscriptionOpened(internalDoc, docRef);
   }
 
   readonly createDocRef = <const T extends DocumentSchema>(
@@ -675,8 +667,7 @@ export abstract class BaseYjsDocumentService<TDoc extends InternalYjsDoc = Inter
     internalDoc.metadataSubscribers.add(callback as DocumentMetadataChangeCallback);
     internalDoc.hasMetadataSubscriptions = true;
 
-    // Trigger remote load if this is the first subscription and not yet loaded
-    if (isFirstSubscription && internalDoc.metadataStatus.load === DocumentLoadStatus.UNLOADED) {
+    if (isFirstSubscription) {
       this.onMetadataSubscriptionOpened(internalDoc, internalDocRef);
     }
 
@@ -1403,13 +1394,26 @@ export abstract class BaseYjsDocumentService<TDoc extends InternalYjsDoc = Inter
 
     // Wait for status to change to LOADED or ERROR
     return new Promise((resolve, reject) => {
+      let hasStartedLoading = internalDoc.metadataStatus.load === DocumentLoadStatus.LOADING;
       const unsubscribe = this.onStatusChange(docRef, (_, status) => {
-        if (status.metadata.load === DocumentLoadStatus.LOADED) {
-          unsubscribe();
-          resolve();
-        } else if (status.metadata.load === DocumentLoadStatus.ERROR) {
-          unsubscribe();
-          reject(new Error("Metadata load error", { cause: status.metadata.error }));
+        switch (status.metadata.load) {
+          case DocumentLoadStatus.LOADING:
+            hasStartedLoading = true;
+            break;
+          case DocumentLoadStatus.LOADED:
+            unsubscribe();
+            resolve();
+            break;
+          case DocumentLoadStatus.ERROR:
+            unsubscribe();
+            reject(new Error("Metadata load error", { cause: status.metadata.error }));
+            break;
+          case DocumentLoadStatus.UNLOADED:
+            if (hasStartedLoading) {
+              unsubscribe();
+              reject(new Error("Metadata load canceled"));
+            }
+            break;
         }
       });
     });
