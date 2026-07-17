@@ -7,7 +7,7 @@ on:
   push:
     branches:
       - main
-      - release/*
+      - release/**
       - next
 
 concurrency: ${{ github.workflow }}-${{ github.ref }}
