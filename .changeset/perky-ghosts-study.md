@@ -1,5 +1,5 @@
 ---
-"@palantir/pack.state.foundry-event": minor
+"@palantir/pack.state.foundry-event": patch
 ---
 
 increase cometd max message size
