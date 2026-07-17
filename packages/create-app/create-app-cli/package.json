@@ -1,0 +1,56 @@
+{
+  "name": "@palantir/pack.create-app",
+  "version": "0.1.0",
+  "description": "Scaffold Palantir PACK schema packages and application starters",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/palantir/pack.git"
+  },
+  "bin": {
+    "create-pack-app": "./bin/cli-node.js"
+  },
+  "exports": {
+    ".": {
+      "types": "./build/types/index.d.ts",
+      "default": "./build/esm/index.js"
+    }
+  },
+  "scripts": {
+    "clean": "rimraf .turbo build dist lib test-output *.tgz tsconfig.tsbuildinfo",
+    "lint": "eslint ./src && dprint check --config $(find-up dprint.json) --allow-no-files",
+    "lint:fix": "eslint ./src --fix && dprint fmt --config $(find-up dprint.json) --allow-no-files",
+    "test": "vitest run --passWithNoTests -u",
+    "test:watch": "vitest --passWithNoTests",
+    "transpile": "tsc",
+    "transpileEsm": "monorepo-transpile -f esm -m normal -t node",
+    "transpileTypes": "tsc --emitDeclarationOnly",
+    "typecheck": "tsc --noEmit --emitDeclarationOnly false"
+  },
+  "dependencies": {
+    "@palantir/pack.codegen.core": "workspace:*",
+    "commander": "catalog:",
+    "find-up": "catalog:"
+  },
+  "devDependencies": {
+    "@palantir/pack.monorepo.tsconfig": "workspace:~",
+    "@types/fs-extra": "catalog:",
+    "@types/node": "catalog:",
+    "fs-extra": "catalog:",
+    "prettier": "catalog:",
+    "rimraf": "catalog:",
+    "tslib": "catalog:",
+    "typescript": "catalog:"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "files": [
+    "bin",
+    "build",
+    "templates"
+  ],
+  "main": "./build/esm/index.js",
+  "types": "./build/types/index.d.ts",
+  "type": "module"
+}

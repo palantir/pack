@@ -1,0 +1,76 @@
+# <%= answers.packageName %>
+
+<%= answers.description %>
+
+This is a standalone [Palantir PACK](https://github.com/palantir/pack) **schema
+package**. It defines a document schema and produces the intermediate
+representation (IR) and asset used to deploy a document type and generate a
+typed SDK.
+
+## Layout
+
+- `src/schema.mjs` — the schema definition, authored with `@palantir/pack.schema`.
+- `pack-config.json` — code-generation config (SDK package name, document type name).
+- `scripts/build-sdk.sh` — regenerates a typed SDK from the schema IR.
+
+## Getting started
+
+```bash
+npm install
+```
+
+## Build the schema IR
+
+```bash
+npm run build:ir      # -> build/ir.json
+```
+
+<% if (answers.firstParty) { -%>
+This is a **first-party** pack (document type `<%= answers.documentTypeName %>`). Build the
+document type asset to bundle with your first-party application:
+
+```bash
+npm run build:asset   # -> build/asset.json
+```
+
+To iterate against a dev stack before the asset ships, you can deploy the document type
+directly (set the environment variables first):
+
+```bash
+export FOUNDRY_URL=https://your-stack.palantirfoundry.com
+export FOUNDRY_TOKEN=...                # a Foundry auth token
+export ONTOLOGY_RID=ri.ontology...      # target ontology for the first-party deploy
+# optional: export FILE_SYSTEM_TYPE=ARTIFACTS   # or COMPASS
+
+npm run deploy
+```
+<% } else { -%>
+This is a **third-party** pack. Deploy the document type to a Foundry stack — set the
+required environment variables first:
+
+```bash
+export FOUNDRY_URL=https://your-stack.palantirfoundry.com
+export FOUNDRY_TOKEN=...                  # a Foundry auth token
+export PARENT_FOLDER_RID=ri.compass...    # target folder for the document type
+# optional: export FILE_SYSTEM_TYPE=ARTIFACTS   # or COMPASS
+
+npm run deploy
+```
+<% } -%>
+
+## Generate an SDK
+
+`sdk-gen` compiles the schema and runs the SDK generator. By default it writes to
+a sibling `../sdk` directory; pass a different path as the first argument (or edit
+`scripts/build-sdk.sh`) to target your SDK package.
+
+```bash
+npm run sdk-gen              # generates into ../sdk
+# or
+bash scripts/build-sdk.sh ../packages/sdk
+```
+
+## Evolving the schema
+
+Add records to the map passed to `S.defineSchema(...)`, or introduce new versions
+with `S.nextSchema(previous).addSchemaUpdate(...)` to migrate existing data.
