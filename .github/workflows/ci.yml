@@ -74,7 +74,47 @@ jobs:
           pnpm exec changeset status --since=main
 
   build:
-    name: Build and Test
+    name: Build, Typecheck and Lint
+    timeout-minutes: 20
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          fetch-depth: 2
+
+      - name: Cache turbo build setup
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: .turbo
+          key: ${{ runner.os }}-turbo-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-turbo-
+
+      - uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6.0.9
+
+      - name: Setup Node.js environment
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 22
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install
+
+      # Node-version-independent checks run once here; tests run across the
+      # Node matrix in the separate "test" job. cspell has its own job.
+      - name: Build, typecheck, lint and monorepolint
+        run: pnpm exec turbo run build typecheck lint mrl:check
+
+      - name: Verify nothing changed
+        run: git diff --exit-code
+
+      - name: Verify nothing added
+        run: u="$(git ls-files --others --exclude-standard)" && test -z "$u"
+
+  test:
+    name: Test
     timeout-minutes: 20
     runs-on: ubuntu-latest
     permissions:
@@ -110,18 +150,8 @@ jobs:
       - name: Install dependencies
         run: pnpm install
 
-      - name: Transpile, typecheck, Lint and test
-        run: pnpm check
-
-      # catches some of the examples that don't have transpile/typecheck tasks
-      - name: Build
-        run: pnpm build
-
-      - name: Verify nothing changed
-        run: git diff --exit-code
-
-      - name: Verify nothing added
-        run: u="$(git ls-files --others --exclude-standard)" && test -z "$u"
+      - name: Test
+        run: pnpm exec turbo run test
 
   e2e:
     name: E2E Tests
