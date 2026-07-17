@@ -1,5 +1,11 @@
 # @palantir/pack.app
 
+## 0.19.1
+
+### Patch Changes
+
+- @palantir/pack.state.foundry@0.21.1
+
 ## 0.19.0
 
 ### Patch Changes
