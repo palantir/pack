@@ -1,5 +1,58 @@
 # @palantir/pack.document-schema.type-gen
 
+## 0.20.0
+
+### Minor Changes
+
+- 931c9a4: regenerate headers
+
+## 0.19.0
+
+### Minor Changes
+
+- 9e9b29d: Include `owningApplicationId` when deploying a first-party document type via `ir deploy --first-party`. When set in `pack-config.json`, the value now flows through the IR chain payload into the `createFirstParty` request body, matching the existing `ir asset` behavior.
+
+## 0.18.0
+
+### Minor Changes
+
+- 4fef953: Include `owningApplicationId` in the generated document type asset. When set in `pack-config.json`, the value flows through `schema ir` into the IR chain payload and `ir asset` writes it onto the `DocumentTypeAsset`.
+
+## 0.17.0
+
+### Minor Changes
+
+- 6e3062b: Bump `@osdk/foundry.pack` to `^2.66.0` and surface document channel subscription errors as typed status.
+
+  The SDK now exports `DocumentTypeAsset` (with an optional `comment` field), so the
+  generator sources it from `@osdk/foundry.pack` instead of a hand-rolled interface
+  (`irGenAssetHandler` / `irDeployHandler` import it directly; local `commands/types.ts`
+  removed). Generated asset JSON is unchanged.
+
+  Surface document channel subscription errors as typed status.
+
+  Channel subscriptions (data, presence, activity) can fail — e.g. the client's
+  schema version is below the document's operational version. Previously only the
+  data channel reported this, via an untyped `DocumentStatus.dataError`, and
+  presence/activity errors were dropped.
+
+  `DocumentStatus` now reports per-channel health for all four channels
+  (`data`, `metadata`, `presence`, `activity`), each carrying a typed
+  `error?: ChannelError` with a `ChannelErrorCode` the UI can branch on
+  (`clientVersionTooLow`, `revisionTooOld`, `operationalVersionBumped`,
+  `internalError`, `unknown`). Use the new `useDocumentStatus` hook to observe it.
+
+- 11c75ce: Export union variant type guards as values from the generated versioned SDK `index.ts`.
+
+  The versioned generator emits per-variant guard functions (e.g. `isShape_v1Circle`) into `types_vN.ts`, but `index.ts` only re-exported per-version symbols via `export type { ... }`. Since guards are runtime values, the type-only re-export erased them, leaving them unreachable from the package root — unlike the legacy non-versioned generator, whose flat `export *` carried them through.
+
+  `generateIndexFromChain` now emits a per-version value export (`export { isFooBar_v1, ... } from "./types_vN.js"`) alongside the existing type-only export, so consumers can narrow a union at runtime without re-deriving the discriminant check. Records-only schemas are unaffected (no guards, no value export).
+
+### Patch Changes
+
+- Updated dependencies [6e3062b]
+  - @palantir/pack.document-schema.model-types@0.15.0
+
 ## 0.16.0
 
 ### Minor Changes

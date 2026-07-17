@@ -1,5 +1,32 @@
 # @palantir/pack.app
 
+## 0.21.0
+
+### Patch Changes
+
+- Updated dependencies [1c9e1f2]
+  - @palantir/pack.state.core@0.20.0
+  - @palantir/pack.state.demo@0.18.0
+  - @palantir/pack.state.foundry@0.23.0
+
+## 0.20.0
+
+### Patch Changes
+
+- Updated dependencies [9d0c61a]
+  - @palantir/pack.state.core@0.19.0
+  - @palantir/pack.state.foundry@0.22.0
+  - @palantir/pack.state.demo@0.17.0
+
+## 0.19.0
+
+### Patch Changes
+
+- Updated dependencies [6e3062b]
+  - @palantir/pack.state.core@0.18.0
+  - @palantir/pack.state.foundry@0.21.0
+  - @palantir/pack.state.demo@0.16.0
+
 ## 0.18.0
 
 ### Minor Changes

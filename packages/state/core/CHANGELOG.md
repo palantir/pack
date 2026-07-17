@@ -1,5 +1,64 @@
 # @palantir/pack.state.core
 
+## 0.20.0
+
+### Minor Changes
+
+- 1c9e1f2: Fix document subscription ownership so activity, presence, metadata, and data channels are shared and cleaned up according to their own subscribers. Preserve client identity across data restarts, safely discard canceled asynchronous opens, and apply presence self-update filtering per subscriber.
+
+## 0.19.0
+
+### Minor Changes
+
+- 9d0c61a: Bump `@osdk/foundry.pack` to `^2.68.0`, surface `owningApplicationId` on document types, and add document-to-application resolution.
+
+  The SDK adds `owningApplicationId` to the wire `DocumentType`, populated from the type's
+  metadata. `DocumentType` (state.core) now carries `owningApplicationId?: string` and
+  `FoundryDocumentService` maps it through, so it rides along on every
+  `loadDocumentTypeByName` / `getDocumentType` call.
+
+  Adds `resolveDocumentApplication(docRef)` to `DocumentService` (and `app.state`), backed by
+  the new `GET /v2/pack/documents/{documentId}/resolveApplication` endpoint. Given a document,
+  it resolves the owning application id from the document's type metadata, returning `undefined`
+  when none is configured. Unsupported on the in-memory and demo services.
+
+  `createDocumentEditDescription` no longer sends the deprecated `eventData.version` or top-level
+  `eventType` fields (both are now optional in the SDK/API and superseded by `eventData.schemaVersion`
+  and `eventData.eventType`).
+
+  `searchDocuments` accepts an optional `ontologyRid` in its options, forwarded to the search
+  request to scope results to a specific ontology. Not defaulted — omitted when unset, in which
+  case the document type name is searched across all ontologies.
+
+## 0.18.0
+
+### Minor Changes
+
+- 6e3062b: Bump `@osdk/foundry.pack` to `^2.66.0` and surface document channel subscription errors as typed status.
+
+  The SDK now exports `DocumentTypeAsset` (with an optional `comment` field), so the
+  generator sources it from `@osdk/foundry.pack` instead of a hand-rolled interface
+  (`irGenAssetHandler` / `irDeployHandler` import it directly; local `commands/types.ts`
+  removed). Generated asset JSON is unchanged.
+
+  Surface document channel subscription errors as typed status.
+
+  Channel subscriptions (data, presence, activity) can fail — e.g. the client's
+  schema version is below the document's operational version. Previously only the
+  data channel reported this, via an untyped `DocumentStatus.dataError`, and
+  presence/activity errors were dropped.
+
+  `DocumentStatus` now reports per-channel health for all four channels
+  (`data`, `metadata`, `presence`, `activity`), each carrying a typed
+  `error?: ChannelError` with a `ChannelErrorCode` the UI can branch on
+  (`clientVersionTooLow`, `revisionTooOld`, `operationalVersionBumped`,
+  `internalError`, `unknown`). Use the new `useDocumentStatus` hook to observe it.
+
+### Patch Changes
+
+- Updated dependencies [6e3062b]
+  - @palantir/pack.document-schema.model-types@0.15.0
+
 ## 0.17.0
 
 ### Minor Changes

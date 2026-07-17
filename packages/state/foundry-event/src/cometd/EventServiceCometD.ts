@@ -39,6 +39,34 @@ interface Subscription {
   readonly getSubscriptionRequest?: () => object;
 }
 
+/**
+ * CometD reports failures in two shapes: server-side Bayeux errors populate `message.error`,
+ * while client-side transport exceptions populate
+ * `message.failure.exception`/`.reason` and leave `message.error` undefined. Extract a human
+ * readable reason from whichever field is present so callers surface the real cause.
+ */
+function extractCometDError(message: Message): string | undefined {
+  if (typeof message.error === "string" && message.error.length > 0) {
+    return message.error;
+  }
+
+  const failure = "failure" in message && typeof message.failure === "object"
+    ? message.failure as Record<string, unknown>
+    : undefined;
+  if (failure == null) {
+    return undefined;
+  }
+
+  const { exception, reason } = failure;
+  if (exception != null) {
+    return typeof exception === "string" ? exception : JSON.stringify(exception);
+  }
+  if (typeof reason === "string" && reason.length > 0) {
+    return reason;
+  }
+  return undefined;
+}
+
 export interface CometDLoader {
   (): Promise<{
     AckExtension: new() => AckExtension;
@@ -88,7 +116,8 @@ export class EventServiceCometD implements EventService {
       await new Promise<void>(resolve => {
         this.cometd!.addListener(
           META_CHANNEL_HANDSHAKE,
-          ({ clientId, connectionType, error, successful }) => {
+          message => {
+            const { clientId, connectionType, successful } = message;
             if (successful) {
               this.logger.info("CometD handshake successful", { clientId, connectionType });
               resolve();
@@ -106,7 +135,10 @@ export class EventServiceCometD implements EventService {
                 });
               });
             } else {
-              this.logger.warn("CometD handshake failed", { clientId, error });
+              this.logger.warn("CometD handshake failed", {
+                clientId,
+                error: extractCometDError(message),
+              });
             }
           },
         );
@@ -164,26 +196,21 @@ export class EventServiceCometD implements EventService {
             resolve(subscriptionId);
           } else {
             this.subscriptionById.delete(subscriptionId);
-            // TODO: Is failure really expected? It's not on the type...
-            const maybeFailureReason = "failure" in message
-                && typeof message.failure === "object"
-                && message.failure
-                && "reason" in message.failure
-                && typeof message.failure.reason === "string"
-              ? message.failure.reason
-              : undefined;
+            const cometdError = extractCometDError(message);
 
             this.logger.error(
               "Failed to subscribe to channel ",
-              { channel, error: message.error, maybeFailureReason },
+              { channel, error: cometdError },
             );
 
-            const errorMessage = message.error
-              ?? (maybeFailureReason != null
-                ? `(no error message provided by server, a guess: ${maybeFailureReason})`
-                : "(no error message provided by server)");
-
-            reject(new Error(`Failed to subscribe to channel ${channel}: ${errorMessage}`));
+            reject(
+              new Error(
+                `Failed to subscribe to channel ${channel}: ${
+                  cometdError ?? "(no error message provided by server)"
+                }`,
+                { cause: message },
+              ),
+            );
           }
         };
 
@@ -238,7 +265,7 @@ export class EventServiceCometD implements EventService {
           this.logger.warn("Server unsubscribe confirmation failed", {
             eventChannel,
             subscriptionId,
-            error: message.error,
+            error: extractCometDError(message),
           });
         }
       },
@@ -261,9 +288,12 @@ export class EventServiceCometD implements EventService {
           this.logger.debug("Successfully published message", channel, { content });
           resolve();
         } else {
+          const cometdError = extractCometDError(message);
           const error = new Error(
-            `Failed to publish to ${channel}`,
-            { cause: message.error },
+            `Failed to publish to ${channel}: ${
+              cometdError ?? "(no error message provided by server)"
+            }`,
+            { cause: message },
           );
           this.logger.error("Failed to publish", { channel, error });
           reject(error);
@@ -289,6 +319,7 @@ export class EventServiceCometD implements EventService {
       maxNetworkDelay: 30_000,
       logLevel,
       autoBatch: true,
+      maxSendBayeuxMessageSize: 65536,
     });
   }
 }

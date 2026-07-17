@@ -28,6 +28,7 @@ import type {
   PresencePublishOptions,
   PresenceSubscriptionOptions,
 } from "@palantir/pack.document-schema.model-types";
+import { toUnknownChannelError } from "@palantir/pack.document-schema.model-types";
 import { createDocumentServiceConfig } from "../DocumentServiceModule.js";
 import type { CreateDocumentMetadata } from "../types/CreateDocumentMetadata.js";
 import { createDocRef } from "../types/DocumentRefImpl.js";
@@ -116,6 +117,7 @@ class InMemoryDocumentService extends BaseYjsDocumentService {
       documentName?: string;
       pageSize?: number;
       pageToken?: string;
+      ontologyRid?: string;
     },
   ): Promise<SearchDocumentsResult> => {
     const results: Array<DocumentMetadata & { readonly id: DocumentId }> = [];
@@ -199,18 +201,33 @@ class InMemoryDocumentService extends BaseYjsDocumentService {
     );
   };
 
+  readonly resolveDocumentApplication = (
+    _docRef: DocumentRef,
+  ): Promise<string | undefined> => {
+    return Promise.reject(
+      new Error(
+        "resolveDocumentApplication is not supported by the in-memory document service",
+      ),
+    );
+  };
+
   // Lifecycle method implementations
   protected onMetadataSubscriptionOpened(
     internalDoc: InternalYjsDoc,
     docRef: DocumentRef,
   ): void {
+    if (internalDoc.metadataStatus.load !== DocumentLoadStatus.UNLOADED) {
+      return;
+    }
     this.updateMetadataStatus(internalDoc, docRef, {
       load: DocumentLoadStatus.LOADING,
     });
 
     if (this.config.autoCreateDocuments === false && internalDoc.metadata == null) {
       this.updateMetadataStatus(internalDoc, docRef, {
-        error: new Error("Document not found and autoCreateDocuments is disabled"),
+        error: toUnknownChannelError(
+          new Error("Document not found and autoCreateDocuments is disabled"),
+        ),
         load: DocumentLoadStatus.ERROR,
       });
       return;
@@ -231,7 +248,9 @@ class InMemoryDocumentService extends BaseYjsDocumentService {
 
     if (this.config.autoCreateDocuments === false && internalDoc.metadata == null) {
       this.updateDataStatus(internalDoc, docRef, {
-        error: new Error("Document not found and autoCreateDocuments is disabled"),
+        error: toUnknownChannelError(
+          new Error("Document not found and autoCreateDocuments is disabled"),
+        ),
         load: DocumentLoadStatus.ERROR,
       });
       return;

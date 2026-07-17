@@ -14,13 +14,15 @@
  * limitations under the License.
  */
 
+export {
+  ContextBuilder,
+  createTemplateUtils,
+  Generator,
+  Logger,
+  promptUser,
+  SchemaParser,
+  TemplateLoader,
+} from "@palantir/pack.codegen.core";
+export type * from "@palantir/pack.codegen.core";
 export { cli } from "./cli.js";
 export { createCommand } from "./commands/create.js";
-export { ContextBuilder } from "./core/contextBuilder.js";
-export { Generator } from "./core/generator.js";
-export { SchemaParser } from "./core/schemaParser.js";
-export { TemplateLoader } from "./core/templateLoader.js";
-export type * from "./types/index.js";
-export { Logger } from "./utils/logger.js";
-export { promptUser } from "./utils/prompts.js";
-export { createTemplateUtils } from "./utils/templateUtils.js";

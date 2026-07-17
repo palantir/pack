@@ -51,9 +51,8 @@ function createDocumentEditDescription(
     eventData: {
       data: editDescription.data,
       eventType,
-      version: editDescription.schemaVersion ?? 1,
+      schemaVersion: editDescription.schemaVersion ?? 1,
     },
-    eventType,
   };
 }
 
@@ -135,9 +134,8 @@ describe("EditDescription helpers", () => {
             name: "Alice",
           },
           eventType: "User",
-          version: 1,
+          schemaVersion: 1,
         },
-        eventType: "User",
       });
     });
 
@@ -150,7 +148,7 @@ describe("EditDescription helpers", () => {
 
       const result = createDocumentEditDescription(editDescription);
 
-      expect(result.eventData.version).toBe(3);
+      expect(result.eventData.schemaVersion).toBe(3);
     });
 
     it("should extract correct model name from metadata", () => {
@@ -169,7 +167,6 @@ describe("EditDescription helpers", () => {
 
       const result = createDocumentEditDescription(editDescription);
 
-      expect(result.eventType).toBe("AnotherModel");
       expect(result.eventData.data).toEqual({ id: "123" });
       expect(result.eventData.eventType).toBe("AnotherModel");
     });

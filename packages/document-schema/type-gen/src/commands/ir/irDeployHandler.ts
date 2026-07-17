@@ -18,6 +18,7 @@ import { createPlatformClient, PalantirApiError } from "@osdk/client";
 import type {
   CreateDocumentTypeRequest,
   CreateFirstPartyDocumentTypeRequest,
+  FileSystemType,
 } from "@osdk/foundry.pack";
 import { DocumentTypes } from "@osdk/foundry.pack";
 import { CommanderError } from "commander";
@@ -25,7 +26,6 @@ import { consola } from "consola";
 import { readFileSync } from "fs";
 import { resolve } from "path";
 import { convertIrToWireSchema } from "../../utils/ir/convertIrToWireSchema.js";
-import type { FileSystemType } from "../types.js";
 import { buildPrefixRewriteFetch, DEFAULT_API_PREFIX } from "../utils/firstPartyPrefix.js";
 import { resolveIrInput } from "./resolveIrInput.js";
 
@@ -48,7 +48,7 @@ export async function irDeployHandler(options: DeployOptions): Promise<void> {
     const irPath = resolve(options.ir);
     consola.info(`Reading schema from: ${irPath}`);
 
-    const { ir, latestVersion } = resolveIrInput(
+    const { ir, latestVersion, owningApplicationId } = resolveIrInput(
       JSON.parse(readFileSync(irPath, "utf8")) as unknown,
       irPath,
     );
@@ -56,7 +56,14 @@ export async function irDeployHandler(options: DeployOptions): Promise<void> {
     const fileSystemType = options.fileSystemType ?? "ARTIFACTS";
 
     if (options.firstParty) {
-      await deployFirstParty(options, ir.name, schema, latestVersion, fileSystemType);
+      await deployFirstParty(
+        options,
+        ir.name,
+        schema,
+        latestVersion,
+        fileSystemType,
+        owningApplicationId,
+      );
     } else {
       await deployThirdParty(options, ir.name, schema, fileSystemType);
     }
@@ -105,6 +112,7 @@ async function deployFirstParty(
   schema: DocumentTypeSchema,
   version: number,
   fileSystemType: FileSystemType,
+  owningApplicationId: string | undefined,
 ): Promise<void> {
   if (options.ontologyRid == null) {
     throw new CommanderError(
@@ -135,6 +143,7 @@ async function deployFirstParty(
       schema,
       version,
       fileSystemType,
+      ...(owningApplicationId != null ? { owningApplicationId } : {}),
     },
   };
 

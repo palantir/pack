@@ -94,6 +94,7 @@ describe("FoundryEventService", () => {
     updateCallback?.({
       baseRevisionId: "0",
       clientId: "server",
+      clientSupportedVersionRange: { minVersion: 1, maxVersion: 1 },
       editIds: [],
       revisionId: "1",
       type: "update",
@@ -138,6 +139,7 @@ describe("FoundryEventService", () => {
     updateCallback?.({
       baseRevisionId: "0",
       clientId: "server",
+      clientSupportedVersionRange: { minVersion: 1, maxVersion: 1 },
       editIds: [],
       revisionId: "1",
       type: "update",
@@ -173,6 +175,7 @@ describe("FoundryEventService", () => {
     updateCallback?.({
       baseRevisionId: "0",
       clientId: "server",
+      clientSupportedVersionRange: { minVersion: 1, maxVersion: 1 },
       editIds: [],
       revisionId: "1",
       type: "update",
@@ -187,5 +190,205 @@ describe("FoundryEventService", () => {
       | [unknown, PublishedDocumentUpdate]
       | undefined;
     expect(publishCall?.[1].documentUpdateSchemaVersion).toBe(1);
+  });
+
+  it("keeps activity subscriptions independent from document data sync", async () => {
+    mocks.eventService.subscribe
+      .mockResolvedValueOnce("activity-sub" as SubscriptionId)
+      .mockResolvedValueOnce("document-sub" as SubscriptionId);
+
+    const service = createFoundryEventService(app);
+    const activitySubscriptionId = await service.subscribeToActivityUpdates(
+      "doc-1" as DocumentId,
+      { maxVersion: 1, minVersion: 1 },
+      () => {},
+    );
+    const session = service.startDocumentSync(
+      "doc-1" as DocumentId,
+      new Y.Doc(),
+      { maxVersion: 1, minVersion: 1 },
+      () => {},
+    );
+    await Promise.resolve();
+
+    service.stopDocumentSync(session);
+
+    expect(mocks.eventService.unsubscribe).toHaveBeenCalledWith("document-sub");
+    expect(mocks.eventService.unsubscribe).not.toHaveBeenCalledWith("activity-sub");
+
+    service.unsubscribe(activitySubscriptionId);
+    expect(mocks.eventService.unsubscribe).toHaveBeenCalledWith("activity-sub");
+  });
+
+  it("keeps presence subscriptions independent from document data sync", async () => {
+    mocks.eventService.subscribe
+      .mockResolvedValueOnce("presence-sub" as SubscriptionId)
+      .mockResolvedValueOnce("document-sub" as SubscriptionId);
+
+    const service = createFoundryEventService(app);
+    const presenceSubscriptionId = await service.subscribeToPresenceUpdates(
+      "doc-1" as DocumentId,
+      { maxVersion: 1, minVersion: 1 },
+      () => {},
+    );
+    const session = service.startDocumentSync(
+      "doc-1" as DocumentId,
+      new Y.Doc(),
+      { maxVersion: 1, minVersion: 1 },
+      () => {},
+    );
+    await Promise.resolve();
+
+    service.stopDocumentSync(session);
+
+    expect(mocks.eventService.unsubscribe).toHaveBeenCalledWith("document-sub");
+    expect(mocks.eventService.unsubscribe).not.toHaveBeenCalledWith("presence-sub");
+
+    service.unsubscribe(presenceSubscriptionId);
+    expect(mocks.eventService.unsubscribe).toHaveBeenCalledWith("presence-sub");
+  });
+
+  it("keeps metadata subscriptions independent from document data sync", async () => {
+    mocks.eventService.subscribe
+      .mockResolvedValueOnce("metadata-sub" as SubscriptionId)
+      .mockResolvedValueOnce("document-sub" as SubscriptionId);
+
+    const service = createFoundryEventService(app);
+    const metadataSubscriptionId = await service.subscribeToMetadataUpdates(
+      "doc-1" as DocumentId,
+      () => {},
+    );
+    const session = service.startDocumentSync(
+      "doc-1" as DocumentId,
+      new Y.Doc(),
+      { maxVersion: 1, minVersion: 1 },
+      () => {},
+    );
+    await Promise.resolve();
+
+    service.stopDocumentSync(session);
+
+    expect(mocks.eventService.unsubscribe).toHaveBeenCalledWith("document-sub");
+    expect(mocks.eventService.unsubscribe).not.toHaveBeenCalledWith("metadata-sub");
+
+    service.unsubscribe(metadataSubscriptionId);
+    expect(mocks.eventService.unsubscribe).toHaveBeenCalledWith("metadata-sub");
+  });
+
+  it("keeps the document client id stable when data sync restarts", async () => {
+    mocks.eventService.subscribe
+      .mockResolvedValueOnce("document-sub-1" as SubscriptionId)
+      .mockResolvedValueOnce("document-sub-2" as SubscriptionId);
+
+    const service = createFoundryEventService(app);
+    const firstSession = service.startDocumentSync(
+      "doc-1" as DocumentId,
+      new Y.Doc(),
+      { maxVersion: 1, minVersion: 1 },
+      () => {},
+    );
+    await Promise.resolve();
+    service.stopDocumentSync(firstSession);
+
+    const secondSession = service.startDocumentSync(
+      "doc-1" as DocumentId,
+      new Y.Doc(),
+      { maxVersion: 1, minVersion: 1 },
+      () => {},
+    );
+
+    expect(secondSession.clientId).toBe(firstSession.clientId);
+  });
+
+  it("does not replace the active Y.Doc when a duplicate data sync is rejected", async () => {
+    mocks.eventService.subscribe.mockResolvedValueOnce("document-sub" as SubscriptionId);
+    const service = createFoundryEventService(app);
+    const activeYDoc = new Y.Doc();
+    const rejectedYDoc = new Y.Doc();
+    const activeOff = vi.spyOn(activeYDoc, "off");
+    const rejectedOff = vi.spyOn(rejectedYDoc, "off");
+
+    const session = service.startDocumentSync(
+      "doc-1" as DocumentId,
+      activeYDoc,
+      { maxVersion: 1, minVersion: 1 },
+      () => {},
+    );
+    await Promise.resolve();
+
+    expect(() =>
+      service.startDocumentSync(
+        "doc-1" as DocumentId,
+        rejectedYDoc,
+        { maxVersion: 1, minVersion: 1 },
+        () => {},
+      )
+    ).toThrow("Document data sync already active");
+
+    service.stopDocumentSync(session);
+
+    expect(activeOff).toHaveBeenCalledWith("update", expect.any(Function));
+    expect(rejectedOff).not.toHaveBeenCalled();
+    expect(mocks.eventService.subscribe).toHaveBeenCalledTimes(1);
+  });
+
+  it("rejects duplicate data sync while the first subscription is still opening", async () => {
+    let resolveSubscription: (subscriptionId: SubscriptionId) => void = () => {};
+    mocks.eventService.subscribe.mockReturnValueOnce(
+      new Promise(resolve => {
+        resolveSubscription = resolve;
+      }),
+    );
+    const service = createFoundryEventService(app);
+    const session = service.startDocumentSync(
+      "doc-1" as DocumentId,
+      new Y.Doc(),
+      { maxVersion: 1, minVersion: 1 },
+      () => {},
+    );
+
+    expect(() =>
+      service.startDocumentSync(
+        "doc-1" as DocumentId,
+        new Y.Doc(),
+        { maxVersion: 1, minVersion: 1 },
+        () => {},
+      )
+    ).toThrow("Document data sync already active");
+    expect(mocks.eventService.subscribe).toHaveBeenCalledTimes(1);
+
+    service.stopDocumentSync(session);
+    resolveSubscription("stale-document-sub" as SubscriptionId);
+    await Promise.resolve();
+
+    expect(mocks.eventService.unsubscribe).toHaveBeenCalledWith("stale-document-sub");
+  });
+
+  it("disposes a document session and its active data subscription", async () => {
+    mocks.eventService.subscribe
+      .mockResolvedValueOnce("document-sub-1" as SubscriptionId)
+      .mockResolvedValueOnce("document-sub-2" as SubscriptionId);
+
+    const service = createFoundryEventService(app);
+    const firstSession = service.startDocumentSync(
+      "doc-1" as DocumentId,
+      new Y.Doc(),
+      { maxVersion: 1, minVersion: 1 },
+      () => {},
+    );
+    await Promise.resolve();
+
+    service.disposeDocument("doc-1" as DocumentId);
+
+    expect(mocks.eventService.unsubscribe).toHaveBeenCalledWith("document-sub-1");
+
+    const secondSession = service.startDocumentSync(
+      "doc-1" as DocumentId,
+      new Y.Doc(),
+      { maxVersion: 1, minVersion: 1 },
+      () => {},
+    );
+
+    expect(secondSession.clientId).not.toBe(firstSession.clientId);
   });
 });

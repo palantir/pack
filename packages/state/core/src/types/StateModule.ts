@@ -89,6 +89,7 @@ export interface StateModule {
       documentName?: string;
       pageSize?: number;
       pageToken?: string;
+      ontologyRid?: string;
     },
   ) => Promise<SearchDocumentsResult>;
 
@@ -114,6 +115,10 @@ export interface StateModule {
     documentTypeName: string,
     ontologyRid?: string,
   ) => Promise<number | undefined>;
+
+  readonly resolveDocumentApplication: (
+    docRef: DocumentRef,
+  ) => Promise<string | undefined>;
 
   readonly getDocumentSnapshot: <T extends DocumentSchema>(
     docRef: DocumentRef<T>,
@@ -266,6 +271,7 @@ export class StateModuleImpl implements StateModule {
       documentName?: string;
       pageSize?: number;
       pageToken?: string;
+      ontologyRid?: string;
     },
   ): Promise<SearchDocumentsResult> {
     return this.documentService.searchDocuments(documentTypeName, schema, options);
@@ -302,6 +308,12 @@ export class StateModuleImpl implements StateModule {
     ontologyRid?: string,
   ): Promise<number | undefined> {
     return this.documentService.getDocumentTypeOperationalVersion(documentTypeName, ontologyRid);
+  }
+
+  async resolveDocumentApplication(
+    docRef: DocumentRef,
+  ): Promise<string | undefined> {
+    return this.documentService.resolveDocumentApplication(docRef);
   }
 
   async getDocumentSnapshot<T extends DocumentSchema>(

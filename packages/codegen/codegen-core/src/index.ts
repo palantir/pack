@@ -14,16 +14,16 @@
  * limitations under the License.
  */
 
-import type { DocumentTypeSchema } from "@osdk/foundry.pack";
-
-export type FileSystemType = "ARTIFACTS" | "COMPASS";
-
-export interface DocumentTypeAsset {
-  readonly documentTypeName: string;
-  readonly documentStorageType: {
-    readonly type: "yjs";
-    readonly schema: DocumentTypeSchema;
-  };
-  readonly fileSystemType: FileSystemType;
-  readonly schemaVersion: number;
-}
+export { ContextBuilder } from "./core/contextBuilder.js";
+export { Generator } from "./core/generator.js";
+export { SchemaParser } from "./core/schemaParser.js";
+export { TemplateLoader } from "./core/templateLoader.js";
+export {
+  createProject,
+  type CreateProjectMessaging,
+  type CreateProjectOptions,
+} from "./createProject.js";
+export type * from "./types/index.js";
+export { Logger } from "./utils/logger.js";
+export { promptUser } from "./utils/prompts.js";
+export { createTemplateUtils } from "./utils/templateUtils.js";

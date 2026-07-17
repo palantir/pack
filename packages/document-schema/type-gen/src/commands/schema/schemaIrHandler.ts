@@ -32,12 +32,14 @@ interface PackConfigLike {
   documentTypeName?: unknown;
   documentTypeDescription?: unknown;
   minSupportedVersion?: unknown;
+  owningApplicationId?: unknown;
 }
 
 interface PackConfigValues {
   readonly documentTypeName: string;
   readonly documentTypeDescription: string;
   readonly minSupportedVersion?: number;
+  readonly owningApplicationId?: string;
 }
 
 function assertNonEmptyString(value: unknown, field: string, configPath: string): string {
@@ -94,7 +96,16 @@ export async function readPackConfig(configPath: string): Promise<PackConfigValu
     minSupportedVersion = rawMin;
   }
 
-  return { documentTypeName, documentTypeDescription, minSupportedVersion };
+  let owningApplicationId: string | undefined;
+  if (config.owningApplicationId != null) {
+    owningApplicationId = assertNonEmptyString(
+      config.owningApplicationId,
+      "owningApplicationId",
+      resolvedConfigPath,
+    );
+  }
+
+  return { documentTypeName, documentTypeDescription, minSupportedVersion, owningApplicationId };
 }
 
 function parseMaxVersion(maxVersion: string | undefined): number | undefined {
@@ -132,6 +143,9 @@ function parseMaxVersion(maxVersion: string | undefined): number | undefined {
  *    (`ir gen-types`, `ir asset`) read the same value. Omitting the field is
  *    an explicit opt-out: the IR will not include `minSupportedVersion` and
  *    downstream tools default to supporting only the latest schema version.
+ *  - `owningApplicationId`: the application that owns this document type; when
+ *    set, it is embedded in the payload and surfaced as `owningApplicationId`
+ *    by `ir asset`.
  *
  * Note: this is distinct from the legacy single-version IR JSON consumed by
  * `ir zod`, which is a bare `IRealTimeDocumentSchema` (no chain, no migrations).
@@ -141,9 +155,8 @@ function parseMaxVersion(maxVersion: string | undefined): number | undefined {
 export async function schemaIrHandler(options: SchemaIrOptions): Promise<void> {
   const { input, output, config } = options;
   const maxVersion = parseMaxVersion(options.maxVersion);
-  const { documentTypeName, documentTypeDescription, minSupportedVersion } = await readPackConfig(
-    config,
-  );
+  const { documentTypeName, documentTypeDescription, minSupportedVersion, owningApplicationId } =
+    await readPackConfig(config);
 
   if (minSupportedVersion == null) {
     consola.warn(
@@ -174,6 +187,7 @@ export async function schemaIrHandler(options: SchemaIrOptions): Promise<void> {
     comment: GENERATED_JSON_COMMENT,
     latestVersion,
     ...(minSupportedVersion != null ? { minSupportedVersion } : {}),
+    ...(owningApplicationId != null ? { owningApplicationId } : {}),
     chain,
   };
   await fs.writeFile(outputPath, JSON.stringify(payload, null, 2) + "\n", "utf8");

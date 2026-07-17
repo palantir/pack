@@ -303,7 +303,7 @@ describe("getActivityEvent", () => {
         type: "documentCustomEvent",
         eventType: "TestModel",
         data: customData,
-        version: 1,
+        schemaVersion: 1,
       }),
     );
 
@@ -324,7 +324,7 @@ describe("getActivityEvent", () => {
         type: "documentCustomEvent",
         eventType: "TestModel",
         data: customData,
-        version: "future",
+        schemaVersion: 99,
       }),
     );
 
@@ -342,7 +342,7 @@ describe("getActivityEvent", () => {
         type: "documentCustomEvent",
         eventType: "TestModel",
         data: { someField: "node-1" },
-        version: 1,
+        schemaVersion: 1,
       }),
     );
 
@@ -376,7 +376,7 @@ describe("getActivityEvent", () => {
             nodeId: "shape-1",
           },
         },
-        version: 1,
+        schemaVersion: 1,
       }),
     );
 
@@ -412,7 +412,7 @@ describe("getActivityEvent", () => {
         type: "documentCustomEvent",
         eventType: "NonExistentModel",
         data: customData,
-        version: 1,
+        schemaVersion: 1,
       }),
     );
 
@@ -473,11 +473,11 @@ describe("getPresenceEvent", () => {
         eventType: "TestModel",
         isEphemeral: true,
         userId: "user-1",
-        version: 1,
+        schemaVersion: 1,
       } as PresenceCollaborativeUpdate,
     );
 
-    expect(result.eventData).toEqual({
+    expect(result?.eventData).toEqual({
       type: PresenceEventDataType.CUSTOM_EVENT,
       model: mockModel,
       schemaVersion: 1,
@@ -495,14 +495,28 @@ describe("getPresenceEvent", () => {
         eventData: customData,
         eventType: "TestModel",
         userId: "user-1",
-        version: 99,
+        schemaVersion: 99,
       } as PresenceCollaborativeUpdate,
     );
 
-    expect(result.eventData).toEqual({
+    expect(result?.eventData).toEqual({
       type: PresenceEventDataType.UNKNOWN,
       rawType: "TestModel",
       rawData: customData,
     });
+  });
+
+  it("returns undefined for an error update (not a presence event)", () => {
+    const result = getPresenceEvent(
+      schemaWithModel,
+      {
+        type: "error",
+        code: "CLIENT_VERSION_TOO_LOW",
+        errorInstanceId: "err-1",
+        args: {},
+      } as unknown as PresenceCollaborativeUpdate,
+    );
+
+    expect(result).toBeUndefined();
   });
 });

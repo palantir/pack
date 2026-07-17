@@ -1,6 +1,6 @@
 {
   "name": "@palantir/pack.sdkgen",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "description": "Generic Typescript SDK generator CLI",
   "license": "Apache-2.0",
   "repository": {
@@ -28,20 +28,15 @@
     "typecheck": "tsc --noEmit --emitDeclarationOnly false"
   },
   "dependencies": {
+    "@palantir/pack.codegen.core": "workspace:*",
     "commander": "catalog:",
-    "consola": "catalog:",
-    "ejs": "^3.1.10",
-    "find-up": "catalog:",
-    "fs-extra": "catalog:",
-    "glob": "^13.0.0",
-    "inquirer": "^13.0.1"
+    "find-up": "catalog:"
   },
   "devDependencies": {
     "@palantir/pack.monorepo.tsconfig": "workspace:~",
-    "@types/ejs": "^3.1.5",
     "@types/fs-extra": "catalog:",
-    "@types/inquirer": "^9.0.9",
     "@types/node": "catalog:",
+    "fs-extra": "catalog:",
     "prettier": "catalog:",
     "rimraf": "catalog:",
     "tslib": "catalog:",

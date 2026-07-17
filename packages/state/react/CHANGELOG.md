@@ -1,5 +1,53 @@
 # @palantir/pack.state.react
 
+## 0.21.0
+
+### Minor Changes
+
+- 1c9e1f2: Fix document subscription ownership so activity, presence, metadata, and data channels are shared and cleaned up according to their own subscribers. Preserve client identity across data restarts, safely discard canceled asynchronous opens, and apply presence self-update filtering per subscriber.
+
+### Patch Changes
+
+- Updated dependencies [1c9e1f2]
+  - @palantir/pack.state.core@0.20.0
+
+## 0.20.0
+
+### Patch Changes
+
+- Updated dependencies [9d0c61a]
+  - @palantir/pack.state.core@0.19.0
+
+## 0.19.0
+
+### Minor Changes
+
+- 6e3062b: Bump `@osdk/foundry.pack` to `^2.66.0` and surface document channel subscription errors as typed status.
+
+  The SDK now exports `DocumentTypeAsset` (with an optional `comment` field), so the
+  generator sources it from `@osdk/foundry.pack` instead of a hand-rolled interface
+  (`irGenAssetHandler` / `irDeployHandler` import it directly; local `commands/types.ts`
+  removed). Generated asset JSON is unchanged.
+
+  Surface document channel subscription errors as typed status.
+
+  Channel subscriptions (data, presence, activity) can fail — e.g. the client's
+  schema version is below the document's operational version. Previously only the
+  data channel reported this, via an untyped `DocumentStatus.dataError`, and
+  presence/activity errors were dropped.
+
+  `DocumentStatus` now reports per-channel health for all four channels
+  (`data`, `metadata`, `presence`, `activity`), each carrying a typed
+  `error?: ChannelError` with a `ChannelErrorCode` the UI can branch on
+  (`clientVersionTooLow`, `revisionTooOld`, `operationalVersionBumped`,
+  `internalError`, `unknown`). Use the new `useDocumentStatus` hook to observe it.
+
+### Patch Changes
+
+- Updated dependencies [6e3062b]
+  - @palantir/pack.document-schema.model-types@0.15.0
+  - @palantir/pack.state.core@0.18.0
+
 ## 0.18.0
 
 ### Minor Changes

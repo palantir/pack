@@ -118,7 +118,7 @@ export function useRemotePresence(docRef: DocumentRef<DocumentModel>): UseRemote
         });
       }
     },
-    { ignoreSelfUpdates: true },
+    { ignoreSelfUpdates: false },
   );
 
   return {
