@@ -1,5 +1,11 @@
 # @palantir/pack.state.foundry-event
 
+## 0.20.1
+
+### Patch Changes
+
+- 9106d61: increase cometd max message size
+
 ## 0.20.0
 
 ### Minor Changes
