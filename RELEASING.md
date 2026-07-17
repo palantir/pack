@@ -40,4 +40,6 @@ We publish releases from `release/` branches. On these branches, after the first
 
 ## Uni-versioning
 
-Some sets of packages may want to share a fixed version. This can be configured in `.changesets/config`.
+All publishable `@palantir/pack.*` packages share a single version. This is configured via the `fixed` group in `.changeset/config.json` (private packages such as `@palantir/pack.monorepo.*`, `@palantir/pack.docs`, and `@palantir/pack.sdkgen.demo-template` are excluded).
+
+Because the group is `fixed`, a changeset touching any one package bumps and publishes **all** of them together at the same version. This keeps every published package on the same version line, so a single `release/` branch backports patches for a given minor across the whole set.
