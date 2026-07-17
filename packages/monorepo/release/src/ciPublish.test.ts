@@ -15,7 +15,7 @@
  */
 
 import { describe, expect, it } from "vitest";
-import { determineTag, findGreatestVersion } from "./ciPublish.js";
+import { determineTag, findGreatestVersion, hasPrereleaseVersion } from "./ciPublish.js";
 
 describe("findGreatestVersion", () => {
   it("should find the highest semver version from release branch names", () => {
@@ -69,5 +69,24 @@ describe("determineTag", () => {
     const result = determineTag(currentBranch, greatestVersion, defaultTag);
 
     expect(result).toBe("latest-2.0.x");
+  });
+});
+
+describe("hasPrereleaseVersion", () => {
+  it("should return false when all versions are stable releases", () => {
+    expect(hasPrereleaseVersion(["1.0.0", "2.3.4", "0.1.0"])).toBe(false);
+  });
+
+  it("should return true when any version is a semver prerelease", () => {
+    expect(hasPrereleaseVersion(["1.0.0", "2.0.0-beta.0"])).toBe(true);
+  });
+
+  it("should return true for prerelease identifiers other than beta", () => {
+    expect(hasPrereleaseVersion(["1.0.0-alpha.1"])).toBe(true);
+    expect(hasPrereleaseVersion(["1.0.0-rc.2"])).toBe(true);
+  });
+
+  it("should return false for an empty list", () => {
+    expect(hasPrereleaseVersion([])).toBe(false);
   });
 });

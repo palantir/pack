@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+import { getPackages } from "@manypkg/get-packages";
 import consola from "consola";
 import { execa } from "execa";
 import { existsSync } from "fs";
@@ -26,7 +27,15 @@ async function ciPublish(): Promise<void> {
   const repoRoot = process.cwd();
   const preJsonPath = join(repoRoot, ".changeset", "pre.json");
 
-  if (existsSync(preJsonPath)) {
+  // `.changeset/pre.json` merely records that the repo is in changeset "pre"
+  // mode; it is not deleted when pre mode is exited to cut a stable release.
+  // A release maintainer may exit pre mode, version + commit a stable release,
+  // then re-enter pre mode, leaving `pre.json` present alongside stable
+  // versions. Only use the prerelease dist-tag when the versions actually being
+  // published are semver prereleases, otherwise fall back to the branch-based
+  // tag so stable releases land on "latest". See issue #60.
+  const versions = await getPublishableVersions(repoRoot);
+  if (existsSync(preJsonPath) && hasPrereleaseVersion(versions)) {
     try {
       const preJson = JSON.parse(await readFile(preJsonPath, "utf-8"));
       if (preJson.mode === "pre") {
@@ -66,6 +75,19 @@ async function ciPublish(): Promise<void> {
     consola.error(`Error during publish: ${error}`);
     process.exit(1);
   }
+}
+
+async function getPublishableVersions(repoRoot: string): Promise<string[]> {
+  const { packages } = await getPackages(repoRoot);
+  // Private packages are never published (pnpm skips them), so their versions
+  // must not influence the dist-tag decision.
+  return packages
+    .filter(pkg => !pkg.packageJson.private)
+    .map(pkg => pkg.packageJson.version);
+}
+
+export function hasPrereleaseVersion(versions: string[]): boolean {
+  return versions.some(version => semver.prerelease(version) != null);
 }
 
 async function getRemoteBranches(): Promise<string[]> {
