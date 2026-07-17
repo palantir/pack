@@ -2,7 +2,14 @@
   "$schema": "https://unpkg.com/@changesets/config@3.0.0/schema.json",
   "changelog": "@changesets/cli/changelog",
   "commit": false,
-  "fixed": [],
+  "fixed": [
+    [
+      "@palantir/pack.*",
+      "!@palantir/pack.monorepo.*",
+      "!@palantir/pack.docs",
+      "!@palantir/pack.sdkgen.demo-template"
+    ]
+  ],
   "linked": [],
   "access": "restricted",
   "baseBranch": "main",
