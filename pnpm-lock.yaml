@@ -803,8 +803,8 @@ importers:
         specifier: ^5.0.0
         version: 5.0.0
       semver:
-        specifier: ^7.7.2
-        version: 7.7.3
+        specifier: ^7.8.5
+        version: 7.8.5
       yargs:
         specifier: ^17.7.2
         version: 17.7.2
@@ -9586,6 +9586,11 @@ packages:
     engines: {node: '>=10'}
     hasBin: true
 
+  semver@7.8.5:
+    resolution: {integrity: sha512-Y7/KDsb8LjooZpwaqGyulO6DQlksgCncchHGk+sZIY4SBvUocMBEFH5Ur1fI4dV+Jvl0w6cjvucaIi40puRioA==}
+    engines: {node: '>=10'}
+    hasBin: true
+
   send@0.19.2:
     resolution: {integrity: sha512-VMbMxbDeehAxpOtWJXlcUS5E8iXh6QmN+BkRX1GARS3wRaXEEgzCcB10gTQazO42tpNIya8xIyNx8fll1OFPrg==}
     engines: {node: '>= 0.8.0'}
@@ -12088,7 +12093,7 @@ snapshots:
       outdent: 0.5.0
       prettier: 2.8.8
       resolve-from: 5.0.0
-      semver: 7.7.3
+      semver: 7.8.5
 
   '@changesets/assemble-release-plan@6.0.9':
     dependencies:
@@ -12097,7 +12102,7 @@ snapshots:
       '@changesets/should-skip-package': 0.1.2
       '@changesets/types': 6.1.0
       '@manypkg/get-packages': 1.1.3
-      semver: 7.7.3
+      semver: 7.8.5
 
   '@changesets/changelog-git@0.2.1':
     dependencies:
@@ -12130,7 +12135,7 @@ snapshots:
       package-manager-detector: 0.2.11
       picocolors: 1.1.1
       resolve-from: 5.0.0
-      semver: 7.7.3
+      semver: 7.8.5
       spawndamnit: 3.0.1
       term-size: 2.2.1
     transitivePeerDependencies:
@@ -12155,7 +12160,7 @@ snapshots:
       '@changesets/types': 6.1.0
       '@manypkg/get-packages': 1.1.3
       picocolors: 1.1.1
-      semver: 7.7.3
+      semver: 7.8.5
 
   '@changesets/get-release-plan@4.0.14':
     dependencies:
@@ -12212,7 +12217,7 @@ snapshots:
       mdast-util-to-string: 1.1.0
       remark-parse: 7.0.2
       remark-stringify: 7.0.4
-      semver: 7.7.3
+      semver: 7.8.5
       spawndamnit: 3.0.1
       unified: 8.4.2
 
@@ -14542,7 +14547,7 @@ snapshots:
       globby: 14.1.0
       jest-diff: 30.2.0
       resolve-package-path: 4.0.3
-      semver: 7.7.3
+      semver: 7.8.5
       tslib: 2.8.1
       zod: 4.1.13
 
@@ -15870,7 +15875,7 @@ snapshots:
       '@typescript-eslint/visitor-keys': 8.48.0
       debug: 4.4.3
       minimatch: 9.0.5
-      semver: 7.7.3
+      semver: 7.8.5
       tinyglobby: 0.2.15
       ts-api-utils: 2.1.0(typescript@5.9.3)
       typescript: 5.9.3
@@ -17026,7 +17031,7 @@ snapshots:
       cspell-lib: 9.4.0
       fast-json-stable-stringify: 2.1.0
       flatted: 3.3.3
-      semver: 7.7.3
+      semver: 7.8.5
       tinyglobby: 0.2.15
 
   css-blank-pseudo@7.0.1(postcss@8.5.6):
@@ -17054,7 +17059,7 @@ snapshots:
       postcss-modules-scope: 3.2.1(postcss@8.5.6)
       postcss-modules-values: 4.0.0(postcss@8.5.6)
       postcss-value-parser: 4.2.0
-      semver: 7.7.3
+      semver: 7.8.5
     optionalDependencies:
       '@rspack/core': 1.7.12
       webpack: 5.108.1(@swc/core@1.15.43)(lightningcss@1.32.0)(postcss@8.5.6)
@@ -18641,7 +18646,7 @@ snapshots:
 
   is-bun-module@2.0.0:
     dependencies:
-      semver: 7.7.3
+      semver: 7.8.5
 
   is-callable@1.2.7: {}
 
@@ -19143,7 +19148,7 @@ snapshots:
 
   make-dir@4.0.0:
     dependencies:
-      semver: 7.7.3
+      semver: 7.8.5
 
   markdown-escapes@1.0.4: {}
 
@@ -20070,14 +20075,14 @@ snapshots:
       ky: 1.11.0
       registry-auth-token: 5.1.0
       registry-url: 6.0.1
-      semver: 7.7.3
+      semver: 7.8.5
 
   package-json@8.1.1:
     dependencies:
       got: 12.6.1
       registry-auth-token: 5.1.0
       registry-url: 6.0.1
-      semver: 7.7.3
+      semver: 7.8.5
 
   package-manager-detector@0.2.11:
     dependencies:
@@ -20387,7 +20392,7 @@ snapshots:
       cosmiconfig: 8.3.6(typescript@5.9.3)
       jiti: 1.21.7
       postcss: 8.5.6
-      semver: 7.7.3
+      semver: 7.8.5
       webpack: 5.108.1(@swc/core@1.15.43)(lightningcss@1.32.0)(postcss@8.5.6)
     transitivePeerDependencies:
       - typescript
@@ -21305,13 +21310,15 @@ snapshots:
 
   semver-diff@4.0.0:
     dependencies:
-      semver: 7.7.3
+      semver: 7.8.5
 
   semver@5.7.2: {}
 
   semver@6.3.1: {}
 
   semver@7.7.3: {}
+
+  semver@7.8.5: {}
 
   send@0.19.2:
     dependencies:
@@ -22133,7 +22140,7 @@ snapshots:
       is-yarn-global: 0.4.1
       latest-version: 7.0.0
       pupa: 3.3.0
-      semver: 7.7.3
+      semver: 7.8.5
       semver-diff: 4.0.0
       xdg-basedir: 5.1.0
 
