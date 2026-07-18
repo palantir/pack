@@ -25,6 +25,7 @@ import { getPackages } from "@manypkg/get-packages";
 import { consola } from "consola";
 import { FailedWithUserMessage } from "./FailedWithUserMessage.js";
 import * as gitUtils from "./gitUtils.js";
+import { mutateReleasePlan } from "./mutateReleasePlan.js";
 import { packageVersionsOrEmptySet } from "./publishPackages.js";
 import { getChangedPackages } from "./util/getChangedPackages.js";
 import { getVersionsByDirectory } from "./util/getVersionsByDirectory.js";
@@ -99,9 +100,16 @@ export async function runVersionCommit({
     preState,
   );
 
-  // Use the branch from environment or default to "main"
-  // const branchType = process.env.VERSION_COMMIT_BRANCH_TYPE ?? "main";
-  // mutateReleasePlan(cwd, releasePlan, branchType);
+  // Soft, early enforcement of the branching model. The authoritative gate runs in CI
+  // before publish (see ciPublish.ts); this catches violations locally and points at
+  // the offending changeset. The base-branch type is detected from git so it is correct
+  // regardless of entry point; VERSION_COMMIT_BRANCH_TYPE can override the detection.
+  const branchTypeOverride = process.env.VERSION_COMMIT_BRANCH_TYPE;
+  const branchType: "main" | "release branch" =
+    branchTypeOverride === "release branch" || branchTypeOverride === "main"
+      ? branchTypeOverride
+      : await gitUtils.detectBaseBranchType();
+  mutateReleasePlan(cwd, releasePlan, branchType);
 
   for (const release of releasePlan.releases) {
     const versions = await packageVersionsOrEmptySet(release.name);

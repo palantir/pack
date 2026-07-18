@@ -112,3 +112,68 @@ export const checkIfClean = async (): Promise<boolean> => {
   const { stdout } = await getExecOutput("git", ["status", "--porcelain"]);
   return !stdout.length;
 };
+
+/**
+ * Detects whether the current (topic) branch was forked from `main` or a `release/*`
+ * branch, by comparing merge-base distances against `origin/main` and each
+ * `origin/release/*`. The closest base (fewest commits since the merge-base) wins.
+ *
+ * Used to apply the correct branching-model rules for the version-commit flow, where
+ * the checked-out branch has an arbitrary name. Best-effort and defaults to "main" if
+ * detection is inconclusive (the authoritative gate runs later in CI before publish).
+ */
+export const detectBaseBranchType = async (): Promise<
+  "main" | "release branch"
+> => {
+  // Best-effort refresh of the refs we compare against; tolerate being offline.
+  await exec(
+    "git",
+    [
+      "fetch",
+      "--quiet",
+      "origin",
+      "refs/heads/main:refs/remotes/origin/main",
+      "refs/heads/release/*:refs/remotes/origin/release/*",
+    ],
+    { ignoreReturnCode: true },
+  );
+
+  const { stdout: refsOut } = await getExecOutput(
+    "git",
+    [
+      "for-each-ref",
+      "--format=%(refname:short)",
+      "refs/remotes/origin/main",
+      "refs/remotes/origin/release/*",
+    ],
+    { ignoreReturnCode: true, silent: true },
+  );
+  const refs = refsOut.split("\n").map(line => line.trim()).filter(Boolean);
+
+  let bestDistance = Infinity;
+  let baseType: "main" | "release branch" = "main";
+  for (const ref of refs) {
+    const mergeBase = await getExecOutput("git", ["merge-base", "HEAD", ref], {
+      ignoreReturnCode: true,
+      silent: true,
+    });
+    if (mergeBase.exitCode !== 0) {
+      continue;
+    }
+    const distance = await getExecOutput(
+      "git",
+      ["rev-list", "--count", `${mergeBase.stdout.trim()}..HEAD`],
+      { ignoreReturnCode: true, silent: true },
+    );
+    if (distance.exitCode !== 0) {
+      continue;
+    }
+    const commits = Number.parseInt(distance.stdout.trim(), 10);
+    if (Number.isNaN(commits) || commits >= bestDistance) {
+      continue;
+    }
+    bestDistance = commits;
+    baseType = ref.includes("/release/") ? "release branch" : "main";
+  }
+  return baseType;
+};

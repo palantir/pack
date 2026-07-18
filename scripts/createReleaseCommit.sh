@@ -8,7 +8,10 @@ cd "${SCRIPT_DIR}/../"
 # Build the release tool
 pnpm exec turbo transpile --filter "./packages/monorepo/release"
 
-# Run version bump and create commit on current branch with version digest
+# Run version bump and create commit on current branch with version digest.
+# The tool enforces the branching model (main = minor/major, release/* = patch),
+# auto-detecting whether this branch was forked from main or a release/* branch. Set
+# VERSION_COMMIT_BRANCH_TYPE ("main" | "release branch") to override the detection.
 node ./packages/monorepo/release/build/esm/index.js \
   --mode version-commit
 
