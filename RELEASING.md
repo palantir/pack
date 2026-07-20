@@ -14,8 +14,8 @@ Releases are cut by bumping versions and letting the Release GitHub Actions work
 
 There are two equivalent ways to prepare a release; both are gated identically:
 
-- `./scripts/createReleasePr.sh` — run on `main` or a `release/*` branch. Creates a `changeset-release/<branch>` "Version Packages" PR; merge it to publish.
-- `./scripts/createReleaseCommit.sh` — run on a topic branch forked from `main` or a `release/*` branch. Bumps versions and commits them; open a PR yourself and merge to publish. (Add an empty changeset with `pnpm exec changeset add --empty` so CI checks pass.)
+- `./scripts/createReleasePr.sh` — run on `main` or a `release/*` branch. Creates a `changeset-release/<branch>` "Version Packages" PR; merge it to publish. It reads the base directly from the branch you are on, so nothing needs to be specified.
+- `./scripts/createReleaseCommit.sh [main|release]` — run on a topic branch forked from `main` or a `release/*` branch. Bumps versions and commits them; open a PR yourself and merge to publish. (Add an empty changeset with `pnpm exec changeset add --empty` so CI checks pass.) It auto-detects the base branch, but pass `main` or `release` explicitly when your branch was forked from a commit shared by both (see [Branching model enforcement](#branching-model-enforcement)).
 
 ### Cutting a minor/major release (from `main`)
 
@@ -40,7 +40,9 @@ To keep release lines coherent under uni-versioning, we only cut **minor/major**
 
 This is enforced authoritatively in CI, in `ciPublish.ts`, **before** anything is published: it compares each package's version against what is already on npm, derives the release-level bump, and refuses to publish (exits non-empty) if the bump is not allowed for the current branch. Because this runs on the protected destination branch after merge, it cannot be bypassed by how the release commit or PR was prepared.
 
-`./scripts/createReleaseCommit.sh` also runs the same check locally (via `mutateReleasePlan`) for early feedback, detecting whether your topic branch was forked from `main` or a `release/*` branch. Set `VERSION_COMMIT_BRANCH_TYPE` (`main` or `release branch`) to override the detected base.
+`./scripts/createReleaseCommit.sh` also runs the same check locally (via `mutateReleasePlan`) for early feedback. Because it runs on an arbitrarily-named topic branch, it infers the base by comparing merge-base distances to `origin/main` and each `origin/release/*`. When HEAD sits on a commit that is on **both** — e.g. the first patch on a freshly-cut `release/*` branch, which is indistinguishable from the first minor on `main` after cutting it — detection is ambiguous and the tool stops and asks you to specify. Pass `main`/`release` to the script, or set `VERSION_COMMIT_BRANCH_TYPE` (`main` or `release branch`), to resolve it.
+
+> `createReleasePr.sh` is never ambiguous: it derives the base from the branch you run it on (`main` or `release/*`), not from topology, so only the commit flow takes an explicit base.
 
 ## Uni-versioning
 

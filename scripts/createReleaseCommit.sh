@@ -5,13 +5,24 @@ SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 
 cd "${SCRIPT_DIR}/../"
 
+# Optional base selector: `main` or `release`. The tool enforces the branching model
+# (main = minor/major, release/* = patch) and normally auto-detects the base, but when
+# HEAD sits on a commit shared by main and a release branch (e.g. the first patch on a
+# freshly-cut release branch) detection is ambiguous and must be told explicitly.
+case "${1:-}" in
+  main) export VERSION_COMMIT_BRANCH_TYPE="main" ;;
+  release) export VERSION_COMMIT_BRANCH_TYPE="release branch" ;;
+  "") : ;; # no arg: honor any pre-set VERSION_COMMIT_BRANCH_TYPE, else auto-detect
+  *)
+    echo "Usage: $0 [main|release]"
+    exit 1
+    ;;
+esac
+
 # Build the release tool
 pnpm exec turbo transpile --filter "./packages/monorepo/release"
 
 # Run version bump and create commit on current branch with version digest.
-# The tool enforces the branching model (main = minor/major, release/* = patch),
-# auto-detecting whether this branch was forked from main or a release/* branch. Set
-# VERSION_COMMIT_BRANCH_TYPE ("main" | "release branch") to override the detection.
 node ./packages/monorepo/release/build/esm/index.js \
   --mode version-commit
 

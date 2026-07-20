@@ -105,10 +105,23 @@ export async function runVersionCommit({
   // the offending changeset. The base-branch type is detected from git so it is correct
   // regardless of entry point; VERSION_COMMIT_BRANCH_TYPE can override the detection.
   const branchTypeOverride = process.env.VERSION_COMMIT_BRANCH_TYPE;
-  const branchType: "main" | "release branch" =
-    branchTypeOverride === "release branch" || branchTypeOverride === "main"
-      ? branchTypeOverride
-      : await gitUtils.detectBaseBranchType();
+  let branchType: "main" | "release branch";
+  if (branchTypeOverride === "release branch" || branchTypeOverride === "main") {
+    branchType = branchTypeOverride;
+  } else {
+    const detected = await gitUtils.detectBaseBranchType();
+    if (detected === "ambiguous") {
+      throw new FailedWithUserMessage(
+        "Could not determine whether this release targets main or a release branch: "
+          + "HEAD descends from a commit that is on both (e.g. the first patch on a "
+          + "freshly-cut release branch). Re-run specifying the base, for example:\n"
+          + "  ./scripts/createReleaseCommit.sh release\n"
+          + "  ./scripts/createReleaseCommit.sh main\n"
+          + `or set VERSION_COMMIT_BRANCH_TYPE to "main" or "release branch".`,
+      );
+    }
+    branchType = detected;
+  }
   mutateReleasePlan(cwd, releasePlan, branchType);
 
   for (const release of releasePlan.releases) {

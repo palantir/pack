@@ -118,12 +118,15 @@ export const checkIfClean = async (): Promise<boolean> => {
  * branch, by comparing merge-base distances against `origin/main` and each
  * `origin/release/*`. The closest base (fewest commits since the merge-base) wins.
  *
- * Used to apply the correct branching-model rules for the version-commit flow, where
- * the checked-out branch has an arbitrary name. Best-effort and defaults to "main" if
- * detection is inconclusive (the authoritative gate runs later in CI before publish).
+ * Returns "ambiguous" when the closest `main` and `release/*` candidates tie — e.g. HEAD
+ * was forked from a commit that is the tip of both `main` and a freshly-cut `release/*`
+ * branch (the first patch on a new release line). Topology cannot disambiguate that from
+ * the first minor on `main` after cutting the branch, so callers must fall back to an
+ * explicit choice. Also "ambiguous" if no candidate refs resolve. Best-effort: refs that
+ * cannot be resolved are skipped.
  */
 export const detectBaseBranchType = async (): Promise<
-  "main" | "release branch"
+  "main" | "release branch" | "ambiguous"
 > => {
   // Best-effort refresh of the refs we compare against; tolerate being offline.
   await exec(
@@ -150,8 +153,8 @@ export const detectBaseBranchType = async (): Promise<
   );
   const refs = refsOut.split("\n").map(line => line.trim()).filter(Boolean);
 
-  let bestDistance = Infinity;
-  let baseType: "main" | "release branch" = "main";
+  let minMainDistance = Infinity;
+  let minReleaseDistance = Infinity;
   for (const ref of refs) {
     const mergeBase = await getExecOutput("git", ["merge-base", "HEAD", ref], {
       ignoreReturnCode: true,
@@ -169,11 +172,23 @@ export const detectBaseBranchType = async (): Promise<
       continue;
     }
     const commits = Number.parseInt(distance.stdout.trim(), 10);
-    if (Number.isNaN(commits) || commits >= bestDistance) {
+    if (Number.isNaN(commits)) {
       continue;
     }
-    bestDistance = commits;
-    baseType = ref.includes("/release/") ? "release branch" : "main";
+    if (ref.includes("/release/")) {
+      minReleaseDistance = Math.min(minReleaseDistance, commits);
+    } else {
+      minMainDistance = Math.min(minMainDistance, commits);
+    }
   }
-  return baseType;
+
+  if (minReleaseDistance < minMainDistance) {
+    return "release branch";
+  }
+  if (minMainDistance < minReleaseDistance) {
+    return "main";
+  }
+  // Tie (HEAD sits on a commit shared by main and a release branch) or nothing
+  // resolved: topology cannot decide, so require the caller to choose explicitly.
+  return "ambiguous";
 };
