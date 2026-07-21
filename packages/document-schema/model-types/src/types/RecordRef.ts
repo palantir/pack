@@ -17,6 +17,7 @@
 import type { Flavored } from "@palantir/pack.core";
 import type { DocumentRef } from "./DocumentRef.js";
 import type { Model, ModelData } from "./Model.js";
+import type { RecordValidationError } from "./RecordValidation.js";
 import type { Unsubscribe } from "./Unsubscribe.js";
 
 export type RecordId = Flavored<"RecordId">;
@@ -75,6 +76,33 @@ export interface RecordRef<M extends Model = Model> {
    * ```
    */
   onChange(callback: (snapshot: ModelData<M>, recordRef: RecordRef<M>) => void): Unsubscribe;
+
+  /**
+   * Subscribe to schema-validation failures for the record.
+   *
+   * If the record's stored data cannot be validated against the model's
+   * schema (for example, after a partial write left the document in a
+   * corrupted state), `onChange` subscribers are NOT called with the invalid
+   * data; instead, callbacks registered here receive a
+   * {@link RecordValidationError} describing the failure. If the record is
+   * later repaired by a subsequent update, `onChange` resumes firing.
+   *
+   * If the record is already invalid at subscription time, the callback is
+   * invoked immediately.
+   *
+   * @param callback The callback to invoke when the record fails validation.
+   * @returns An unsubscribe function.
+   *
+   * @example
+   * ```ts
+   * recordRef.onInvalid((error, recordRef) => {
+   *   console.warn("Record failed validation:", error.issues);
+   * });
+   * ```
+   */
+  onInvalid(
+    callback: (error: RecordValidationError, recordRef: RecordRef<M>) => void,
+  ): Unsubscribe;
 
   /**
    * Subscribe to deletion of the record.

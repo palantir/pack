@@ -33,6 +33,7 @@ import type {
   RecordCollectionRef,
   RecordId,
   RecordRef,
+  RecordValidationError,
 } from "@palantir/pack.document-schema.model-types";
 import type { CreateDocumentMetadata, FileSystemType } from "./CreateDocumentMetadata.js";
 
@@ -54,6 +55,7 @@ export type DocumentLiveStatus = typeof DocumentLiveStatus[keyof typeof Document
 
 export type DocumentSyncStatus = {
   readonly error?: ChannelError;
+  readonly invalidRecordCount?: number;
   /**
    * When true, indicates this is a demo/test service not connected to real Foundry.
    * UI can use this to display a badge or indicator that data is local-only.
@@ -93,6 +95,11 @@ export type RecordChangeCallback<M extends Model = Model> = (
 ) => void;
 
 export type RecordDeleteCallback<M extends Model = Model> = (
+  record: RecordRef<M>,
+) => void;
+
+export type RecordInvalidCallback<M extends Model = Model> = (
+  error: RecordValidationError,
   record: RecordRef<M>,
 ) => void;
 
@@ -331,6 +338,15 @@ export interface DocumentService {
     record: RecordRef<M>,
     callback: RecordDeleteCallback<M>,
   ) => Unsubscribe;
+
+  readonly onRecordInvalid: <M extends Model>(
+    record: RecordRef<M>,
+    callback: RecordInvalidCallback<M>,
+  ) => Unsubscribe;
+
+  readonly getInvalidRecords: (
+    docRef: DocumentRef,
+  ) => ReadonlyArray<RecordValidationError>;
 
   // Status methods
   readonly getDocumentStatus: <T extends DocumentSchema>(

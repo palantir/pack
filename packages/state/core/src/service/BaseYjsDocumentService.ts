@@ -34,7 +34,9 @@ import {
   type PresencePublishOptions,
   type RecordCollectionRef,
   type RecordId,
+  RecordInvalidError,
   type RecordRef,
+  type RecordValidationError,
   type UpgradeFns,
   type UpgradeRegistryMap,
 } from "@palantir/pack.document-schema.model-types";
@@ -54,6 +56,7 @@ import type {
   RecordChangeCallback,
   RecordCollectionChangeCallback,
   RecordDeleteCallback,
+  RecordInvalidCallback,
   SearchDocumentsResult,
   UpdateDocumentMetadata,
 } from "../types/DocumentService.js";
@@ -67,6 +70,30 @@ import {
 } from "./DocumentUpdateSchemaVersion.js";
 import * as YjsSchemaMapper from "./YjsSchemaMapper.js";
 
+/**
+ * Minimal structural view of a zod schema's safeParse. Some models carry a
+ * non-functional placeholder zodSchema (e.g. custom payload models), so the
+ * presence of a callable safeParse is checked at runtime.
+ */
+type SafeParseLike = (data: unknown) => {
+  readonly success: boolean;
+  readonly error?: {
+    readonly issues?: ReadonlyArray<{
+      readonly path: ReadonlyArray<PropertyKey>;
+      readonly message: string;
+    }>;
+  };
+};
+
+/**
+ * Identity key for invalid-record tracking. Records are identified by
+ * model + id: the same id may exist in different collections of a document,
+ * so id alone is not a safe key. JSON encoding avoids delimiter collisions.
+ */
+function invalidRecordKey(recordRef: RecordRef): string {
+  return JSON.stringify([getMetadata(recordRef.model).name, recordRef.id as string]);
+}
+
 export interface RecordCollectionSubscriptions<M extends Model = Model> {
   added?: Set<RecordCollectionChangeCallback<M>>;
   changed?: Set<RecordCollectionChangeCallback<M>>;
@@ -77,6 +104,7 @@ export interface RecordSubscribers<M extends Model = Model> {
   readonly ref: RecordRef<M>;
   changed?: Set<RecordChangeCallback<M>>;
   deleted?: Set<RecordDeleteCallback<M>>;
+  invalid?: Set<RecordInvalidCallback<M>>;
 }
 
 export interface InternalYjsDoc {
@@ -116,6 +144,7 @@ export interface InternalYjsDoc {
   readonly statusSubscribers: Set<DocumentStatusChangeCallback>;
 
   readonly yjsCollectionHandlers: Map<string, () => void>;
+  readonly invalidRecords: Map<string, RecordValidationError>;
 
   readonly upgrades?: UpgradeRegistryMap;
   /**
@@ -347,6 +376,7 @@ export abstract class BaseYjsDocumentService<TDoc extends InternalYjsDoc = Inter
       docStateSubscribers: new Set(),
       metadataSubscribers: new Set(),
       recordSubscriptions: new Map(),
+      invalidRecords: new Map(),
       yDoc: this.initializeYDoc(schema),
       yDocUpdateHandler: undefined,
       yjsCollectionHandlers: new Map(),
@@ -372,9 +402,12 @@ export abstract class BaseYjsDocumentService<TDoc extends InternalYjsDoc = Inter
 
   // Status helper methods
   private buildStatus(internalDoc: TDoc): DocumentStatus {
+    const invalidRecordCount = internalDoc.invalidRecords.size;
     return {
       metadata: internalDoc.metadataStatus,
-      data: internalDoc.dataStatus,
+      data: invalidRecordCount > 0
+        ? { ...internalDoc.dataStatus, invalidRecordCount }
+        : internalDoc.dataStatus,
       presence: internalDoc.presenceStatus,
       activity: internalDoc.activityStatus,
     };
@@ -530,15 +563,25 @@ export abstract class BaseYjsDocumentService<TDoc extends InternalYjsDoc = Inter
     recordRef: RecordRef<M>,
   ): Promise<ModelData<M>> => {
     const { internalDoc } = this.getCreateInternalDoc(recordRef.docRef);
-    const snapshot = this.getRecordSnapshotInternal(internalDoc, recordRef);
+    const { snapshot, thrown } = this.getRecordSnapshotChecked(internalDoc, recordRef);
 
     // This is a promise interface for async loading for external API implementations to trigger a load first
     // For this base implementation, we always return from the local Y.Doc
 
+    if (thrown != null) {
+      this.markRecordInvalid(internalDoc, recordRef, thrown);
+      return Promise.reject(new RecordInvalidError(thrown));
+    }
     if (snapshot == null) {
       // TODO: well known error types
       return Promise.reject(new Error(`Record not found: ${recordRef.id}`));
     }
+    const validationError = this.validateRecordSnapshot(recordRef, snapshot);
+    if (validationError != null) {
+      this.markRecordInvalid(internalDoc, recordRef, validationError);
+      return Promise.reject(new RecordInvalidError(validationError));
+    }
+    this.clearRecordInvalid(internalDoc, recordRef);
     return Promise.resolve(snapshot);
   };
 
@@ -553,6 +596,154 @@ export abstract class BaseYjsDocumentService<TDoc extends InternalYjsDoc = Inter
       internalDoc.upgrades,
       internalDoc.upgradeFns,
     ) as ModelData<M>;
+  }
+
+  /**
+   * Compute a record snapshot, containing any exception thrown by the read
+   * path (schema mapping / upgrade lens) instead of letting it escape into
+   * notification fan-out or Yjs observer callbacks. A throw is synthesized
+   * into a RecordValidationError so a corrupt record that breaks its upgrade
+   * lens is handled identically to one that fails validation: that one
+   * record becomes invalid, and sibling records in the same transaction are
+   * unaffected.
+   */
+  private getRecordSnapshotChecked<M extends Model>(
+    internalDoc: TDoc,
+    recordRef: RecordRef<M>,
+  ): { readonly snapshot?: ModelData<M>; readonly thrown?: RecordValidationError } {
+    try {
+      return { snapshot: this.getRecordSnapshotInternal(internalDoc, recordRef) };
+    } catch (e) {
+      const modelName = getMetadata(recordRef.model).name;
+      const cause = e instanceof Error ? e.message : String(e);
+      return {
+        thrown: {
+          modelName,
+          recordId: recordRef.id,
+          issues: [{ path: [], message: `snapshot computation threw: ${cause}` }],
+          message: `Record ${recordRef.id} of model ${modelName} could not be read `
+            + `(a failing upgrade lens on corrupt data can cause this): ${cause}`,
+        },
+      };
+    }
+  }
+
+  /**
+   * Validate a record snapshot against its model's zod schema, if a
+   * functional one is present. Models without a usable schema (e.g. custom
+   * payload placeholders) are treated as always valid.
+   *
+   * @returns undefined if valid (or has no usable schema), otherwise the error.
+   */
+  private validateRecordSnapshot<M extends Model>(
+    recordRef: RecordRef<M>,
+    snapshot: unknown,
+  ): RecordValidationError | undefined {
+    const zodSchema = recordRef.model.zodSchema as { readonly safeParse?: SafeParseLike };
+    const safeParse = zodSchema?.safeParse;
+    if (safeParse == null) {
+      return undefined;
+    }
+
+    const modelName = getMetadata(recordRef.model).name;
+    let result: ReturnType<SafeParseLike>;
+    try {
+      result = safeParse.call(recordRef.model.zodSchema, snapshot);
+    } catch (e) {
+      const cause = e instanceof Error ? e.message : String(e);
+      return {
+        modelName,
+        recordId: recordRef.id,
+        issues: [{ path: [], message: `schema validation threw: ${cause}` }],
+        message: `Record ${recordRef.id} of model ${modelName} could not be validated: ${cause}`,
+      };
+    }
+    if (result.success) {
+      return undefined;
+    }
+
+    const issues = (result.error?.issues ?? []).map(issue => ({
+      path: issue.path.map(part => (typeof part === "number" ? part : String(part))),
+      message: issue.message,
+    }));
+    const issueSummary = issues
+      .map(issue =>
+        issue.path.length > 0 ? `${issue.path.join(".")}: ${issue.message}` : issue.message
+      )
+      .join("; ");
+    return {
+      modelName,
+      recordId: recordRef.id,
+      issues,
+      message: `Record ${recordRef.id} does not match schema for model ${modelName}`
+        + (issueSummary.length > 0 ? ` (${issueSummary})` : ""),
+    };
+  }
+
+  /**
+   * Track a validation failure: store it on the doc, notify onInvalid
+   * subscribers, log, and (on the valid->invalid transition) notify status
+   * subscribers so doc-level UI can react.
+   */
+  private markRecordInvalid<M extends Model>(
+    internalDoc: TDoc,
+    recordRef: RecordRef<M>,
+    error: RecordValidationError,
+  ): void {
+    const key = invalidRecordKey(recordRef);
+    const wasInvalid = internalDoc.invalidRecords.has(key);
+    internalDoc.invalidRecords.set(key, error);
+
+    if (!wasInvalid) {
+      this.logger.error(
+        "Record failed schema validation; withholding snapshot from onChange subscribers",
+        {
+          docId: recordRef.docRef.id,
+          recordId: recordRef.id,
+          model: error.modelName,
+          issues: error.issues,
+        },
+      );
+    }
+
+    const recordSubs = internalDoc.recordSubscriptions.get(recordRef.id);
+    if (
+      recordSubs != null
+      && getMetadata(recordSubs.ref.model).name === getMetadata(recordRef.model).name
+    ) {
+      for (const callback of recordSubs.invalid ?? []) {
+        try {
+          callback(error, recordRef);
+        } catch (e) {
+          console.error("Record onInvalid callback threw unhandled error", e, {
+            model: error.modelName,
+            id: recordRef.id,
+          });
+        }
+      }
+    }
+
+    if (!wasInvalid) {
+      this.notifyStatusSubscribers(internalDoc, recordRef.docRef);
+    }
+  }
+
+  /**
+   * Clear a previously tracked validation failure (record repaired or
+   * deleted). Notifies status subscribers on the invalid->valid transition.
+   */
+  private clearRecordInvalid(
+    internalDoc: TDoc,
+    recordRef: RecordRef,
+  ): void {
+    if (!internalDoc.invalidRecords.delete(invalidRecordKey(recordRef))) {
+      return;
+    }
+    this.logger.info("Record passes schema validation again", {
+      docId: recordRef.docRef.id,
+      recordId: recordRef.id,
+    });
+    this.notifyStatusSubscribers(internalDoc, recordRef.docRef);
   }
 
   readonly setRecord = <R extends Model>(
@@ -606,7 +797,14 @@ export abstract class BaseYjsDocumentService<TDoc extends InternalYjsDoc = Inter
     );
 
     const storageName = getMetadata(recordRef.model).name;
-    const currentState = this.getRecordSnapshotInternal(internalDoc, recordRef);
+    const { snapshot: currentState, thrown } = this.getRecordSnapshotChecked(
+      internalDoc,
+      recordRef,
+    );
+    if (thrown != null) {
+      this.markRecordInvalid(internalDoc, recordRef, thrown);
+      return Promise.reject(new RecordInvalidError(thrown));
+    }
     const documentUpdateSchemaVersion = getPartialModelDataSchemaVersion(
       internalDoc.schema,
       storageName,
@@ -835,22 +1033,27 @@ export abstract class BaseYjsDocumentService<TDoc extends InternalYjsDoc = Inter
     invariant(internalDoc != null, "Document not found for record notifications");
 
     const recordSubs = internalDoc.recordSubscriptions.get(recordRef.id);
-    if (recordSubs == null) {
-      return;
+    if (recordSubs != null) {
+      // Verify model consistency
+      invariant(
+        getMetadata(recordSubs.ref.model).name === getMetadata(recordRef.model).name,
+        `Model mismatch when notifying record subscribers for ${recordRef.id}: expected ${
+          getMetadata(recordSubs.ref.model).name
+        }, got ${getMetadata(recordRef.model).name}`,
+      );
     }
-
-    // Verify model consistency
-    invariant(
-      getMetadata(recordSubs.ref.model).name === getMetadata(recordRef.model).name,
-      `Model mismatch when notifying record subscribers for ${recordRef.id}: expected ${
-        getMetadata(recordSubs.ref.model).name
-      }, got ${getMetadata(recordRef.model).name}`,
-    );
 
     switch (changeType) {
       case "changed": {
-        const snapshot = this.getRecordSnapshotInternal(internalDoc, recordRef);
-        for (const callback of recordSubs.changed ?? []) {
+        const { snapshot, thrown } = this.getRecordSnapshotChecked(internalDoc, recordRef);
+        const validationError = thrown
+          ?? (snapshot != null ? this.validateRecordSnapshot(recordRef, snapshot) : undefined);
+        if (validationError != null) {
+          this.markRecordInvalid(internalDoc, recordRef, validationError);
+          break;
+        }
+        this.clearRecordInvalid(internalDoc, recordRef);
+        for (const callback of recordSubs?.changed ?? []) {
           try {
             callback(snapshot, recordRef);
           } catch (e) {
@@ -863,7 +1066,8 @@ export abstract class BaseYjsDocumentService<TDoc extends InternalYjsDoc = Inter
         break;
       }
       case "deleted": {
-        for (const callback of recordSubs.deleted ?? []) {
+        this.clearRecordInvalid(internalDoc, recordRef);
+        for (const callback of recordSubs?.deleted ?? []) {
           try {
             callback(recordRef);
           } catch (e) {
@@ -929,16 +1133,28 @@ export abstract class BaseYjsDocumentService<TDoc extends InternalYjsDoc = Inter
 
     const existed = recordsCollection.has(record.id as string);
     if (existed) {
-      const documentUpdateSchemaVersion = getModelDataSchemaVersion(
-        internalDoc.schema,
-        storageName,
-        this.getRecordSnapshotInternal(internalDoc, record),
-      );
+      let documentUpdateSchemaVersion: number | undefined;
+      try {
+        documentUpdateSchemaVersion = getModelDataSchemaVersion(
+          internalDoc.schema,
+          storageName,
+          this.getRecordSnapshotInternal(internalDoc, record),
+        );
+      } catch {
+        // A corrupt record whose upgrade lens throws must still be deletable
+        // (delete-and-recreate is the repair path). Fall back to tagging no
+        // explicit schema version on the deletion transaction.
+        documentUpdateSchemaVersion = undefined;
+      }
       internalDoc.yDoc.transact(transaction => {
-        addDocumentUpdateSchemaVersionToTransaction(transaction, documentUpdateSchemaVersion);
+        if (documentUpdateSchemaVersion != null) {
+          addDocumentUpdateSchemaVersionToTransaction(transaction, documentUpdateSchemaVersion);
+        }
         recordsCollection.delete(record.id as string);
       });
     }
+
+    this.clearRecordInvalid(internalDoc, record);
 
     return Promise.resolve();
   };
@@ -1033,12 +1249,17 @@ export abstract class BaseYjsDocumentService<TDoc extends InternalYjsDoc = Inter
       this.setupCollectionListener(internalDoc, collectionRef);
     }
 
-    const snapshot = this.getRecordSnapshotInternal(
-      internalDoc,
-      record,
-    );
-    if (snapshot != null) {
-      callback(snapshot, record);
+    const { snapshot, thrown } = this.getRecordSnapshotChecked(internalDoc, record);
+    if (thrown != null) {
+      this.markRecordInvalid(internalDoc, record, thrown);
+    } else if (snapshot != null) {
+      const validationError = this.validateRecordSnapshot(record, snapshot);
+      if (validationError == null) {
+        this.clearRecordInvalid(internalDoc, record);
+        callback(snapshot, record);
+      } else {
+        this.markRecordInvalid(internalDoc, record, validationError);
+      }
     }
 
     return () => {
@@ -1110,6 +1331,95 @@ export abstract class BaseYjsDocumentService<TDoc extends InternalYjsDoc = Inter
         this.onDataSubscriptionClosed(currentDoc, internalDocRef);
       }
     };
+  };
+
+  readonly onRecordInvalid = <M extends Model>(
+    record: RecordRef<M>,
+    callback: RecordInvalidCallback<M>,
+  ): Unsubscribe => {
+    const { internalDoc, internalDocRef } = this.getCreateInternalDoc(record.docRef);
+    const isFirstDataSubscription = !internalDoc.hasDataSubscriptions;
+    const storageName = getMetadata(record.model).name;
+    const collectionRef = this.getCreateRecordCollectionRef(record.docRef, record.model);
+    const needsCollectionListener = !internalDoc.yjsCollectionHandlers.has(storageName);
+
+    const recordSubs = this.getCreateRecordSubscriptions(internalDoc, record);
+    (recordSubs.invalid ??= new Set()).add(callback);
+    internalDoc.hasDataSubscriptions = true;
+
+    // Trigger remote load if this is the first data subscription and not yet loaded
+    if (isFirstDataSubscription && internalDoc.dataStatus.load === DocumentLoadStatus.UNLOADED) {
+      this.onDataSubscriptionOpened(internalDoc, internalDocRef);
+    }
+
+    if (needsCollectionListener) {
+      this.getCreateCollectionSubscriptions(internalDoc, collectionRef);
+      this.setupCollectionListener(internalDoc, collectionRef);
+    }
+
+    const { snapshot, thrown } = this.getRecordSnapshotChecked(internalDoc, record);
+    const validationError = thrown
+      ?? (snapshot != null ? this.validateRecordSnapshot(record, snapshot) : undefined);
+    if (validationError != null) {
+      this.markRecordInvalid(internalDoc, record, validationError);
+    } else {
+      this.clearRecordInvalid(internalDoc, record);
+    }
+
+    return () => {
+      recordSubs.invalid?.delete(callback);
+      const currentDoc = this.documents.get(record.docRef.id);
+      if (!currentDoc) return;
+
+      if (isRecordSubscriptionsEmpty(recordSubs)) {
+        currentDoc.recordSubscriptions.delete(record.id);
+      }
+
+      this.cleanupCollectionListenerIfUnused(currentDoc, record.docRef.id, storageName);
+
+      const hasDataSubs = currentDoc.docStateSubscribers.size > 0
+        || currentDoc.recordSubscriptions.size > 0
+        || Array.from(currentDoc.collectionSubscriptions.values()).some(subs =>
+          subs.added?.size || subs.changed?.size || subs.deleted?.size
+        );
+
+      if (!hasDataSubs) {
+        currentDoc.hasDataSubscriptions = false;
+        this.onDataSubscriptionClosed(currentDoc, internalDocRef);
+      }
+    };
+  };
+
+  /**
+   * Get the KNOWN invalid records of a document: records whose stored data
+   * failed schema validation when last read or notified. This is not a full
+   * document scan, so corruption in records that have never been read or
+   * observed is not included. Tracked entries are re-validated on each call
+   * and pruned if the record has since been repaired or deleted, so results
+   * do not go stale for documents without active subscriptions.
+   */
+  readonly getInvalidRecords = (
+    docRef: DocumentRef,
+  ): ReadonlyArray<RecordValidationError> => {
+    const internalDoc = this.documents.get(docRef.id);
+    if (internalDoc == null) {
+      return [];
+    }
+    for (const error of [...internalDoc.invalidRecords.values()]) {
+      const model: Model | undefined = internalDoc.schema[error.modelName];
+      if (model == null) {
+        continue;
+      }
+      const recordRef = this.getCreateRecordRef(docRef, error.recordId, model);
+      const { snapshot, thrown } = this.getRecordSnapshotChecked(internalDoc, recordRef);
+      if (thrown != null) {
+        continue; // still unreadable; keep the tracked entry
+      }
+      if (snapshot == null || this.validateRecordSnapshot(recordRef, snapshot) == null) {
+        this.clearRecordInvalid(internalDoc, recordRef);
+      }
+    }
+    return [...internalDoc.invalidRecords.values()];
   };
 
   private getCreateCollectionSubscriptions<M extends Model>(
@@ -1472,5 +1782,6 @@ function isRecordSubscriptionsEmpty<M extends Model>(
   return (
     !subs.changed?.size
     && !subs.deleted?.size
+    && !subs.invalid?.size
   );
 }
