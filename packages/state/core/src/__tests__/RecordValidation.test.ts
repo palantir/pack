@@ -466,6 +466,42 @@ describe("Record schema validation", () => {
     expect(userInvalidCount).toBe(0);
     unsubscribe();
   });
+
+  it("notifies a new onInvalid subscriber without re-notifying existing ones", async () => {
+    const schema = createSchemaWithUser();
+    const documentId = "validation-multi-invalid-doc" as DocumentId;
+    const docRef = createDocRef(app, documentId, schema);
+    const stateModule = getStateModule(app);
+
+    const userId = "user_1" as RecordId;
+    const recordRef = stateModule.createRecordRef(docRef, userId, schema.User);
+
+    let countA = 0;
+    let countB = 0;
+    const unsubscribeA = stateModule.onRecordInvalid(recordRef, () => {
+      countA++;
+    });
+
+    corruptRecord(documentId, userId);
+    await new Promise(resolve => setTimeout(resolve, 10));
+    expect(countA).toBe(1);
+
+    // B joins an already-invalid record: B is notified, A is not re-notified.
+    const unsubscribeB = stateModule.onRecordInvalid(recordRef, () => {
+      countB++;
+    });
+    expect(countB).toBe(1);
+    expect(countA).toBe(1);
+
+    // After A unsubscribes, a repair clears tracking and neither A nor B fire again.
+    unsubscribeA();
+    await stateModule.setRecord(recordRef, VALID_USER);
+    await new Promise(resolve => setTimeout(resolve, 10));
+    expect(countA).toBe(1);
+    expect(stateModule.getInvalidRecords(docRef)).toHaveLength(0);
+
+    unsubscribeB();
+  });
 });
 describe("Record schema validation with a throwing upgrade lens", () => {
   let app: PackAppInternal;

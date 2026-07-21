@@ -689,6 +689,7 @@ export abstract class BaseYjsDocumentService<TDoc extends InternalYjsDoc = Inter
     internalDoc: TDoc,
     recordRef: RecordRef<M>,
     error: RecordValidationError,
+    callbackToNotify?: RecordInvalidCallback<M>,
   ): void {
     const key = invalidRecordKey(recordRef);
     const wasInvalid = internalDoc.invalidRecords.has(key);
@@ -711,7 +712,8 @@ export abstract class BaseYjsDocumentService<TDoc extends InternalYjsDoc = Inter
       recordSubs != null
       && getMetadata(recordSubs.ref.model).name === getMetadata(recordRef.model).name
     ) {
-      for (const callback of recordSubs.invalid ?? []) {
+      const callbacks = callbackToNotify != null ? [callbackToNotify] : recordSubs.invalid ?? [];
+      for (const callback of callbacks) {
         try {
           callback(error, recordRef);
         } catch (e) {
@@ -1361,7 +1363,7 @@ export abstract class BaseYjsDocumentService<TDoc extends InternalYjsDoc = Inter
     const validationError = thrown
       ?? (snapshot != null ? this.validateRecordSnapshot(record, snapshot) : undefined);
     if (validationError != null) {
-      this.markRecordInvalid(internalDoc, record, validationError);
+      this.markRecordInvalid(internalDoc, record, validationError, callback);
     } else {
       this.clearRecordInvalid(internalDoc, record);
     }
