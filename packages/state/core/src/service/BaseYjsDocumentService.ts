@@ -756,11 +756,24 @@ export abstract class BaseYjsDocumentService<TDoc extends InternalYjsDoc = Inter
         );
 
       if (!hasDataSubs) {
-        currentDoc.hasDataSubscriptions = false;
-        this.onDataSubscriptionClosed(currentDoc, internalDocRef);
+        this.closeDataSubscription(currentDoc, internalDocRef);
       }
     };
   };
+
+  private closeDataSubscription(currentDoc: TDoc, docRef: DocumentRef): void {
+    currentDoc.hasDataSubscriptions = false;
+    this.onDataSubscriptionClosed(currentDoc, docRef);
+    if (
+      currentDoc.dataStatus.load !== DocumentLoadStatus.UNLOADED
+      || currentDoc.dataStatus.live !== DocumentLiveStatus.DISCONNECTED
+    ) {
+      this.updateDataStatus(currentDoc, docRef, {
+        live: DocumentLiveStatus.DISCONNECTED,
+        load: DocumentLoadStatus.UNLOADED,
+      });
+    }
+  }
 
   protected getDocumentRef(docId: DocumentId): DocumentRef | null {
     const internalDoc = this.documents.get(docId);
@@ -1059,8 +1072,7 @@ export abstract class BaseYjsDocumentService<TDoc extends InternalYjsDoc = Inter
         );
 
       if (!hasDataSubs) {
-        currentDoc.hasDataSubscriptions = false;
-        this.onDataSubscriptionClosed(currentDoc, internalDocRef);
+        this.closeDataSubscription(currentDoc, internalDocRef);
       }
     };
   };
@@ -1106,8 +1118,7 @@ export abstract class BaseYjsDocumentService<TDoc extends InternalYjsDoc = Inter
         );
 
       if (!hasDataSubs) {
-        currentDoc.hasDataSubscriptions = false;
-        this.onDataSubscriptionClosed(currentDoc, internalDocRef);
+        this.closeDataSubscription(currentDoc, internalDocRef);
       }
     };
   };
@@ -1190,8 +1201,7 @@ export abstract class BaseYjsDocumentService<TDoc extends InternalYjsDoc = Inter
         );
 
       if (!hasDataSubs) {
-        currentDoc.hasDataSubscriptions = false;
-        this.onDataSubscriptionClosed(currentDoc, internalDocRef);
+        this.closeDataSubscription(currentDoc, internalDocRef);
       }
     };
   }
@@ -1432,15 +1442,42 @@ export abstract class BaseYjsDocumentService<TDoc extends InternalYjsDoc = Inter
       return Promise.reject(new Error("Data load error", { cause: internalDoc.dataStatus.error }));
     }
 
-    // Wait for status to change to LOADED or ERROR
+    // Data loads are demand-driven: they only start when a data subscription
+    // (onStateChange / record / collection) is registered. Waiting with no
+    // subscription and no load in flight would hang forever, so fail fast.
+    if (
+      !internalDoc.hasDataSubscriptions
+      && internalDoc.dataStatus.load === DocumentLoadStatus.UNLOADED
+    ) {
+      return Promise.reject(
+        new Error(
+          "Cannot wait for data load: no data subscription is registered for this document, "
+            + "so no load will start. Subscribe (e.g. onStateChange) before waiting.",
+        ),
+      );
+    }
+
     return new Promise((resolve, reject) => {
+      let hasStartedLoading = internalDoc.dataStatus.load === DocumentLoadStatus.LOADING;
       const unsubscribe = this.onStatusChange(docRef, (_, status) => {
-        if (status.data.load === DocumentLoadStatus.LOADED) {
-          unsubscribe();
-          resolve();
-        } else if (status.data.load === DocumentLoadStatus.ERROR) {
-          unsubscribe();
-          reject(new Error("Data load error", { cause: status.data.error }));
+        switch (status.data.load) {
+          case DocumentLoadStatus.LOADING:
+            hasStartedLoading = true;
+            break;
+          case DocumentLoadStatus.LOADED:
+            unsubscribe();
+            resolve();
+            break;
+          case DocumentLoadStatus.ERROR:
+            unsubscribe();
+            reject(new Error("Data load error", { cause: status.data.error }));
+            break;
+          case DocumentLoadStatus.UNLOADED:
+            if (hasStartedLoading) {
+              unsubscribe();
+              reject(new Error("Data load canceled"));
+            }
+            break;
         }
       });
     });

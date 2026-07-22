@@ -524,19 +524,9 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
     if (internalDoc.syncSession) {
       this.eventService.stopDocumentSync(internalDoc.syncSession);
       internalDoc.syncSession = undefined;
-      this.updateDataStatus(internalDoc, docRef, {
-        live: DocumentLiveStatus.DISCONNECTED,
-        load: DocumentLoadStatus.UNLOADED,
-      });
-    } else if (
-      internalDoc.dataStatus.load === DocumentLoadStatus.LOADING
-      || internalDoc.dataStatus.load === DocumentLoadStatus.ERROR
-    ) {
-      this.updateDataStatus(internalDoc, docRef, {
-        live: DocumentLiveStatus.DISCONNECTED,
-        load: DocumentLoadStatus.UNLOADED,
-      });
     }
+    // Data status reset (UNLOADED/DISCONNECTED) is owned by the base class,
+    // which applies it after this hook returns.
     if (
       internalDoc.metadataStatus.load === DocumentLoadStatus.ERROR
       && internalDoc.metadataSubscribers.size === 0
