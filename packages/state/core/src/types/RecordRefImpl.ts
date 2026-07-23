@@ -20,6 +20,7 @@ import type {
   ModelData,
   RecordId,
   RecordRef,
+  RecordValidationError,
   Unsubscribe,
 } from "@palantir/pack.document-schema.model-types";
 import { RecordRefBrand } from "@palantir/pack.document-schema.model-types";
@@ -37,6 +38,7 @@ const INVALID_RECORD_REF: RecordRef = Object.freeze(
     getSnapshot: () => Promise.reject(new Error("Invalid record reference")),
     onChange: () => () => {},
     onDeleted: () => () => {},
+    onInvalid: () => () => {},
   } as const,
 );
 
@@ -115,6 +117,12 @@ class RecordRefImpl<M extends Model> implements RecordRef<M> {
 
   onDeleted(callback: (recordRef: RecordRef<M>) => void): Unsubscribe {
     return this.#documentService.onRecordDeleted(this, callback);
+  }
+
+  onInvalid(
+    callback: (error: RecordValidationError, recordRef: RecordRef<M>) => void,
+  ): Unsubscribe {
+    return this.#documentService.onRecordInvalid(this, callback);
   }
 
   delete(): Promise<void> {
