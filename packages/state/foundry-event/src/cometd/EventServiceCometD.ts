@@ -113,7 +113,7 @@ export class EventServiceCometD implements EventService {
         // this.cometd.registerExtension(BINARY_EXTENSION_NAME, new BinaryExtension());
       }
 
-      await new Promise<void>(resolve => {
+      await new Promise<void>((resolve, reject) => {
         this.cometd!.addListener(
           META_CHANNEL_HANDSHAKE,
           message => {
@@ -148,6 +148,8 @@ export class EventServiceCometD implements EventService {
           this.logger.info("Initializing CometD with token");
           this.tokenExtension.setToken(token);
           this.cometd!.handshake();
+        }).catch((e: unknown) => {
+          reject(new Error("Failed to get auth token for CometD handshake", { cause: e }));
         });
       });
     })();
