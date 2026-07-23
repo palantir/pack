@@ -388,6 +388,9 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
       })
       .catch((e: unknown) => {
         if (!this.isMetadataOpenGeneration(internalDoc, docRef, openToken)) {
+          this.logger.warn("Document metadata load failed after subscription was closed", e, {
+            docId: docRef.id,
+          });
           return;
         }
         internalDoc.metadataSubscriptionOpenToken = undefined;
@@ -420,6 +423,13 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
       })
       .catch((e: unknown) => {
         if (!this.isMetadataOpenGeneration(internalDoc, docRef, openToken)) {
+          this.logger.warn(
+            "Metadata updates subscription failed after subscription was closed",
+            e,
+            {
+              docId: docRef.id,
+            },
+          );
           return;
         }
         this.logger.error("Failed to subscribe to metadata updates", e, {
@@ -498,6 +508,9 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
           || currentDoc.dataSubscriptionOpenToken !== openToken
           || !currentDoc.hasDataSubscriptions
         ) {
+          this.logger.warn("Metadata load for data sync failed after subscription was closed", e, {
+            docId: docRef.id,
+          });
           return;
         }
         this.updateDataStatus(internalDoc, docRef, {
@@ -693,6 +706,9 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
       })
       .catch((e: unknown) => {
         if (this.documents.get(docRef.id) !== internalDoc) {
+          this.logger.warn("Metadata refetch failed after document was replaced", e, {
+            docId: docRef.id,
+          });
           return;
         }
         this.logger.error("Failed to refetch document metadata", e, {
