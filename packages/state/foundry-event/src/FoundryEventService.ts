@@ -548,6 +548,15 @@ class FoundryEventServiceImpl implements FoundryEventService {
             lastRevisionId: session.lastRevisionId,
             message: messageDetail,
           });
+          onStatusChange({
+            error: toUnknownChannelError(
+              new Error(
+                `Revision gap: expected base revision ${session.lastRevisionId}, `
+                  + `received ${baseRevisionId}. Local document state is stale.`,
+              ),
+            ),
+            load: DocumentLoadStatus.ERROR,
+          });
           return;
         }
 
@@ -557,10 +566,28 @@ class FoundryEventServiceImpl implements FoundryEventService {
           message: messageDetail,
         });
 
-        session.lastRevisionId = Number(revisionId);
         if (data != null) {
-          y.applyUpdate(yDoc, data, UPDATE_ORIGIN_REMOTE);
+          try {
+            y.applyUpdate(yDoc, data, UPDATE_ORIGIN_REMOTE);
+          } catch (e) {
+            this.logger.error("Failed to apply remote Y.js update; local state is now stale", e, {
+              docId: session.documentId,
+              lastRevisionId: session.lastRevisionId,
+              message: messageDetail,
+            });
+            onStatusChange({
+              error: toUnknownChannelError(
+                new Error(
+                  `Failed to apply remote update at revision ${revisionId}`,
+                  { cause: e },
+                ),
+              ),
+              load: DocumentLoadStatus.ERROR,
+            });
+            return;
+          }
         }
+        session.lastRevisionId = Number(revisionId);
 
         onStatusChange({
           load: DocumentLoadStatus.LOADED,
