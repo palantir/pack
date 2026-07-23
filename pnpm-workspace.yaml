@@ -8,7 +8,7 @@ catalog:
   "@babel/preset-typescript": ^7.29.7
   "@changesets/changelog-git": ^0.2.1
   "@osdk/api": ^2.5.2
-  "@osdk/client": ^2.5.2
+  "@osdk/client": ^2.50.0
   "@osdk/foundry.admin": ^2.56.0
   "@osdk/foundry.pack": ^2.68.0
   "@osdk/oauth": ^1.4.0
