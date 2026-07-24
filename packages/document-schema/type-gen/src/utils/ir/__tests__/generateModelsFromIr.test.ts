@@ -383,4 +383,121 @@ describe("generateModelsFromIr", () => {
       path.join(snapshotDir, "custom-discriminant.ts"),
     );
   });
+
+  it("should map mediaRef and object field types to externalRefFieldTypes", async () => {
+    const mediaField: IFieldDef = {
+      key: "thumbnail",
+      name: "Thumbnail",
+      description: "Media reference to a thumbnail",
+      fieldType: {
+        type: "value",
+        value: {
+          type: "mediaRef",
+          mediaRef: {},
+        },
+      },
+      metadata: { addedInVersion: 1 },
+    };
+
+    const objectField: IFieldDef = {
+      key: "linkedObject",
+      name: "Linked Object",
+      description: "Reference to a Foundry object",
+      fieldType: {
+        type: "value",
+        value: {
+          type: "object",
+          object: {
+            interfaceTypeRids: [],
+            objectTypeRids: [],
+          },
+        },
+      },
+      metadata: { addedInVersion: 1 },
+    };
+
+    const assetRecord: IRecordDef = {
+      key: "Asset",
+      name: "Asset",
+      description: "A record with media and object references",
+      fields: [mediaField, objectField],
+    };
+
+    const schema: IRealTimeDocumentSchema = {
+      name: "Test Schema",
+      description: "A test schema with media and object refs",
+      version: 1,
+      primaryModelKeys: ["Asset"],
+      models: {
+        Asset: {
+          type: "record",
+          record: assetRecord,
+        } as IModelDef,
+      },
+    };
+
+    const result = await generateModelsFromIr(schema);
+    const formatted = await formatWithPrettier(result);
+
+    // mediaRef fields map to "mediaRef" and object fields map to "objectRef"
+    expect(formatted).toContain("externalRefFieldTypes");
+    expect(formatted).toContain("thumbnail: 'mediaRef'");
+    expect(formatted).toContain("linkedObject: 'objectRef'");
+
+    await expect(formatted).toMatchFileSnapshot(
+      path.join(snapshotDir, "media-and-object-refs.ts"),
+    );
+  });
+
+  it("should respect custom typeImportPath and schemaImportPath options", async () => {
+    const widgetRecord: IRecordDef = {
+      key: "Widget",
+      name: "Widget",
+      description: "A widget record",
+      fields: [
+        {
+          key: "label",
+          name: "Label",
+          description: "Widget label",
+          fieldType: {
+            type: "value",
+            value: {
+              type: "string",
+              string: {},
+            },
+          },
+          metadata: { addedInVersion: 1 },
+        },
+      ],
+    };
+
+    const schema: IRealTimeDocumentSchema = {
+      name: "Test Schema",
+      description: "A test schema with custom import paths",
+      version: 1,
+      primaryModelKeys: ["Widget"],
+      models: {
+        Widget: {
+          type: "record",
+          record: widgetRecord,
+        } as IModelDef,
+      },
+    };
+
+    const result = await generateModelsFromIr(schema, {
+      typeImportPath: "../generated/custom-types.js",
+      schemaImportPath: "../generated/custom-schema.js",
+    });
+    const formatted = await formatWithPrettier(result);
+
+    // Custom import paths should override the "./types.js" / "./schema.js" defaults
+    expect(formatted).toContain("from '../generated/custom-types.js'");
+    expect(formatted).toContain("from '../generated/custom-schema.js'");
+    expect(formatted).not.toContain("from './types.js'");
+    expect(formatted).not.toContain("from './schema.js'");
+
+    await expect(formatted).toMatchFileSnapshot(
+      path.join(snapshotDir, "custom-import-paths.ts"),
+    );
+  });
 });
