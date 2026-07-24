@@ -85,7 +85,7 @@ function convertUnionToYaml(unionDef: P.UnionDef): UnionDefinition {
   return result;
 }
 
-export function convertSchemaToSteps(schema: P.ReturnedSchema): MigrationStep[] {
+export function convertSchemaToSteps(schema: P.ModelDefs): MigrationStep[] {
   // Reject aliased schemas: the YAML step format cannot represent exportKey !== declaredName
   for (const [exportKey, def] of Object.entries(schema)) {
     if (exportKey !== def.name) {
