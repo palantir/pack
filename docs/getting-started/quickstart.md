@@ -4,7 +4,40 @@ sidebar_position: 3
 
 # Quickstart
 
-_Content coming soon._
+## Scaffold a workspace
+
+Create a new PACK workspace starter (a `schema` + `sdk` + `app` npm workspace) with
+the `create-app` CLI:
+
+```bash
+npx @palantir/pack.create-app my-pack-app --template workspace
+cd my-pack-app
+```
+
+### 1. Create a Developer Console Application
+
+{/* TODO: describe creating a Developer Console application and where to find the
+client id, API URL, and ontology RID used in the next step. */}
+
+### 2. Configure the app
+
+Copy the example env file and fill in the values from your Developer Console
+application:
+
+```bash
+cp packages/app/.env.example packages/app/.env.local
+# then edit packages/app/.env.local (client id, API URL, ontology RID)
+```
+
+### 3. Generate the SDK and run the app
+
+```bash
+npm run sdk-gen    # generate the SDK from packages/schema
+npm run build:sdk  # compile the generated SDK
+npm run dev        # start the example app
+```
+
+Re-run `sdk-gen` then `build:sdk` whenever you change `packages/schema/src/schema.mjs`.
 
 ## Package Setup
 
