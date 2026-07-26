@@ -14,17 +14,72 @@
  * limitations under the License.
  */
 
-import inquirer from "inquirer";
+import { checkbox, confirm, input, number, password, select } from "@inquirer/prompts";
 import type { PromptQuestion } from "../types/index.js";
+
+interface Choice {
+  readonly name: string;
+  readonly value: unknown;
+}
+
+function normalizeChoices(choices: PromptQuestion["choices"]): Choice[] {
+  return (choices ?? []).map(choice =>
+    typeof choice === "string"
+      ? { name: choice, value: choice }
+      : { name: choice.name, value: choice.value }
+  );
+}
+
+async function askQuestion(
+  question: PromptQuestion,
+  answers: Record<string, unknown>,
+): Promise<unknown> {
+  switch (question.type) {
+    case "input":
+      return input({
+        message: question.message,
+        default: question.default as string | undefined,
+        validate: question.validate,
+      });
+    case "number":
+      return number({
+        message: question.message,
+        default: question.default as number | undefined,
+        validate: question.validate,
+      });
+    case "confirm":
+      return confirm({
+        message: question.message,
+        default: question.default as boolean | undefined,
+      });
+    case "select":
+      return select({
+        message: question.message,
+        choices: normalizeChoices(question.choices),
+        default: question.default,
+      });
+    case "checkbox":
+      return checkbox({
+        message: question.message,
+        choices: normalizeChoices(question.choices),
+      });
+    case "password":
+      return password({
+        message: question.message,
+        validate: question.validate,
+      });
+  }
+}
 
 export async function promptUser(
   questions: PromptQuestion[],
 ): Promise<Record<string, unknown>> {
-  const mappedQuestions = questions.map(q => ({
-    ...q,
-
-    type: q.type as any,
-  }));
-
-  return inquirer.prompt(mappedQuestions);
+  const answers: Record<string, unknown> = {};
+  for (const question of questions) {
+    if (question.when && !question.when(answers)) {
+      continue;
+    }
+    answers[question.name] = await askQuestion(question, answers);
+  }
+  return answers;
 }

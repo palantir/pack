@@ -72,6 +72,8 @@ const WORKSPACE_FILES = [
   "packages/sdk/package.json",
   "packages/sdk/src/index.ts",
   "packages/app/package.json",
+  "packages/app/.env.example",
+  "packages/app/.env.local",
   "packages/app/src/main.tsx",
   "packages/app/src/App.tsx",
   "packages/app/src/packApp.ts",
@@ -289,6 +291,18 @@ describe("create-app createCommand", () => {
           path.join(projectDir, testCase.schemaDir, "pack-config.json"),
         ) as PackConfig;
         expect(packConfig.owningApplicationId).toBe(testCase.owningApplicationId);
+
+        // The workspace app ships a pre-filled .env.local seeded with the document
+        // type name so the app runs without a manual copy step.
+        if (testCase.template === "workspace") {
+          const envLocal = fs.readFileSync(
+            path.join(projectDir, "packages/app/.env.local"),
+            "utf8",
+          );
+          expect(envLocal).toContain(
+            `VITE_PACK_DOCUMENT_TYPE_NAME=${testCase.answers.documentTypeName as string}`,
+          );
+        }
       });
     });
   }
