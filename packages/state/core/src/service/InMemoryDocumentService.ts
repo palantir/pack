@@ -117,6 +117,7 @@ class InMemoryDocumentService extends BaseYjsDocumentService {
       documentName?: string;
       pageSize?: number;
       pageToken?: string;
+      ontologyRid?: string;
     },
   ): Promise<SearchDocumentsResult> => {
     const results: Array<DocumentMetadata & { readonly id: DocumentId }> = [];
@@ -200,11 +201,24 @@ class InMemoryDocumentService extends BaseYjsDocumentService {
     );
   };
 
+  readonly resolveDocumentApplication = (
+    _docRef: DocumentRef,
+  ): Promise<string | undefined> => {
+    return Promise.reject(
+      new Error(
+        "resolveDocumentApplication is not supported by the in-memory document service",
+      ),
+    );
+  };
+
   // Lifecycle method implementations
   protected onMetadataSubscriptionOpened(
     internalDoc: InternalYjsDoc,
     docRef: DocumentRef,
   ): void {
+    if (internalDoc.metadataStatus.load !== DocumentLoadStatus.UNLOADED) {
+      return;
+    }
     this.updateMetadataStatus(internalDoc, docRef, {
       load: DocumentLoadStatus.LOADING,
     });

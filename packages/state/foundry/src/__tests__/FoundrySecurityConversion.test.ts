@@ -188,6 +188,31 @@ describe("Foundry Security Conversion", () => {
 
       expect(result.data[0]?.operationalVersion).toBe(2);
     });
+
+    it("forwards ontologyRid on the request when provided", async () => {
+      vi.mocked(Documents.search).mockResolvedValue({ data: [] });
+
+      await service.searchDocuments("SecureType", testSchema, {
+        ontologyRid: "ri.ontology..scoped-rid",
+      });
+
+      expect(Documents.search).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({
+          requestBody: expect.objectContaining({ ontologyRid: "ri.ontology..scoped-rid" }),
+        }),
+        expect.anything(),
+      );
+    });
+
+    it("leaves ontologyRid undefined when not provided", async () => {
+      vi.mocked(Documents.search).mockResolvedValue({ data: [] });
+
+      await service.searchDocuments("SecureType", testSchema);
+
+      const request = vi.mocked(Documents.search).mock.calls[0]?.[1];
+      expect(request?.requestBody.ontologyRid).toBeUndefined();
+    });
   });
 
   describe("onMetadataSubscriptionOpened", () => {

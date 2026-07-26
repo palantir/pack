@@ -52,6 +52,7 @@ export type {
   DocumentStatusChangeCallback,
   DocumentSyncStatus,
   DocumentType,
+  RecordInvalidCallback,
   SearchDocumentsResult,
   UpdateDocumentMetadata,
 } from "./types/DocumentService.js";

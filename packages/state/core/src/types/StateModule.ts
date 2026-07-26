@@ -32,6 +32,7 @@ import type {
   RecordCollectionRef,
   RecordId,
   RecordRef,
+  RecordValidationError,
 } from "@palantir/pack.document-schema.model-types";
 import { getMetadata } from "@palantir/pack.document-schema.model-types";
 import { DOCUMENT_SERVICE_MODULE_KEY } from "../DocumentServiceModule.js";
@@ -42,6 +43,7 @@ import type {
   RecordChangeCallback,
   RecordCollectionChangeCallback,
   RecordDeleteCallback,
+  RecordInvalidCallback,
   SearchDocumentsResult,
   UpdateDocumentMetadata,
 } from "./DocumentService.js";
@@ -89,6 +91,7 @@ export interface StateModule {
       documentName?: string;
       pageSize?: number;
       pageToken?: string;
+      ontologyRid?: string;
     },
   ) => Promise<SearchDocumentsResult>;
 
@@ -114,6 +117,10 @@ export interface StateModule {
     documentTypeName: string,
     ontologyRid?: string,
   ) => Promise<number | undefined>;
+
+  readonly resolveDocumentApplication: (
+    docRef: DocumentRef,
+  ) => Promise<string | undefined>;
 
   readonly getDocumentSnapshot: <T extends DocumentSchema>(
     docRef: DocumentRef<T>,
@@ -198,6 +205,15 @@ export interface StateModule {
     callback: RecordDeleteCallback<M>,
   ) => Unsubscribe;
 
+  readonly onRecordInvalid: <M extends Model>(
+    record: RecordRef<M>,
+    callback: RecordInvalidCallback<M>,
+  ) => Unsubscribe;
+
+  readonly getInvalidRecords: (
+    docRef: DocumentRef,
+  ) => ReadonlyArray<RecordValidationError>;
+
   readonly deleteRecord: <M extends Model>(
     record: RecordRef<M>,
   ) => Promise<void>;
@@ -266,6 +282,7 @@ export class StateModuleImpl implements StateModule {
       documentName?: string;
       pageSize?: number;
       pageToken?: string;
+      ontologyRid?: string;
     },
   ): Promise<SearchDocumentsResult> {
     return this.documentService.searchDocuments(documentTypeName, schema, options);
@@ -302,6 +319,12 @@ export class StateModuleImpl implements StateModule {
     ontologyRid?: string,
   ): Promise<number | undefined> {
     return this.documentService.getDocumentTypeOperationalVersion(documentTypeName, ontologyRid);
+  }
+
+  async resolveDocumentApplication(
+    docRef: DocumentRef,
+  ): Promise<string | undefined> {
+    return this.documentService.resolveDocumentApplication(docRef);
   }
 
   async getDocumentSnapshot<T extends DocumentSchema>(
@@ -431,6 +454,19 @@ export class StateModuleImpl implements StateModule {
     callback: RecordDeleteCallback<M>,
   ): Unsubscribe {
     return this.documentService.onRecordDeleted(record, callback);
+  }
+
+  onRecordInvalid<M extends Model>(
+    record: RecordRef<M>,
+    callback: RecordInvalidCallback<M>,
+  ): Unsubscribe {
+    return this.documentService.onRecordInvalid(record, callback);
+  }
+
+  getInvalidRecords(
+    docRef: DocumentRef,
+  ): ReadonlyArray<RecordValidationError> {
+    return this.documentService.getInvalidRecords(docRef);
   }
 
   onCollectionItemsAdded<M extends Model>(

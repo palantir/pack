@@ -14,13 +14,19 @@
  * limitations under the License.
  */
 
-import type { Model, ModelData, RecordRef } from "@palantir/pack.document-schema.model-types";
+import type {
+  Model,
+  ModelData,
+  RecordRef,
+  RecordValidationError,
+} from "@palantir/pack.document-schema.model-types";
 import { useEffect, useState } from "react";
 
 type UseRecordResult<M extends Model> =
-  | { status: "loading"; data: undefined }
-  | { status: "loaded"; data: ModelData<M> }
-  | { status: "deleted"; data: undefined };
+  | { status: "loading"; data: undefined; error?: undefined }
+  | { status: "loaded"; data: ModelData<M>; error?: undefined }
+  | { status: "deleted"; data: undefined; error?: undefined }
+  | { status: "invalid"; data: undefined; error: RecordValidationError };
 
 /**
  * Subscribes to an individual record and subscribes to its changes.
@@ -43,6 +49,12 @@ type UseRecordResult<M extends Model> =
  *     return <div>Record not found</div>;
  *   }
  *
+ *   if (record.status === "invalid") {
+ *     // The record exists but its data failed schema validation
+ *     // (e.g. after a corrupted/partial write). record.error has details.
+ *     return <div>Record cannot be displayed</div>;
+ *   }
+ *
  *   return <div>Hello, {record.data.myFieldName}</div>;
  * }
  * ```
@@ -63,9 +75,14 @@ export function useRecord<M extends Model>(
       setResult({ status: "deleted", data: undefined });
     });
 
+    const unsubscribeToOnInvalid = ref.onInvalid(error => {
+      setResult({ status: "invalid", data: undefined, error });
+    });
+
     return () => {
       unsubscribeToOnChange();
       unsubscribeToOnDeleted();
+      unsubscribeToOnInvalid();
     };
   }, [ref]);
 

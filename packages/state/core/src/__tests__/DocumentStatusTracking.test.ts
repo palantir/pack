@@ -226,4 +226,51 @@ describe("Document Status Tracking", () => {
     expect(immediateStatus!.metadata.load).toBe(DocumentLoadStatus.UNLOADED);
     expect(immediateStatus!.data.load).toBe(DocumentLoadStatus.UNLOADED);
   });
+
+  it("should reset data status to UNLOADED when the last data subscription closes", async () => {
+    const mockApp = createTestApp();
+    const service = internalCreateInMemoryDocumentService(mockApp, { autoCreateDocuments: true });
+    const docRef = createDocRef(mockApp, DOCUMENT_ID, testSchema);
+
+    const unsubscribe = service.onStateChange(docRef, () => {});
+    await service.waitForDataLoad(docRef);
+    expect(service.getDocumentStatus(docRef).data.load).toBe(DocumentLoadStatus.LOADED);
+
+    // Closing the last data subscription must reset status so a later reopen
+    // re-runs the load; a stale LOADED would let waitForDataLoad resolve before
+    // the write path is re-established.
+    unsubscribe();
+    const status = service.getDocumentStatus(docRef);
+    expect(status.data.load).toBe(DocumentLoadStatus.UNLOADED);
+    expect(status.data.live).toBe(DocumentLiveStatus.DISCONNECTED);
+  });
+
+  it("should reload after a close/reopen cycle", async () => {
+    const mockApp = createTestApp();
+    const service = internalCreateInMemoryDocumentService(mockApp, { autoCreateDocuments: true });
+    const docRef = createDocRef(mockApp, DOCUMENT_ID, testSchema);
+
+    const unsubscribe1 = service.onStateChange(docRef, () => {});
+    await service.waitForDataLoad(docRef);
+    unsubscribe1();
+    expect(service.getDocumentStatus(docRef).data.load).toBe(DocumentLoadStatus.UNLOADED);
+
+    // Reopen must trigger a fresh load, not short-circuit on stale status.
+    const unsubscribe2 = service.onStateChange(docRef, () => {});
+    await expect(service.waitForDataLoad(docRef)).resolves.toBeUndefined();
+    expect(service.getDocumentStatus(docRef).data.load).toBe(DocumentLoadStatus.LOADED);
+
+    unsubscribe2();
+  });
+
+  it("should reject waitForDataLoad when no data subscription is registered", async () => {
+    const mockApp = createTestApp();
+    const service = internalCreateInMemoryDocumentService(mockApp, { autoCreateDocuments: true });
+    const docRef = createDocRef(mockApp, DOCUMENT_ID, testSchema);
+
+    // No subscription means no load will ever start; must fail fast, not hang.
+    await expect(service.waitForDataLoad(docRef)).rejects.toThrow(
+      /no data subscription is registered/,
+    );
+  });
 });

@@ -22,6 +22,7 @@ export interface ResolvedIrInput {
   readonly ir: IRealTimeDocumentSchema;
   readonly latestVersion: number;
   readonly minSupportedVersion: number;
+  readonly owningApplicationId?: string;
 }
 
 function isChainPayload(parsed: unknown): parsed is IrChainPayload {
@@ -54,7 +55,12 @@ function resolveFromChain(payload: IrChainPayload, irPath: string): ResolvedIrIn
       `IR chain payload at ${irPath} has no entry matching latestVersion ${latestVersion}`,
     );
   }
-  return { ir: latestEntry.ir, latestVersion, minSupportedVersion: minVersion };
+  return {
+    ir: latestEntry.ir,
+    latestVersion,
+    minSupportedVersion: minVersion,
+    owningApplicationId: payload.owningApplicationId,
+  };
 }
 
 function resolveFromSingleIr(ir: IRealTimeDocumentSchema): ResolvedIrInput {

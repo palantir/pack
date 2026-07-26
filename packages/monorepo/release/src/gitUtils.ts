@@ -112,3 +112,83 @@ export const checkIfClean = async (): Promise<boolean> => {
   const { stdout } = await getExecOutput("git", ["status", "--porcelain"]);
   return !stdout.length;
 };
+
+/**
+ * Detects whether the current (topic) branch was forked from `main` or a `release/*`
+ * branch, by comparing merge-base distances against `origin/main` and each
+ * `origin/release/*`. The closest base (fewest commits since the merge-base) wins.
+ *
+ * Returns "ambiguous" when the closest `main` and `release/*` candidates tie — e.g. HEAD
+ * was forked from a commit that is the tip of both `main` and a freshly-cut `release/*`
+ * branch (the first patch on a new release line). Topology cannot disambiguate that from
+ * the first minor on `main` after cutting the branch, so callers must fall back to an
+ * explicit choice. Also "ambiguous" if no candidate refs resolve. Best-effort: refs that
+ * cannot be resolved are skipped.
+ */
+export const detectBaseBranchType = async (): Promise<
+  "main" | "release branch" | "ambiguous"
+> => {
+  // Best-effort refresh of the refs we compare against; tolerate being offline.
+  await exec(
+    "git",
+    [
+      "fetch",
+      "--quiet",
+      "origin",
+      "refs/heads/main:refs/remotes/origin/main",
+      "refs/heads/release/*:refs/remotes/origin/release/*",
+    ],
+    { ignoreReturnCode: true },
+  );
+
+  const { stdout: refsOut } = await getExecOutput(
+    "git",
+    [
+      "for-each-ref",
+      "--format=%(refname:short)",
+      "refs/remotes/origin/main",
+      "refs/remotes/origin/release/*",
+    ],
+    { ignoreReturnCode: true, silent: true },
+  );
+  const refs = refsOut.split("\n").map(line => line.trim()).filter(Boolean);
+
+  let minMainDistance = Infinity;
+  let minReleaseDistance = Infinity;
+  for (const ref of refs) {
+    const mergeBase = await getExecOutput("git", ["merge-base", "HEAD", ref], {
+      ignoreReturnCode: true,
+      silent: true,
+    });
+    if (mergeBase.exitCode !== 0) {
+      continue;
+    }
+    const distance = await getExecOutput(
+      "git",
+      ["rev-list", "--count", `${mergeBase.stdout.trim()}..HEAD`],
+      { ignoreReturnCode: true, silent: true },
+    );
+    if (distance.exitCode !== 0) {
+      continue;
+    }
+    const commits = Number.parseInt(distance.stdout.trim(), 10);
+    if (Number.isNaN(commits)) {
+      continue;
+    }
+    if (ref.includes("/release/")) {
+      minReleaseDistance = Math.min(minReleaseDistance, commits);
+    } else {
+      minMainDistance = Math.min(minMainDistance, commits);
+    }
+  }
+
+  if (minReleaseDistance < minMainDistance) {
+    return "release branch";
+  }
+  if (minMainDistance < minReleaseDistance) {
+    return "main";
+  }
+  // Tie (HEAD sits on a commit shared by main and a release branch) or nothing
+  // resolved: topology cannot decide, so require the caller to choose explicitly.
+  return "ambiguous";
+};

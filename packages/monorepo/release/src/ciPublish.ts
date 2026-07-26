@@ -14,17 +14,20 @@
  * limitations under the License.
  */
 
+import { getPackages } from "@manypkg/get-packages";
 import consola from "consola";
 import { execa } from "execa";
 import { existsSync } from "fs";
 import { readFile } from "fs/promises";
 import { join } from "path";
 import semver from "semver";
+import { packageVersionsOrEmptySet } from "./publishPackages.js";
 
 async function ciPublish(): Promise<void> {
   let tag = "latest";
   const repoRoot = process.cwd();
   const preJsonPath = join(repoRoot, ".changeset", "pre.json");
+  const currentBranch = await getCurrentBranch();
 
   if (existsSync(preJsonPath)) {
     try {
@@ -41,10 +44,15 @@ async function ciPublish(): Promise<void> {
     }
   } else {
     const remoteBranches = await getRemoteBranches();
-    const currentBranch = await getCurrentBranch();
     const greatestVersion = findGreatestVersion(remoteBranches);
     tag = determineTag(currentBranch, greatestVersion, tag);
   }
+
+  // Enforce the branching model (main = minor/major, release/* = patch) against the
+  // concrete versions about to be published. This is the authoritative gate: it runs
+  // on the protected destination branch and cannot be bypassed by how the release
+  // commit/PR was prepared.
+  await assertReleaseAllowedOnBranch(repoRoot, currentBranch);
 
   consola.info(`Publishing with tag: ${tag}`);
 
@@ -94,6 +102,165 @@ async function getCurrentBranch(): Promise<string> {
     "HEAD",
   ], { cwd: repoRoot });
   return stdout;
+}
+
+export type ReleaseBump = "initial" | "major" | "minor" | "patch" | "prerelease";
+
+// Higher rank = more significant. Used to reduce a set of per-package bumps down to a
+// single release-level bump (safe under fixed uni-versioning, where all published
+// packages move together).
+const BUMP_RANK: Record<ReleaseBump, number> = {
+  major: 4,
+  minor: 3,
+  patch: 2,
+  prerelease: 1,
+  initial: 0,
+};
+
+/**
+ * Returns the highest published version strictly below `local`, or null if there is
+ * none. Using "highest below local" (rather than the `latest` dist-tag) keeps the
+ * comparison correct per release line even when main is ahead of a release branch.
+ */
+export function highestVersionBelow(
+  local: string,
+  published: Set<string>,
+): string | null {
+  let highest: string | null = null;
+  for (const candidate of published) {
+    if (!semver.valid(candidate) || semver.gte(candidate, local)) {
+      continue;
+    }
+    if (highest == null || semver.gt(candidate, highest)) {
+      highest = candidate;
+    }
+  }
+  return highest;
+}
+
+/**
+ * Derives the bump type from the numeric major.minor.patch core, so RC/beta prerelease
+ * versions are handled naturally (e.g. `0.23.5 -> 0.24.0-rc.0` is a minor). A null
+ * `prev` (package not yet published) is an `initial` release. Equal cores (only the
+ * prerelease identifier differs) are reported as `prerelease`.
+ */
+export function determineReleaseBump(
+  prev: string | null,
+  local: string,
+): ReleaseBump {
+  if (prev == null) {
+    return "initial";
+  }
+  const prevParsed = semver.parse(prev);
+  const localParsed = semver.parse(local);
+  if (!prevParsed || !localParsed) {
+    throw new Error(`Unable to parse versions for bump: ${prev} -> ${local}`);
+  }
+  if (localParsed.major > prevParsed.major) {
+    return "major";
+  }
+  if (
+    localParsed.major === prevParsed.major
+    && localParsed.minor > prevParsed.minor
+  ) {
+    return "minor";
+  }
+  if (
+    localParsed.major === prevParsed.major
+    && localParsed.minor === prevParsed.minor
+    && localParsed.patch > prevParsed.patch
+  ) {
+    return "patch";
+  }
+  return "prerelease";
+}
+
+/**
+ * Enforces the branching model: main only cuts minor/major releases, release/* only
+ * cuts patch releases. `initial` (brand-new package) and `prerelease` (core unchanged)
+ * do not move the constrained core and are allowed anywhere. Branches that are neither
+ * main nor release/* are not gated.
+ */
+export function checkBumpAllowedOnBranch(
+  branch: string,
+  bump: ReleaseBump,
+): { ok: true } | { ok: false; reason: string } {
+  if (bump === "initial" || bump === "prerelease") {
+    return { ok: true };
+  }
+
+  if (branch === "main") {
+    if (bump === "patch") {
+      return {
+        ok: false,
+        reason: "Refusing to publish a patch release from main. Our branching model only "
+          + "cuts minor/major releases from main; patches must come from a release/* branch.",
+      };
+    }
+    return { ok: true };
+  }
+
+  if (branch.startsWith("release/")) {
+    if (bump === "minor" || bump === "major") {
+      return {
+        ok: false,
+        reason: `Refusing to publish a ${bump} release from a release branch (${branch}). `
+          + "Our branching model only cuts patch releases from release/* branches; "
+          + "minor/major releases must come from main.",
+      };
+    }
+    return { ok: true };
+  }
+
+  return { ok: true };
+}
+
+/**
+ * Computes the release-level bump for the packages that will actually be published
+ * (public, and whose local version is not already on npm), or null if none will
+ * publish.
+ */
+export async function computeReleaseBump(
+  cwd: string,
+): Promise<ReleaseBump | null> {
+  const { packages } = await getPackages(cwd);
+  const publicPackages = packages.filter(pkg => !pkg.packageJson.private);
+
+  let releaseBump: ReleaseBump | null = null;
+  for (const pkg of publicPackages) {
+    const { name, version } = pkg.packageJson;
+    const published = await packageVersionsOrEmptySet(name);
+    if (published.has(version)) {
+      // Already on npm; `pnpm publish` will skip it, so it isn't part of this release.
+      continue;
+    }
+    const bump = determineReleaseBump(
+      highestVersionBelow(version, published),
+      version,
+    );
+    if (releaseBump == null || BUMP_RANK[bump] > BUMP_RANK[releaseBump]) {
+      releaseBump = bump;
+    }
+  }
+  return releaseBump;
+}
+
+async function assertReleaseAllowedOnBranch(
+  cwd: string,
+  branch: string,
+): Promise<void> {
+  const releaseBump = await computeReleaseBump(cwd);
+  if (releaseBump == null) {
+    consola.info("No unpublished packages found; skipping branch/bump gate.");
+    return;
+  }
+
+  consola.info(`Release bump for branch "${branch}": ${releaseBump}`);
+  const result = checkBumpAllowedOnBranch(branch, releaseBump);
+  if (!result.ok) {
+    consola.error(result.reason);
+    process.exit(1);
+  }
 }
 
 export function findGreatestVersion(releaseBranches: string[]): string | null {

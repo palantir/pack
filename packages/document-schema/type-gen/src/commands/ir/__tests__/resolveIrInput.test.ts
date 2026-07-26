@@ -56,6 +56,16 @@ describe("resolveIrInput", () => {
     });
   });
 
+  it("carries owningApplicationId through from a chain payload", () => {
+    const resolved = resolveIrInput({
+      latestVersion: 1,
+      owningApplicationId: "app-123",
+      chain: [{ version: 1, ir: ir(1) }],
+    }, "chain.json");
+
+    expect(resolved.owningApplicationId).toBe("app-123");
+  });
+
   it("defaults chain minSupportedVersion to latestVersion", () => {
     const resolved = resolveIrInput({
       latestVersion: 3,

@@ -15,8 +15,9 @@
  */
 
 import type { DocumentType as WireDocumentType } from "@osdk/foundry.pack";
-import { DocumentTypes } from "@osdk/foundry.pack";
+import { Documents, DocumentTypes } from "@osdk/foundry.pack";
 import type { PackAppInternal } from "@palantir/pack.core";
+import type { DocumentRef } from "@palantir/pack.document-schema.model-types";
 import type { FoundryEventService } from "@palantir/pack.state.foundry-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { MockProxy } from "vitest-mock-extended";
@@ -29,6 +30,9 @@ vi.mock("@osdk/foundry.pack", () => ({
     get: vi.fn(),
     loadByName: vi.fn(),
     getOperationalVersion: vi.fn(),
+  },
+  Documents: {
+    resolveApplication: vi.fn(),
   },
 }));
 
@@ -58,6 +62,7 @@ const WIRE_DOCUMENT_TYPE: WireDocumentType = {
   name: "com.palantir.pack.test.doctype",
   operationalVersion: 3,
   fileSystemType: "COMPASS",
+  owningApplicationId: "ri.workspace..application.test-app",
 };
 
 describe("FoundryDocumentService document type loading", () => {
@@ -73,6 +78,7 @@ describe("FoundryDocumentService document type loading", () => {
     vi.mocked(DocumentTypes.get).mockReset();
     vi.mocked(DocumentTypes.loadByName).mockReset();
     vi.mocked(DocumentTypes.getOperationalVersion).mockReset();
+    vi.mocked(Documents.resolveApplication).mockReset();
   });
 
   describe("loadDocumentTypeByName", () => {
@@ -97,6 +103,7 @@ describe("FoundryDocumentService document type loading", () => {
         name: "com.palantir.pack.test.doctype",
         operationalVersion: 3,
         fileSystemType: "COMPASS",
+        owningApplicationId: "ri.workspace..application.test-app",
       });
     });
 
@@ -132,6 +139,7 @@ describe("FoundryDocumentService document type loading", () => {
         name: "com.palantir.pack.test.doctype",
         operationalVersion: 3,
         fileSystemType: "COMPASS",
+        owningApplicationId: "ri.workspace..application.test-app",
       });
     });
 
@@ -148,6 +156,7 @@ describe("FoundryDocumentService document type loading", () => {
         name: "minimal",
         operationalVersion: undefined,
         fileSystemType: undefined,
+        owningApplicationId: undefined,
       });
     });
   });
@@ -180,6 +189,33 @@ describe("FoundryDocumentService document type loading", () => {
         "com.palantir.pack.test.doctype",
         "ri.ontology..explicit-rid",
       );
+
+      expect(result).toBeUndefined();
+    });
+  });
+
+  describe("resolveDocumentApplication", () => {
+    const docRef = { id: "test-doc-1" } as DocumentRef;
+
+    it("calls resolveApplication with the document id and returns the owning application id", async () => {
+      vi.mocked(Documents.resolveApplication).mockResolvedValue({
+        owningApplicationId: "ri.workspace..application.test-app",
+      });
+
+      const result = await service.resolveDocumentApplication(docRef);
+
+      expect(Documents.resolveApplication).toHaveBeenCalledWith(
+        mockOsdkClient,
+        "test-doc-1",
+        { preview: true },
+      );
+      expect(result).toBe("ri.workspace..application.test-app");
+    });
+
+    it("returns undefined when no owning application is configured", async () => {
+      vi.mocked(Documents.resolveApplication).mockResolvedValue({});
+
+      const result = await service.resolveDocumentApplication(docRef);
 
       expect(result).toBeUndefined();
     });

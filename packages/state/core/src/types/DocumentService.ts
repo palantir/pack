@@ -33,6 +33,7 @@ import type {
   RecordCollectionRef,
   RecordId,
   RecordRef,
+  RecordValidationError,
 } from "@palantir/pack.document-schema.model-types";
 import type { CreateDocumentMetadata, FileSystemType } from "./CreateDocumentMetadata.js";
 
@@ -54,6 +55,7 @@ export type DocumentLiveStatus = typeof DocumentLiveStatus[keyof typeof Document
 
 export type DocumentSyncStatus = {
   readonly error?: ChannelError;
+  readonly invalidRecordCount?: number;
   /**
    * When true, indicates this is a demo/test service not connected to real Foundry.
    * UI can use this to display a badge or indicator that data is local-only.
@@ -96,6 +98,11 @@ export type RecordDeleteCallback<M extends Model = Model> = (
   record: RecordRef<M>,
 ) => void;
 
+export type RecordInvalidCallback<M extends Model = Model> = (
+  error: RecordValidationError,
+  record: RecordRef<M>,
+) => void;
+
 /**
  * Result of a document search operation, including pagination information.
  */
@@ -112,6 +119,7 @@ export interface DocumentType {
   readonly name: string;
   readonly operationalVersion?: number;
   readonly fileSystemType?: FileSystemType;
+  readonly owningApplicationId?: string;
 }
 
 /**
@@ -147,6 +155,7 @@ export interface DocumentService {
       documentName?: string;
       pageSize?: number;
       pageToken?: string;
+      ontologyRid?: string;
     },
   ) => Promise<SearchDocumentsResult>;
 
@@ -199,6 +208,14 @@ export interface DocumentService {
     documentTypeName: string,
     ontologyRid?: string,
   ) => Promise<number | undefined>;
+
+  /**
+   * Resolves a document to the application that owns its document type. Returns the owning
+   * application id from the type's metadata, or undefined if none is configured.
+   */
+  readonly resolveDocumentApplication: (
+    docRef: DocumentRef,
+  ) => Promise<string | undefined>;
 
   readonly createDocRef: <const T extends DocumentSchema>(
     id: DocumentId,
@@ -321,6 +338,15 @@ export interface DocumentService {
     record: RecordRef<M>,
     callback: RecordDeleteCallback<M>,
   ) => Unsubscribe;
+
+  readonly onRecordInvalid: <M extends Model>(
+    record: RecordRef<M>,
+    callback: RecordInvalidCallback<M>,
+  ) => Unsubscribe;
+
+  readonly getInvalidRecords: (
+    docRef: DocumentRef,
+  ) => ReadonlyArray<RecordValidationError>;
 
   // Status methods
   readonly getDocumentStatus: <T extends DocumentSchema>(

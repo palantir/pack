@@ -275,6 +275,7 @@ export class DemoDocumentService extends BaseYjsDocumentService<DemoInternalDoc>
       documentName?: string;
       pageSize?: number;
       pageToken?: string;
+      ontologyRid?: string;
     },
   ): Promise<SearchDocumentsResult> => {
     await this.metadataStore.whenReady();
@@ -348,10 +349,23 @@ export class DemoDocumentService extends BaseYjsDocumentService<DemoInternalDoc>
     );
   };
 
+  readonly resolveDocumentApplication = (
+    _docRef: DocumentRef,
+  ): Promise<string | undefined> => {
+    return Promise.reject(
+      new Error(
+        "resolveDocumentApplication is not supported by the demo document service",
+      ),
+    );
+  };
+
   protected onMetadataSubscriptionOpened(
     internalDoc: DemoInternalDoc,
     docRef: DocumentRef,
   ): void {
+    if (internalDoc.metadataStatus.load !== DocumentLoadStatus.UNLOADED) {
+      return;
+    }
     this.updateMetadataStatus(internalDoc, docRef, {
       load: DocumentLoadStatus.LOADING,
     });

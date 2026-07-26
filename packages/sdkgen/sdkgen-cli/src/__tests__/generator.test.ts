@@ -14,15 +14,17 @@
  * limitations under the License.
  */
 
+import {
+  ContextBuilder,
+  Generator,
+  Logger,
+  SchemaParser,
+  TemplateLoader,
+} from "@palantir/pack.codegen.core";
 import fs from "fs-extra";
 import path from "path";
 import { fileURLToPath } from "url";
 import { beforeAll, describe, expect, it } from "vitest";
-import { ContextBuilder } from "../core/contextBuilder.js";
-import { Generator } from "../core/generator.js";
-import { SchemaParser } from "../core/schemaParser.js";
-import { TemplateLoader } from "../core/templateLoader.js";
-import { Logger } from "../utils/logger.js";
 import type { PackageJson } from "./types/testTypes.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));

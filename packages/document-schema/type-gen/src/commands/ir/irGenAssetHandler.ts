@@ -74,7 +74,7 @@ export function irGenAssetHandler(options: IrGenAssetOptions): void {
 
     const resolved = resolveIrInput(parsed, irPath);
 
-    const { ir: irSchema, latestVersion, minSupportedVersion } = resolved;
+    const { ir: irSchema, latestVersion, minSupportedVersion, owningApplicationId } = resolved;
     const { name: documentTypeName } = irSchema;
     const wireSchema = convertIrToWireSchema(irSchema);
 
@@ -96,6 +96,7 @@ export function irGenAssetHandler(options: IrGenAssetOptions): void {
       },
       fileSystemType,
       schemaVersion: latestVersion,
+      ...(owningApplicationId != null ? { owningApplicationId } : {}),
     };
 
     const outputDir = dirname(outputPath);
@@ -132,6 +133,9 @@ export function irGenAssetHandler(options: IrGenAssetOptions): void {
     consola.info(`   Schema version: ${latestVersion}`);
     consola.info(`   Compatibility range: [${minSupportedVersion}, ${latestVersion}]`);
     consola.info(`   File system type: ${fileSystemType}`);
+    if (owningApplicationId != null) {
+      consola.info(`   Owning application id: ${owningApplicationId}`);
+    }
   } catch (error) {
     if (error instanceof CommanderError) {
       throw error;

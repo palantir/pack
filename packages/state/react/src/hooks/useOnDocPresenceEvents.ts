@@ -93,8 +93,7 @@ export function useOnDocPresenceEvents(
 ): void {
   const callback = useRef<(typeof onPresence)>(onPresence);
   callback.current = onPresence;
-  const subOptions = useRef<PresenceSubscriptionOptions>(options);
-  subOptions.current = options;
+  const ignoreSelfUpdates = options.ignoreSelfUpdates ?? true;
 
   useEffect(() => {
     if (!isValidDocRef(docRef)) {
@@ -103,10 +102,10 @@ export function useOnDocPresenceEvents(
 
     const unsubscribe = docRef.onPresence((_inDocRef, event) => {
       callback.current(event);
-    }, subOptions.current);
+    }, { ignoreSelfUpdates });
 
     return () => {
       unsubscribe();
     };
-  }, [docRef]);
+  }, [docRef, ignoreSelfUpdates]);
 }
