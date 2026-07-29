@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+/* eslint-disable @typescript-eslint/no-deprecated -- Mirror current generated `.passthrough()` schemas. */
+
 import type { DocumentSchema, Model, RecordId } from "@palantir/pack.document-schema.model-types";
 import { Metadata } from "@palantir/pack.document-schema.model-types";
 import { describe, expect, it } from "vitest";
@@ -66,12 +68,21 @@ type MergeOperation =
 interface MergeScenario {
   readonly clientA: ReadonlyArray<MergeOperation>;
   readonly clientB: ReadonlyArray<MergeOperation>;
+  readonly discriminant?: string;
   readonly initial: Readonly<Record<string, unknown>>;
+  readonly modelName?: string;
   readonly name: string;
   readonly schema: z.ZodType<unknown>;
+  readonly schemaSource?: "generator-shaped";
   /** Number of logical field/collection writes performed by A and B, respectively. */
   readonly writes: `${number}+${number}`;
-  readonly dataType: "array" | "record" | "union";
+  readonly dataType:
+    | "array"
+    | "array of records"
+    | "discriminated union"
+    | "nested record"
+    | "record"
+    | "union";
 }
 
 const rangeSchema = z.object({
@@ -123,7 +134,228 @@ const uniqueStrings = z.array(z.string()).refine(
   { message: "array elements must be unique" },
 );
 
+/*
+ * These schemas deliberately mirror generateZodSchemasFromIr output. Record
+ * variants are emitted first, each union variant extends its record with a
+ * literal discriminant, and the union is a z.discriminatedUnion over those
+ * extended schemas.
+ */
+const generatedShapeFields = {
+  x: z.number(),
+  y: z.number(),
+};
+const GeneratedShapeCircleSchema = z.object(generatedShapeFields).passthrough();
+const GeneratedShapeBoxSchema = z.object(generatedShapeFields).passthrough();
+const GeneratedNodeShapeCircleSchema = GeneratedShapeCircleSchema.extend({
+  shapeType: z.literal("circle"),
+});
+const GeneratedNodeShapeBoxSchema = GeneratedShapeBoxSchema.extend({
+  shapeType: z.literal("box"),
+});
+const GeneratedNodeShapeSchema = z.discriminatedUnion("shapeType", [
+  GeneratedNodeShapeBoxSchema,
+  GeneratedNodeShapeCircleSchema,
+]);
+
+const GeneratedFlexibleShapeCircleSchema = z.object({
+  ...generatedShapeFields,
+  payload: z.unknown(),
+}).passthrough();
+const GeneratedTextShapeBoxSchema = z.object({
+  ...generatedShapeFields,
+  payload: z.string(),
+}).passthrough();
+const GeneratedPayloadShapeCircleSchema = GeneratedFlexibleShapeCircleSchema.extend({
+  shapeType: z.literal("circle"),
+});
+const GeneratedPayloadShapeBoxSchema = GeneratedTextShapeBoxSchema.extend({
+  shapeType: z.literal("box"),
+});
+const GeneratedPayloadShapeSchema = z.discriminatedUnion("shapeType", [
+  GeneratedPayloadShapeBoxSchema,
+  GeneratedPayloadShapeCircleSchema,
+]);
+
+const GeneratedOptionalShapeCircleSchema = z.object({
+  ...generatedShapeFields,
+  label: z.string().optional(),
+}).passthrough();
+const GeneratedRequiredShapeBoxSchema = z.object({
+  ...generatedShapeFields,
+  label: z.string(),
+}).passthrough();
+const GeneratedLabeledShapeCircleSchema = GeneratedOptionalShapeCircleSchema.extend({
+  shapeType: z.literal("circle"),
+});
+const GeneratedLabeledShapeBoxSchema = GeneratedRequiredShapeBoxSchema.extend({
+  shapeType: z.literal("box"),
+});
+const GeneratedLabeledShapeSchema = z.discriminatedUnion("shapeType", [
+  GeneratedLabeledShapeBoxSchema,
+  GeneratedLabeledShapeCircleSchema,
+]);
+
+const GeneratedPointSchema = z.object({
+  id: z.string(),
+  x: z.number(),
+  y: z.number(),
+}).passthrough();
+const GeneratedDrawingSchema = z.object({
+  points: z.array(z.lazy(() => GeneratedPointSchema)),
+}).passthrough();
+const GeneratedBoundsSchema = z.object({
+  height: z.number(),
+  width: z.number(),
+  x: z.number(),
+  y: z.number(),
+}).passthrough();
+const GeneratedNestedRecordSchema = z.object({
+  bounds: z.lazy(() => GeneratedBoundsSchema),
+  id: z.string(),
+}).passthrough();
+const GeneratedNestedShapeRecordSchema = z.object({
+  id: z.string(),
+  shape: z.lazy(() => GeneratedPayloadShapeSchema),
+}).passthrough();
+
+const GeneratedLooseCollectionSchema = z.object({
+  items: z.array(z.unknown()),
+}).passthrough();
+const GeneratedPointCollectionSchema = z.object({
+  items: z.array(z.lazy(() => GeneratedPointSchema)),
+}).passthrough();
+const GeneratedCollectionLooseSchema = GeneratedLooseCollectionSchema.extend({
+  collectionType: z.literal("loose"),
+});
+const GeneratedCollectionPointsSchema = GeneratedPointCollectionSchema.extend({
+  collectionType: z.literal("points"),
+});
+const GeneratedCollectionSchema = z.discriminatedUnion("collectionType", [
+  GeneratedCollectionLooseSchema,
+  GeneratedCollectionPointsSchema,
+]);
+
 const SCENARIOS: ReadonlyArray<MergeScenario> = [
+  {
+    dataType: "discriminated union",
+    schemaSource: "generator-shaped",
+    modelName: "NodeShape",
+    discriminant: "shapeType",
+    name: "identical ShapeBox and ShapeCircle fields (control)",
+    writes: "1+1",
+    schema: GeneratedNodeShapeSchema,
+    initial: { shapeType: "circle", x: 0, y: 0 },
+    clientA: [{ kind: "patch", value: { shapeType: "box" } }],
+    clientB: [{ kind: "patch", value: { x: 1 } }],
+  },
+  {
+    dataType: "discriminated union",
+    schemaSource: "generator-shaped",
+    modelName: "PayloadShape",
+    discriminant: "shapeType",
+    name: "discriminant changed while variant payload changes type",
+    writes: "1+1",
+    schema: GeneratedPayloadShapeSchema,
+    initial: { shapeType: "circle", x: 0, y: 0, payload: "text" },
+    clientA: [{ kind: "patch", value: { shapeType: "box" } }],
+    clientB: [{ kind: "patch", value: { payload: { rich: true } } }],
+  },
+  {
+    dataType: "discriminated union",
+    schemaSource: "generator-shaped",
+    modelName: "LabeledShape",
+    discriminant: "shapeType",
+    name: "discriminant changed while a newly-required field is deleted",
+    writes: "1+1",
+    schema: GeneratedLabeledShapeSchema,
+    initial: { shapeType: "circle", x: 0, y: 0, label: "shape" },
+    clientA: [{ kind: "patch", value: { shapeType: "box" } }],
+    clientB: [{ kind: "patch", value: { label: undefined } }],
+  },
+  {
+    dataType: "nested record",
+    schemaSource: "generator-shaped",
+    modelName: "NestedRecord",
+    name: "independent fields in a nested record (control)",
+    writes: "1+1",
+    schema: GeneratedNestedRecordSchema,
+    initial: { id: "node", bounds: { height: 10, width: 10, x: 0, y: 0 } },
+    clientA: [{ kind: "patch", value: { bounds: { x: 1 } } }],
+    clientB: [{ kind: "patch", value: { bounds: { y: 2 } } }],
+  },
+  {
+    dataType: "nested record",
+    schemaSource: "generator-shaped",
+    modelName: "NestedShapeRecord",
+    name: "discriminated union nested inside a record",
+    writes: "1+1",
+    schema: GeneratedNestedShapeRecordSchema,
+    initial: {
+      id: "node",
+      shape: { shapeType: "circle", x: 0, y: 0, payload: "text" },
+    },
+    clientA: [{ kind: "patch", value: { shape: { shapeType: "box" } } }],
+    clientB: [{ kind: "patch", value: { shape: { payload: { rich: true } } } }],
+  },
+  {
+    dataType: "array of records",
+    schemaSource: "generator-shaped",
+    modelName: "Drawing",
+    name: "concurrent insertion of records (control)",
+    writes: "1+1",
+    schema: GeneratedDrawingSchema,
+    initial: { points: [{ id: "seed", x: 0, y: 0 }] },
+    clientA: [{
+      kind: "arrayInsert",
+      path: ["points"],
+      index: 1,
+      values: [{ id: "a", x: 1, y: 1 }],
+    }],
+    clientB: [{
+      kind: "arrayInsert",
+      path: ["points"],
+      index: 1,
+      values: [{ id: "b", x: 2, y: 2 }],
+    }],
+  },
+  {
+    dataType: "array of records",
+    schemaSource: "generator-shaped",
+    modelName: "Drawing",
+    name: "concurrent replacement of one record (control)",
+    writes: "2+2",
+    schema: GeneratedDrawingSchema,
+    initial: { points: [{ id: "seed", x: 0, y: 0 }] },
+    clientA: [{
+      kind: "arrayReplace",
+      path: ["points"],
+      index: 0,
+      order: "deleteThenInsert",
+      value: { id: "a", x: 1, y: 1 },
+    }],
+    clientB: [{
+      kind: "arrayReplace",
+      path: ["points"],
+      index: 0,
+      order: "deleteThenInsert",
+      value: { id: "b", x: 2, y: 2 },
+    }],
+  },
+  {
+    dataType: "array of records",
+    schemaSource: "generator-shaped",
+    modelName: "Collection",
+    discriminant: "collectionType",
+    name: "array item schema changes with a union discriminant",
+    writes: "1+1",
+    schema: GeneratedCollectionSchema,
+    initial: {
+      collectionType: "loose",
+      items: [{ id: "seed", x: 0, y: 0 }],
+    },
+    clientA: [{ kind: "patch", value: { collectionType: "points" } }],
+    clientB: [{ kind: "arrayInsert", path: ["items"], index: 1, values: ["not-a-point"] }],
+  },
   {
     dataType: "record",
     name: "independent scalar fields (control)",
@@ -324,15 +556,26 @@ const CLIENT_ID_ORDERS = [
   { label: "A=3, B=2", clientA: 3, clientB: 2 },
 ] as const;
 
-function createSchema(zodSchema: z.ZodType<unknown>): DocumentSchema {
-  const model: Model<unknown> = {
-    __type: undefined,
-    zodSchema,
-    [Metadata]: { name: MODEL_NAME },
+function getModelName(scenario: MergeScenario): string {
+  return scenario.modelName ?? MODEL_NAME;
+}
+
+function getSchemaSource(scenario: MergeScenario): "generator-shaped" | "hand-authored" {
+  return scenario.schemaSource ?? "hand-authored";
+}
+
+function createSchema(scenario: MergeScenario): DocumentSchema {
+  const modelName = getModelName(scenario);
+  const model: Model<Record<string, unknown>> = {
+    __type: {},
+    zodSchema: scenario.schema as z.ZodType<Record<string, unknown>>,
+    [Metadata]: scenario.discriminant == null
+      ? { name: modelName }
+      : { discriminant: scenario.discriminant, name: modelName },
   };
 
   return {
-    [MODEL_NAME]: model,
+    [modelName]: model,
     [Metadata]: { version: 1 },
   };
 }
@@ -340,8 +583,8 @@ function createSchema(zodSchema: z.ZodType<unknown>): DocumentSchema {
 function createBaseDocument(scenario: MergeScenario): Y.Doc {
   const yDoc = new Y.Doc();
   yDoc.clientID = BASE_CLIENT_ID;
-  YjsSchemaMapper.initializeDocumentStructure(yDoc, createSchema(scenario.schema));
-  YjsSchemaMapper.setRecord(yDoc, MODEL_NAME, RECORD_ID, scenario.initial);
+  YjsSchemaMapper.initializeDocumentStructure(yDoc, createSchema(scenario));
+  YjsSchemaMapper.setRecord(yDoc, getModelName(scenario), RECORD_ID, scenario.initial);
   return yDoc;
 }
 
@@ -352,12 +595,16 @@ function cloneDocument(update: Uint8Array, clientId: number): Y.Doc {
   return yDoc;
 }
 
-function getSnapshot(yDoc: Y.Doc): unknown {
-  return YjsSchemaMapper.getRecordSnapshot(yDoc, MODEL_NAME, RECORD_ID);
+function getSnapshot(yDoc: Y.Doc, scenario: MergeScenario): unknown {
+  return YjsSchemaMapper.getRecordSnapshot(yDoc, getModelName(scenario), RECORD_ID);
 }
 
-function getSharedValue(yDoc: Y.Doc, path: SharedPath): unknown {
-  let value: unknown = YjsSchemaMapper.getRecordData(yDoc, MODEL_NAME, RECORD_ID);
+function getSharedValue(yDoc: Y.Doc, scenario: MergeScenario, path: SharedPath): unknown {
+  let value: unknown = YjsSchemaMapper.getRecordData(
+    yDoc,
+    getModelName(scenario),
+    RECORD_ID,
+  );
 
   for (const segment of path) {
     if (value instanceof Y.Map && typeof segment === "string") {
@@ -372,8 +619,12 @@ function getSharedValue(yDoc: Y.Doc, path: SharedPath): unknown {
   return value;
 }
 
-function getSharedArray(yDoc: Y.Doc, path: SharedPath): Y.Array<unknown> {
-  const value = getSharedValue(yDoc, path);
+function getSharedArray(
+  yDoc: Y.Doc,
+  scenario: MergeScenario,
+  path: SharedPath,
+): Y.Array<unknown> {
+  const value = getSharedValue(yDoc, scenario, path);
   if (!(value instanceof Y.Array)) {
     throw new Error(`Expected a Y.Array at ${JSON.stringify(path)}`);
   }
@@ -385,24 +636,35 @@ function getSharedArray(yDoc: Y.Doc, path: SharedPath): Y.Array<unknown> {
  * address the Y.Array created by that mapper because it currently exposes
  * whole-array replacement, but not insert/delete/move helpers.
  */
-function applyOperation(yDoc: Y.Doc, operation: MergeOperation): void {
+function applyOperation(
+  yDoc: Y.Doc,
+  scenario: MergeScenario,
+  operation: MergeOperation,
+): void {
+  const modelName = getModelName(scenario);
   switch (operation.kind) {
     case "patch":
-      if (!YjsSchemaMapper.updateRecord(yDoc, MODEL_NAME, RECORD_ID, operation.value)) {
+      if (!YjsSchemaMapper.updateRecord(yDoc, modelName, RECORD_ID, operation.value)) {
         throw new Error(`Record ${RECORD_ID} does not exist`);
       }
       break;
     case "replaceRecord":
-      YjsSchemaMapper.setRecord(yDoc, MODEL_NAME, RECORD_ID, operation.value);
+      YjsSchemaMapper.setRecord(yDoc, modelName, RECORD_ID, operation.value);
       break;
     case "arrayDelete":
-      getSharedArray(yDoc, operation.path).delete(operation.index, operation.length ?? 1);
+      getSharedArray(yDoc, scenario, operation.path).delete(
+        operation.index,
+        operation.length ?? 1,
+      );
       break;
     case "arrayInsert":
-      getSharedArray(yDoc, operation.path).insert(operation.index, [...operation.values]);
+      getSharedArray(yDoc, scenario, operation.path).insert(
+        operation.index,
+        [...operation.values],
+      );
       break;
     case "arrayReplace": {
-      const array = getSharedArray(yDoc, operation.path);
+      const array = getSharedArray(yDoc, scenario, operation.path);
       if (operation.order === "deleteThenInsert") {
         array.delete(operation.index, 1);
         array.insert(operation.index, [operation.value]);
@@ -413,7 +675,7 @@ function applyOperation(yDoc: Y.Doc, operation: MergeOperation): void {
       break;
     }
     case "arrayMove": {
-      const array = getSharedArray(yDoc, operation.path);
+      const array = getSharedArray(yDoc, scenario, operation.path);
       const value = array.get(operation.sourceIndex);
       array.delete(operation.sourceIndex, 1);
       array.insert(operation.destinationIndex, [value]);
@@ -422,10 +684,14 @@ function applyOperation(yDoc: Y.Doc, operation: MergeOperation): void {
   }
 }
 
-function applyOperations(yDoc: Y.Doc, operations: ReadonlyArray<MergeOperation>): void {
+function applyOperations(
+  yDoc: Y.Doc,
+  scenario: MergeScenario,
+  operations: ReadonlyArray<MergeOperation>,
+): void {
   yDoc.transact(() => {
     for (const operation of operations) {
-      applyOperation(yDoc, operation);
+      applyOperation(yDoc, scenario, operation);
     }
   });
 }
@@ -459,6 +725,7 @@ function formatValidationFailure(
 
   return [
     `Schema-invalid Yjs merge: ${scenario.dataType}/${scenario.name}`,
+    `schema=${getSchemaSource(scenario)}; model=${getModelName(scenario)}`,
     `writes=${scenario.writes}; clientIds=${clientIds.label}`,
     "",
     "Starting state:",
@@ -480,20 +747,24 @@ function formatValidationFailure(
 
 describe("schema validity after concurrent Yjs merges", () => {
   for (const scenario of SCENARIOS) {
-    describe(`${scenario.dataType}: ${scenario.name} (${scenario.writes} writes)`, () => {
+    describe(`[${getSchemaSource(scenario)}] ${scenario.dataType}: ${scenario.name} (${scenario.writes} writes)`, () => {
       it.each(CLIENT_ID_ORDERS)("remains valid with client IDs $label", clientIds => {
         const base = createBaseDocument(scenario);
-        const startingState = getSnapshot(base);
+        const startingState = getSnapshot(base, scenario);
+        expect(
+          scenario.schema.safeParse(startingState).success,
+          "starting state must be valid",
+        ).toBe(true);
         const baseUpdate = Y.encodeStateAsUpdate(base);
         const baseStateVector = Y.encodeStateVector(base);
         const clientA = cloneDocument(baseUpdate, clientIds.clientA);
         const clientB = cloneDocument(baseUpdate, clientIds.clientB);
 
-        applyOperations(clientA, scenario.clientA);
-        applyOperations(clientB, scenario.clientB);
+        applyOperations(clientA, scenario, scenario.clientA);
+        applyOperations(clientB, scenario, scenario.clientB);
 
-        const localA = getSnapshot(clientA);
-        const localB = getSnapshot(clientB);
+        const localA = getSnapshot(clientA, scenario);
+        const localB = getSnapshot(clientB, scenario);
         expect(scenario.schema.safeParse(localA).success, "client A must be locally valid").toBe(
           true,
         );
@@ -510,11 +781,11 @@ describe("schema validity after concurrent Yjs merges", () => {
         Y.applyUpdate(clientB, updateA);
         const aThenB = mergeUpdates(baseUpdate, 4, [updateA, updateB]);
         const bThenA = mergeUpdates(baseUpdate, 5, [updateB, updateA]);
-        const mergedSnapshot = getSnapshot(aThenB);
+        const mergedSnapshot = getSnapshot(aThenB, scenario);
 
-        expect(getSnapshot(clientA)).toEqual(mergedSnapshot);
-        expect(getSnapshot(clientB)).toEqual(mergedSnapshot);
-        expect(getSnapshot(bThenA)).toEqual(mergedSnapshot);
+        expect(getSnapshot(clientA, scenario)).toEqual(mergedSnapshot);
+        expect(getSnapshot(clientB, scenario)).toEqual(mergedSnapshot);
+        expect(getSnapshot(bThenA, scenario)).toEqual(mergedSnapshot);
 
         // Each thrown error is a concrete schema-safety gap, and the case will
         // turn green if its merge behavior is made invariant-preserving.
