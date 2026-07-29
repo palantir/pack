@@ -445,19 +445,36 @@ function mergeUpdates(
 function formatValidationFailure(
   scenario: MergeScenario,
   clientIds: typeof CLIENT_ID_ORDERS[number],
-  snapshot: unknown,
+  startingState: unknown,
+  clientAState: unknown,
+  clientBState: unknown,
+  mergedState: unknown,
   result: z.ZodSafeParseResult<unknown>,
 ): string {
   const issues = result.success ? [] : result.error.issues.map(issue => ({
     message: issue.message,
     path: issue.path,
   }));
+  const formatState = (state: unknown): string => JSON.stringify(state, null, 2);
 
   return [
     `Schema-invalid Yjs merge: ${scenario.dataType}/${scenario.name}`,
     `writes=${scenario.writes}; clientIds=${clientIds.label}`,
-    `snapshot=${JSON.stringify(snapshot)}`,
-    `issues=${JSON.stringify(issues)}`,
+    "",
+    "Starting state:",
+    formatState(startingState),
+    "",
+    "Client A state:",
+    formatState(clientAState),
+    "",
+    "Client B state:",
+    formatState(clientBState),
+    "",
+    "Merged state:",
+    formatState(mergedState),
+    "",
+    "Schema issues:",
+    formatState(issues),
   ].join("\n");
 }
 
@@ -466,6 +483,7 @@ describe("schema validity after concurrent Yjs merges", () => {
     describe(`${scenario.dataType}: ${scenario.name} (${scenario.writes} writes)`, () => {
       it.each(CLIENT_ID_ORDERS)("remains valid with client IDs $label", clientIds => {
         const base = createBaseDocument(scenario);
+        const startingState = getSnapshot(base);
         const baseUpdate = Y.encodeStateAsUpdate(base);
         const baseStateVector = Y.encodeStateVector(base);
         const clientA = cloneDocument(baseUpdate, clientIds.clientA);
@@ -498,14 +516,20 @@ describe("schema validity after concurrent Yjs merges", () => {
         expect(getSnapshot(clientB)).toEqual(mergedSnapshot);
         expect(getSnapshot(bThenA)).toEqual(mergedSnapshot);
 
-        // This is intentionally a normal (not expected-to-fail) assertion:
-        // each red case is a concrete schema-safety gap, and will turn green
-        // if its merge behavior is made invariant-preserving.
+        // Each thrown error is a concrete schema-safety gap, and the case will
+        // turn green if its merge behavior is made invariant-preserving.
         const validation = scenario.schema.safeParse(mergedSnapshot);
-        expect(
-          validation.success,
-          formatValidationFailure(scenario, clientIds, mergedSnapshot, validation),
-        ).toBe(true);
+        if (!validation.success) {
+          throw new Error(formatValidationFailure(
+            scenario,
+            clientIds,
+            startingState,
+            localA,
+            localB,
+            mergedSnapshot,
+            validation,
+          ));
+        }
       });
     });
   }
