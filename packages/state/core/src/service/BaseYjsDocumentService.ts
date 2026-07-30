@@ -1714,6 +1714,23 @@ export abstract class BaseYjsDocumentService<TDoc extends InternalYjsDoc = Inter
       );
     }
 
+    // Metadata loads are demand-driven, like data loads: they only start when a metadata
+    // subscription is registered, or when a subclass pulls metadata in for a data subscription
+    // (`ensureMetadataLoaded`). Both paths move the status off UNLOADED synchronously, so an
+    // UNLOADED status with no metadata subscription means no load will ever start — waiting on
+    // it would hang forever. Fail fast instead.
+    if (
+      !internalDoc.hasMetadataSubscriptions
+      && internalDoc.metadataStatus.load === DocumentLoadStatus.UNLOADED
+    ) {
+      return Promise.reject(
+        new Error(
+          "Cannot wait for metadata load: no metadata subscription is registered for this "
+            + "document, so no load will start. Subscribe (e.g. onMetadataChange) before waiting.",
+        ),
+      );
+    }
+
     // Wait for status to change to LOADED or ERROR
     return new Promise((resolve, reject) => {
       let hasStartedLoading = internalDoc.metadataStatus.load === DocumentLoadStatus.LOADING;
