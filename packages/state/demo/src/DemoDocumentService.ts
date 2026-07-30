@@ -87,8 +87,11 @@ export interface DemoDocumentServiceOptions {
 
 interface DemoInternalDoc extends InternalYjsDoc {
   channel?: BroadcastChannel;
+  /** Identifies the current metadata open, so stale async continuations can be discarded. */
+  metadataSubscriptionOpenToken?: object;
   presenceManager?: PresenceManager;
   provider?: IndexeddbPersistence;
+  unobserveMetadata?: () => void;
   updateHandler?: (update: Uint8Array, origin: unknown) => void;
 }
 
@@ -363,19 +366,34 @@ export class DemoDocumentService extends BaseYjsDocumentService<DemoInternalDoc>
     internalDoc: DemoInternalDoc,
     docRef: DocumentRef,
   ): void {
-    if (internalDoc.metadataStatus.load !== DocumentLoadStatus.UNLOADED) {
+    if (
+      internalDoc.metadataSubscriptionOpenToken != null
+      || !this.hasMetadataDemand(internalDoc)
+    ) {
       return;
     }
+    const openToken = {};
+    internalDoc.metadataSubscriptionOpenToken = openToken;
+
     this.updateMetadataStatus(internalDoc, docRef, {
-      load: DocumentLoadStatus.LOADING,
+      live: DocumentLiveStatus.CONNECTING,
+      // Metadata already held (from createDocument, or an earlier open that only closed the
+      // channel) must not flash back to LOADING: consumers gate on `load === LOADED`, and
+      // waitForMetadataLoad would stop resolving immediately. Reopening re-establishes liveness,
+      // not the load — unlike Foundry, which genuinely fetches again over HTTP.
+      ...(internalDoc.metadata == null ? { load: DocumentLoadStatus.LOADING } : {}),
     });
 
     this.metadataStore.whenReady().then(() => {
+      if (!this.isMetadataOpenGeneration(internalDoc, docRef, openToken)) {
+        return;
+      }
       const metadata = this.metadataStore.getDocument(docRef.id);
 
       if (metadata == null) {
         this.updateMetadataStatus(internalDoc, docRef, {
           error: toUnknownChannelError(new Error("Document not found")),
+          live: DocumentLiveStatus.ERROR,
           load: DocumentLoadStatus.ERROR,
         });
         return;
@@ -383,22 +401,48 @@ export class DemoDocumentService extends BaseYjsDocumentService<DemoInternalDoc>
 
       internalDoc.metadata = metadata;
 
-      const unobserve = this.metadataStore.observeDocument(docRef.id, updatedMetadata => {
-        if (updatedMetadata != null) {
-          internalDoc.metadata = updatedMetadata;
-          this.notifyMetadataSubscribers(internalDoc, docRef, updatedMetadata);
-        }
-      });
+      internalDoc.unobserveMetadata = this.metadataStore.observeDocument(
+        docRef.id,
+        updatedMetadata => {
+          if (updatedMetadata != null) {
+            internalDoc.metadata = updatedMetadata;
+            this.notifyMetadataSubscribers(internalDoc, docRef, updatedMetadata);
+          }
+        },
+      );
 
       this.updateMetadataStatus(internalDoc, docRef, {
+        live: DocumentLiveStatus.CONNECTED,
         load: DocumentLoadStatus.LOADED,
       });
     }).catch((error: unknown) => {
+      if (!this.isMetadataOpenGeneration(internalDoc, docRef, openToken)) {
+        return;
+      }
       this.updateMetadataStatus(internalDoc, docRef, {
         error: toUnknownChannelError(error),
+        live: DocumentLiveStatus.ERROR,
         load: DocumentLoadStatus.ERROR,
       });
     });
+  }
+
+  private hasMetadataDemand(internalDoc: DemoInternalDoc): boolean {
+    return internalDoc.hasDataSubscriptions || internalDoc.hasMetadataSubscriptions;
+  }
+
+  /**
+   * Checks whether a metadata load's result is still safe to use. It is not safe if the load was
+   * replaced, nobody needs metadata anymore, or the document was recreated.
+   */
+  private isMetadataOpenGeneration(
+    internalDoc: DemoInternalDoc,
+    docRef: DocumentRef,
+    openToken: object,
+  ): boolean {
+    return this.documents.get(docRef.id) === internalDoc
+      && internalDoc.metadataSubscriptionOpenToken === openToken
+      && this.hasMetadataDemand(internalDoc);
   }
 
   protected onDataSubscriptionOpened(
@@ -455,14 +499,46 @@ export class DemoDocumentService extends BaseYjsDocumentService<DemoInternalDoc>
   }
 
   protected onMetadataSubscriptionClosed(
-    _internalDoc: DemoInternalDoc,
-    _docRef: DocumentRef,
+    internalDoc: DemoInternalDoc,
+    docRef: DocumentRef,
   ): void {
+    this.closeMetadataSubscription(internalDoc, docRef);
+  }
+
+  private closeMetadataSubscription(
+    internalDoc: DemoInternalDoc,
+    docRef: DocumentRef,
+  ): void {
+    // Data subscriptions drive metadata through ensureMetadataLoaded, so metadata stays live
+    // until nobody needs it — otherwise the indicator reads disconnected while updates flow.
+    if (this.hasMetadataDemand(internalDoc)) {
+      return;
+    }
+    internalDoc.metadataSubscriptionOpenToken = undefined;
+    internalDoc.unobserveMetadata?.();
+    internalDoc.unobserveMetadata = undefined;
+    if (internalDoc.metadataStatus.load === DocumentLoadStatus.LOADING) {
+      this.updateMetadataStatus(internalDoc, docRef, {
+        live: DocumentLiveStatus.DISCONNECTED,
+        load: DocumentLoadStatus.UNLOADED,
+      });
+    } else if (
+      internalDoc.metadataStatus.live !== DocumentLiveStatus.DISCONNECTED
+      || internalDoc.metadataStatus.error != null
+    ) {
+      this.updateMetadataStatus(internalDoc, docRef, {
+        live: DocumentLiveStatus.DISCONNECTED,
+        // Replaying the current load is a no-op for `load` itself but lets updateChannelStatus
+        // drop a subscription error: closing on purpose is not a failure. A load of ERROR is
+        // preserved, since that error describes the metadata, not the channel.
+        load: internalDoc.metadataStatus.load,
+      });
+    }
   }
 
   protected onDataSubscriptionClosed(
     internalDoc: DemoInternalDoc,
-    _docRef: DocumentRef,
+    docRef: DocumentRef,
   ): void {
     if (internalDoc.updateHandler) {
       internalDoc.yDoc.off("update", internalDoc.updateHandler);
@@ -483,6 +559,8 @@ export class DemoDocumentService extends BaseYjsDocumentService<DemoInternalDoc>
       internalDoc.presenceManager.dispose();
       internalDoc.presenceManager = undefined;
     }
+
+    this.closeMetadataSubscription(internalDoc, docRef);
   }
 
   onActivity<T extends DocumentSchema>(

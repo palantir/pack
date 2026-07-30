@@ -1397,8 +1397,7 @@ export abstract class BaseYjsDocumentService<TDoc extends InternalYjsDoc = Inter
         );
 
       if (!hasDataSubs) {
-        currentDoc.hasDataSubscriptions = false;
-        this.onDataSubscriptionClosed(currentDoc, internalDocRef);
+        this.closeDataSubscription(currentDoc, internalDocRef);
       }
     };
   };

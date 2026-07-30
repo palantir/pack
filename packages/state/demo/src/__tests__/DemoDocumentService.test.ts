@@ -562,4 +562,146 @@ describe("DemoDocumentService", () => {
 
     unsubscribeState();
   });
+
+  it("should reset data liveness when the last data subscription is an onRecordInvalid", async () => {
+    const stateModule = getStateModule(app);
+
+    const schema = createSchemaWithRecords();
+    const docRef = await stateModule.createDocument({
+      documentTypeName: "TestType",
+      name: "Record Invalid Teardown",
+      ontologyRid: "test-ontology-rid",
+      security: TEST_SECURITY,
+    }, schema);
+
+    const recordRef = stateModule.createRecordRef(docRef, "user1" as RecordId, schema.User);
+    const unsubscribe = stateModule.onRecordInvalid(recordRef, () => {});
+    await new Promise(resolve => setTimeout(resolve, 100));
+
+    expect(stateModule.getDocumentStatus(docRef).data.live).toBe(DocumentLiveStatus.CONNECTED);
+
+    // This teardown path used to bypass the shared close path, leaving data.live CONNECTED after
+    // the underlying provider and update handler had already been disposed.
+    unsubscribe();
+
+    const status = stateModule.getDocumentStatus(docRef);
+    expect(status.data.live).toBe(DocumentLiveStatus.DISCONNECTED);
+    expect(status.data.load).toBe(DocumentLoadStatus.UNLOADED);
+  });
+
+  describe("metadata liveness", () => {
+    async function createDoc(stateModule: ReturnType<typeof getStateModule>) {
+      const docRef = await stateModule.createDocument({
+        documentTypeName: "TestType",
+        name: "Metadata Liveness Document",
+        ontologyRid: "test-ontology-rid",
+        security: TEST_SECURITY,
+      }, createTestSchema());
+      return docRef;
+    }
+
+    const settle = () => new Promise(resolve => setTimeout(resolve, 100));
+
+    it("should not regress the load status when metadata is already available", async () => {
+      const stateModule = getStateModule(app);
+      const docRef = await createDoc(stateModule);
+      await settle();
+      expect(stateModule.getDocumentStatus(docRef).metadata.load).toBe(DocumentLoadStatus.LOADED);
+
+      const loads: DocumentLoadStatus[] = [];
+      const unsubscribeStatus = stateModule.onStatusChange(docRef, (_, status) => {
+        loads.push(status.metadata.load);
+      });
+
+      // Opening a metadata subscription re-reports liveness, but the metadata is already held,
+      // so consumers gating on `load === LOADED` must not see a loading flash and
+      // waitForMetadataLoad must stay immediate.
+      const unsubscribe = stateModule.onMetadataChange(docRef, () => {});
+      await settle();
+
+      expect(loads).not.toContain(DocumentLoadStatus.LOADING);
+      expect(stateModule.getDocumentStatus(docRef).metadata.live).toBe(
+        DocumentLiveStatus.CONNECTED,
+      );
+
+      unsubscribe();
+      unsubscribeStatus();
+    });
+
+    it("should restore CONNECTED when metadata is resubscribed after closing", async () => {
+      const stateModule = getStateModule(app);
+      const docRef = await createDoc(stateModule);
+
+      const unsubscribeFirst = stateModule.onMetadataChange(docRef, () => {});
+      await settle();
+      expect(stateModule.getDocumentStatus(docRef).metadata.live).toBe(
+        DocumentLiveStatus.CONNECTED,
+      );
+
+      unsubscribeFirst();
+      expect(stateModule.getDocumentStatus(docRef).metadata.live).toBe(
+        DocumentLiveStatus.DISCONNECTED,
+      );
+
+      // Reopening must re-report liveness. Keying the open guard off `load` latched the
+      // indicator at DISCONNECTED for the document's lifetime once metadata had loaded.
+      const unsubscribeSecond = stateModule.onMetadataChange(docRef, () => {});
+      await settle();
+      expect(stateModule.getDocumentStatus(docRef).metadata.live).toBe(
+        DocumentLiveStatus.CONNECTED,
+      );
+
+      unsubscribeSecond();
+    });
+
+    it("should stay CONNECTED while a data subscription still needs metadata", async () => {
+      const stateModule = getStateModule(app);
+      const docRef = await createDoc(stateModule);
+
+      const unsubscribeData = stateModule.onStateChange(docRef, () => {});
+      const unsubscribeMetadata = stateModule.onMetadataChange(docRef, () => {});
+      await settle();
+      expect(stateModule.getDocumentStatus(docRef).metadata.live).toBe(
+        DocumentLiveStatus.CONNECTED,
+      );
+
+      // Data subscriptions drive metadata via ensureMetadataLoaded, so metadata is still live
+      // after the last metadata subscriber leaves.
+      unsubscribeMetadata();
+      expect(stateModule.getDocumentStatus(docRef).metadata.live).toBe(
+        DocumentLiveStatus.CONNECTED,
+      );
+
+      unsubscribeData();
+      expect(stateModule.getDocumentStatus(docRef).metadata.live).toBe(
+        DocumentLiveStatus.DISCONNECTED,
+      );
+    });
+
+    it("should not report CONNECTED when the subscription closes while metadata loads", async () => {
+      const schema = createTestSchema();
+      const createdRef = await getStateModule(app).createDocument({
+        documentTypeName: "TestType",
+        name: "Metadata Liveness Reload Document",
+        ontologyRid: "test-ontology-rid",
+        security: TEST_SECURITY,
+      }, schema);
+      await settle();
+
+      // A second service instance is used because its metadataStore has not resolved for this
+      // document yet, so the load is genuinely in flight when the unsubscribe lands.
+      const stateModule = getStateModule(createTestApp());
+      const docRef = stateModule.createDocRef(createdRef.id, schema);
+
+      // Unsubscribe before the in-flight load resolves; its continuation must not resurrect
+      // CONNECTED on a channel nobody is listening to.
+      const unsubscribe = stateModule.onMetadataChange(docRef, () => {});
+      unsubscribe();
+      await settle();
+
+      expect(stateModule.getDocumentStatus(docRef).metadata.live).toBe(
+        DocumentLiveStatus.DISCONNECTED,
+      );
+    });
+  });
 });

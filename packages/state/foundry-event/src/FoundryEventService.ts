@@ -39,6 +39,7 @@ import {
   toUnknownChannelError,
 } from "@palantir/pack.document-schema.model-types";
 import {
+  DocumentLiveStatus,
   DocumentLoadStatus,
   type DocumentSyncStatus,
   getDocumentUpdateSchemaVersionFromTransaction,
@@ -267,16 +268,25 @@ class FoundryEventServiceImpl implements FoundryEventService {
     yDoc.on("update", localYDocUpdateHandler);
 
     onStatusChange({
+      live: DocumentLiveStatus.CONNECTING,
       load: DocumentLoadStatus.LOADING,
     });
 
     const channelId = getDocumentUpdatesChannelId(documentId);
+
+    // Scoped to this sync generation. CometD dispatches a transport response's messages
+    // synchronously while the subscribe promise resolves on a microtask, so a channel error
+    // delivered alongside the ack would otherwise be overwritten by the promotion below.
+    let channelFailed = false;
 
     this.eventService.subscribe(
       channelId,
       (message: DocumentUpdateMessage) => {
         if (session.localYDocUpdateHandler !== localYDocUpdateHandler) {
           return;
+        }
+        if (message.type === "error") {
+          channelFailed = true;
         }
         this.handleDocumentUpdateMessage(session, message, yDoc, onStatusChange);
       },
@@ -288,6 +298,14 @@ class FoundryEventServiceImpl implements FoundryEventService {
     ).then(subscriptionId => {
       if (session.localYDocUpdateHandler === localYDocUpdateHandler) {
         session.documentSubscriptionId = subscriptionId;
+        if (!channelFailed) {
+          // The channel is subscribed, so the data channel is live. Reported separately from
+          // `load`, which stays LOADING until the first update arrives. Matches how the activity
+          // and presence channels report liveness on subscription establishment.
+          onStatusChange({
+            live: DocumentLiveStatus.CONNECTED,
+          });
+        }
       } else {
         this.eventService.unsubscribe(subscriptionId);
       }
@@ -297,6 +315,7 @@ class FoundryEventServiceImpl implements FoundryEventService {
           error: toUnknownChannelError(
             new Error("Failed to setup document data subscription", { cause: e }),
           ),
+          live: DocumentLiveStatus.ERROR,
           load: DocumentLoadStatus.ERROR,
         });
       } else {
@@ -522,8 +541,12 @@ class FoundryEventServiceImpl implements FoundryEventService {
           errorInstanceId,
           args,
         });
+        // A channel-level error from the server means the subscription itself is unusable, so
+        // liveness fails with the load. Data-integrity failures below (revision gap, update that
+        // will not apply) leave `live` alone: the connection is still up, only the state is stale.
         onStatusChange({
           error: toChannelError(code, errorInstanceId),
+          live: DocumentLiveStatus.ERROR,
           load: DocumentLoadStatus.ERROR,
         });
         break;
