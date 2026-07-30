@@ -367,6 +367,7 @@ export class DemoDocumentService extends BaseYjsDocumentService<DemoInternalDoc>
       return;
     }
     this.updateMetadataStatus(internalDoc, docRef, {
+      live: DocumentLiveStatus.CONNECTING,
       load: DocumentLoadStatus.LOADING,
     });
 
@@ -376,6 +377,7 @@ export class DemoDocumentService extends BaseYjsDocumentService<DemoInternalDoc>
       if (metadata == null) {
         this.updateMetadataStatus(internalDoc, docRef, {
           error: toUnknownChannelError(new Error("Document not found")),
+          live: DocumentLiveStatus.ERROR,
           load: DocumentLoadStatus.ERROR,
         });
         return;
@@ -391,11 +393,13 @@ export class DemoDocumentService extends BaseYjsDocumentService<DemoInternalDoc>
       });
 
       this.updateMetadataStatus(internalDoc, docRef, {
+        live: DocumentLiveStatus.CONNECTED,
         load: DocumentLoadStatus.LOADED,
       });
     }).catch((error: unknown) => {
       this.updateMetadataStatus(internalDoc, docRef, {
         error: toUnknownChannelError(error),
+        live: DocumentLiveStatus.ERROR,
         load: DocumentLoadStatus.ERROR,
       });
     });
@@ -455,9 +459,14 @@ export class DemoDocumentService extends BaseYjsDocumentService<DemoInternalDoc>
   }
 
   protected onMetadataSubscriptionClosed(
-    _internalDoc: DemoInternalDoc,
-    _docRef: DocumentRef,
+    internalDoc: DemoInternalDoc,
+    docRef: DocumentRef,
   ): void {
+    if (internalDoc.metadataStatus.live !== DocumentLiveStatus.DISCONNECTED) {
+      this.updateMetadataStatus(internalDoc, docRef, {
+        live: DocumentLiveStatus.DISCONNECTED,
+      });
+    }
   }
 
   protected onDataSubscriptionClosed(
