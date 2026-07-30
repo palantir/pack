@@ -398,9 +398,6 @@ importers:
       '@osdk/api':
         specifier: 'catalog:'
         version: 2.5.2
-      '@osdk/client':
-        specifier: 'catalog:'
-        version: 2.5.2
       '@osdk/oauth':
         specifier: 'catalog:'
         version: 1.4.0
@@ -416,6 +413,9 @@ importers:
       '@palantir/pack.core':
         specifier: workspace:*
         version: link:../core
+      '@palantir/pack.document-schema.model-types':
+        specifier: workspace:*
+        version: link:../document-schema/model-types
       '@palantir/pack.state.core':
         specifier: workspace:*
         version: link:../state/core
@@ -432,9 +432,15 @@ importers:
         specifier: 'catalog:'
         version: 1.3.3
     devDependencies:
+      '@osdk/client':
+        specifier: 'catalog:'
+        version: 2.5.2
       '@palantir/pack.monorepo.tsconfig':
         specifier: workspace:~
         version: link:../monorepo/tsconfig
+      '@types/node':
+        specifier: 'catalog:'
+        version: 20.19.19
       happy-dom:
         specifier: 'catalog:'
         version: 20.0.11
@@ -449,7 +455,10 @@ importers:
         version: 5.9.3
       vitest-mock-extended:
         specifier: 'catalog:'
-        version: 3.1.0(typescript@5.9.3)(vitest@4.1.10(@types/node@22.19.1)(@vitest/coverage-v8@4.0.14(vitest@4.0.14(@types/node@22.19.1)(happy-dom@20.0.11)(jiti@1.21.7)(lightningcss@1.32.0)(terser@5.48.0)(yaml@2.8.2)))(happy-dom@20.0.11)(vite@7.2.6(@types/node@22.19.1)(jiti@1.21.7)(lightningcss@1.32.0)(terser@5.48.0)(yaml@2.8.2)))
+        version: 3.1.0(typescript@5.9.3)(vitest@4.1.10(@types/node@20.19.19)(@vitest/coverage-v8@4.0.14(vitest@4.0.14(@types/node@22.19.1)(happy-dom@20.0.11)(jiti@1.21.7)(lightningcss@1.32.0)(terser@5.48.0)(yaml@2.8.2)))(happy-dom@20.0.11)(vite@7.2.6(@types/node@20.19.19)(jiti@1.21.7)(lightningcss@1.32.0)(terser@5.48.0)(yaml@2.8.2)))
+      zod:
+        specifier: 'catalog:'
+        version: 4.1.13
 
   packages/auth/core:
     dependencies:
