@@ -44,6 +44,7 @@
     "@palantir/pack.auth": "workspace:*",
     "@palantir/pack.auth.foundry": "workspace:*",
     "@palantir/pack.core": "workspace:*",
+    "@palantir/pack.document-schema.model-types": "workspace:*",
     "@palantir/pack.state.core": "workspace:*",
     "@palantir/pack.state.demo": "workspace:*",
     "@palantir/pack.state.foundry": "workspace:*",
@@ -57,12 +58,15 @@
     "@osdk/shared.client2": "catalog:"
   },
   "devDependencies": {
+    "@osdk/client": "catalog:",
     "@palantir/pack.monorepo.tsconfig": "workspace:~",
+    "@types/node": "catalog:",
     "happy-dom": "catalog:",
     "rimraf": "catalog:",
     "tslib": "catalog:",
     "typescript": "catalog:",
-    "vitest-mock-extended": "catalog:"
+    "vitest-mock-extended": "catalog:",
+    "zod": "catalog:"
   },
   "publishConfig": {
     "access": "public"
