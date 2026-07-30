@@ -24,7 +24,12 @@ import { Documents } from "@osdk/foundry.pack";
 import type { PackAppInternal } from "@palantir/pack.core";
 import type { DocumentId, DocumentSchema } from "@palantir/pack.document-schema.model-types";
 import { ChannelErrorCode, Metadata } from "@palantir/pack.document-schema.model-types";
-import { createDocRef, DocumentLoadStatus, type DocumentStatus } from "@palantir/pack.state.core";
+import {
+  createDocRef,
+  DocumentLiveStatus,
+  DocumentLoadStatus,
+  type DocumentStatus,
+} from "@palantir/pack.state.core";
 import type {
   FoundryEventService,
   SubscriptionId,
@@ -1052,6 +1057,156 @@ describe("Foundry Document Status Tracking", () => {
       expect(finalStatus).toBeDefined();
       expect(finalStatus?.metadata.load).toBe(DocumentLoadStatus.LOADED);
       expect(finalStatus?.data.load).toBe(DocumentLoadStatus.LOADED);
+    });
+  });
+
+  describe("metadata channel liveness", () => {
+    const unsubscribes: Array<() => void> = [];
+
+    afterEach(() => {
+      unsubscribes.forEach(fn => {
+        fn();
+      });
+      unsubscribes.length = 0;
+    });
+
+    it("should report CONNECTED once the metadata updates subscription is established", async () => {
+      const docRef = createDocRef(mockApp, "test-doc-live-1" as DocumentId, testSchema);
+
+      unsubscribes.push(service.onMetadataChange(docRef, () => {}));
+
+      expect(service.getDocumentStatus(docRef).metadata.live).toBe(DocumentLiveStatus.CONNECTING);
+
+      await vi.runAllTimersAsync();
+
+      expect(service.getDocumentStatus(docRef).metadata.live).toBe(DocumentLiveStatus.CONNECTED);
+      expect(service.getDocumentStatus(docRef).metadata.load).toBe(DocumentLoadStatus.LOADED);
+    });
+
+    it("should stay CONNECTING while metadata is loaded but the subscription is pending", async () => {
+      // Never resolves, so the updates subscription stays in flight.
+      mockEventService.subscribeToMetadataUpdates.mockReturnValueOnce(new Promise(() => {}));
+
+      const docRef = createDocRef(mockApp, "test-doc-live-pending" as DocumentId, testSchema);
+
+      unsubscribes.push(service.onMetadataChange(docRef, () => {}));
+      await vi.runAllTimersAsync();
+
+      // The metadata document arrived over HTTP, but `live` describes the updates subscription,
+      // which is not established yet. The intervening `{ load: LOADED }` update must not drop the
+      // CONNECTING set before it.
+      const status = service.getDocumentStatus(docRef);
+      expect(status.metadata.load).toBe(DocumentLoadStatus.LOADED);
+      expect(status.metadata.live).toBe(DocumentLiveStatus.CONNECTING);
+    });
+
+    it("should report ERROR liveness but keep metadata loaded when the subscription fails", async () => {
+      mockEventService.subscribeToMetadataUpdates.mockRejectedValueOnce(
+        new Error("window is not defined"),
+      );
+
+      const docRef = createDocRef(mockApp, "test-doc-live-2" as DocumentId, testSchema);
+
+      unsubscribes.push(service.onMetadataChange(docRef, () => {}));
+      await vi.runAllTimersAsync();
+
+      // Metadata was fetched over HTTP, so it is genuinely loaded; only live updates are dead.
+      const status = service.getDocumentStatus(docRef);
+      expect(status.metadata.load).toBe(DocumentLoadStatus.LOADED);
+      expect(status.metadata.live).toBe(DocumentLiveStatus.ERROR);
+      // The failed liveness must be explainable, matching activity and presence.
+      expect(status.metadata.error).toMatchObject({ code: ChannelErrorCode.UNKNOWN });
+    });
+
+    it("should keep the data load status when the event service reports liveness alone", async () => {
+      // The event service emits partial status updates. A liveness-only update must not disturb
+      // the load status set when the data subscription opened.
+      mockEventService.startDocumentSync.mockImplementationOnce(
+        (documentId, _yDoc, _versionRange, onStatusChange) => {
+          void Promise.resolve().then(() => {
+            onStatusChange({ live: DocumentLiveStatus.CONNECTED });
+          });
+          return { clientId: "test-client-partial", documentId };
+        },
+      );
+
+      const docRef = createDocRef(mockApp, "test-doc-live-partial" as DocumentId, testSchema);
+
+      unsubscribes.push(service.onStateChange(docRef, () => {}));
+      await vi.runAllTimersAsync();
+
+      const status = service.getDocumentStatus(docRef);
+      expect(status.data.live).toBe(DocumentLiveStatus.CONNECTED);
+      // No update has arrived, so the load is still in flight rather than reset.
+      expect(status.data.load).toBe(DocumentLoadStatus.LOADING);
+    });
+
+    it("should preserve the load status and error across partial liveness updates", async () => {
+      mockEventService.subscribeToMetadataUpdates.mockRejectedValueOnce(
+        new Error("window is not defined"),
+      );
+
+      const docRef = createDocRef(mockApp, "test-doc-live-5" as DocumentId, testSchema);
+
+      const unsubscribe = service.onMetadataChange(docRef, () => {});
+      await vi.runAllTimersAsync();
+      expect(service.getDocumentStatus(docRef).metadata.error).toBeDefined();
+
+      // A later data-channel update must not disturb the metadata channel: updateChannelStatus
+      // merges per channel, and omitted fields fall back to the current value.
+      unsubscribes.push(service.onStateChange(docRef, () => {}));
+      await vi.runAllTimersAsync();
+
+      const status = service.getDocumentStatus(docRef);
+      expect(status.metadata.load).toBe(DocumentLoadStatus.LOADED);
+      expect(status.metadata.live).toBe(DocumentLiveStatus.ERROR);
+      expect(status.metadata.error).toBeDefined();
+
+      unsubscribe();
+    });
+
+    it("should surface data liveness reported by the event service", async () => {
+      // The event service owns the data subscription, so it reports liveness through the
+      // startDocumentSync status callback. This asserts the value survives the status merge and
+      // reaches DocumentStatus.data.live, which read DISCONNECTED forever against a real stack.
+      mockEventService.startDocumentSync.mockImplementationOnce(
+        (documentId, _yDoc, _versionRange, onStatusChange) => {
+          void Promise.resolve().then(() => {
+            onStatusChange({ live: DocumentLiveStatus.CONNECTED });
+            onStatusChange({ load: DocumentLoadStatus.LOADED });
+          });
+          return { clientId: "test-client-live", documentId };
+        },
+      );
+
+      const docRef = createDocRef(mockApp, "test-doc-live-4" as DocumentId, testSchema);
+
+      expect(service.getDocumentStatus(docRef).data.live).toBe(DocumentLiveStatus.DISCONNECTED);
+
+      const unsubscribe = service.onStateChange(docRef, () => {});
+      await vi.runAllTimersAsync();
+
+      const status = service.getDocumentStatus(docRef);
+      expect(status.data.load).toBe(DocumentLoadStatus.LOADED);
+      expect(status.data.live).toBe(DocumentLiveStatus.CONNECTED);
+
+      unsubscribe();
+
+      expect(service.getDocumentStatus(docRef).data.live).toBe(DocumentLiveStatus.DISCONNECTED);
+    });
+
+    it("should report DISCONNECTED after the metadata subscription closes", async () => {
+      const docRef = createDocRef(mockApp, "test-doc-live-3" as DocumentId, testSchema);
+
+      const unsubscribe = service.onMetadataChange(docRef, () => {});
+      await vi.runAllTimersAsync();
+      expect(service.getDocumentStatus(docRef).metadata.live).toBe(DocumentLiveStatus.CONNECTED);
+
+      unsubscribe();
+
+      expect(service.getDocumentStatus(docRef).metadata.live).toBe(
+        DocumentLiveStatus.DISCONNECTED,
+      );
     });
   });
 });

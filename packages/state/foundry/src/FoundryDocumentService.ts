@@ -366,6 +366,7 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
     internalDoc.metadataSubscriptionOpenToken = openToken;
 
     this.updateMetadataStatus(internalDoc, docRef, {
+      live: DocumentLiveStatus.CONNECTING,
       load: DocumentLoadStatus.LOADING,
     });
 
@@ -398,6 +399,7 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
           error: toUnknownChannelError(
             new Error("Failed to load document metadata", { cause: e }),
           ),
+          live: DocumentLiveStatus.ERROR,
           load: DocumentLoadStatus.ERROR,
         });
       });
@@ -420,6 +422,9 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
           return;
         }
         internalDoc.metadataSubscriptionId = subscriptionId;
+        this.updateMetadataStatus(internalDoc, docRef, {
+          live: DocumentLiveStatus.CONNECTED,
+        });
       })
       .catch((e: unknown) => {
         if (!this.isMetadataOpenGeneration(internalDoc, docRef, openToken)) {
@@ -434,6 +439,14 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
         }
         this.logger.error("Failed to subscribe to metadata updates", e, {
           docId: docRef.id,
+        });
+        // `load` is deliberately omitted so it stays LOADED: the metadata itself was fetched over
+        // HTTP and is valid, only the live updates channel is dead — which is what `live` exists to
+        // express. `error` is still set so the failed liveness is explainable; omitting `load` also
+        // means the merge preserves it rather than clearing the error.
+        this.updateMetadataStatus(internalDoc, docRef, {
+          error: toUnknownChannelError(e),
+          live: DocumentLiveStatus.ERROR,
         });
       });
   }
@@ -565,7 +578,12 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
     }
     if (internalDoc.metadataStatus.load === DocumentLoadStatus.LOADING) {
       this.updateMetadataStatus(internalDoc, docRef, {
+        live: DocumentLiveStatus.DISCONNECTED,
         load: DocumentLoadStatus.UNLOADED,
+      });
+    } else if (internalDoc.metadataStatus.live !== DocumentLiveStatus.DISCONNECTED) {
+      this.updateMetadataStatus(internalDoc, docRef, {
+        live: DocumentLiveStatus.DISCONNECTED,
       });
     }
   }

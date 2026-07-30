@@ -19,6 +19,8 @@ import type { PackAppInternal } from "@palantir/pack.core";
 import type { DocumentId } from "@palantir/pack.document-schema.model-types";
 import {
   addDocumentUpdateSchemaVersionToTransaction,
+  DocumentLiveStatus,
+  DocumentLoadStatus,
   type DocumentSyncStatus,
 } from "@palantir/pack.state.core";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -390,5 +392,137 @@ describe("FoundryEventService", () => {
     );
 
     expect(secondSession.clientId).not.toBe(firstSession.clientId);
+  });
+
+  describe("data channel liveness", () => {
+    function collectStatus(): {
+      statusUpdates: Array<Partial<DocumentSyncStatus>>;
+      onStatusChange: (status: Partial<DocumentSyncStatus>) => void;
+    } {
+      const statusUpdates: Array<Partial<DocumentSyncStatus>> = [];
+      return { statusUpdates, onStatusChange: status => statusUpdates.push(status) };
+    }
+
+    /** Latest reported value of a single status field, since updates are partial. */
+    function latest<K extends keyof DocumentSyncStatus>(
+      statusUpdates: Array<Partial<DocumentSyncStatus>>,
+      field: K,
+    ): DocumentSyncStatus[K] | undefined {
+      return statusUpdates.filter(s => s[field] !== undefined).at(-1)?.[field];
+    }
+
+    it("reports CONNECTING while the subscription is being established", () => {
+      mocks.eventService.subscribe.mockReturnValue(new Promise(() => {}));
+      const service = createFoundryEventService(app);
+      const { statusUpdates, onStatusChange } = collectStatus();
+
+      service.startDocumentSync(
+        "doc-1" as DocumentId,
+        new Y.Doc(),
+        { maxVersion: 1, minVersion: 1 },
+        onStatusChange,
+      );
+
+      expect(latest(statusUpdates, "live")).toBe(DocumentLiveStatus.CONNECTING);
+      expect(latest(statusUpdates, "load")).toBe(DocumentLoadStatus.LOADING);
+    });
+
+    it("reports CONNECTED once the subscription is established", async () => {
+      mocks.eventService.subscribe.mockResolvedValue("document-sub" as SubscriptionId);
+      const service = createFoundryEventService(app);
+      const { statusUpdates, onStatusChange } = collectStatus();
+
+      service.startDocumentSync(
+        "doc-1" as DocumentId,
+        new Y.Doc(),
+        { maxVersion: 1, minVersion: 1 },
+        onStatusChange,
+      );
+      await Promise.resolve();
+
+      expect(latest(statusUpdates, "live")).toBe(DocumentLiveStatus.CONNECTED);
+      // Liveness is independent of the load: no update has arrived yet.
+      expect(latest(statusUpdates, "load")).toBe(DocumentLoadStatus.LOADING);
+    });
+
+    it("stays CONNECTED after the document finishes loading", async () => {
+      let updateCallback: ((message: DocumentUpdateMessage) => void) | undefined;
+      mocks.eventService.subscribe.mockImplementation((_channel, callback) => {
+        updateCallback = callback as (message: DocumentUpdateMessage) => void;
+        return Promise.resolve("document-sub" as SubscriptionId);
+      });
+      const service = createFoundryEventService(app);
+      const { statusUpdates, onStatusChange } = collectStatus();
+
+      service.startDocumentSync(
+        "doc-1" as DocumentId,
+        new Y.Doc(),
+        { maxVersion: 1, minVersion: 1 },
+        onStatusChange,
+      );
+      await Promise.resolve();
+      updateCallback?.({
+        baseRevisionId: "0",
+        clientId: "server",
+        clientSupportedVersionRange: { maxVersion: 1, minVersion: 1 },
+        editIds: [],
+        revisionId: "1",
+        type: "update",
+      });
+
+      // The reported regression: data synced correctly while live read DISCONNECTED forever.
+      expect(latest(statusUpdates, "load")).toBe(DocumentLoadStatus.LOADED);
+      expect(latest(statusUpdates, "live")).toBe(DocumentLiveStatus.CONNECTED);
+    });
+
+    it("reports ERROR when the subscription cannot be established", async () => {
+      mocks.eventService.subscribe.mockRejectedValue(new Error("no socket"));
+      const service = createFoundryEventService(app);
+      const { statusUpdates, onStatusChange } = collectStatus();
+
+      service.startDocumentSync(
+        "doc-1" as DocumentId,
+        new Y.Doc(),
+        { maxVersion: 1, minVersion: 1 },
+        onStatusChange,
+      );
+      await Promise.resolve();
+      await Promise.resolve();
+
+      expect(latest(statusUpdates, "live")).toBe(DocumentLiveStatus.ERROR);
+      expect(latest(statusUpdates, "load")).toBe(DocumentLoadStatus.ERROR);
+    });
+
+    it("leaves liveness alone when a revision gap makes local state stale", async () => {
+      let updateCallback: ((message: DocumentUpdateMessage) => void) | undefined;
+      mocks.eventService.subscribe.mockImplementation((_channel, callback) => {
+        updateCallback = callback as (message: DocumentUpdateMessage) => void;
+        return Promise.resolve("document-sub" as SubscriptionId);
+      });
+      const service = createFoundryEventService(app);
+      const { statusUpdates, onStatusChange } = collectStatus();
+
+      service.startDocumentSync(
+        "doc-1" as DocumentId,
+        new Y.Doc(),
+        { maxVersion: 1, minVersion: 1 },
+        onStatusChange,
+      );
+      await Promise.resolve();
+      const update = (baseRevisionId: string, revisionId: string): DocumentUpdateMessage => ({
+        baseRevisionId,
+        clientId: "server",
+        clientSupportedVersionRange: { maxVersion: 1, minVersion: 1 },
+        editIds: [],
+        revisionId,
+        type: "update",
+      });
+      updateCallback?.(update("0", "1"));
+      // Skips revision 2, so the local state is stale even though the socket is fine.
+      updateCallback?.(update("7", "8"));
+
+      expect(latest(statusUpdates, "load")).toBe(DocumentLoadStatus.ERROR);
+      expect(latest(statusUpdates, "live")).toBe(DocumentLiveStatus.CONNECTED);
+    });
   });
 });
