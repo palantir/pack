@@ -71,7 +71,7 @@ export interface PresencePublishOptions {
 
 const UPDATE_ORIGIN_REMOTE = "remote" as const;
 
-/** Queue depth at which held updates stop looking like a normal load and start looking stuck. */
+/** Queue depth at which held updates stop looking like a normal wait and start looking stuck. */
 const PENDING_PUBLISH_WARN_THRESHOLD = 100;
 
 const getDocumentUpdatesChannelId = (
@@ -109,6 +109,19 @@ export interface SyncSession {
   readonly documentId: DocumentId;
 }
 
+/**
+ * A local Yjs update captured for publishing. Kept unresolved rather than as a finished
+ * `DocumentPublishMessage` so the schema version is decided when it is sent, not when it is made.
+ */
+interface PendingPublish {
+  readonly description?: DocumentPublishMessage["description"];
+  /** Resolves the document's operational version at publish time; absent for callers without one. */
+  readonly getDocumentSchemaOperationalVersion?: () => number;
+  /** Version stamped on the originating transaction, when it carried one. */
+  readonly transactionSchemaVersion?: number;
+  readonly update: Uint8Array;
+}
+
 interface SyncSessionInternal extends SyncSession {
   documentSubscriptionId?: SubscriptionId;
   lastRevisionId?: number;
@@ -125,7 +138,13 @@ interface SyncSessionInternal extends SyncSession {
    * `lastRevisionId`), and until the initial load delivers one there is no such revision. They
    * are held here and flushed in order once it is established.
    */
-  pendingPublishes: DocumentPublishMessage[];
+  pendingPublishes: PendingPublish[];
+  /**
+   * Identifies the current run of sync. Async callbacks compare against it to tell whether the run
+   * that started them is still the current one. The update handler cannot serve as that token: it
+   * outlives sync so local writes are still captured while sync is stopped.
+   */
+  syncToken?: object;
   yDoc?: y.Doc;
 }
 
@@ -134,6 +153,20 @@ interface SyncSessionInternal extends SyncSession {
  * our PACK Foundry backend's cometd service.
  */
 export interface FoundryEventService {
+  /**
+   * Begin capturing local Yjs updates for a document before any sync session exists, so writes
+   * made before the first data subscription opens are held rather than lost. Safe to call more
+   * than once for the same document and the same `Y.Doc`. Passing a different `Y.Doc` replaces
+   * the previous one: held updates are discarded and any sync run in flight is ended, since both
+   * belong to the document being replaced — the caller must restart sync.
+   */
+  beginDocumentCapture(
+    documentId: DocumentId,
+    yDoc: y.Doc,
+    clientSupportedVersionRange: ClientSupportedVersionRange,
+    getDocumentSchemaOperationalVersion?: () => number,
+  ): void;
+
   disposeDocument(documentId: DocumentId): void;
 
   publishCustomPresence(
@@ -212,22 +245,62 @@ class FoundryEventServiceImpl implements FoundryEventService {
     return session;
   }
 
-  startDocumentSync(
+  beginDocumentCapture(
     documentId: DocumentId,
     yDoc: y.Doc,
     clientSupportedVersionRange: ClientSupportedVersionRange,
-    onStatusChange: (status: Partial<DocumentSyncStatus>) => void,
     getDocumentSchemaOperationalVersion?: () => number,
-  ): SyncSession {
-    const session = this.getOrCreateSession(documentId);
+  ): void {
+    this.captureLocalUpdates(
+      documentId,
+      yDoc,
+      clientSupportedVersionRange,
+      getDocumentSchemaOperationalVersion,
+    );
+  }
 
-    if (
-      session.localYDocUpdateHandler != null
-      || session.documentSubscriptionId != null
-    ) {
-      throw new Error(`Document data sync already active for document ${documentId}`);
+  /**
+   * Start listening for local Yjs updates so none are missed, whether or not sync is running.
+   * Updates are held until a sync session establishes the revision to publish them against.
+   *
+   * Idempotent per Y.Doc: re-attaching for the same Y.Doc swaps in a handler bound to the latest
+   * arguments, leaving exactly one listener attached.
+   */
+  private captureLocalUpdates(
+    documentId: DocumentId,
+    yDoc: y.Doc,
+    clientSupportedVersionRange: ClientSupportedVersionRange,
+    getDocumentSchemaOperationalVersion?: () => number,
+  ): void {
+    const session = this.getOrCreateSession(documentId);
+    const isReplacingYDoc = session.yDoc != null && session.yDoc !== yDoc;
+
+    if (session.localYDocUpdateHandler != null) {
+      session.yDoc?.off("update", session.localYDocUpdateHandler);
     }
-    session.yDoc = yDoc;
+
+    if (isReplacingYDoc) {
+      // Held updates describe operations in the previous Y.Doc. Publishing them against a document
+      // that has been replaced would inject state the local document no longer has, so they are
+      // dropped — loudly, because dropping writes is exactly what this queue exists to prevent.
+      if (session.pendingPublishes.length > 0) {
+        this.logger.warn("Discarding local document updates captured for a replaced Y.Doc", {
+          docId: documentId,
+          discardedCount: session.pendingPublishes.length,
+        });
+        session.pendingPublishes = [];
+      }
+      // The run in flight is bound to the previous Y.Doc: startDocumentSync closed over it, so
+      // remote updates would keep applying there, and a surviving lastRevisionId would let writes
+      // to the new document publish against a revision stream that is not theirs. End the run and
+      // leave restarting to the caller.
+      if (session.syncToken != null) {
+        this.logger.warn("Ending document sync because the Y.Doc was replaced mid-sync", {
+          docId: documentId,
+        });
+        this.stopDocumentSync(session);
+      }
+    }
 
     const localYDocUpdateHandler = (
       update: Uint8Array,
@@ -241,19 +314,55 @@ class FoundryEventServiceImpl implements FoundryEventService {
 
       this.publishOrQueueUpdate(session, clientSupportedVersionRange, update, {
         description: isEditDescription(origin) ? createDocumentEditDescription(origin) : undefined,
-        documentUpdateSchemaVersion: getDocumentUpdateSchemaVersionFromTransaction(transaction)
-          ?? getDocumentSchemaOperationalVersion?.()
-          ?? getFallbackDocumentUpdateSchemaVersion(clientSupportedVersionRange),
+        getDocumentSchemaOperationalVersion,
+        // Absent when the transaction carried no version. Left unresolved here so a queued update
+        // picks up the operational version at publish time: capture can happen before metadata
+        // loads, when the fallback would understate the version the content actually needs.
+        transactionSchemaVersion: getDocumentUpdateSchemaVersionFromTransaction(transaction),
       });
     };
 
+    session.yDoc = yDoc;
     session.localYDocUpdateHandler = localYDocUpdateHandler;
     yDoc.on("update", localYDocUpdateHandler);
+  }
 
-    onStatusChange({
-      live: DocumentLiveStatus.CONNECTING,
-      load: DocumentLoadStatus.LOADING,
-    });
+  startDocumentSync(
+    documentId: DocumentId,
+    yDoc: y.Doc,
+    clientSupportedVersionRange: ClientSupportedVersionRange,
+    onStatusChange: (status: Partial<DocumentSyncStatus>) => void,
+    getDocumentSchemaOperationalVersion?: () => number,
+  ): SyncSession {
+    const session = this.getOrCreateSession(documentId);
+
+    if (session.syncToken != null) {
+      throw new Error(`Document data sync already active for document ${documentId}`);
+    }
+    const syncToken = {};
+    session.syncToken = syncToken;
+
+    try {
+      // Capture normally began at document creation. Re-attaching here covers a caller that starts
+      // sync without having begun capture, and a document whose Y.Doc was replaced.
+      this.captureLocalUpdates(
+        documentId,
+        yDoc,
+        clientSupportedVersionRange,
+        getDocumentSchemaOperationalVersion,
+      );
+
+      // Fans out to caller-supplied status subscribers, which are not guarded against throwing.
+      onStatusChange({
+        live: DocumentLiveStatus.CONNECTING,
+        load: DocumentLoadStatus.LOADING,
+      });
+    } catch (e) {
+      // Without this the token stays set and every later start is rejected as already active,
+      // wedging the document for the lifetime of the session.
+      session.syncToken = undefined;
+      throw e;
+    }
 
     const channelId = getDocumentUpdatesChannelId(documentId);
 
@@ -265,13 +374,19 @@ class FoundryEventServiceImpl implements FoundryEventService {
     this.eventService.subscribe(
       channelId,
       (message: DocumentUpdateMessage) => {
-        if (session.localYDocUpdateHandler !== localYDocUpdateHandler) {
+        if (session.syncToken !== syncToken) {
           return;
         }
         if (message.type === "error") {
           channelFailed = true;
         }
-        this.handleDocumentUpdateMessage(session, message, yDoc, onStatusChange);
+        this.handleDocumentUpdateMessage(
+          session,
+          message,
+          yDoc,
+          clientSupportedVersionRange,
+          onStatusChange,
+        );
       },
       () => ({
         clientId: session.clientId,
@@ -279,7 +394,7 @@ class FoundryEventServiceImpl implements FoundryEventService {
         lastRevisionId: session.lastRevisionId?.toString(),
       } satisfies DocumentUpdateSubscriptionRequest),
     ).then(subscriptionId => {
-      if (session.localYDocUpdateHandler === localYDocUpdateHandler) {
+      if (session.syncToken === syncToken) {
         session.documentSubscriptionId = subscriptionId;
         if (!channelFailed) {
           // The channel is subscribed, so the data channel is live. Reported separately from
@@ -293,7 +408,7 @@ class FoundryEventServiceImpl implements FoundryEventService {
         this.eventService.unsubscribe(subscriptionId);
       }
     }).catch((e: unknown) => {
-      if (session.localYDocUpdateHandler === localYDocUpdateHandler) {
+      if (session.syncToken === syncToken) {
         onStatusChange({
           error: toUnknownChannelError(
             new Error("Failed to setup document data subscription", { cause: e }),
@@ -482,27 +597,28 @@ class FoundryEventServiceImpl implements FoundryEventService {
       return;
     }
 
-    if (internalSession.localYDocUpdateHandler != null) {
-      internalSession.yDoc?.off("update", internalSession.localYDocUpdateHandler);
-      internalSession.localYDocUpdateHandler = undefined;
-    }
-
     if (internalSession.documentSubscriptionId) {
       this.eventService.unsubscribe(internalSession.documentSubscriptionId);
       internalSession.documentSubscriptionId = undefined;
     }
+    internalSession.syncToken = undefined;
     internalSession.lastRevisionId = undefined;
-    // Sync stopped before the initial load established a revision, so these were never publishable
-    // and there is nothing to send them against now. They stay in the local Y.Doc but the server
-    // never learns of them — the same loss this queue exists to prevent, so say so out loud.
+    // The update handler and any held updates deliberately survive: the document is still open and
+    // writable, so writes made while sync is stopped are captured and published when sync resumes.
+    // Only disposeDocument tears capture down.
+    //
+    // Nothing guarantees sync resumes, though. disposeDocument is reached only via deleteDocument,
+    // while the ordinary path (onDataSubscriptionClosed) stops here — so this is where a backlog
+    // starts accruing unpublished writes, and it must not do so silently.
     if (internalSession.pendingPublishes.length > 0) {
-      this.logger.warn("Discarding local document updates held for a load that never completed", {
-        docId: internalSession.documentId,
-        discardedCount: internalSession.pendingPublishes.length,
-      });
-      internalSession.pendingPublishes = [];
+      this.logger.warn(
+        "Local document updates are held and never published while sync is stopped",
+        {
+          docId: internalSession.documentId,
+          heldCount: internalSession.pendingPublishes.length,
+        },
+      );
     }
-    internalSession.yDoc = undefined;
   }
 
   unsubscribe(subscriptionId: SubscriptionId): void {
@@ -516,6 +632,24 @@ class FoundryEventServiceImpl implements FoundryEventService {
       return;
     }
     this.stopDocumentSync(session);
+
+    if (session.localYDocUpdateHandler != null) {
+      session.yDoc?.off("update", session.localYDocUpdateHandler);
+      session.localYDocUpdateHandler = undefined;
+    }
+    session.yDoc = undefined;
+
+    // The document is going away, so held updates have no future sync session to publish them.
+    // They are lost from the server's perspective — the loss this queue exists to prevent, so it
+    // is stated rather than left silent.
+    if (session.pendingPublishes.length > 0) {
+      this.logger.warn("Discarding local document updates that were never published", {
+        docId: session.documentId,
+        discardedCount: session.pendingPublishes.length,
+      });
+      session.pendingPublishes = [];
+    }
+
     this.sessions.delete(sessionId);
   }
 
@@ -529,35 +663,26 @@ class FoundryEventServiceImpl implements FoundryEventService {
     session: SyncSessionInternal,
     clientSupportedVersionRange: ClientSupportedVersionRange,
     update: Uint8Array,
-    options: {
-      description?: DocumentPublishMessage["description"];
-      documentUpdateSchemaVersion: number;
-    },
+    options: Omit<PendingPublish, "update">,
   ): void {
-    const publishMessage: DocumentPublishMessage = {
-      clientId: session.clientId,
-      clientSupportedVersionRange,
-      description: options.description,
-      documentUpdateSchemaVersion: options.documentUpdateSchemaVersion,
-      editId: generateId(),
-      yjsUpdate: {
-        data: Base64.fromUint8Array(update),
-      },
-    };
-
     if (session.lastRevisionId == null) {
-      session.pendingPublishes.push(publishMessage);
+      session.pendingPublishes.push({ ...options, update });
       const pendingCount = session.pendingPublishes.length;
-      // Nothing bounds the queue: an initial load that never completes grows it for as long as
-      // edits keep arriving. Warn on crossing the threshold rather than dropping edits, since
-      // dropping is the failure this queue exists to prevent.
-      if (pendingCount === PENDING_PUBLISH_WARN_THRESHOLD) {
-        this.logger.warn("Local document updates are piling up while the initial load completes", {
-          docId: session.documentId,
-          pendingCount,
-        });
+      // Nothing bounds the queue: as long as there is no revision to publish against it grows
+      // for as long as edits keep arriving — a load that stalled, or a document that has never
+      // synced at all. Warn periodically rather than dropping edits, since dropping is the
+      // failure this queue exists to prevent — and warn again as it keeps growing, so it does not
+      // go quiet after one message.
+      if (pendingCount % PENDING_PUBLISH_WARN_THRESHOLD === 0) {
+        this.logger.warn(
+          "Local document updates are piling up with no revision to publish against",
+          {
+            docId: session.documentId,
+            pendingCount,
+          },
+        );
       } else {
-        this.logger.debug("Holding local document update until the initial load completes", {
+        this.logger.debug("Holding local document update until a revision is known", {
           docId: session.documentId,
           pendingCount,
         });
@@ -565,13 +690,30 @@ class FoundryEventServiceImpl implements FoundryEventService {
       return;
     }
 
-    this.publishUpdate(session, publishMessage);
+    this.publishUpdate(session, clientSupportedVersionRange, { ...options, update });
   }
 
   private publishUpdate(
     session: SyncSessionInternal,
-    publishMessage: DocumentPublishMessage,
+    clientSupportedVersionRange: ClientSupportedVersionRange,
+    pending: PendingPublish,
   ): void {
+    const publishMessage: DocumentPublishMessage = {
+      clientId: session.clientId,
+      clientSupportedVersionRange,
+      description: pending.description,
+      // Resolved here rather than at capture: an update held through the initial load was captured
+      // before metadata was available, when the operational version would still be a schema
+      // fallback that can understate what the content needs.
+      documentUpdateSchemaVersion: pending.transactionSchemaVersion
+        ?? pending.getDocumentSchemaOperationalVersion?.()
+        ?? getFallbackDocumentUpdateSchemaVersion(clientSupportedVersionRange),
+      editId: generateId(),
+      yjsUpdate: {
+        data: Base64.fromUint8Array(pending.update),
+      },
+    };
+
     void this.eventService.publish(
       getDocumentPublishChannelId(session.documentId),
       publishMessage,
@@ -583,7 +725,10 @@ class FoundryEventServiceImpl implements FoundryEventService {
   }
 
   /** Flush updates held while the revision was unknown, preserving the order they were made in. */
-  private flushPendingPublishes(session: SyncSessionInternal): void {
+  private flushPendingPublishes(
+    session: SyncSessionInternal,
+    clientSupportedVersionRange: ClientSupportedVersionRange,
+  ): void {
     if (session.pendingPublishes.length === 0) {
       return;
     }
@@ -595,8 +740,8 @@ class FoundryEventServiceImpl implements FoundryEventService {
       pendingCount: pending.length,
     });
 
-    for (const publishMessage of pending) {
-      this.publishUpdate(session, publishMessage);
+    for (const pendingPublish of pending) {
+      this.publishUpdate(session, clientSupportedVersionRange, pendingPublish);
     }
   }
 
@@ -604,6 +749,7 @@ class FoundryEventServiceImpl implements FoundryEventService {
     session: SyncSessionInternal,
     message: DocumentUpdateMessage,
     yDoc: y.Doc,
+    clientSupportedVersionRange: ClientSupportedVersionRange,
     onStatusChange: (status: Partial<DocumentSyncStatus>) => void,
   ): void {
     switch (message.type) {
@@ -687,7 +833,7 @@ class FoundryEventServiceImpl implements FoundryEventService {
         session.lastRevisionId = Number(revisionId);
 
         // The revision is known, so anything held during the load can go out now.
-        this.flushPendingPublishes(session);
+        this.flushPendingPublishes(session, clientSupportedVersionRange);
 
         onStatusChange({
           load: DocumentLoadStatus.LOADED,

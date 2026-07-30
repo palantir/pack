@@ -330,6 +330,11 @@ describe("FoundryEventService", () => {
 
     service.stopDocumentSync(session);
 
+    // Capture outlives sync so writes made while stopped are still held; only disposal detaches.
+    expect(activeOff).not.toHaveBeenCalled();
+
+    service.disposeDocument("doc-1" as DocumentId);
+
     expect(activeOff).toHaveBeenCalledWith("update", expect.any(Function));
     expect(rejectedOff).not.toHaveBeenCalled();
     expect(mocks.eventService.subscribe).toHaveBeenCalledTimes(1);
@@ -461,6 +466,34 @@ describe("FoundryEventService", () => {
       return { service, deliverInitialRevision: () => updateCallback?.(initialRevision()) };
     }
 
+    it("holds a write made before any sync session exists", async () => {
+      const yDoc = new Y.Doc();
+      const service = createFoundryEventService(app);
+
+      // Capture begins when the document is created, well before a data subscription opens.
+      service.beginDocumentCapture("doc-1" as DocumentId, yDoc, { maxVersion: 1, minVersion: 1 });
+      yDoc.getMap("Shape").set("shape-1", "before-any-sync");
+      expect(mocks.eventService.publish).not.toHaveBeenCalled();
+
+      let updateCallback: ((message: DocumentUpdateMessage) => void) | undefined;
+      mocks.eventService.subscribe.mockImplementation((_channel, callback) => {
+        updateCallback = callback as (message: DocumentUpdateMessage) => void;
+        return Promise.resolve("sub-1" as SubscriptionId);
+      });
+      service.startDocumentSync(
+        "doc-1" as DocumentId,
+        yDoc,
+        { maxVersion: 1, minVersion: 1 },
+        () => {},
+      );
+      await Promise.resolve();
+      updateCallback?.(initialRevision());
+
+      // One update carrying the original transaction, not a full-state snapshot of the document.
+      expect(mocks.eventService.publish).toHaveBeenCalledTimes(1);
+      expect(applyPublishedUpdates().getMap("Shape").get("shape-1")).toBe("before-any-sync");
+    });
+
     it("holds a write made during the load instead of dropping it", async () => {
       const yDoc = new Y.Doc();
       const { deliverInitialRevision } = startSyncCapturingServer(yDoc);
@@ -507,7 +540,189 @@ describe("FoundryEventService", () => {
       expect(mocks.eventService.publish).not.toHaveBeenCalled();
     });
 
-    it("warns rather than staying silent when a load never completes", async () => {
+    it("keeps held updates across a stop and publishes them when sync resumes", async () => {
+      const yDoc = new Y.Doc();
+      const { service } = startSyncCapturingServer(yDoc);
+      await Promise.resolve();
+
+      yDoc.getMap("Shape").set("shape-1", "held-across-stop");
+      service.stopDocumentSync({ clientId: "unused", documentId: "doc-1" as DocumentId });
+
+      // Stopping sync does not end the document, so the write must survive to the next session.
+      yDoc.getMap("Shape").set("shape-2", "written-while-stopped");
+      expect(mocks.eventService.publish).not.toHaveBeenCalled();
+
+      let resumedCallback: ((message: DocumentUpdateMessage) => void) | undefined;
+      mocks.eventService.subscribe.mockImplementation((_channel, callback) => {
+        resumedCallback = callback as (message: DocumentUpdateMessage) => void;
+        return Promise.resolve("sub-2" as SubscriptionId);
+      });
+      service.startDocumentSync(
+        "doc-1" as DocumentId,
+        yDoc,
+        { maxVersion: 1, minVersion: 1 },
+        () => {},
+      );
+      await Promise.resolve();
+      resumedCallback?.(initialRevision());
+
+      expect(mocks.eventService.publish).toHaveBeenCalledTimes(2);
+      const peerShapes = applyPublishedUpdates().getMap("Shape");
+      expect(peerShapes.get("shape-1")).toBe("held-across-stop");
+      expect(peerShapes.get("shape-2")).toBe("written-while-stopped");
+    });
+
+    it("reports held updates left behind when sync stops", async () => {
+      const yDoc = new Y.Doc();
+      const { service } = startSyncCapturingServer(yDoc);
+      await Promise.resolve();
+
+      yDoc.getMap("Shape").set("shape-1", "held-across-stop");
+      logger.warn.mockClear();
+
+      // stopDocumentSync is the teardown the ordinary lifecycle actually runs —
+      // onDataSubscriptionClosed calls it, and disposeDocument is only reached via
+      // deleteDocument. Held updates survive on purpose, but must not do so silently: nothing
+      // guarantees sync ever resumes, and until it does these writes are not on the server.
+      service.stopDocumentSync({ clientId: "unused", documentId: "doc-1" as DocumentId });
+
+      expect(logger.warn).toHaveBeenCalledWith(
+        expect.stringContaining("never published"),
+        expect.objectContaining({ docId: "doc-1", heldCount: 1 }),
+      );
+    });
+
+    it("resolves the schema version when publishing, not when capturing", async () => {
+      const yDoc = new Y.Doc();
+      const service = createFoundryEventService(app);
+
+      // Capture happens before metadata loads, when the operational version is still a fallback.
+      let operationalVersion = 1;
+      service.beginDocumentCapture(
+        "doc-1" as DocumentId,
+        yDoc,
+        { maxVersion: 5, minVersion: 1 },
+        () => operationalVersion,
+      );
+      yDoc.getMap("Shape").set("shape-1", "captured-early");
+
+      // Metadata lands during the load and raises the operational version.
+      operationalVersion = 3;
+
+      let updateCallback: ((message: DocumentUpdateMessage) => void) | undefined;
+      mocks.eventService.subscribe.mockImplementation((_channel, callback) => {
+        updateCallback = callback as (message: DocumentUpdateMessage) => void;
+        return Promise.resolve("sub-1" as SubscriptionId);
+      });
+      service.startDocumentSync(
+        "doc-1" as DocumentId,
+        yDoc,
+        { maxVersion: 5, minVersion: 1 },
+        () => {},
+        () => operationalVersion,
+      );
+      await Promise.resolve();
+      updateCallback?.(initialRevision());
+
+      const publishCall = mocks.eventService.publish.mock.calls[0] as
+        | [unknown, PublishedDocumentUpdate]
+        | undefined;
+      expect(publishCall?.[1].documentUpdateSchemaVersion).toBe(3);
+    });
+
+    it("does not wedge the document when starting sync throws", () => {
+      const yDoc = new Y.Doc();
+      const service = createFoundryEventService(app);
+      mocks.eventService.subscribe.mockResolvedValue("sub-1" as SubscriptionId);
+
+      const failingStatusCallback = () => {
+        throw new Error("subscriber blew up");
+      };
+
+      expect(() =>
+        service.startDocumentSync(
+          "doc-1" as DocumentId,
+          yDoc,
+          { maxVersion: 1, minVersion: 1 },
+          failingStatusCallback,
+        )
+      ).toThrow("subscriber blew up");
+
+      // The failed attempt must not leave the document permanently "already active".
+      expect(() =>
+        service.startDocumentSync(
+          "doc-1" as DocumentId,
+          yDoc,
+          { maxVersion: 1, minVersion: 1 },
+          () => {},
+        )
+      ).not.toThrow();
+    });
+
+    it("discards held updates loudly when the Y.Doc is replaced", async () => {
+      const originalYDoc = new Y.Doc();
+      const service = createFoundryEventService(app);
+      service.beginDocumentCapture("doc-1" as DocumentId, originalYDoc, {
+        maxVersion: 1,
+        minVersion: 1,
+      });
+      originalYDoc.getMap("Shape").set("shape-1", "belongs-to-old-doc");
+      logger.warn.mockClear();
+
+      // Held updates describe operations in a document that is being replaced, so publishing them
+      // against the replacement would inject state it does not have.
+      const replacementYDoc = new Y.Doc();
+      service.beginDocumentCapture("doc-1" as DocumentId, replacementYDoc, {
+        maxVersion: 1,
+        minVersion: 1,
+      });
+
+      expect(logger.warn).toHaveBeenCalledWith(
+        expect.stringContaining("replaced Y.Doc"),
+        expect.objectContaining({ discardedCount: 1 }),
+      );
+
+      let updateCallback: ((message: DocumentUpdateMessage) => void) | undefined;
+      mocks.eventService.subscribe.mockImplementation((_channel, callback) => {
+        updateCallback = callback as (message: DocumentUpdateMessage) => void;
+        return Promise.resolve("sub-1" as SubscriptionId);
+      });
+      service.startDocumentSync(
+        "doc-1" as DocumentId,
+        replacementYDoc,
+        { maxVersion: 1, minVersion: 1 },
+        () => {},
+      );
+      await Promise.resolve();
+      updateCallback?.(initialRevision());
+
+      expect(mocks.eventService.publish).not.toHaveBeenCalled();
+    });
+
+    it("ends the sync run when the Y.Doc is replaced mid-sync", async () => {
+      const originalYDoc = new Y.Doc();
+      const { service, deliverInitialRevision } = startSyncCapturingServer(originalYDoc);
+      await Promise.resolve();
+      deliverInitialRevision();
+      mocks.eventService.publish.mockClear();
+
+      // Replacing the document under an active sync leaves the subscription and lastRevisionId
+      // bound to the old Y.Doc. Left in place, remote updates keep applying to the replaced
+      // document while writes to the new one publish against a revision stream that is not
+      // theirs — so the run has to end and be restarted by the caller.
+      const replacementYDoc = new Y.Doc();
+      service.beginDocumentCapture("doc-1" as DocumentId, replacementYDoc, {
+        maxVersion: 1,
+        minVersion: 1,
+      });
+
+      expect(mocks.eventService.unsubscribe).toHaveBeenCalledWith("sub-1");
+
+      replacementYDoc.getMap("Shape").set("shape-1", "belongs-to-new-doc");
+      expect(mocks.eventService.publish).not.toHaveBeenCalled();
+    });
+
+    it("warns rather than staying silent when a disposed document had unpublished writes", async () => {
       const yDoc = new Y.Doc();
       const { service } = startSyncCapturingServer(yDoc);
       await Promise.resolve();
@@ -515,9 +730,8 @@ describe("FoundryEventService", () => {
       yDoc.getMap("Shape").set("shape-1", "never-published");
       logger.warn.mockClear();
 
-      // The load never established a revision, so the held update has nothing to publish against
-      // and is dropped. It must not be dropped quietly.
-      service.stopDocumentSync({ clientId: "unused", documentId: "doc-1" as DocumentId });
+      // Disposal ends the document, so held updates have no future session to publish them.
+      service.disposeDocument("doc-1" as DocumentId);
 
       expect(mocks.eventService.publish).not.toHaveBeenCalled();
       expect(logger.warn).toHaveBeenCalledWith(
