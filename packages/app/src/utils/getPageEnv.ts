@@ -99,6 +99,12 @@ export function getPageEnvOrThrow(): RequiredPageEnv {
 }
 
 function getMetaTagContent(tagName: string): string | null {
+  // Non-DOM scopes (Worker, SharedWorker, Node) have no meta tags to read. Callers that need a
+  // value there must pass it explicitly via options, all of which override the page env.
+  if (typeof document === "undefined") {
+    return null;
+  }
+
   const elements = document.querySelectorAll(`meta[name="${tagName}"]`);
   const element = elements.item(elements.length - 1);
 
