@@ -55,26 +55,28 @@ function convertFieldValueToTypeScript(
   version?: number,
 ): string {
   switch (value.type) {
+    // Ref fields hold the bare id, so emit the id type — not the <X>Ref handle, which is
+    // an object and would contradict the `string` / `z.string()` internal representation.
     case "artifactRef":
-      return "ArtifactRef";
+      return "ArtifactRid";
     case "boolean":
       return "boolean";
     case "datetime":
       return "string";
     case "docRef":
-      return "DocumentRef";
+      return "DocumentId";
     case "double":
       return "number";
     case "integer":
       return "number";
     case "mediaRef":
-      return "MediaRef";
+      return "MediaId";
     case "modelRef": {
       const modelKey = value.modelRef.modelTypes[0]!;
       return version != null ? versionedTypeName(modelKey, version) : modelKey;
     }
     case "object":
-      return "ObjectRef";
+      return "ObjectId";
     case "string":
       return "string";
     case "text":
@@ -82,7 +84,7 @@ function convertFieldValueToTypeScript(
     case "unmanagedJson":
       return "any";
     case "userRef":
-      return "UserRef";
+      return "UserId";
   }
 }
 
@@ -359,19 +361,19 @@ function scanFieldTypeForRefs(fieldType: IFieldTypeUnion, out: Set<string>): voi
 function scanFieldValueForRefs(value: IFieldValueUnion, out: Set<string>): void {
   switch (value.type) {
     case "artifactRef":
-      out.add("ArtifactRef");
+      out.add("ArtifactRid");
       break;
     case "docRef":
-      out.add("DocumentRef");
+      out.add("DocumentId");
       break;
     case "mediaRef":
-      out.add("MediaRef");
+      out.add("MediaId");
       break;
     case "object":
-      out.add("ObjectRef");
+      out.add("ObjectId");
       break;
     case "userRef":
-      out.add("UserRef");
+      out.add("UserId");
       break;
   }
 }

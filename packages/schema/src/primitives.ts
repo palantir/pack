@@ -107,6 +107,7 @@ export const String: String = { type: TypeKind.STRING };
 export const Double: Double = { type: TypeKind.DOUBLE };
 export const Boolean: Boolean = { type: TypeKind.BOOLEAN };
 export const Unknown: Unknown = { type: TypeKind.UNKNOWN };
+export const ArtifactRef: ArtifactRef = { type: TypeKind.ARTIFACT_REF };
 function unwrapOneOptional(t: TypeBase): TypeBase {
   return t.type === TypeKind.OPTIONAL && "item" in t ? (t as { item: TypeBase }).item : t;
 }
