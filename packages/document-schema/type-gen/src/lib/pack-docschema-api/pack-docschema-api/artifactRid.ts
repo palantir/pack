@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 Palantir Technologies, Inc. All rights reserved.
+ * Copyright 2026 Palantir Technologies, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,11 +14,7 @@
  * limitations under the License.
  */
 
-export * from "./artifactRid.js";
-export * from "./documentTypeRid.js";
-export * from "./fieldKey.js";
-export * from "./interfaceTypeRid.js";
-export * from "./modelTypeKey.js";
-export * from "./objectTypeRid.js";
-export * from "./schemaVersion.js";
-export * from "./unionVariantKey.js";
+export type IArtifactRid = string & {
+  __conjure_type?: "ArtifactRid";
+  __conjure_package?: "com.palantir.pack.docschema.api";
+};

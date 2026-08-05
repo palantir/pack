@@ -56,6 +56,7 @@ export interface EditDescription<M extends Model = Model> {
 }
 
 export const ExternalRefType = {
+  ARTIFACT_REF: "artifactRef",
   DOC_REF: "docRef",
   MEDIA_REF: "mediaRef",
   OBJECT_REF: "objectRef",

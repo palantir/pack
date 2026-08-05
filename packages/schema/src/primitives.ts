@@ -16,6 +16,7 @@
 
 export const TypeKind = {
   ARRAY: "array",
+  ARTIFACT_REF: "artifactRef",
   BOOLEAN: "boolean",
   DOC_REF: "docRef",
   DOUBLE: "double",
@@ -68,6 +69,10 @@ export type Unknown = {
   readonly type: typeof TypeKind.UNKNOWN;
 };
 
+export type ArtifactRef = {
+  readonly type: typeof TypeKind.ARTIFACT_REF;
+};
+
 export type DocRef = {
   readonly type: typeof TypeKind.DOC_REF;
 };
@@ -86,6 +91,7 @@ export type UserRef = {
 
 export type Type =
   | Array
+  | ArtifactRef
   | Boolean
   | DocRef
   | Double

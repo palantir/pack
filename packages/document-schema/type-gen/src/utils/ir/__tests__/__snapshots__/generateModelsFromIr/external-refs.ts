@@ -17,6 +17,7 @@ export const EventModel: EventModel = {
     externalRefFieldTypes: {
       documentRef: 'docRef',
       userRef: 'userRef',
+      artifactRef: 'artifactRef',
     },
     name: 'Event',
   },

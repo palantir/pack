@@ -112,6 +112,9 @@ function recordFieldDefinitionToSchemaType(
 ): Type {
   if (typeof recordFieldDefinition === "string") {
     // Basic types
+    if (recordFieldDefinition === "artifactRef") {
+      return { type: "artifactRef" };
+    }
     if (recordFieldDefinition === "docRef") {
       return { type: "docRef" };
     }

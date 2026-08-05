@@ -21,6 +21,7 @@ export const DrawingSchema_v1 = z
     background: z.lazy((): ZodType<Circle_v1> => CircleSchema_v1).optional(),
     attachment: z.string(),
     owner: z.string().optional(),
+    artifact: z.string(),
   })
   .passthrough() satisfies ZodType<Drawing_v1>;
 

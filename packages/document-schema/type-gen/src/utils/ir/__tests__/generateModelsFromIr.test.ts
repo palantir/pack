@@ -138,11 +138,25 @@ describe("generateModelsFromIr", () => {
       metadata: { addedInVersion: 1 },
     };
 
+    const eventField4: IFieldDef = {
+      key: "artifactRef",
+      name: "Artifact Reference",
+      description: "A reference to an artifact",
+      fieldType: {
+        type: "value",
+        value: {
+          type: "artifactRef",
+          artifactRef: { artifactRids: [] },
+        },
+      },
+      metadata: { addedInVersion: 1 },
+    };
+
     const eventRecord: IRecordDef = {
       key: "Event",
       name: "Event",
       description: "An event record with external refs",
-      fields: [eventField1, eventField2, eventField3],
+      fields: [eventField1, eventField2, eventField3, eventField4],
     };
 
     const schema: IRealTimeDocumentSchema = {
@@ -165,6 +179,7 @@ describe("generateModelsFromIr", () => {
     expect(formatted).toContain("externalRefFieldTypes");
     expect(formatted).toContain("documentRef: 'docRef'");
     expect(formatted).toContain("userRef: 'userRef'");
+    expect(formatted).toContain("artifactRef: 'artifactRef'");
 
     await expect(formatted).toMatchFileSnapshot(path.join(snapshotDir, "external-refs.ts"));
   });
