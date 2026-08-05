@@ -269,7 +269,7 @@ function convertTypeToFieldValueUnion(
 
     case "artifactRef":
       return IFieldValueUnion.artifactRef({
-        artifactRids: [], // FIXME: confirm whether we will use rids in the deployed schema.
+        artifactRids: [],
       });
 
     case "boolean":
