@@ -141,6 +141,78 @@ export const unionTypesSchema: SchemaDefinition = defineSchema({
   }),
 });
 
+/**
+ * Single-version schema consumed by state-core's Yjs schema-merge matrix.
+ * Its checked-in SDK output is guarded byte-for-byte by a generator drift
+ * test, so the collaboration tests exercise actual generated artifacts.
+ */
+const MergePointRecord = defineRecord("MergePoint", {
+  docs: "A point in a drawing.",
+  fields: {
+    id: P.String,
+    x: P.Double,
+    y: P.Double,
+  },
+});
+
+const MergeBoundsRecord = defineRecord("MergeBounds", {
+  docs: "Nested bounds for a scene node.",
+  fields: {
+    height: P.Double,
+    width: P.Double,
+    x: P.Double,
+    y: P.Double,
+  },
+});
+
+const MergeShapeCircleRecord = defineRecord("MergeShapeCircle", {
+  docs: "A permissive shape variant.",
+  fields: {
+    items: P.Array(P.Unknown),
+    label: P.Optional(P.String),
+    payload: P.Unknown,
+    x: P.Double,
+    y: P.Double,
+  },
+});
+
+const MergeShapeBoxRecord = defineRecord("MergeShapeBox", {
+  docs: "A shape variant with stricter fields.",
+  fields: {
+    items: P.Array(modelToRef(MergePointRecord)),
+    label: P.String,
+    payload: P.String,
+    x: P.Double,
+    y: P.Double,
+  },
+});
+
+const MergeNodeShapeUnion = defineUnion("MergeNodeShape", {
+  discriminant: "shapeType",
+  docs: "The shape of a scene node.",
+  variants: {
+    box: MergeShapeBoxRecord,
+    circle: MergeShapeCircleRecord,
+  },
+});
+
+export const yjsSchemaMergeSchema: SchemaDefinition = defineSchema({
+  MergeBounds: MergeBoundsRecord,
+  MergeNodeShape: MergeNodeShapeUnion,
+  MergePoint: MergePointRecord,
+  MergeSceneNode: defineRecord("MergeSceneNode", {
+    docs: "A scene node containing nested records, a union, and an array of records.",
+    fields: {
+      bounds: MergeBoundsRecord,
+      id: P.String,
+      points: P.Array(modelToRef(MergePointRecord)),
+      shape: MergeNodeShapeUnion,
+    },
+  }),
+  MergeShapeBox: MergeShapeBoxRecord,
+  MergeShapeCircle: MergeShapeCircleRecord,
+});
+
 /** Schema with nested optionals: tests that optional inside array structures is preserved */
 export const nestedOptionalsSchema: SchemaDefinition = defineSchema({
   Config: defineRecord("Config", {
