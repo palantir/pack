@@ -20,14 +20,17 @@ import type { PromptQuestion } from "../types/index.js";
 interface Choice {
   readonly name: string;
   readonly value: unknown;
+  readonly checked?: boolean;
 }
 
-function normalizeChoices(choices: PromptQuestion["choices"]): Choice[] {
-  return (choices ?? []).map(choice =>
-    typeof choice === "string"
-      ? { name: choice, value: choice }
-      : { name: choice.name, value: choice.value }
-  );
+function normalizeChoices(choices: PromptQuestion["choices"], checkedValues?: unknown): Choice[] {
+  const checked = Array.isArray(checkedValues) ? checkedValues : undefined;
+  return (choices ?? []).map(choice => {
+    const { name, value } = typeof choice === "string" ? { name: choice, value: choice } : choice;
+    return checked === undefined
+      ? { name, value }
+      : { name, value, checked: checked.includes(value) };
+  });
 }
 
 async function askQuestion(
@@ -61,7 +64,7 @@ async function askQuestion(
     case "checkbox":
       return checkbox({
         message: question.message,
-        choices: normalizeChoices(question.choices),
+        choices: normalizeChoices(question.choices, question.default),
       });
     case "password":
       return password({
