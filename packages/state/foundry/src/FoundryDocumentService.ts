@@ -17,6 +17,7 @@
 import type {
   ClientSupportedVersionRange,
   CreateDocumentRequest,
+  CreateDocumentV2Request,
   DiscretionaryPrincipal,
   DiscretionaryPrincipal as WireDiscretionaryPrincipal,
   Document as WireDocument,
@@ -168,27 +169,59 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
     metadata: CreateDocumentMetadata,
     schema: T,
   ): Promise<DocumentRef<T>> => {
-    const { documentTypeName, name, parentFolderRid, security } = metadata;
-    const ontologyRid = metadata.ontologyRid ?? await getOntologyRid(this.app);
+    const { documentTypeName, name, parent, parentFolderRid, security } = metadata;
+    const preview = this.config.usePreviewApi ?? DEFAULT_USE_PREVIEW_API;
+    const wireSecurity = getWireSecurity(security);
 
-    const request: CreateDocumentRequest = {
-      documentTypeName: documentTypeName,
-      name: name,
-      ontologyRid: ontologyRid,
-      security: getWireSecurity(security),
-    };
+    let createResponse: WireDocument;
+    if (parent == null) {
+      const ontologyRid = metadata.ontologyRid ?? await getOntologyRid(this.app);
+      const request: CreateDocumentRequest = {
+        documentTypeName,
+        name,
+        ontologyRid,
+        security: wireSecurity,
+      };
 
-    if (parentFolderRid != null) {
-      request.parentFolderRid = parentFolderRid;
+      if (parentFolderRid != null) {
+        request.parentFolderRid = parentFolderRid;
+      }
+
+      createResponse = await Documents.create(
+        this.app.config.osdkClient,
+        request,
+        { preview },
+      );
+    } else {
+      if (parentFolderRid != null || metadata.ontologyRid != null) {
+        throw new Error(
+          "CreateDocumentMetadata cannot combine parent with parentFolderRid or ontologyRid",
+        );
+      }
+      const isValidParentFolder = parent.type === "parentFolder"
+        && typeof parent.folderRid === "string"
+        && !("namespaceRid" in parent);
+      const isValidNamespace = parent.type === "namespace"
+        && typeof parent.namespaceRid === "string"
+        && !("folderRid" in parent);
+      if (!isValidParentFolder && !isValidNamespace) {
+        throw new Error("Invalid CreateDocumentMetadata.parent");
+      }
+
+      const request: CreateDocumentV2Request = {
+        requestBody: {
+          documentTypeName,
+          name,
+          parent,
+          security: wireSecurity,
+        },
+      };
+      createResponse = await Documents.createV2(
+        this.app.config.osdkClient,
+        request,
+        { preview },
+      );
     }
-
-    const createResponse = await Documents.create(
-      this.app.config.osdkClient,
-      request,
-      {
-        preview: this.config.usePreviewApi ?? DEFAULT_USE_PREVIEW_API,
-      },
-    );
 
     const documentId = createResponse.id as DocumentId;
     const docRef = this.createDocRef(documentId, schema);
