@@ -239,7 +239,7 @@ export function convertTypeToFieldTypeUnion(
       // Optional flag is handled at field level; unwrap and recurse on inner type
       return convertTypeToFieldTypeUnion(schemaType.item as P.Type, nameToExportKey);
 
-    case "artifactRef":
+    case "resourceRef":
     case "boolean":
     case "docRef":
     case "double":
@@ -267,9 +267,9 @@ function convertTypeToFieldValueUnion(
           + "Wrap the inner array in a record instead.",
       );
 
-    case "artifactRef":
-      return IFieldValueUnion.artifactRef({
-        artifactRids: [],
+    case "resourceRef":
+      return IFieldValueUnion.resourceRef({
+        resourceRids: [],
       });
 
     case "boolean":

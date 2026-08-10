@@ -43,8 +43,8 @@ interface ArrayField extends BaseSchemaField {
   readonly items: SchemaField;
 }
 
-interface ArtifactRefField extends BaseSchemaField {
-  readonly type: typeof TypeKind.ARTIFACT_REF;
+interface ResourceRefField extends BaseSchemaField {
+  readonly type: typeof TypeKind.RESOURCE_REF;
 }
 
 interface DocRefField extends BaseSchemaField {
@@ -85,7 +85,7 @@ interface UserRefField extends BaseSchemaField {
 type SchemaField =
   | AnyField
   | ArrayField
-  | ArtifactRefField
+  | ResourceRefField
   | DocRefField
   | DoubleField
   | MediaRefField
@@ -149,8 +149,8 @@ function detectUsedRefTypes(schema: RuntimeSchema): Set<string> {
           scanField(field.items);
         }
         break;
-      case TypeKind.ARTIFACT_REF:
-        refTypes.add("ArtifactRid");
+      case TypeKind.RESOURCE_REF:
+        refTypes.add("ResourceRid");
         break;
       case TypeKind.DOC_REF:
         refTypes.add("DocumentId");
@@ -330,8 +330,8 @@ function convertTypeToTypeScript(
         throw new Error("Array field is missing items type");
       }
       return `readonly ${convertTypeToTypeScript(fieldType.items, schema)}[]`;
-    case TypeKind.ARTIFACT_REF:
-      return "ArtifactRid";
+    case TypeKind.RESOURCE_REF:
+      return "ResourceRid";
     case TypeKind.DOC_REF:
       return "DocumentId";
     case TypeKind.DOUBLE:

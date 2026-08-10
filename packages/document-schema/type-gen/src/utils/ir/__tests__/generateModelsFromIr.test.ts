@@ -139,14 +139,14 @@ describe("generateModelsFromIr", () => {
     };
 
     const eventField4: IFieldDef = {
-      key: "artifactRef",
-      name: "Artifact Reference",
-      description: "A reference to an artifact",
+      key: "resourceRef",
+      name: "Resource Reference",
+      description: "A reference to a resource",
       fieldType: {
         type: "value",
         value: {
-          type: "artifactRef",
-          artifactRef: { artifactRids: [] },
+          type: "resourceRef",
+          resourceRef: { resourceRids: [] },
         },
       },
       metadata: { addedInVersion: 1 },
@@ -179,7 +179,7 @@ describe("generateModelsFromIr", () => {
     expect(formatted).toContain("externalRefFieldTypes");
     expect(formatted).toContain("documentRef: 'docRef'");
     expect(formatted).toContain("userRef: 'userRef'");
-    expect(formatted).toContain("artifactRef: 'artifactRef'");
+    expect(formatted).toContain("resourceRef: 'resourceRef'");
 
     await expect(formatted).toMatchFileSnapshot(path.join(snapshotDir, "external-refs.ts"));
   });

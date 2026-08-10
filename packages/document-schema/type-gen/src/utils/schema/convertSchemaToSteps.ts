@@ -22,8 +22,8 @@ function convertFieldType(field: P.Type): string {
   switch (field.type) {
     case "array":
       return `array<${convertFieldType(field.items as P.Type)}>`;
-    case "artifactRef":
-      return "artifactRef";
+    case "resourceRef":
+      return "resourceRef";
     case "boolean":
       return "boolean";
     case "docRef":

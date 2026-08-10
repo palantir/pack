@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-import type { IFieldValueArtifactRef } from "./fieldValueArtifactRef.js";
 import type { IFieldValueBoolean } from "./fieldValueBoolean.js";
 import type { IFieldValueDatetime } from "./fieldValueDatetime.js";
 import type { IFieldValueDocumentRef } from "./fieldValueDocumentRef.js";
@@ -23,15 +22,11 @@ import type { IFieldValueInteger } from "./fieldValueInteger.js";
 import type { IFieldValueMediaRef } from "./fieldValueMediaRef.js";
 import type { IFieldValueModelRef } from "./fieldValueModelRef.js";
 import type { IFieldValueObjectRef } from "./fieldValueObjectRef.js";
+import type { IFieldValueResourceRef } from "./fieldValueResourceRef.js";
 import type { IFieldValueString } from "./fieldValueString.js";
 import type { IFieldValueText } from "./fieldValueText.js";
 import type { IFieldValueUnmanagedJson } from "./fieldValueUnmanagedJson.js";
 import type { IFieldValueUserRef } from "./fieldValueUserRef.js";
-
-export interface IFieldValueUnion_ArtifactRef {
-  readonly "artifactRef": IFieldValueArtifactRef;
-  readonly "type": "artifactRef";
-}
 
 export interface IFieldValueUnion_Boolean {
   readonly "boolean": IFieldValueBoolean;
@@ -73,6 +68,11 @@ export interface IFieldValueUnion_Object {
   readonly "type": "object";
 }
 
+export interface IFieldValueUnion_ResourceRef {
+  readonly "resourceRef": IFieldValueResourceRef;
+  readonly "type": "resourceRef";
+}
+
 export interface IFieldValueUnion_String {
   readonly "string": IFieldValueString;
   readonly "type": "string";
@@ -94,7 +94,6 @@ export interface IFieldValueUnion_UserRef {
 }
 
 export type IFieldValueUnion =
-  | IFieldValueUnion_ArtifactRef
   | IFieldValueUnion_Boolean
   | IFieldValueUnion_Datetime
   | IFieldValueUnion_DocRef
@@ -103,13 +102,13 @@ export type IFieldValueUnion =
   | IFieldValueUnion_MediaRef
   | IFieldValueUnion_ModelRef
   | IFieldValueUnion_Object
+  | IFieldValueUnion_ResourceRef
   | IFieldValueUnion_String
   | IFieldValueUnion_Text
   | IFieldValueUnion_UnmanagedJson
   | IFieldValueUnion_UserRef;
 
 export interface IFieldValueUnionVisitor<T> {
-  readonly "artifactRef": (obj: IFieldValueArtifactRef) => T;
   readonly "boolean": (obj: IFieldValueBoolean) => T;
   readonly "datetime": (obj: IFieldValueDatetime) => T;
   readonly "docRef": (obj: IFieldValueDocumentRef) => T;
@@ -118,22 +117,12 @@ export interface IFieldValueUnionVisitor<T> {
   readonly "mediaRef": (obj: IFieldValueMediaRef) => T;
   readonly "modelRef": (obj: IFieldValueModelRef) => T;
   readonly "object": (obj: IFieldValueObjectRef) => T;
+  readonly "resourceRef": (obj: IFieldValueResourceRef) => T;
   readonly "string": (obj: IFieldValueString) => T;
   readonly "text": (obj: IFieldValueText) => T;
   readonly "unmanagedJson": (obj: IFieldValueUnmanagedJson) => T;
   readonly "userRef": (obj: IFieldValueUserRef) => T;
   readonly "unknown": (obj: IFieldValueUnion) => T;
-}
-
-function isArtifactRef(obj: IFieldValueUnion): obj is IFieldValueUnion_ArtifactRef {
-  return (obj.type === "artifactRef");
-}
-
-function artifactRef(obj: IFieldValueArtifactRef): IFieldValueUnion_ArtifactRef {
-  return {
-    artifactRef: obj,
-    type: "artifactRef",
-  };
 }
 
 function isBoolean(obj: IFieldValueUnion): obj is IFieldValueUnion_Boolean {
@@ -224,6 +213,17 @@ function object(obj: IFieldValueObjectRef): IFieldValueUnion_Object {
   };
 }
 
+function isResourceRef(obj: IFieldValueUnion): obj is IFieldValueUnion_ResourceRef {
+  return (obj.type === "resourceRef");
+}
+
+function resourceRef(obj: IFieldValueResourceRef): IFieldValueUnion_ResourceRef {
+  return {
+    resourceRef: obj,
+    type: "resourceRef",
+  };
+}
+
 function isString(obj: IFieldValueUnion): obj is IFieldValueUnion_String {
   return (obj.type === "string");
 }
@@ -269,9 +269,6 @@ function userRef(obj: IFieldValueUserRef): IFieldValueUnion_UserRef {
 }
 
 function visit<T>(obj: IFieldValueUnion, visitor: IFieldValueUnionVisitor<T>): T {
-  if (isArtifactRef(obj)) {
-    return visitor.artifactRef(obj.artifactRef);
-  }
   if (isBoolean(obj)) {
     return visitor.boolean(obj.boolean);
   }
@@ -296,6 +293,9 @@ function visit<T>(obj: IFieldValueUnion, visitor: IFieldValueUnionVisitor<T>): T
   if (isObject(obj)) {
     return visitor.object(obj.object);
   }
+  if (isResourceRef(obj)) {
+    return visitor.resourceRef(obj.resourceRef);
+  }
   if (isString(obj)) {
     return visitor.string(obj.string);
   }
@@ -312,8 +312,6 @@ function visit<T>(obj: IFieldValueUnion, visitor: IFieldValueUnionVisitor<T>): T
 }
 
 export const IFieldValueUnion: {
-  isArtifactRef: typeof isArtifactRef;
-  artifactRef: typeof artifactRef;
   isBoolean: typeof isBoolean;
   boolean: typeof boolean;
   isDatetime: typeof isDatetime;
@@ -330,6 +328,8 @@ export const IFieldValueUnion: {
   modelRef: typeof modelRef;
   isObject: typeof isObject;
   object: typeof object;
+  isResourceRef: typeof isResourceRef;
+  resourceRef: typeof resourceRef;
   isString: typeof isString;
   string: typeof string;
   isText: typeof isText;
@@ -340,8 +340,6 @@ export const IFieldValueUnion: {
   userRef: typeof userRef;
   visit: typeof visit;
 } = {
-  isArtifactRef: isArtifactRef,
-  artifactRef: artifactRef,
   isBoolean: isBoolean,
   boolean: boolean,
   isDatetime: isDatetime,
@@ -358,6 +356,8 @@ export const IFieldValueUnion: {
   modelRef: modelRef,
   isObject: isObject,
   object: object,
+  isResourceRef: isResourceRef,
+  resourceRef: resourceRef,
   isString: isString,
   string: string,
   isText: isText,

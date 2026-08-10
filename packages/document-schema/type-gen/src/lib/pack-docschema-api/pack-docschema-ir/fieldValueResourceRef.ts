@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-export type IArtifactRid = string & {
-  __conjure_type?: "ArtifactRid";
-  __conjure_package?: "com.palantir.pack.docschema.api";
-};
+import type { IResourceRid } from "../pack-docschema-api/resourceRid.js";
+export interface IFieldValueResourceRef {
+  readonly "resourceRids": ReadonlyArray<IResourceRid>;
+}

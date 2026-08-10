@@ -16,7 +16,6 @@
 
 export const TypeKind = {
   ARRAY: "array",
-  ARTIFACT_REF: "artifactRef",
   BOOLEAN: "boolean",
   DOC_REF: "docRef",
   DOUBLE: "double",
@@ -24,6 +23,7 @@ export const TypeKind = {
   OBJECT_REF: "objectRef",
   OPTIONAL: "optional",
   REF: "ref",
+  RESOURCE_REF: "resourceRef",
   STRING: "string",
   UNKNOWN: "unknown",
   USER_REF: "userRef",
@@ -69,10 +69,6 @@ export type Unknown = {
   readonly type: typeof TypeKind.UNKNOWN;
 };
 
-export type ArtifactRef = {
-  readonly type: typeof TypeKind.ARTIFACT_REF;
-};
-
 export type DocRef = {
   readonly type: typeof TypeKind.DOC_REF;
 };
@@ -85,18 +81,22 @@ export type ObjectRef = {
   readonly type: typeof TypeKind.OBJECT_REF;
 };
 
+export type ResourceRef = {
+  readonly type: typeof TypeKind.RESOURCE_REF;
+};
+
 export type UserRef = {
   readonly type: typeof TypeKind.USER_REF;
 };
 
 export type Type =
   | Array
-  | ArtifactRef
   | Boolean
   | DocRef
   | Double
   | MediaRef
   | ObjectRef
+  | ResourceRef
   | Optional
   | Ref
   | String
@@ -107,7 +107,7 @@ export const String: String = { type: TypeKind.STRING };
 export const Double: Double = { type: TypeKind.DOUBLE };
 export const Boolean: Boolean = { type: TypeKind.BOOLEAN };
 export const Unknown: Unknown = { type: TypeKind.UNKNOWN };
-export const ArtifactRef: ArtifactRef = { type: TypeKind.ARTIFACT_REF };
+export const ResourceRef: ResourceRef = { type: TypeKind.RESOURCE_REF };
 function unwrapOneOptional(t: TypeBase): TypeBase {
   return t.type === TypeKind.OPTIONAL && "item" in t ? (t as { item: TypeBase }).item : t;
 }

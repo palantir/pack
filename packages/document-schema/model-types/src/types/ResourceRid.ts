@@ -16,20 +16,5 @@
 
 import type { Flavored } from "@palantir/pack.core";
 
-/** Identifies an artifact by rid; peering translates rid/gid across stacks. */
-export type ArtifactRid = Flavored<"ArtifactRid">;
-
-export const ArtifactRefBrand: unique symbol = Symbol("pack:ArtifactRef");
-
-/**
- * A reference to a Gotham artifact.
- *
- * @experimental
- */
-export interface ArtifactRef {
-  readonly artifactRid: ArtifactRid;
-  readonly [ArtifactRefBrand]: typeof ArtifactRefBrand;
-
-  // TODO: implement this correctly
-  readonly subscribe?: (callback: unknown) => unknown;
-}
+/** Identifies an arbitrary platform resource by RID. */
+export type ResourceRid = Flavored<"ResourceRid">;

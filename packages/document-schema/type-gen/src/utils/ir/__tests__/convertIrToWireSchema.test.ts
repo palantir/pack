@@ -200,9 +200,9 @@ describe("convertIrToWireSchema", () => {
       payload: Record<string, unknown>;
     }> = [
       {
-        fn: IFieldValueUnion.artifactRef,
-        type: "artifactRef",
-        payload: { artifactRids: ["rid3"] },
+        fn: IFieldValueUnion.resourceRef,
+        type: "resourceRef",
+        payload: { resourceRids: ["rid3"] },
       },
       { fn: IFieldValueUnion.boolean, type: "boolean", payload: {} },
       { fn: IFieldValueUnion.datetime, type: "datetime", payload: {} },

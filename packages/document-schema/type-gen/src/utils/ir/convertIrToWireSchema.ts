@@ -136,12 +136,12 @@ function convertFieldValueType(value: IFieldValueUnion): FieldValueType {
 
 function convertFieldValueUnion(value: IFieldValueUnion): FieldValueUnion {
   switch (value.type) {
-    case "artifactRef":
-      // TODO: @osdk/foundry.pack does not yet declare the artifactRef variant. Drop the
+    case "resourceRef":
+      // TODO: @osdk/foundry.pack does not yet declare the resourceRef variant. Drop the
       // cast once the api-gateway publish and osdk regeneration land.
       return {
-        type: "artifactRef",
-        artifactRids: [...value.artifactRef.artifactRids],
+        type: "resourceRef",
+        resourceRids: [...value.resourceRef.resourceRids],
       } as unknown as FieldValueUnion;
     case "boolean":
       return { type: "boolean", defaultValue: orUndefined(value.boolean.defaultValue) };
