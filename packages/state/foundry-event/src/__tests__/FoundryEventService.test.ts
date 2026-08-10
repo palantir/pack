@@ -23,6 +23,7 @@ import {
   DocumentLoadStatus,
   type DocumentSyncStatus,
 } from "@palantir/pack.state.core";
+import { Base64 } from "js-base64";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import * as Y from "yjs";
 import { createFoundryEventService } from "../FoundryEventService.js";
@@ -392,6 +393,138 @@ describe("FoundryEventService", () => {
     );
 
     expect(secondSession.clientId).not.toBe(firstSession.clientId);
+  });
+
+  describe("updates made before the initial revision is known", () => {
+    /** Server acknowledgement that establishes lastRevisionId and completes the initial load. */
+    function initialRevision(): DocumentUpdateMessage {
+      return {
+        baseRevisionId: "0",
+        clientId: "server",
+        clientSupportedVersionRange: { maxVersion: 1, minVersion: 1 },
+        editIds: [],
+        revisionId: "1",
+        type: "update",
+      };
+    }
+
+    /** Rebuild what a peer would see from every update this client published, in order. */
+    function applyPublishedUpdates(): Y.Doc {
+      const peerDoc = new Y.Doc();
+      for (const call of mocks.eventService.publish.mock.calls) {
+        const message = call[1] as PublishedDocumentUpdate;
+        const data = message.yjsUpdate?.data;
+        if (typeof data === "string") {
+          Y.applyUpdate(peerDoc, Base64.toUint8Array(data));
+        }
+      }
+      return peerDoc;
+    }
+
+    /**
+     * Keys a peer would observe after each published update, in publish order. The merged end
+     * state cannot distinguish flush order — Yjs buffers an update whose dependencies have not
+     * arrived and integrates it later — so only the intermediate states pin FIFO.
+     */
+    function publishedKeySnapshots(): string[][] {
+      const peerDoc = new Y.Doc();
+      const snapshots: string[][] = [];
+      for (const call of mocks.eventService.publish.mock.calls) {
+        const message = call[1] as PublishedDocumentUpdate;
+        const data = message.yjsUpdate?.data;
+        if (typeof data === "string") {
+          Y.applyUpdate(peerDoc, Base64.toUint8Array(data));
+        }
+        snapshots.push([...peerDoc.getMap("Shape").keys()].sort());
+      }
+      return snapshots;
+    }
+
+    function startSyncCapturingServer(yDoc: Y.Doc): {
+      service: ReturnType<typeof createFoundryEventService>;
+      deliverInitialRevision: () => void;
+    } {
+      let updateCallback: ((message: DocumentUpdateMessage) => void) | undefined;
+      mocks.eventService.subscribe.mockImplementation((_channel, callback) => {
+        updateCallback = callback as (message: DocumentUpdateMessage) => void;
+        return Promise.resolve("sub-1" as SubscriptionId);
+      });
+
+      const service = createFoundryEventService(app);
+      service.startDocumentSync(
+        "doc-1" as DocumentId,
+        yDoc,
+        { maxVersion: 1, minVersion: 1 },
+        () => {},
+      );
+
+      return { service, deliverInitialRevision: () => updateCallback?.(initialRevision()) };
+    }
+
+    it("holds a write made during the load instead of dropping it", async () => {
+      const yDoc = new Y.Doc();
+      const { deliverInitialRevision } = startSyncCapturingServer(yDoc);
+      await Promise.resolve();
+
+      // The handler is attached but lastRevisionId is still unknown. This previously logged
+      // "Cannot publish document update before initial load is complete" and discarded the update.
+      yDoc.getMap("Shape").set("shape-1", "during-load");
+      expect(mocks.eventService.publish).not.toHaveBeenCalled();
+
+      deliverInitialRevision();
+
+      expect(mocks.eventService.publish).toHaveBeenCalledTimes(1);
+      expect(applyPublishedUpdates().getMap("Shape").get("shape-1")).toBe("during-load");
+    });
+
+    it("preserves the order of writes held across the load", async () => {
+      const yDoc = new Y.Doc();
+      const { deliverInitialRevision } = startSyncCapturingServer(yDoc);
+      await Promise.resolve();
+
+      yDoc.getMap("Shape").set("first", "during-load");
+      yDoc.getMap("Shape").set("second", "also-during-load");
+      deliverInitialRevision();
+      yDoc.getMap("Shape").set("third", "after-load");
+
+      expect(mocks.eventService.publish).toHaveBeenCalledTimes(3);
+      // Asserted per-update rather than on the merged result: applying all three into one doc
+      // passes just as well for a reversed flush, so it would not test order at all.
+      expect(publishedKeySnapshots()).toEqual([
+        ["first"],
+        ["first", "second"],
+        ["first", "second", "third"],
+      ]);
+    });
+
+    it("publishes nothing when no local write was made during the load", async () => {
+      const yDoc = new Y.Doc();
+      const { deliverInitialRevision } = startSyncCapturingServer(yDoc);
+      await Promise.resolve();
+
+      deliverInitialRevision();
+
+      expect(mocks.eventService.publish).not.toHaveBeenCalled();
+    });
+
+    it("warns rather than staying silent when a load never completes", async () => {
+      const yDoc = new Y.Doc();
+      const { service } = startSyncCapturingServer(yDoc);
+      await Promise.resolve();
+
+      yDoc.getMap("Shape").set("shape-1", "never-published");
+      logger.warn.mockClear();
+
+      // The load never established a revision, so the held update has nothing to publish against
+      // and is dropped. It must not be dropped quietly.
+      service.stopDocumentSync({ clientId: "unused", documentId: "doc-1" as DocumentId });
+
+      expect(mocks.eventService.publish).not.toHaveBeenCalled();
+      expect(logger.warn).toHaveBeenCalledWith(
+        expect.stringContaining("Discarding local document updates"),
+        expect.objectContaining({ discardedCount: 1 }),
+      );
+    });
   });
 
   describe("data channel liveness", () => {

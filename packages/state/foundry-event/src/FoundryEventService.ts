@@ -71,6 +71,9 @@ export interface PresencePublishOptions {
 
 const UPDATE_ORIGIN_REMOTE = "remote" as const;
 
+/** Queue depth at which held updates stop looking like a normal load and start looking stuck. */
+const PENDING_PUBLISH_WARN_THRESHOLD = 100;
+
 const getDocumentUpdatesChannelId = (
   documentId: DocumentId,
 ): TypedReceiveChannelId<DocumentUpdateMessage> =>
@@ -115,6 +118,14 @@ interface SyncSessionInternal extends SyncSession {
     doc: y.Doc,
     transaction: y.Transaction,
   ) => void;
+  /**
+   * Local updates produced before the server's first revision is known. The publish payload
+   * carries no revision of its own; the server resolves a publish against the revision this
+   * client last acknowledged on its update subscription (`DocumentUpdateSubscriptionRequest`.
+   * `lastRevisionId`), and until the initial load delivers one there is no such revision. They
+   * are held here and flushed in order once it is established.
+   */
+  pendingPublishes: DocumentPublishMessage[];
   yDoc?: y.Doc;
 }
 
@@ -192,6 +203,7 @@ class FoundryEventServiceImpl implements FoundryEventService {
         documentSubscriptionId: undefined,
         lastRevisionId: undefined,
         localYDocUpdateHandler: undefined,
+        pendingPublishes: [],
         yDoc: undefined,
       };
       this.sessions.set(sessionId, session);
@@ -227,40 +239,11 @@ class FoundryEventServiceImpl implements FoundryEventService {
         return;
       }
 
-      const lastRevisionId = session.lastRevisionId;
-      if (lastRevisionId == null) {
-        this.logger.error(
-          "Cannot publish document update before initial load is complete. The local state will remain inconsistent.",
-          { docId: documentId },
-        );
-        return;
-      }
-
-      const publishChannelId = getDocumentPublishChannelId(documentId);
-      const editId = generateId();
-      const description = isEditDescription(origin)
-        ? createDocumentEditDescription(origin)
-        : undefined;
-      const documentUpdateSchemaVersion = getDocumentUpdateSchemaVersionFromTransaction(transaction)
-        ?? getDocumentSchemaOperationalVersion?.()
-        ?? getFallbackDocumentUpdateSchemaVersion(clientSupportedVersionRange);
-      const publishMessage: DocumentPublishMessage = {
-        clientId: session.clientId,
-        clientSupportedVersionRange,
-        description,
-        documentUpdateSchemaVersion,
-        editId,
-        yjsUpdate: {
-          data: Base64.fromUint8Array(update),
-        },
-      };
-      void this.eventService.publish(
-        publishChannelId,
-        publishMessage,
-      ).catch((error: unknown) => {
-        this.logger.error("Failed to publish document update", error, {
-          docId: documentId,
-        });
+      this.publishOrQueueUpdate(session, clientSupportedVersionRange, update, {
+        description: isEditDescription(origin) ? createDocumentEditDescription(origin) : undefined,
+        documentUpdateSchemaVersion: getDocumentUpdateSchemaVersionFromTransaction(transaction)
+          ?? getDocumentSchemaOperationalVersion?.()
+          ?? getFallbackDocumentUpdateSchemaVersion(clientSupportedVersionRange),
       });
     };
 
@@ -509,6 +492,16 @@ class FoundryEventServiceImpl implements FoundryEventService {
       internalSession.documentSubscriptionId = undefined;
     }
     internalSession.lastRevisionId = undefined;
+    // Sync stopped before the initial load established a revision, so these were never publishable
+    // and there is nothing to send them against now. They stay in the local Y.Doc but the server
+    // never learns of them — the same loss this queue exists to prevent, so say so out loud.
+    if (internalSession.pendingPublishes.length > 0) {
+      this.logger.warn("Discarding local document updates held for a load that never completed", {
+        docId: internalSession.documentId,
+        discardedCount: internalSession.pendingPublishes.length,
+      });
+      internalSession.pendingPublishes = [];
+    }
     internalSession.yDoc = undefined;
   }
 
@@ -524,6 +517,87 @@ class FoundryEventServiceImpl implements FoundryEventService {
     }
     this.stopDocumentSync(session);
     this.sessions.delete(sessionId);
+  }
+
+  /**
+   * Publish a local Yjs update, or hold it until the initial load establishes `lastRevisionId` —
+   * the revision the server resolves this client's publishes against, sent on the update
+   * subscription rather than on the publish itself. Updates were previously dropped with only a
+   * log line in that window, which lost them silently.
+   */
+  private publishOrQueueUpdate(
+    session: SyncSessionInternal,
+    clientSupportedVersionRange: ClientSupportedVersionRange,
+    update: Uint8Array,
+    options: {
+      description?: DocumentPublishMessage["description"];
+      documentUpdateSchemaVersion: number;
+    },
+  ): void {
+    const publishMessage: DocumentPublishMessage = {
+      clientId: session.clientId,
+      clientSupportedVersionRange,
+      description: options.description,
+      documentUpdateSchemaVersion: options.documentUpdateSchemaVersion,
+      editId: generateId(),
+      yjsUpdate: {
+        data: Base64.fromUint8Array(update),
+      },
+    };
+
+    if (session.lastRevisionId == null) {
+      session.pendingPublishes.push(publishMessage);
+      const pendingCount = session.pendingPublishes.length;
+      // Nothing bounds the queue: an initial load that never completes grows it for as long as
+      // edits keep arriving. Warn on crossing the threshold rather than dropping edits, since
+      // dropping is the failure this queue exists to prevent.
+      if (pendingCount === PENDING_PUBLISH_WARN_THRESHOLD) {
+        this.logger.warn("Local document updates are piling up while the initial load completes", {
+          docId: session.documentId,
+          pendingCount,
+        });
+      } else {
+        this.logger.debug("Holding local document update until the initial load completes", {
+          docId: session.documentId,
+          pendingCount,
+        });
+      }
+      return;
+    }
+
+    this.publishUpdate(session, publishMessage);
+  }
+
+  private publishUpdate(
+    session: SyncSessionInternal,
+    publishMessage: DocumentPublishMessage,
+  ): void {
+    void this.eventService.publish(
+      getDocumentPublishChannelId(session.documentId),
+      publishMessage,
+    ).catch((error: unknown) => {
+      this.logger.error("Failed to publish document update", error, {
+        docId: session.documentId,
+      });
+    });
+  }
+
+  /** Flush updates held while the revision was unknown, preserving the order they were made in. */
+  private flushPendingPublishes(session: SyncSessionInternal): void {
+    if (session.pendingPublishes.length === 0) {
+      return;
+    }
+
+    const pending = session.pendingPublishes;
+    session.pendingPublishes = [];
+    this.logger.debug("Publishing local document updates held during the initial load", {
+      docId: session.documentId,
+      pendingCount: pending.length,
+    });
+
+    for (const publishMessage of pending) {
+      this.publishUpdate(session, publishMessage);
+    }
   }
 
   private handleDocumentUpdateMessage(
@@ -611,6 +685,9 @@ class FoundryEventServiceImpl implements FoundryEventService {
           }
         }
         session.lastRevisionId = Number(revisionId);
+
+        // The revision is known, so anything held during the load can go out now.
+        this.flushPendingPublishes(session);
 
         onStatusChange({
           load: DocumentLoadStatus.LOADED,
