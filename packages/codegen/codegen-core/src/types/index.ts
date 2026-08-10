@@ -60,7 +60,7 @@ export interface TemplateConfig {
 }
 
 export interface PromptQuestion {
-  readonly type: "input" | "number" | "confirm" | "list" | "checkbox" | "password";
+  readonly type: "input" | "number" | "confirm" | "select" | "checkbox" | "password";
   readonly name: string;
   readonly message: string;
   readonly default?: unknown;

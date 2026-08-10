@@ -534,7 +534,7 @@ module.exports = {
       default: "https://api.example.com",
     },
     {
-      type: "list",
+      type: "select",
       name: "httpClient",
       message: "HTTP client library?",
       choices: ["fetch", "axios", "node-fetch"],
