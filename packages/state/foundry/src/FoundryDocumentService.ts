@@ -146,10 +146,22 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
     ref: DocumentRef,
     metadata: DocumentMetadata | undefined,
   ): FoundryInternalDoc {
-    return {
+    const internalDoc: FoundryInternalDoc = {
       ...this.createBaseInternalDoc(ref, metadata),
       syncSession: undefined,
     };
+
+    // Data loads are demand-driven, but writes are not: callers may populate a document before
+    // opening a subscription. Capturing from creation means those writes are held for the first
+    // sync session rather than never being seen by a publish handler at all.
+    this.eventService.beginDocumentCapture(
+      ref.id,
+      internalDoc.yDoc,
+      getClientSupportedVersionRange(ref.schema),
+      () => this.getDocumentSchemaOperationalVersion(ref),
+    );
+
+    return internalDoc;
   }
 
   get hasMetadataSubscriptions(): boolean {

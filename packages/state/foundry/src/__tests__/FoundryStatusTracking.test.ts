@@ -406,6 +406,26 @@ describe("Foundry Document Status Tracking", () => {
       expect(getOperationalVersion?.()).toBe(3);
     });
 
+    it("should capture local writes from document creation against the synced Y.Doc", async () => {
+      const docRef = createDocRef(mockApp, "test-doc-capture" as DocumentId, testSchema);
+
+      // Capture has to start at creation, before any subscription exists, or writes made before
+      // the first subscription never reach a publish handler.
+      const unsubscribe = service.onStateChange(docRef, () => {});
+      expect(mockEventService.beginDocumentCapture).toHaveBeenCalled();
+
+      await vi.runAllTimersAsync();
+      expect(mockEventService.startDocumentSync).toHaveBeenCalled();
+
+      // Must be the same Y.Doc instance: a different one silently trips the replacement path,
+      // which discards everything captured instead of holding it.
+      const capturedYDoc = mockEventService.beginDocumentCapture.mock.calls[0]?.[1];
+      const syncedYDoc = mockEventService.startDocumentSync.mock.calls[0]?.[1];
+      expect(capturedYDoc).toBe(syncedYDoc);
+
+      unsubscribe();
+    });
+
     it("should handle fast unsubscribe before websocket data sync starts", async () => {
       let resolveMetadata: (document: Document) => void = () => {};
       vi.mocked(Documents.get).mockReturnValueOnce(
