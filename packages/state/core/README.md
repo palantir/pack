@@ -38,6 +38,24 @@ Reference (or _ref_) objects provide the main public api for interacting with do
 
 > **Note:** All ref objects are stable, deduplicated automatically via weak ref caches. This means they are suitable for use as keys in maps, cache deps in react etc, as long as the application holds a ref it will never receive a duplicate.
 
+## Creating Documents
+
+`app.state.createDocument` supports a gradual migration to the V2 create endpoint. The legacy
+endpoint is deprecated and remains available only to avoid breaking existing callers during the
+transition. New callers should use V2, and existing callers should migrate by providing `parent`:
+
+```ts
+await app.state.createDocument({
+  name: "Example",
+  documentTypeName: "com.palantir.pack.example",
+  parent: { type: "parentFolder", folderRid },
+}, schema);
+```
+
+Use `parentFolder` for Compass-backed document types and `namespace` for Artifacts-backed document
+types. V2 metadata cannot include the legacy `parentFolderRid` or `ontologyRid` fields. The legacy
+path remains available during migration but should not be used for new integrations.
+
 ## Internal Notes
 
 ### Document Services

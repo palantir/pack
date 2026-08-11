@@ -16,19 +16,43 @@
 
 import type { DocumentSecurity } from "@palantir/pack.document-schema.model-types";
 
-export interface CreateDocumentMetadata {
+export type CreateDocumentParent =
+  | {
+    readonly type: "parentFolder";
+    readonly folderRid: string;
+  }
+  | {
+    readonly type: "namespace";
+    readonly namespaceRid: string;
+  };
+
+interface CreateDocumentMetadataBase {
   readonly name: string;
   readonly documentTypeName: string;
   readonly security?: DocumentSecurity;
-  readonly parentFolderRid?: string;
-  /**
-   * Ontology to create the document in. When omitted, the app's default ontology is used. Provide
-   * this to create in a different ontology (e.g. multi-tenant hosts that pick an ontology per
-   * document); the document's target ontology travels in the create request, so the app's OSDK
-   * client does not need to be bound to it.
-   */
-  readonly ontologyRid?: string;
 }
+
+export type CreateDocumentMetadata =
+  & CreateDocumentMetadataBase
+  & (
+    | {
+      readonly parent?: never;
+      readonly parentFolderRid?: string;
+      /**
+       * Ontology to create the document in. When omitted, the app's default ontology is used.
+       */
+      readonly ontologyRid?: string;
+    }
+    | {
+      /**
+       * Parent used by the V2 create endpoint. The parent type must match the document type's file
+       * system: `parentFolder` for Compass or `namespace` for Artifacts.
+       */
+      readonly parent: CreateDocumentParent;
+      readonly parentFolderRid?: never;
+      readonly ontologyRid?: never;
+    }
+  );
 
 export const FileSystemType = {
   ARTIFACTS: "ARTIFACTS",
