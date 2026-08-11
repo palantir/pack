@@ -1,5 +1,7 @@
 # @palantir/pack.core
 
+## 0.24.0
+
 ## 0.6.0
 
 ### Minor Changes
