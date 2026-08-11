@@ -187,6 +187,9 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
         request.parentFolderRid = parentFolderRid;
       }
 
+      this.logger.warn(
+        "The legacy document create endpoint is deprecated; provide CreateDocumentMetadata.parent to use createV2",
+      );
       createResponse = await Documents.create(
         this.app.config.osdkClient,
         request,

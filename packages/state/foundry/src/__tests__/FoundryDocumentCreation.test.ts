@@ -93,6 +93,7 @@ describe("FoundryDocumentService document creation", () => {
   beforeEach(() => {
     vi.mocked(Documents.create).mockReset().mockResolvedValue(document);
     vi.mocked(Documents.createV2).mockReset().mockResolvedValue(document);
+    mockLogger.warn.mockClear();
   });
 
   it("keeps existing createDocument calls on the legacy endpoint", async () => {
@@ -119,6 +120,9 @@ describe("FoundryDocumentService document creation", () => {
       { preview: true },
     );
     expect(Documents.createV2).not.toHaveBeenCalled();
+    expect(mockLogger.warn).toHaveBeenCalledWith(
+      "The legacy document create endpoint is deprecated; provide CreateDocumentMetadata.parent to use createV2",
+    );
   });
 
   it("uses createV2 when a namespace parent is provided", async () => {
@@ -152,6 +156,7 @@ describe("FoundryDocumentService document creation", () => {
       { preview: true },
     );
     expect(Documents.create).not.toHaveBeenCalled();
+    expect(mockLogger.warn).not.toHaveBeenCalled();
   });
 
   it("supports folder parents on createV2", async () => {
