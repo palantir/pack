@@ -1,5 +1,18 @@
 # @palantir/pack.document-schema.model-types
 
+## 0.24.0
+
+### Minor Changes
+
+- ef44c87: Record snapshots are now validated against their model's zod schema at read time, so corrupted document state can be observed and handled gracefully instead of crashing consumers. Invalid records are withheld from `onChange` delivery and surfaced through the new `RecordRef.onInvalid` / `onRecordInvalid` subscriptions, a new `"invalid"` status (with a `RecordValidationError`) on `useRecord`, `getInvalidRecords` on the state module/document service (returning the known invalid records observed so far, re-validated and pruned on each call), and an `invalidRecordCount` on the data channel of `DocumentStatus`. `RecordRef.getSnapshot` now rejects with `RecordInvalidError` when the record exists but fails validation. Records repaired by a later update automatically resume `onChange` delivery. Exceptions thrown during snapshot computation (e.g. an upgrade lens applied to corrupt data) are contained and reported as invalid records rather than escaping into notification fan-out; `updateRecord` rejects with `RecordInvalidError` for unreadable records, while `deleteRecord` remains usable on them so delete-and-recreate repair works.
+- eae6a45: Document Type schemas can now declare a field as a reference to an arbitrary platform resource via the new `resourceRef` field type, written as `S.ResourceRef`. Such fields surface as the new `ResourceRid` type in generated read and write types, matching the `string` / `z.string()` internal representation, and are reported through model metadata as `externalRefFieldTypes: { <field>: "resourceRef" }`. The generated document type asset carries the field as `{ type: "resourceRef" }`, allowing backpack to identify and extract resource references from document content.
+
+  Also fixes `RecordModelMetadata.externalRefFieldTypes` to be partial. It was `Record<keyof T, ExternalRefType>`, which required an entry for _every_ field in the model, so any model combining a reference field with ordinary fields produced a generated `models.ts` that did not typecheck.
+
+### Patch Changes
+
+- @palantir/pack.core@0.24.0
+
 ## 0.15.0
 
 ### Minor Changes

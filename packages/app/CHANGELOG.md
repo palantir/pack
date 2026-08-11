@@ -1,5 +1,25 @@
 # @palantir/pack.app
 
+## 0.24.0
+
+### Minor Changes
+
+- d0ec426: Guard meta tag reads against non-DOM scopes. `getPageEnv` called `document.querySelectorAll` unconditionally, so it threw `ReferenceError: document is not defined` in a Worker, SharedWorker, or Node scope — the only DOM dependency left on PACK's worker path. `getMetaTagContent` now returns `null` when `document` is undefined, so callers fall back to their explicit `options` and get the normal "missing configuration" errors instead of a `ReferenceError`. Browser behavior is unchanged.
+
+### Patch Changes
+
+- Updated dependencies [baadfd9]
+- Updated dependencies [276b1ae]
+- Updated dependencies [ef44c87]
+- Updated dependencies [e2108bd]
+- Updated dependencies [767b541]
+  - @palantir/pack.state.core@0.24.0
+  - @palantir/pack.state.foundry@0.24.0
+  - @palantir/pack.state.demo@0.24.0
+  - @palantir/pack.auth@0.24.0
+  - @palantir/pack.auth.foundry@0.24.0
+  - @palantir/pack.core@0.24.0
+
 ## 0.21.0
 
 ### Patch Changes
