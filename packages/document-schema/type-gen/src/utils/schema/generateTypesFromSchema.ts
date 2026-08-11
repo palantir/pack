@@ -43,6 +43,10 @@ interface ArrayField extends BaseSchemaField {
   readonly items: SchemaField;
 }
 
+interface ResourceRefField extends BaseSchemaField {
+  readonly type: typeof TypeKind.RESOURCE_REF;
+}
+
 interface DocRefField extends BaseSchemaField {
   readonly type: typeof TypeKind.DOC_REF;
 }
@@ -81,6 +85,7 @@ interface UserRefField extends BaseSchemaField {
 type SchemaField =
   | AnyField
   | ArrayField
+  | ResourceRefField
   | DocRefField
   | DoubleField
   | MediaRefField
@@ -144,14 +149,17 @@ function detectUsedRefTypes(schema: RuntimeSchema): Set<string> {
           scanField(field.items);
         }
         break;
+      case TypeKind.RESOURCE_REF:
+        refTypes.add("ResourceRid");
+        break;
       case TypeKind.DOC_REF:
-        refTypes.add("DocumentRef");
+        refTypes.add("DocumentId");
         break;
       case TypeKind.MEDIA_REF:
-        refTypes.add("MediaRef");
+        refTypes.add("MediaId");
         break;
       case TypeKind.OBJECT_REF:
-        refTypes.add("ObjectRef");
+        refTypes.add("ObjectId");
         break;
       case TypeKind.OPTIONAL:
         if (isOptionalField(field)) {
@@ -159,7 +167,7 @@ function detectUsedRefTypes(schema: RuntimeSchema): Set<string> {
         }
         break;
       case TypeKind.USER_REF:
-        refTypes.add("UserRef");
+        refTypes.add("UserId");
         break;
     }
   }
@@ -322,14 +330,16 @@ function convertTypeToTypeScript(
         throw new Error("Array field is missing items type");
       }
       return `readonly ${convertTypeToTypeScript(fieldType.items, schema)}[]`;
+    case TypeKind.RESOURCE_REF:
+      return "ResourceRid";
     case TypeKind.DOC_REF:
-      return "DocumentRef";
+      return "DocumentId";
     case TypeKind.DOUBLE:
       return "number";
     case TypeKind.MEDIA_REF:
-      return "MediaRef";
+      return "MediaId";
     case TypeKind.OBJECT_REF:
-      return "ObjectRef";
+      return "ObjectId";
     case TypeKind.OPTIONAL:
       if (!isOptionalField(fieldType)) {
         throw new Error("Optional field is missing inner type");
@@ -347,7 +357,7 @@ function convertTypeToTypeScript(
     case TypeKind.STRING:
       return "string";
     case TypeKind.USER_REF:
-      return "UserRef";
+      return "UserId";
     default: {
       const _exhaustive: never = fieldType;
       throw new Error(`Unknown schema field type: ${(_exhaustive as SchemaField).type}`);

@@ -387,6 +387,7 @@ class ZodSchemaGenerator {
       case "unmanagedJson":
         return "z.unknown()";
 
+      case "resourceRef":
       case "docRef":
       case "mediaRef":
       case "object":

@@ -55,24 +55,28 @@ function convertFieldValueToTypeScript(
   version?: number,
 ): string {
   switch (value.type) {
+    // Ref fields hold the bare id, so emit the id type — not the <X>Ref handle, which is
+    // an object and would contradict the `string` / `z.string()` internal representation.
+    case "resourceRef":
+      return "ResourceRid";
     case "boolean":
       return "boolean";
     case "datetime":
       return "string";
     case "docRef":
-      return "DocumentRef";
+      return "DocumentId";
     case "double":
       return "number";
     case "integer":
       return "number";
     case "mediaRef":
-      return "MediaRef";
+      return "MediaId";
     case "modelRef": {
       const modelKey = value.modelRef.modelTypes[0]!;
       return version != null ? versionedTypeName(modelKey, version) : modelKey;
     }
     case "object":
-      return "ObjectRef";
+      return "ObjectId";
     case "string":
       return "string";
     case "text":
@@ -80,7 +84,7 @@ function convertFieldValueToTypeScript(
     case "unmanagedJson":
       return "any";
     case "userRef":
-      return "UserRef";
+      return "UserId";
   }
 }
 
@@ -116,6 +120,7 @@ function convertFieldValueToZodSchema(
   switch (value.type) {
     case "boolean":
       return "z.boolean()";
+    case "resourceRef":
     case "datetime":
     case "docRef":
     case "mediaRef":
@@ -189,6 +194,7 @@ function convertFieldValueToInternalTs(value: IFieldValueUnion): string {
     case "double":
     case "integer":
       return "number";
+    case "resourceRef":
     case "datetime":
     case "docRef":
     case "mediaRef":
@@ -253,6 +259,7 @@ function convertFieldValueToInternalZod(value: IFieldValueUnion): string {
     case "double":
     case "integer":
       return "z.number()";
+    case "resourceRef":
     case "datetime":
     case "docRef":
     case "mediaRef":
@@ -323,8 +330,8 @@ function convertFieldValueToDescriptor(value: IFieldValueUnion): string {
 // ---------------------------------------------------------------------------
 
 /**
- * Detect which external ref types (DocumentRef, MediaRef, ObjectRef, UserRef)
- * are used anywhere in the IR schema.
+ * Detect which external ref types (ResourceRef, DocumentRef, MediaRef, ObjectRef,
+ * UserRef) are used anywhere in the IR schema.
  */
 export function detectUsedRefTypes(ir: IRealTimeDocumentSchema): Set<string> {
   const refTypes = new Set<string>();
@@ -353,17 +360,20 @@ function scanFieldTypeForRefs(fieldType: IFieldTypeUnion, out: Set<string>): voi
 
 function scanFieldValueForRefs(value: IFieldValueUnion, out: Set<string>): void {
   switch (value.type) {
+    case "resourceRef":
+      out.add("ResourceRid");
+      break;
     case "docRef":
-      out.add("DocumentRef");
+      out.add("DocumentId");
       break;
     case "mediaRef":
-      out.add("MediaRef");
+      out.add("MediaId");
       break;
     case "object":
-      out.add("ObjectRef");
+      out.add("ObjectId");
       break;
     case "userRef":
-      out.add("UserRef");
+      out.add("UserId");
       break;
   }
 }
@@ -402,7 +412,8 @@ function collectReferencedValuesTypes(
 // ---------------------------------------------------------------------------
 
 /**
- * Detect the external ref type (docRef, mediaRef, objectRef, userRef) of a field, if any.
+ * Detect the external ref type (resourceRef, docRef, mediaRef, objectRef, userRef) of a
+ * field, if any.
  */
 export function findExternalRefType(fieldType: IFieldTypeUnion): string | undefined {
   switch (fieldType.type) {
@@ -417,6 +428,8 @@ export function findExternalRefType(fieldType: IFieldTypeUnion): string | undefi
 
 function findExternalRefValueType(value: IFieldValueUnion): string | undefined {
   switch (value.type) {
+    case "resourceRef":
+      return "resourceRef";
     case "docRef":
       return "docRef";
     case "mediaRef":

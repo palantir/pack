@@ -136,6 +136,13 @@ function convertFieldValueType(value: IFieldValueUnion): FieldValueType {
 
 function convertFieldValueUnion(value: IFieldValueUnion): FieldValueUnion {
   switch (value.type) {
+    case "resourceRef":
+      // TODO: @osdk/foundry.pack does not yet declare the resourceRef variant. Drop the
+      // cast once the api-gateway publish and osdk regeneration land.
+      return {
+        type: "resourceRef",
+        resourceRids: [...value.resourceRef.resourceRids],
+      } as unknown as FieldValueUnion;
     case "boolean":
       return { type: "boolean", defaultValue: orUndefined(value.boolean.defaultValue) };
     case "datetime":

@@ -199,6 +199,11 @@ describe("convertIrToWireSchema", () => {
       type: string;
       payload: Record<string, unknown>;
     }> = [
+      {
+        fn: IFieldValueUnion.resourceRef,
+        type: "resourceRef",
+        payload: { resourceRids: ["rid3"] },
+      },
       { fn: IFieldValueUnion.boolean, type: "boolean", payload: {} },
       { fn: IFieldValueUnion.datetime, type: "datetime", payload: {} },
       { fn: IFieldValueUnion.docRef, type: "docRef", payload: { documentTypeRids: ["rid1"] } },
