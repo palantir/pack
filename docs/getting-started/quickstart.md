@@ -14,7 +14,7 @@ Full documentation for this can be found [here](https://www.palantir.com/docs/fo
 - Ensure you create a **Client-facing Application**.
 - Add a redirect URL for `http://localhost:5173/auth/callback`
   - This is the default address used by `@palantir/pack.create-app`
-- Note the **Client ID** on the **Overview** page of your, we'll need this in the next step.
+- Note the **Client ID** on the **Overview** page of your dev-console app, we'll need this in the next step.
 
 After creating the application, you'll need to enable the **PACK API**s in the **Platform SDK**. 
 
