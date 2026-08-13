@@ -103,27 +103,22 @@ async function loadConfigAnswers(configPath: string | undefined): Promise<Record
   return JSON.parse(contents) as Record<string, unknown>;
 }
 
-async function resolveFirstParty(
+/**
+ * First-party is an advanced, asset-based mode driven only by the `--first-party`
+ * CLI flag (or a config file). It is intentionally not surfaced as an interactive
+ * prompt.
+ */
+function resolveFirstParty(
   options: CreateAppOptions,
   configAnswers: Record<string, unknown>,
-  nonInteractive: boolean,
-): Promise<boolean> {
+): boolean {
   if (options.firstParty != null) {
     return options.firstParty;
   }
   if (typeof configAnswers.firstParty === "boolean") {
     return configAnswers.firstParty;
   }
-  if (nonInteractive) {
-    return false;
-  }
-  const answers = await promptUser([{
-    type: "confirm",
-    name: "firstParty",
-    message: "Is this a first-party pack?",
-    default: false,
-  }]);
-  return answers.firstParty === true;
+  return false;
 }
 
 async function resolveDocumentTypeName(
@@ -212,7 +207,7 @@ export async function createCommand(
         template = DEFAULT_TEMPLATE;
       } else {
         const answers = await promptUser([{
-          type: "list",
+          type: "select",
           name: "template",
           message: "Which template would you like?",
           choices: TEMPLATES.map(t => ({ name: t.name, value: t.value })),
@@ -234,7 +229,7 @@ export async function createCommand(
     // type asset (and may declare an owning application); third-party packs deploy the
     // document type to a Foundry stack.
     const configAnswers = await loadConfigAnswers(options.config);
-    const firstParty = await resolveFirstParty(options, configAnswers, nonInteractive);
+    const firstParty = resolveFirstParty(options, configAnswers);
     const documentTypeName = await resolveDocumentTypeName(
       configAnswers,
       firstParty,

@@ -59,6 +59,7 @@ export const ExternalRefType = {
   DOC_REF: "docRef",
   MEDIA_REF: "mediaRef",
   OBJECT_REF: "objectRef",
+  RESOURCE_REF: "resourceRef",
   USER_REF: "userRef",
 } as const;
 
@@ -67,8 +68,9 @@ export type ExternalRefType = typeof ExternalRefType[keyof typeof ExternalRefTyp
 export interface RecordModelMetadata<T = unknown> {
   /**
    * Which fields in the model are external references (e.g. UserRef, DocumentRef, etc).
+   * Partial — only ref fields are listed, not every field in the model.
    */
-  readonly externalRefFieldTypes?: Readonly<Record<keyof T, ExternalRefType>>;
+  readonly externalRefFieldTypes?: Readonly<Partial<Record<keyof T, ExternalRefType>>>;
   /**
    * The name of the model (should match the typescript symbol).
    */

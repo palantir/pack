@@ -22,6 +22,7 @@ import type { IFieldValueInteger } from "./fieldValueInteger.js";
 import type { IFieldValueMediaRef } from "./fieldValueMediaRef.js";
 import type { IFieldValueModelRef } from "./fieldValueModelRef.js";
 import type { IFieldValueObjectRef } from "./fieldValueObjectRef.js";
+import type { IFieldValueResourceRef } from "./fieldValueResourceRef.js";
 import type { IFieldValueString } from "./fieldValueString.js";
 import type { IFieldValueText } from "./fieldValueText.js";
 import type { IFieldValueUnmanagedJson } from "./fieldValueUnmanagedJson.js";
@@ -67,6 +68,11 @@ export interface IFieldValueUnion_Object {
   readonly "type": "object";
 }
 
+export interface IFieldValueUnion_ResourceRef {
+  readonly "resourceRef": IFieldValueResourceRef;
+  readonly "type": "resourceRef";
+}
+
 export interface IFieldValueUnion_String {
   readonly "string": IFieldValueString;
   readonly "type": "string";
@@ -96,6 +102,7 @@ export type IFieldValueUnion =
   | IFieldValueUnion_MediaRef
   | IFieldValueUnion_ModelRef
   | IFieldValueUnion_Object
+  | IFieldValueUnion_ResourceRef
   | IFieldValueUnion_String
   | IFieldValueUnion_Text
   | IFieldValueUnion_UnmanagedJson
@@ -110,6 +117,7 @@ export interface IFieldValueUnionVisitor<T> {
   readonly "mediaRef": (obj: IFieldValueMediaRef) => T;
   readonly "modelRef": (obj: IFieldValueModelRef) => T;
   readonly "object": (obj: IFieldValueObjectRef) => T;
+  readonly "resourceRef": (obj: IFieldValueResourceRef) => T;
   readonly "string": (obj: IFieldValueString) => T;
   readonly "text": (obj: IFieldValueText) => T;
   readonly "unmanagedJson": (obj: IFieldValueUnmanagedJson) => T;
@@ -205,6 +213,17 @@ function object(obj: IFieldValueObjectRef): IFieldValueUnion_Object {
   };
 }
 
+function isResourceRef(obj: IFieldValueUnion): obj is IFieldValueUnion_ResourceRef {
+  return (obj.type === "resourceRef");
+}
+
+function resourceRef(obj: IFieldValueResourceRef): IFieldValueUnion_ResourceRef {
+  return {
+    resourceRef: obj,
+    type: "resourceRef",
+  };
+}
+
 function isString(obj: IFieldValueUnion): obj is IFieldValueUnion_String {
   return (obj.type === "string");
 }
@@ -274,6 +293,9 @@ function visit<T>(obj: IFieldValueUnion, visitor: IFieldValueUnionVisitor<T>): T
   if (isObject(obj)) {
     return visitor.object(obj.object);
   }
+  if (isResourceRef(obj)) {
+    return visitor.resourceRef(obj.resourceRef);
+  }
   if (isString(obj)) {
     return visitor.string(obj.string);
   }
@@ -306,6 +328,8 @@ export const IFieldValueUnion: {
   modelRef: typeof modelRef;
   isObject: typeof isObject;
   object: typeof object;
+  isResourceRef: typeof isResourceRef;
+  resourceRef: typeof resourceRef;
   isString: typeof isString;
   string: typeof string;
   isText: typeof isText;
@@ -332,6 +356,8 @@ export const IFieldValueUnion: {
   modelRef: modelRef,
   isObject: isObject,
   object: object,
+  isResourceRef: isResourceRef,
+  resourceRef: resourceRef,
   isString: isString,
   string: string,
   isText: isText,

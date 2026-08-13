@@ -273,4 +273,43 @@ describe("Document Status Tracking", () => {
       /no data subscription is registered/,
     );
   });
+
+  it("should reject waitForMetadataLoad when no subscription is registered", async () => {
+    const mockApp = createTestApp();
+    const service = internalCreateInMemoryDocumentService(mockApp, { autoCreateDocuments: true });
+    const docRef = createDocRef(mockApp, DOCUMENT_ID, testSchema);
+
+    // No subscription means no load will ever start; must fail fast, not hang.
+    await expect(service.waitForMetadataLoad(docRef)).rejects.toThrow(
+      /no metadata subscription is registered/,
+    );
+  });
+
+  it("should resolve waitForMetadataLoad once a metadata subscription starts the load", async () => {
+    const mockApp = createTestApp();
+    const service = internalCreateInMemoryDocumentService(mockApp, { autoCreateDocuments: true });
+    const docRef = createDocRef(mockApp, DOCUMENT_ID, testSchema);
+
+    const unsubscribe = service.onMetadataChange(docRef, () => {});
+
+    await expect(service.waitForMetadataLoad(docRef)).resolves.toBeUndefined();
+    expect(service.getDocumentStatus(docRef).metadata.load).toBe(DocumentLoadStatus.LOADED);
+
+    unsubscribe();
+  });
+
+  it("should not reject waitForMetadataLoad while a load is already in flight", async () => {
+    const mockApp = createTestApp();
+    const service = internalCreateInMemoryDocumentService(mockApp, { autoCreateDocuments: true });
+    const docRef = createDocRef(mockApp, DOCUMENT_ID, testSchema);
+
+    // Subscribing puts the load in flight, then dropping the subscription clears
+    // hasMetadataSubscriptions. The guard keys off load status, not the flag, so an
+    // in-flight load must still be awaited rather than rejected on entry.
+    const unsubscribe = service.onMetadataChange(docRef, () => {});
+    const pending = service.waitForMetadataLoad(docRef);
+    unsubscribe();
+
+    await expect(pending).resolves.toBeUndefined();
+  });
 });

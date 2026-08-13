@@ -95,7 +95,7 @@ export const twoVersionRequiredAdditiveSchema: SchemaDefinition = nextSchema(
   singleVersionSchemaNarrow,
 ).addSchemaUpdate(addOpacityRequiredUpdate).build();
 
-/** Schema with ref fields: tests import paths for record refs, DocumentRef, UserRef */
+/** Schema with ref fields: tests import paths for record refs, ResourceRef, DocumentRef, UserRef */
 const CircleRecord = defineRecord("Circle", {
   docs: "A circle",
   fields: {
@@ -103,6 +103,7 @@ const CircleRecord = defineRecord("Circle", {
   },
 });
 
+const ResourceRefField: P.ResourceRef = { type: "resourceRef" };
 const DocRef: P.DocRef = { type: "docRef" };
 const UserRefField: P.UserRef = { type: "userRef" };
 
@@ -116,6 +117,7 @@ export const refFieldsSchema: SchemaDefinition = defineSchema({
       background: P.Optional(modelToRef(CircleRecord)),
       attachment: DocRef,
       owner: P.Optional(UserRefField),
+      resource: ResourceRefField,
     },
   }),
 });

@@ -19,5 +19,6 @@ export * from "./fieldKey.js";
 export * from "./interfaceTypeRid.js";
 export * from "./modelTypeKey.js";
 export * from "./objectTypeRid.js";
+export * from "./resourceRid.js";
 export * from "./schemaVersion.js";
 export * from "./unionVariantKey.js";

@@ -1,5 +1,24 @@
 # @palantir/pack.state.core
 
+## 0.24.0
+
+### Minor Changes
+
+- baadfd9: Add backward-compatible support for the PACK `createV2` document endpoint. Existing
+  `createDocument` calls continue to use the legacy endpoint, while providing a namespace or folder
+  through `CreateDocumentMetadata.parent` opts into V2. Legacy and V2 routing fields cannot be
+  combined.
+- 276b1ae: Fix stale data-load status blocking document reopen. `waitForDataLoad` resolved off `dataStatus.load === LOADED`, which on reopen of a previously-loaded document could still read `LOADED` from the prior open — resolving against a torn-down subscription and leaving callers acting on stale state. The reset to `UNLOADED` on subscription close now lives in the base class (`closeDataSubscription`) and runs unconditionally on every close path, so subclasses can no longer skip it and a reopen re-runs the load. `waitForDataLoad` also now rejects (instead of hanging forever) when no data subscription is registered or when an in-flight load is canceled.
+- ef44c87: Record snapshots are now validated against their model's zod schema at read time, so corrupted document state can be observed and handled gracefully instead of crashing consumers. Invalid records are withheld from `onChange` delivery and surfaced through the new `RecordRef.onInvalid` / `onRecordInvalid` subscriptions, a new `"invalid"` status (with a `RecordValidationError`) on `useRecord`, `getInvalidRecords` on the state module/document service (returning the known invalid records observed so far, re-validated and pruned on each call), and an `invalidRecordCount` on the data channel of `DocumentStatus`. `RecordRef.getSnapshot` now rejects with `RecordInvalidError` when the record exists but fails validation. Records repaired by a later update automatically resume `onChange` delivery. Exceptions thrown during snapshot computation (e.g. an upgrade lens applied to corrupt data) are contained and reported as invalid records rather than escaping into notification fan-out; `updateRecord` rejects with `RecordInvalidError` for unreadable records, while `deleteRecord` remains usable on them so delete-and-recreate repair works.
+- 767b541: Fix `waitForMetadataLoad` hanging forever when no metadata load will ever start. Metadata loads are demand-driven in the same way as data loads, but `waitForMetadataLoad` had none of the fast-fail guarding that `waitForDataLoad` gained: calling it on a document with no metadata subscription returned a promise that never settled, with no timeout and no status transition to wake it. It now rejects with the same explanatory message shape as the data path. The guard keys off the load status rather than the subscription flag, so an in-flight load is still awaited even after its subscription is dropped.
+
+### Patch Changes
+
+- Updated dependencies [ef44c87]
+- Updated dependencies [eae6a45]
+  - @palantir/pack.document-schema.model-types@0.24.0
+  - @palantir/pack.core@0.24.0
+
 ## 0.20.0
 
 ### Minor Changes

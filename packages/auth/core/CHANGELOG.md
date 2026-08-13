@@ -1,5 +1,11 @@
 # @palantir/pack.auth
 
+## 0.24.0
+
+### Patch Changes
+
+- @palantir/pack.core@0.24.0
+
 ## 0.5.0
 
 ### Minor Changes

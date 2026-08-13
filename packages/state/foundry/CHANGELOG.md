@@ -1,5 +1,31 @@
 # @palantir/pack.state.foundry
 
+## 0.24.0
+
+### Minor Changes
+
+- baadfd9: Add backward-compatible support for the PACK `createV2` document endpoint. Existing
+  `createDocument` calls continue to use the legacy endpoint, while providing a namespace or folder
+  through `CreateDocumentMetadata.parent` opts into V2. Legacy and V2 routing fields cannot be
+  combined.
+- 276b1ae: Fix stale data-load status blocking document reopen. `waitForDataLoad` resolved off `dataStatus.load === LOADED`, which on reopen of a previously-loaded document could still read `LOADED` from the prior open — resolving against a torn-down subscription and leaving callers acting on stale state. The reset to `UNLOADED` on subscription close now lives in the base class (`closeDataSubscription`) and runs unconditionally on every close path, so subclasses can no longer skip it and a reopen re-runs the load. `waitForDataLoad` also now rejects (instead of hanging forever) when no data subscription is registered or when an in-flight load is canceled.
+- e2108bd: Surface previously-silent event and metadata failures as errors instead of leaving documents in a stale state. Revision gaps and failed remote Y.js updates now set the document load status to `ERROR` with a descriptive cause rather than silently returning while `lastRevisionId` was already advanced — so callers see the stale state instead of acting on it. CometD handshake failures caused by a missing auth token now reject the handshake promise with the underlying cause instead of hanging. Metadata load/subscription/refetch failures that occur after a subscription is closed or a document is replaced are now logged at `warn` level for observability instead of being dropped entirely.
+
+### Patch Changes
+
+- Updated dependencies [f1a4f80]
+- Updated dependencies [baadfd9]
+- Updated dependencies [276b1ae]
+- Updated dependencies [ef44c87]
+- Updated dependencies [eae6a45]
+- Updated dependencies [e2108bd]
+- Updated dependencies [767b541]
+  - @palantir/pack.state.foundry-event@0.24.0
+  - @palantir/pack.state.core@0.24.0
+  - @palantir/pack.document-schema.model-types@0.24.0
+  - @palantir/pack.auth@0.24.0
+  - @palantir/pack.core@0.24.0
+
 ## 0.23.0
 
 ### Minor Changes

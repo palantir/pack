@@ -1,6 +1,6 @@
 {
   "name": "@palantir/pack.codegen.core",
-  "version": "0.2.0",
+  "version": "0.24.0",
   "description": "Shared template-driven code generation engine for Palantir PACK CLIs",
   "license": "Apache-2.0",
   "repository": {
@@ -25,18 +25,17 @@
     "typecheck": "tsc --noEmit --emitDeclarationOnly false"
   },
   "dependencies": {
+    "@inquirer/prompts": "^8.0.1",
     "consola": "catalog:",
     "ejs": "^3.1.10",
     "find-up": "catalog:",
     "fs-extra": "catalog:",
-    "glob": "^13.0.0",
-    "inquirer": "^13.0.1"
+    "glob": "^13.0.0"
   },
   "devDependencies": {
     "@palantir/pack.monorepo.tsconfig": "workspace:~",
     "@types/ejs": "^3.1.5",
     "@types/fs-extra": "catalog:",
-    "@types/inquirer": "^9.0.9",
     "@types/node": "catalog:",
     "prettier": "catalog:",
     "rimraf": "catalog:",

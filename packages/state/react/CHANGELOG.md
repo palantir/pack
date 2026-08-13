@@ -1,5 +1,23 @@
 # @palantir/pack.state.react
 
+## 0.24.0
+
+### Minor Changes
+
+- ef44c87: Record snapshots are now validated against their model's zod schema at read time, so corrupted document state can be observed and handled gracefully instead of crashing consumers. Invalid records are withheld from `onChange` delivery and surfaced through the new `RecordRef.onInvalid` / `onRecordInvalid` subscriptions, a new `"invalid"` status (with a `RecordValidationError`) on `useRecord`, `getInvalidRecords` on the state module/document service (returning the known invalid records observed so far, re-validated and pruned on each call), and an `invalidRecordCount` on the data channel of `DocumentStatus`. `RecordRef.getSnapshot` now rejects with `RecordInvalidError` when the record exists but fails validation. Records repaired by a later update automatically resume `onChange` delivery. Exceptions thrown during snapshot computation (e.g. an upgrade lens applied to corrupt data) are contained and reported as invalid records rather than escaping into notification fan-out; `updateRecord` rejects with `RecordInvalidError` for unreadable records, while `deleteRecord` remains usable on them so delete-and-recreate repair works.
+
+### Patch Changes
+
+- Updated dependencies [baadfd9]
+- Updated dependencies [276b1ae]
+- Updated dependencies [ef44c87]
+- Updated dependencies [eae6a45]
+- Updated dependencies [767b541]
+  - @palantir/pack.state.core@0.24.0
+  - @palantir/pack.document-schema.model-types@0.24.0
+  - @palantir/pack.auth@0.24.0
+  - @palantir/pack.core@0.24.0
+
 ## 0.21.0
 
 ### Minor Changes

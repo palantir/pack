@@ -82,6 +82,7 @@ export { RecordRefBrand } from "./types/RecordRef.js";
 export type { RecordId, RecordRef } from "./types/RecordRef.js";
 export { RecordInvalidError } from "./types/RecordValidation.js";
 export type { RecordValidationError, RecordValidationIssue } from "./types/RecordValidation.js";
+export type { ResourceRid } from "./types/ResourceRid.js";
 export type { Unsubscribe } from "./types/Unsubscribe.js";
 export type {
   FieldDef,

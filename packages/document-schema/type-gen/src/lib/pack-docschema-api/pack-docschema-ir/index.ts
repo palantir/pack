@@ -25,6 +25,7 @@ export * from "./fieldValueInteger.js";
 export * from "./fieldValueMediaRef.js";
 export * from "./fieldValueModelRef.js";
 export * from "./fieldValueObjectRef.js";
+export * from "./fieldValueResourceRef.js";
 export * from "./fieldValueString.js";
 export * from "./fieldValueText.js";
 export * from "./fieldValueUnion.js";

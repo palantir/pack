@@ -1,5 +1,24 @@
 # @palantir/pack.state.foundry-event
 
+## 0.24.0
+
+### Minor Changes
+
+- f1a4f80: Surface the underlying reason for CometD publish/subscribe/handshake failures. Client-side transport errors (e.g. `maxSendBayeuxMessageSize exceeded`) live in `message.failure.exception`/`.reason` rather than `message.error`, so they previously surfaced as a bare "Failed to publish" with no detail. Failures now include the real cause in the error message and attach the raw failure as the error `cause`.
+- e2108bd: Surface previously-silent event and metadata failures as errors instead of leaving documents in a stale state. Revision gaps and failed remote Y.js updates now set the document load status to `ERROR` with a descriptive cause rather than silently returning while `lastRevisionId` was already advanced — so callers see the stale state instead of acting on it. CometD handshake failures caused by a missing auth token now reject the handshake promise with the underlying cause instead of hanging. Metadata load/subscription/refetch failures that occur after a subscription is closed or a document is replaced are now logged at `warn` level for observability instead of being dropped entirely.
+
+### Patch Changes
+
+- Updated dependencies [baadfd9]
+- Updated dependencies [276b1ae]
+- Updated dependencies [ef44c87]
+- Updated dependencies [eae6a45]
+- Updated dependencies [767b541]
+  - @palantir/pack.state.core@0.24.0
+  - @palantir/pack.document-schema.model-types@0.24.0
+  - @palantir/pack.auth@0.24.0
+  - @palantir/pack.core@0.24.0
+
 ## 0.22.0
 
 ### Minor Changes
