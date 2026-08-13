@@ -506,6 +506,7 @@ const packages = {
   "@palantir/pack.app": {},
   "@palantir/pack.auth": {},
   "@palantir/pack.auth.foundry": {},
+  "@palantir/pack.components.react": {},
   "@palantir/pack.core": {},
   "@palantir/pack.document-schema.model-types": {},
   "@palantir/pack.schema": {},

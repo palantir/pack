@@ -200,6 +200,11 @@ async function transpileWithTsup(format, target) {
 
     esbuildPlugins: [
       /** @type {any} */ (babel({
+        // Skip .tsx/.jsx and let esbuild handle those natively (it reads `jsx` from tsconfig).
+        // This plugin returns transformed contents without a loader, so esbuild falls back to "js",
+        // and preset-typescript leaves JSX in place -> "JSX syntax extension is not currently
+        // enabled". Everything else still goes through babel for babel-plugin-dev-expression.
+        filter: /\.(?:[cm]?ts|[cm]?js)$/,
         config: {
           presets: [["@babel/preset-typescript", { allowDeclareFields: true }]],
           plugins: ["babel-plugin-dev-expression"],
