@@ -4,29 +4,38 @@ sidebar_position: 3
 
 # Quickstart
 
-## Scaffold a workspace
-
-Create a new PACK workspace starter (a `schema` + `sdk` + `app` npm workspace) with
-the `create-app` CLI:
-
-```bash
-npx @palantir/pack.create-app my-pack-app --template workspace
-cd my-pack-app
-```
+The quickest way to get started is using the project generator in `@palantir/pack.create-app`.
 
 ### 1. Create a Developer Console Application
 
-{/* TODO: describe creating a Developer Console application and where to find the
-client id, API URL, and ontology RID used in the next step. */}
+To connect your application to Foundry, you'll need to create a Developer Console Application.
+Full documentation for this can be found [here](https://www.palantir.com/docs/foundry/developer-console/create-application/).
 
-### 2. Configure the app
+- Ensure you create a **Client-facing Application**.
+- Add a redirect URL for `http://localhost:5173/auth/callback`
+  - This is the default address used by `@palantir/pack.create-app`
+- Note the **Client ID** on the **Overview** page of your, we'll need this in the next step.
 
-Copy the example env file and fill in the values from your Developer Console
-application:
+After creating the application, you'll need to enable the **PACK API**s in the **Platform SDK**. 
+
+### 2. Scaffold a workspace
+
+Create a new PACK workspace starter (a `schema` + `sdk` + `app` npm workspace) using the wizard from the `create-app` CLI. 
+
+You'll need:
+- the URL of your Foundry stack, e.g. `https://my-customer-name.palantircloud.com/`,
+- the **Client ID** copied from the previous step,
+- the **Ontology RID** of the Ontology you'll use along side this application
+    - this can be found in the **Ontology configuration** section of Ontology Manager
 
 ```bash
-cp packages/app/.env.example packages/app/.env.local
-# then edit packages/app/.env.local (client id, API URL, ontology RID)
+npx @palantir/pack.create-app -t workspace
+```
+
+This will create a new folder with the name of your project, `cd` into this folder:
+
+```bash
+cd my-pack-app
 ```
 
 ### 3. Generate the SDK and run the app
