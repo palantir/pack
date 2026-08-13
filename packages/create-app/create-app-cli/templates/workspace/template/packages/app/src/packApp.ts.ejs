@@ -2,6 +2,10 @@ import { createClient } from "@osdk/client";
 import { createPublicOauthClient } from "@osdk/oauth";
 import { getPageEnvOrThrow, initPackApp } from "@palantir/pack.app";
 
+// The document type name is generated into the SDK from your schema's
+// pack-config.json, so it stays in sync with the schema you deploy.
+export { DOCUMENT_TYPE_NAME } from "<%= answers.scope %>.sdk";
+
 // PACK's auth module type — provided here to show where authentication plugs in.
 export type { AuthModule } from "@palantir/pack.auth";
 
@@ -14,9 +18,6 @@ const CLIENT_ID = pageEnv.clientId;
 const FOUNDRY_URL = pageEnv.baseUrl;
 const ONTOLOGY_RID = pageEnv.ontologyRid;
 const REDIRECT_URL = pageEnv.redirectUrl ?? `${window.location.origin}/auth/callback`;
-
-/** The document type name, sourced from the `pack-documentTypeName` meta tag. */
-export const DOCUMENT_TYPE_NAME = pageEnv.documentTypeName;
 
 // A public OAuth client for the browser. Configure the values in `.env.local`.
 const authClient = createPublicOauthClient(CLIENT_ID, FOUNDRY_URL, REDIRECT_URL, {

@@ -37,7 +37,6 @@ const TEST_CLIENT_ID = "test-client-id";
 const TEST_REDIRECT_URL = "http://localhost:3000/auth/callback";
 const TEST_ONTOLOGY_RID = "ri.ontology.main.ontology.test-ontology";
 const TEST_CLIENT_SECRET = "test-client-secret";
-const TEST_DOCUMENT_TYPE_NAME = "test-document-type";
 const TEST_FILE_SYSTEM_TYPE = "ARTIFACTS";
 
 describe("initPackApp - Auth Integration", () => {
@@ -54,7 +53,6 @@ describe("initPackApp - Auth Integration", () => {
       baseUrl: "https://page-env.example.com",
       clientId: "page-env-client-id",
       demoMode: null,
-      documentTypeName: TEST_DOCUMENT_TYPE_NAME,
       fileSystemType: TEST_FILE_SYSTEM_TYPE,
       ontologyRid: TEST_ONTOLOGY_RID,
       parentFolderRid: null,

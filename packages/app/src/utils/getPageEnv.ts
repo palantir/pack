@@ -20,7 +20,6 @@ export interface PageEnv {
   readonly baseUrl: string | null;
   readonly clientId: string | null;
   readonly demoMode: boolean | null;
-  readonly documentTypeName: string | null;
   readonly fileSystemType: string | null;
   readonly ontologyRid: string | null;
   readonly parentFolderRid: string | null;
@@ -33,7 +32,6 @@ export interface RequiredPageEnv {
   readonly baseUrl: string;
   readonly clientId: string;
   readonly demoMode: boolean | null;
-  readonly documentTypeName: string;
   readonly fileSystemType: string | null;
   readonly ontologyRid: string;
   readonly parentFolderRid: string | null;
@@ -44,7 +42,6 @@ export function getPageEnv(): PageEnv {
   const appId = getMetaTagContent("pack-appId");
   const appVersion = getMetaTagContent("pack-appVersion");
   const demoModeStr = getMetaTagContent("pack-demoMode");
-  const documentTypeName = getMetaTagContent("pack-documentTypeName");
   const fileSystemType = getMetaTagContent("pack-fileSystemType");
   const foundryUrl = getMetaTagContent("osdk-foundryUrl");
   const parentFolderRid = getMetaTagContent("pack-parentFolderRid");
@@ -60,7 +57,6 @@ export function getPageEnv(): PageEnv {
     baseUrl: foundryUrl,
     clientId,
     demoMode,
-    documentTypeName,
     fileSystemType,
     ontologyRid,
     parentFolderRid,
@@ -74,7 +70,6 @@ export function getPageEnvOrThrow(): RequiredPageEnv {
   const missing: string[] = [];
   if (env.baseUrl == null) missing.push("osdk-foundryUrl");
   if (env.clientId == null) missing.push("osdk-clientId");
-  if (env.documentTypeName == null) missing.push("pack-documentTypeName");
   if (env.ontologyRid == null) missing.push("osdk-ontologyRid");
 
   if (missing.length > 0) {
@@ -90,7 +85,6 @@ export function getPageEnvOrThrow(): RequiredPageEnv {
     baseUrl: env.baseUrl!,
     clientId: env.clientId!,
     demoMode: env.demoMode,
-    documentTypeName: env.documentTypeName!,
     fileSystemType: env.fileSystemType,
     ontologyRid: env.ontologyRid!,
     parentFolderRid: env.parentFolderRid,
