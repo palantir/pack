@@ -61,7 +61,6 @@ describe("getPageEnv", () => {
       expect(env.appId).toBeNull();
       expect(env.baseUrl).toBeNull();
       expect(env.clientId).toBeNull();
-      expect(env.documentTypeName).toBeNull();
       expect(env.ontologyRid).toBeNull();
       // demoMode is derived from a string compare, so it is false rather than null.
       expect(env.demoMode).toBe(false);

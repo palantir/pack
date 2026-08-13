@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+import { DOCUMENT_TYPE_NAME } from "@demo/canvas.sdk";
 import { createClient } from "@osdk/client";
 import { BrowserLogger } from "@osdk/client/internal";
 import type { PublicOauthClient } from "@osdk/oauth";
@@ -46,7 +47,7 @@ const FOUNDRY_URL = pageEnv.baseUrl;
 const ONTOLOGY_RID = pageEnv.ontologyRid;
 const REDIRECT_URL = pageEnv.redirectUrl ?? `${FOUNDRY_URL}/auth/callback`;
 
-export const DOCUMENT_TYPE_NAME = pageEnv.documentTypeName;
+export { DOCUMENT_TYPE_NAME };
 export const FILE_SYSTEM_TYPE = pageEnv.fileSystemType;
 export const PARENT_FOLDER_RID = pageEnv.parentFolderRid;
 

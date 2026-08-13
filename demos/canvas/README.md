@@ -81,7 +81,6 @@ precedence over the checked-in defaults.
 | `VITE_FOUNDRY_CLIENT_ID`       | Yes              | OAuth Client ID from your Foundry TPA, or a non-placeholder local value in demo mode. |
 | `VITE_FOUNDRY_REDIRECT_URL`    | For real backend | OAuth callback URL. Defaults to `https://localhost:5173/auth/callback`.               |
 | `VITE_FOUNDRY_ONTOLOGY_RID`    | Yes              | Ontology RID, or a non-placeholder local value in demo mode.                          |
-| `VITE_PACK_DOCUMENT_TYPE_NAME` | Yes              | Document type name registered in Foundry. Should match `pack-config.json`.            |
 | `VITE_PACK_FILE_SYSTEM_TYPE`   | No               | `ARTIFACTS` by default. Set to `COMPASS` for Compass-backed documents.                |
 | `VITE_PACK_PARENT_FOLDER_RID`  | For Compass      | Compass folder RID where new documents are created. Required for `COMPASS`.           |
 
@@ -111,9 +110,6 @@ VITE_FOUNDRY_REDIRECT_URL=https://localhost:5173/auth/callback
 
 # Your ontology RID
 VITE_FOUNDRY_ONTOLOGY_RID=ri.ontology.main.ontology.xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
-
-# Document type name (must match pack-config.json and the Foundry registration)
-VITE_PACK_DOCUMENT_TYPE_NAME=your-document-type
 
 # Filesystem configuration
 VITE_PACK_FILE_SYSTEM_TYPE=ARTIFACTS
@@ -145,11 +141,11 @@ Copy the **Client ID** to your local env file.
 
 ### 2. Configure the Document Type
 
-Set `VITE_PACK_DOCUMENT_TYPE_NAME` to the document type registered in Foundry.
-This should match `documentTypeName` in `demos/canvas/schema/pack-config.json`.
-The generated SDK also emits this value as `DOCUMENT_TYPE_NAME`, so app code can
-use the SDK constant as the code-level source of truth when runtime env
-overrides are not needed.
+The document type name is defined by `documentTypeName` in
+`demos/canvas/schema/pack-config.json` and emitted by the generated SDK as
+`DOCUMENT_TYPE_NAME`. The app imports that constant directly, so there is no
+document-type env var to set — just make sure the document type is registered in
+Foundry under the same name.
 
 To test the demo app against a real backend with your own document type,
 manually deploy the document type to Foundry first. The app creates documents

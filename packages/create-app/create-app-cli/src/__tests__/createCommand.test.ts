@@ -292,15 +292,16 @@ describe("create-app createCommand", () => {
         ) as PackConfig;
         expect(packConfig.owningApplicationId).toBe(testCase.owningApplicationId);
 
-        // The workspace app ships a pre-filled .env.local seeded with the document
-        // type name so the app runs without a manual copy step.
+        // The workspace app sources the document type name from the generated SDK.
+        // Until `sdk-gen` runs, the placeholder SDK seeds it from the answers so the
+        // app compiles and shows the right value out of the box.
         if (testCase.template === "workspace") {
-          const envLocal = fs.readFileSync(
-            path.join(projectDir, "packages/app/.env.local"),
+          const sdkIndex = fs.readFileSync(
+            path.join(projectDir, "packages/sdk/src/index.ts"),
             "utf8",
           );
-          expect(envLocal).toContain(
-            `VITE_PACK_DOCUMENT_TYPE_NAME=${testCase.answers.documentTypeName as string}`,
+          expect(sdkIndex).toContain(
+            `export const DOCUMENT_TYPE_NAME = "${testCase.answers.documentTypeName as string}"`,
           );
         }
       });
