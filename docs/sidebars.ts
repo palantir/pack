@@ -30,7 +30,19 @@ const sidebars: SidebarsConfig = {
     {
       type: "category",
       label: "Guides",
-      items: ["guides/overview"],
+      items: ["guides/overview", "guides/schemas", "guides/versioning"],
+    },
+    {
+      type: "category",
+      label: "API Reference",
+      items: [
+        {
+          type: "category",
+          label: "@palantir/pack.schema",
+          link: { type: "doc", id: "api/schema/index" },
+          items: require("./api/schema/typedoc-sidebar.cjs"),
+        },
+      ],
     },
   ],
 };

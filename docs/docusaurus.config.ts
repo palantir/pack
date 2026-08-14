@@ -44,6 +44,21 @@ const config: Config = {
     locales: ["en"],
   },
 
+  plugins: [
+    [
+      "docusaurus-plugin-typedoc",
+      {
+        id: "api-schema",
+        entryPoints: ["../packages/schema/src/index.ts"],
+        tsconfig: "../packages/schema/tsconfig.json",
+        out: "api/schema",
+        readme: "none",
+        hidePageHeader: true,
+        sidebar: { autoConfiguration: true, pretty: true },
+      },
+    ],
+  ],
+
   presets: [
     [
       "classic",
