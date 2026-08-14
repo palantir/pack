@@ -38,19 +38,9 @@ writing the typed SDK into `packages/sdk/src`. Re-run it whenever you change the
 npm run build:sdk
 ```
 
-## 4. Run the app
-
-`packages/app/.env.local` was pre-filled from the answers you gave when scaffolding.
-Double-check the values (Foundry client id, API URL, and ontology RID) — see
-`packages/app/.env.example` for the full list — then:
-
-```bash
-npm run dev
-```
+## 4. Deploy the document type
 
 <% if (answers.firstParty) { -%>
-## Build the document type asset
-
 This is a first-party pack (document type `<%= answers.documentTypeName %>`). Build the asset
 to bundle with your application:
 
@@ -65,15 +55,30 @@ To iterate against a dev stack before the asset ships, deploy the document type 
 npm run deploy
 ```
 <% } else { -%>
-## Deploy the document type
-
-This is a third-party pack. Deploy the document type to a Foundry stack — set
-`FOUNDRY_URL`, `FOUNDRY_TOKEN`, and `PARENT_FOLDER_RID` in your environment first:
+Deploy the document type defined in `packages/schema` to your Foundry stack. Deployment
+authenticates with a Foundry token rather than the browser OAuth flow: generate one under
+**User Settings → Tokens** in Foundry and export it as `FOUNDRY_TOKEN`. The stack URL and
+Compass parent folder you supplied when scaffolding are already baked into the deploy
+script, so that token is the only value you need to set:
 
 ```bash
+export FOUNDRY_TOKEN=<your-token>
 npm run deploy
 ```
 <% } -%>
+
+## 5. Run the app
+
+`packages/app/.env.local` was pre-filled from the answers you gave when scaffolding.
+Double-check the values (Foundry client id, API URL, and ontology RID) — see
+`packages/app/.env.example` for the full list — then:
+
+```bash
+npm run dev
+```
+
+On first load the app kicks off the OAuth flow, redirecting you to Foundry to sign in and
+then back to `/auth/callback`.
 
 ## Typical loop
 

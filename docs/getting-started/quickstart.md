@@ -27,6 +27,9 @@ You'll need:
 - the **Client ID** copied from the previous step,
 - the **Ontology RID** of the Ontology you'll use along side this application
     - this can be found in the **Ontology configuration** section of Ontology Manager
+- the **Compass folder RID** where new documents will be created
+    - this is the RID of the Compass folder that will hold documents created by your
+      app, and can be found on the folder's **Overview** panel
 
 ```bash
 npx @palantir/pack.create-app -t workspace
@@ -38,15 +41,43 @@ This will create a new folder with the name of your project, `cd` into this fold
 cd my-pack-app
 ```
 
-### 3. Generate the SDK and run the app
+### 3. Generate the SDK
 
 ```bash
 npm run sdk-gen    # generate the SDK from packages/schema
 npm run build:sdk  # compile the generated SDK
-npm run dev        # start the example app
 ```
 
 Re-run `sdk-gen` then `build:sdk` whenever you change `packages/schema/src/schema.mjs`.
+
+### 4. Deploy the document type
+
+Before the app can read or write documents, deploy the document type defined in
+`packages/schema` to your Foundry stack. Deployment authenticates with a Foundry
+token rather than the browser OAuth flow, so you must provide one:
+
+- Generate a token under **User Settings → Tokens** in Foundry.
+- Export it as `FOUNDRY_TOKEN` in your shell.
+
+The stack URL and the Compass parent folder you supplied when scaffolding are already
+baked into the deploy script, so `FOUNDRY_TOKEN` is the only value you need to set:
+
+```bash
+export FOUNDRY_TOKEN=<your-token>
+npm run deploy
+```
+
+Re-run `npm run deploy` whenever you change the schema and want to update the deployed
+document type.
+
+### 5. Run the app
+
+```bash
+npm run dev        # start the example app
+```
+
+On first load the app kicks off the OAuth flow, redirecting you to Foundry to sign in
+and then back to `/auth/callback`.
 
 ## Package Setup
 

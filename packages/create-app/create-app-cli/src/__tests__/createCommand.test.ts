@@ -62,6 +62,7 @@ const WORKSPACE_SCHEMA_FILES = [
   "tsconfig.json",
   "src/schema.mjs",
   "scripts/build-sdk.sh",
+  "scripts/deploy.sh",
 ];
 
 const WORKSPACE_FILES = [
@@ -76,6 +77,8 @@ const WORKSPACE_FILES = [
   "packages/app/.env.local",
   "packages/app/src/main.tsx",
   "packages/app/src/App.tsx",
+  "packages/app/src/AuthCallback.tsx",
+  "packages/app/src/hooks/usePackApp.ts",
   "packages/app/src/packApp.ts",
 ];
 
@@ -283,7 +286,19 @@ describe("create-app createCommand", () => {
           expect(schemaScripts.deploy).toContain("--first-party");
         } else {
           expect(schemaScripts).not.toHaveProperty("build:asset");
-          expect(schemaScripts.deploy).toContain("--parent-folder");
+          if (testCase.template === "workspace") {
+            // The workspace deploys via a script that bakes in the stack URL and the
+            // Compass parent folder captured at scaffold time; only FOUNDRY_TOKEN is
+            // read from the environment.
+            expect(schemaScripts.deploy).toContain("scripts/deploy.sh");
+            const deployScript = fs.readFileSync(
+              path.join(projectDir, testCase.schemaDir, "scripts/deploy.sh"),
+              "utf8",
+            );
+            expect(deployScript).toContain("--parent-folder");
+          } else {
+            expect(schemaScripts.deploy).toContain("--parent-folder");
+          }
         }
 
         // owningApplicationId is written into pack-config.json only for first-party packs.

@@ -1,21 +1,48 @@
-import { usePackApp } from "@palantir/pack.state.react";
-import { DOCUMENT_TYPE_NAME } from "./packApp.js";
-
-// Once you have run `npm run sdk-gen`, import your generated models from the SDK,
-// e.g.:
-//   import { DocumentModel } from "<%= answers.scope %>.sdk";
+import { useSearchDocuments } from "@palantir/pack.state.react";
+import { AuthCallback } from "./AuthCallback.js";
+import { usePackApp } from "./hooks/usePackApp.js";
+import { AppSchema, DOCUMENT_TYPE_NAME } from "./packApp.js";
 
 export function App(): React.JSX.Element {
+  // Minimal routing: render the OAuth callback handler at /auth/callback, and the
+  // app everywhere else. See AuthCallback.tsx for what happens on the redirect back.
+  if (window.location.href.includes("/auth/callback")) {
+    return <AuthCallback />;
+  }
+  return <PackApp />;
+}
+
+function PackApp(): React.JSX.Element {
   const app = usePackApp();
-  const documentTypeName = DOCUMENT_TYPE_NAME;
+
+  // Issuing a query kicks off the OSDK OAuth flow: on first load the browser is
+  // redirected to Foundry to sign in and then back to /auth/callback. This example
+  // simply fetches the first page of documents to trigger that flow.
+  const { results, isLoading, error } = useSearchDocuments(
+    app,
+    DOCUMENT_TYPE_NAME,
+    AppSchema,
+    undefined,
+    10,
+  );
 
   return (
     <main style={{ fontFamily: "system-ui, sans-serif", padding: "2rem", lineHeight: 1.5 }}>
       <h1><%= projectName %></h1>
       <p>Your PACK application is wired up and ready.</p>
       <ul>
-        <li>Document type: <code>{documentTypeName}</code></li>
+        <li>Document type: <code>{DOCUMENT_TYPE_NAME}</code></li>
         <li>PACK app: <code>{app != null ? "ready" : "unavailable"}</code></li>
+        <li>
+          Documents:{" "}
+          <code>
+            {error != null
+              ? `error: ${error.message}`
+              : isLoading
+              ? "loading…"
+              : `${results?.length ?? 0} found`}
+          </code>
+        </li>
       </ul>
       <p>
         Next, edit <code>packages/schema/src/schema.mjs</code>, run{" "}
