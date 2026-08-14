@@ -81,11 +81,11 @@ function nextSteps(template: TemplateName, firstParty: boolean) {
       steps.push("npm install");
     }
     if (template === "workspace") {
-      steps.push("npm run sdk-gen    # generate the SDK from packages/schema");
-      steps.push("npm run build:sdk  # compile the generated SDK");
+      steps.push("npm run sdk-gen         # generate the SDK from packages/schema");
+      steps.push("npm run build:sdk       # compile the generated SDK");
       steps.push("export FOUNDRY_TOKEN=…  # a token from Foundry User Settings -> Tokens");
-      steps.push("npm run deploy     # deploy the document type to Foundry");
-      steps.push("npm run dev        # start the example app");
+      steps.push("npm run deploy          # deploy the document type to Foundry");
+      steps.push("npm run dev             # start the example app");
     } else if (firstParty) {
       steps.push("npm run build:asset   # build the document type asset for your app");
     } else {
