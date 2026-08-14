@@ -1,0 +1,40 @@
+#!/bin/bash
+
+set -euo pipefail
+
+# Deploys the document type to a Foundry stack from this schema's IR.
+#
+# The Foundry stack URL and the Compass parent folder were captured when this
+# workspace was scaffolded. Only $FOUNDRY_TOKEN is read from the environment:
+# generate one under Foundry -> User Settings -> Tokens and export it before
+# running `npm run deploy`, e.g.
+#
+#   export FOUNDRY_TOKEN=<your-token>
+#   npm run deploy
+
+FOUNDRY_URL="<%= answers.foundryApiUrl %>"
+PARENT_FOLDER_RID="<%= answers.parentFolderRid %>"
+FILE_SYSTEM_TYPE="${FILE_SYSTEM_TYPE:-ARTIFACTS}"
+
+if [ -z "${FOUNDRY_TOKEN:-}" ]; then
+  echo "❌ FOUNDRY_TOKEN is not set. Create a token under Foundry -> User Settings -> Tokens" >&2
+  echo "   and export it first, e.g. 'export FOUNDRY_TOKEN=<your-token>'." >&2
+  exit 1
+fi
+
+SCHEMA_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+
+cd "$SCHEMA_DIR"
+
+echo "🛠  Building schema IR..."
+npm run build:ir
+
+echo "🚀 Deploying document type to ${FOUNDRY_URL}..."
+npx type-gen ir deploy \
+  --ir build/ir.json \
+  --base-url "$FOUNDRY_URL" \
+  --auth "$FOUNDRY_TOKEN" \
+  --parent-folder "$PARENT_FOLDER_RID" \
+  --file-system-type "$FILE_SYSTEM_TYPE"
+
+echo "✅ Document type deployed to ${FOUNDRY_URL}"

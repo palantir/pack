@@ -61,6 +61,8 @@ const cspell = {
     "*.json",
     "*.jsonc",
     "*.sh",
+    // Shell-script templates (e.g. scripts/deploy.sh.ejs) are shell, not prose.
+    "*.sh.ejs",
     "*.snap",
     "typedoc.jsonc",
 

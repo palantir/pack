@@ -11,7 +11,7 @@
     "build:asset": "npm run build:ir && type-gen ir asset -i build/ir.json -o build/asset.json",
     "deploy": "npm run build:ir && type-gen ir deploy --ir build/ir.json --base-url $FOUNDRY_URL --auth $FOUNDRY_TOKEN --first-party --ontology-rid $ONTOLOGY_RID --file-system-type ${FILE_SYSTEM_TYPE:-ARTIFACTS}",
 <% } else { -%>
-    "deploy": "npm run build:ir && type-gen ir deploy --ir build/ir.json --base-url $FOUNDRY_URL --auth $FOUNDRY_TOKEN --parent-folder $PARENT_FOLDER_RID --file-system-type ${FILE_SYSTEM_TYPE:-ARTIFACTS}",
+    "deploy": "bash scripts/deploy.sh",
 <% } -%>
     "clean": "rimraf build dist *.tgz tsconfig.tsbuildinfo",
     "sdk-gen": "bash scripts/build-sdk.sh",

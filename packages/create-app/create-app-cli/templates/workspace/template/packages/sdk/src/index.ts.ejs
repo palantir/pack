@@ -1,7 +1,21 @@
 // This SDK is generated from the schema in ../schema and currently contains only
-// this placeholder.
+// these placeholders.
 //
 // Run `npm run sdk-gen` from the workspace root (or
 // `npm --workspace packages/schema run sdk-gen`) to generate the real SDK here.
-// Regeneration overwrites this file, including the placeholder below.
+// Regeneration overwrites this file, including the placeholders below.
+import { Metadata } from "@palantir/pack.document-schema.model-types";
+import type { DocumentSchema } from "@palantir/pack.document-schema.model-types";
+
 export const DOCUMENT_TYPE_NAME = "<%= answers.documentTypeName %>";
+
+/**
+ * Placeholder document schema. Regeneration replaces this with the real, typed
+ * `DocumentModel` for the records you define in ../schema. For a single-version
+ * schema this is a plain schema object; once the schema gains derived/additive
+ * fields across versions it becomes a `DocumentModel({ ...upgradeFns })` factory.
+ */
+export const DocumentModel = {
+  [Metadata]: { version: 1 },
+} as DocumentSchema;
+export type DocumentModel = typeof DocumentModel;

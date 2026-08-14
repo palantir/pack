@@ -1,6 +1,7 @@
 import { createClient } from "@osdk/client";
 import { createPublicOauthClient } from "@osdk/oauth";
 import { getPageEnvOrThrow, initPackApp } from "@palantir/pack.app";
+import { DocumentModel } from "<%= answers.scope %>.sdk";
 
 // The document type name is generated into the SDK from your schema's
 // pack-config.json, so it stays in sync with the schema you deploy.
@@ -46,3 +47,11 @@ export const app = initPackApp(osdkClient, {
 })
   .withState()
   .build();
+
+// The shared, typed document schema for this app, from the generated SDK. Reuse
+// this wherever a `DocumentSchema` is required, e.g. `useSearchDocuments`.
+//
+// For a single-version schema `DocumentModel` is a plain schema object. Once your
+// schema gains derived/additive fields across versions, the generated SDK turns
+// `DocumentModel` into a factory and you'll call `DocumentModel({ ...upgradeFns })`.
+export const AppSchema = DocumentModel;
