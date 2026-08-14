@@ -47,6 +47,12 @@ function isSameChannelError(a: ChannelError, b: ChannelError): boolean {
 export interface UseChannelErrorToastsArgs {
   /** The PackApp instance. */
   readonly app: WithStateModule<PackApp>;
+  /**
+   * Labels the error instance id shown in each toast's footer.
+   *
+   * @default "Error instance ID"
+   */
+  readonly correlationIdLabel?: string;
   /** The document to observe. */
   readonly docRef: DocumentRef;
   /**
@@ -76,7 +82,7 @@ export interface UseChannelErrorToastsArgs {
  * ```
  */
 export function useChannelErrorToasts(
-  { app, docRef, formatTitle, messages, toaster }: UseChannelErrorToastsArgs,
+  { app, correlationIdLabel, docRef, formatTitle, messages, toaster }: UseChannelErrorToastsArgs,
 ): void {
   const status = useDocumentStatus(app, docRef);
   const toastStateByChannel = useRef<Map<string, ChannelToastState>>(new Map());
@@ -85,6 +91,8 @@ export function useChannelErrorToasts(
   messagesRef.current = messages;
   const formatTitleRef = useRef(formatTitle);
   formatTitleRef.current = formatTitle;
+  const correlationIdLabelRef = useRef(correlationIdLabel);
+  correlationIdLabelRef.current = correlationIdLabel;
 
   useEffect(() => {
     if (toaster == null || status == null) {
@@ -120,6 +128,7 @@ export function useChannelErrorToasts(
           message: (
             <ChannelErrorToast
               channel={channel}
+              correlationIdLabel={correlationIdLabelRef.current}
               error={error}
               messages={messagesRef.current}
               title={formatTitleRef.current?.(channel)}

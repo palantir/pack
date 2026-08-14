@@ -38,6 +38,12 @@ function toSentenceCase(channel: string): string {
 export interface ChannelErrorToastProps {
   /** Which channel failed (e.g. "data", "presence"). */
   readonly channel: string;
+  /**
+   * Labels the error instance id shown in the footer.
+   *
+   * @default "Error instance ID"
+   */
+  readonly correlationIdLabel?: string;
   readonly error: ChannelError;
   /**
    * Per-code copy overrides; unlisted codes fall back to the defaults. Takes precedence over the
@@ -61,12 +67,15 @@ export interface ChannelErrorToastProps {
  * All copy is overridable via `messages` and `title`; this package ships no i18n.
  */
 export function ChannelErrorToast(
-  { channel, error, messages, title }: ChannelErrorToastProps,
+  { channel, correlationIdLabel, error, messages, title }: ChannelErrorToastProps,
 ): JSX.Element {
   return (
     <BaseErrorToast
-      code={error.code}
+      // `unknown` categorizes nothing, so it is noise in front of a user. The correlation id still
+      // makes the failure findable, and the real cause is logged.
+      code={error.code === ChannelErrorCode.UNKNOWN ? undefined : error.code}
       correlationId={error.errorInstanceId === "" ? undefined : error.errorInstanceId}
+      correlationIdLabel={correlationIdLabel}
       detail={messages?.[error.code] ?? error.message ?? CHANNEL_ERROR_MESSAGES[error.code]}
       title={title ?? `${toSentenceCase(channel)} channel error`}
     />

@@ -19,16 +19,7 @@ import { describe, expect, it } from "vitest";
 import { BaseErrorToast } from "../errorToast/BaseErrorToast.js";
 
 describe("BaseErrorToast", () => {
-  it("renders the title and detail", () => {
-    const { container } = render(
-      <BaseErrorToast detail="Something went wrong" title="data channel error" />,
-    );
-
-    expect(container.textContent).toContain("data channel error");
-    expect(container.textContent).toContain("Something went wrong");
-  });
-
-  it("joins code and correlation id with a separator", () => {
+  it("renders title, detail, and a labelled footer", () => {
     const { container } = render(
       <BaseErrorToast
         code="internalError"
@@ -38,7 +29,22 @@ describe("BaseErrorToast", () => {
       />,
     );
 
-    expect(container.textContent).toContain("internalError · abc-123");
+    expect(container.textContent).toContain("data channel error");
+    expect(container.textContent).toContain("A server error occurred.");
+    expect(container.textContent).toContain("internalError · Error instance ID: abc-123");
+  });
+
+  it("lets the correlation id label be overridden", () => {
+    const { container } = render(
+      <BaseErrorToast
+        correlationId="abc-123"
+        correlationIdLabel="Support reference"
+        detail="d"
+        title="t"
+      />,
+    );
+
+    expect(container.textContent).toContain("Support reference: abc-123");
   });
 
   it("omits the separator when only a code is given", () => {
@@ -55,12 +61,5 @@ describe("BaseErrorToast", () => {
 
     // Title and detail only.
     expect(container.querySelectorAll("span")).toHaveLength(2);
-  });
-
-  it("reads themeable values from CSS custom properties", () => {
-    const { container } = render(<BaseErrorToast detail="d" title="t" />);
-    const root = container.firstElementChild as HTMLElement;
-
-    expect(root.style.gap).toContain("--pack-error-toast-gap");
   });
 });

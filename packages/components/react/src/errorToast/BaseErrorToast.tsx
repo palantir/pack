@@ -37,8 +37,14 @@ const STYLES = {
 export interface BaseErrorToastProps {
   /** Short machine-readable code shown in the footer, e.g. `"internalError"`. */
   readonly code?: string;
-  /** Id for correlating this failure with backend logs. Omitted when empty. */
+  /** Conjure `errorInstanceId` — identifies this one error occurrence in backend logs. */
   readonly correlationId?: string;
+  /**
+   * Labels the correlation id so it is not a bare unexplained string to the user.
+   *
+   * @default "Error instance ID"
+   */
+  readonly correlationIdLabel?: string;
   /** Human-readable explanation of what went wrong. */
   readonly detail: string;
   /** Headline, e.g. `"data channel error"`. */
@@ -50,7 +56,8 @@ export interface BaseErrorToastProps {
  * See {@link ChannelErrorToast} for the channel-aware version.
  */
 export function BaseErrorToast(
-  { code, correlationId, detail, title }: BaseErrorToastProps,
+  { code, correlationId, correlationIdLabel = "Error instance ID", detail, title }:
+    BaseErrorToastProps,
 ): JSX.Element {
   const hasFooter = code != null || correlationId != null;
 
@@ -62,7 +69,7 @@ export function BaseErrorToast(
         <span style={STYLES.code}>
           {code}
           {code != null && correlationId != null && " · "}
-          {correlationId}
+          {correlationId != null && `${correlationIdLabel}: ${correlationId}`}
         </span>
       )}
     </div>

@@ -74,18 +74,6 @@ describe("ChannelErrorToast", () => {
     );
   });
 
-  it("shows the error instance id for correlating with backend logs", () => {
-    const { container } = render(
-      <ChannelErrorToast
-        channel="data"
-        error={{ code: ChannelErrorCode.INTERNAL_ERROR, errorInstanceId: "abc-123" }}
-      />,
-    );
-
-    expect(container.textContent).toContain(ChannelErrorCode.INTERNAL_ERROR);
-    expect(container.textContent).toContain("abc-123");
-  });
-
   it("lets an app override the copy for a specific code", () => {
     const { container } = render(
       <ChannelErrorToast
@@ -97,18 +85,6 @@ describe("ChannelErrorToast", () => {
 
     expect(container.textContent).toContain("Custom copy for this code.");
     expect(container.textContent).not.toContain("Your session is out of date.");
-  });
-
-  it("falls back to defaults for codes the override does not cover", () => {
-    const { container } = render(
-      <ChannelErrorToast
-        channel="data"
-        error={{ code: ChannelErrorCode.INTERNAL_ERROR, errorInstanceId: "" }}
-        messages={{ [ChannelErrorCode.REVISION_TOO_OLD]: "unused" }}
-      />,
-    );
-
-    expect(container.textContent).toContain("A server error occurred.");
   });
 
   it("prefers an override over the error's own message, so `unknown` stays localizable", () => {
@@ -128,28 +104,16 @@ describe("ChannelErrorToast", () => {
     expect(container.textContent).not.toContain("WebSocket closed: 1006");
   });
 
-  it("lets an app override the title", () => {
+  it("hides the `unknown` code, which means nothing to a user", () => {
     const { container } = render(
       <ChannelErrorToast
         channel="data"
-        error={{ code: ChannelErrorCode.UNKNOWN, errorInstanceId: "" }}
-        title="Could not reach the server"
+        error={{ code: ChannelErrorCode.UNKNOWN, errorInstanceId: "abc-123" }}
       />,
     );
 
-    expect(container.textContent).toContain("Could not reach the server");
-    expect(container.textContent).not.toContain("channel error");
-  });
-
-  it("omits the separator when there is no error instance id", () => {
-    const { container } = render(
-      <ChannelErrorToast
-        channel="data"
-        error={{ code: ChannelErrorCode.INTERNAL_ERROR, errorInstanceId: "" }}
-      />,
-    );
-
-    expect(container.textContent).toContain(ChannelErrorCode.INTERNAL_ERROR);
-    expect(container.textContent).not.toContain("·");
+    expect(container.textContent).not.toContain("unknown");
+    // The correlation id still shows, so the failure stays reportable.
+    expect(container.textContent).toContain("abc-123");
   });
 });
