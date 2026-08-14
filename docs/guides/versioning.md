@@ -37,9 +37,49 @@ The types are exhaustive: if you miss an entry (or add one that isn't needed), t
 
 ## Writing documents
 
-During a rolling deploy, old and new copies of your app run side by side. All clients operating on a document must be writing at the same schema version. We call this the **operational version**. This prevents cases where newer clients are writing fields that older clients don't understand. The operational version is computed by the backend, and passed to the client. Typically, this will be the highest schema version that *every* deployed copy can handle, computed from all of the currently in-use compatibility ranges.
+During a rolling deploy, old and new copies of your app run side by side. All clients operating on a document must be writing at the same schema version. We call this the **operational version**. This prevents cases where newer clients are writing fields that older clients don't understand. The operational version is monotonically increasing, computed by the backend, and passed to the client. Typically, this will be the highest schema version that _every_ deployed copy can handle, computed from the set of currently in-use compatibility ranges.
 
-The operational version only ever increases. Read it with `getDocumentTypeOperationalVersion(documentTypeName)`.
+### Version guards
+
+Your SDK may know a newer schema version than the one currently in operation. For example, during a rolling deploy the operational version only advances once _every_ client can handle it. You must write and expose features against the **operational version**, never writing a newer version's fields that other clients don't yet understand.
+
+Wrap each write in a **version guard** so you only ever write fields the operational version supports. The generated `matchVersion` helper runs the branch for the document's version and hands back a `doc` with types narrowed. Each branch can only touch that version's fields, and the guard is exhaustive, so a new schema version fails to compile until you handle it everywhere.
+
+```ts
+import { matchVersion } from "@demo/canvas.sdk";
+
+matchVersion(doc, {
+  // v1 only knows `color`.
+  1: doc =>
+    doc.withTransaction(() => {
+      void doc.updateRecord(shapeRef, { color });
+    }),
+  // v2 split `color` into separate fill and stroke colors.
+  2: doc =>
+    doc.withTransaction(() => {
+      void doc.updateRecord(shapeRef, { fillColor: color, strokeColor: color });
+    }),
+});
+```
+
+Likewise, features should only be displayed in the application for a newer field once the operational version has reached the version that introduced it:
+
+```tsx
+{
+  doc.version >= 2
+    ? (
+      <>
+        <ColorPicker label="Fill" value={fillColor} onChange={setFillColor} />
+        <ColorPicker
+          label="Stroke"
+          value={strokeColor}
+          onChange={setStrokeColor}
+        />
+      </>
+    )
+    : <ColorPicker label="Color" value={color} onChange={setColor} />;
+}
+```
 
 ### minSupportedVersion
 
