@@ -17,6 +17,7 @@
 import type { Toaster } from "@blueprintjs/core";
 import { Callout, OverlayToaster, Position } from "@blueprintjs/core";
 import type { SupportedVersions } from "@demo/canvas.sdk";
+import { useChannelErrorToasts } from "@palantir/pack.components.react";
 import type { DocumentId } from "@palantir/pack.document-schema.model-types";
 import { isValidDocRef } from "@palantir/pack.state.core";
 import type { KeyboardEvent, MouseEvent } from "react";
@@ -27,7 +28,6 @@ import { useActivityToast } from "../../hooks/useActivityToast.js";
 import { useBroadcastPresence } from "../../hooks/useBroadcastPresence.js";
 import { useCanvasInteraction } from "../../hooks/useCanvasInteraction.js";
 import { useRemotePresence } from "../../hooks/useRemotePresence.js";
-import { useStatusErrorToast } from "../../hooks/useStatusErrorToast.js";
 import { useCanvasDocRef } from "../../pack.js";
 import { CanvasContent } from "./CanvasContent.js";
 import styles from "./CanvasPage.module.css";
@@ -101,7 +101,7 @@ export const CanvasPage = () => {
   const { remoteUsersByUserId, userIdsBySelectedNodeId } = useRemotePresence(doc);
   const interaction = useCanvasInteraction(doc, broadcastSelection);
   useActivityToast(doc, toaster);
-  useStatusErrorToast(app, doc, statusToaster);
+  useChannelErrorToasts({ app, docRef: doc, toaster: statusToaster });
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {

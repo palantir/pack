@@ -37,6 +37,7 @@
     "@osdk/oauth": "catalog:",
     "@palantir/pack.app": "workspace:*",
     "@palantir/pack.auth": "workspace:*",
+    "@palantir/pack.components.react": "workspace:*",
     "@palantir/pack.core": "workspace:*",
     "@palantir/pack.document-schema.model-types": "workspace:*",
     "@palantir/pack.monorepo.tsconfig": "workspace:~",

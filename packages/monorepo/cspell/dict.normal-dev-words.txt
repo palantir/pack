@@ -4,3 +4,4 @@ webapi
 nodir
 indexeddb
 hideable
+unmemoized
