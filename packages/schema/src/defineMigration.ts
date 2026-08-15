@@ -50,7 +50,7 @@ export type SchemaBuilder<T extends ModelDefs> = {
 export interface UpgradeFieldOptions<TOld extends Record<string, unknown>> {
   /**
    * The existing fields this new field is derived from. The runtime read lens
-   * uses this to know when to back-fill the field for documents written by an
+   * uses this to know when to back-fill the field for records written by an
    * older version; the app supplies the actual upgrade function at boot.
    */
   readonly derivedFrom: ReadonlyArray<keyof TOld & string>;
@@ -64,7 +64,7 @@ export interface RecordBuilder<T extends Record<string, Type>> {
   // TODO: builders should support arg types and resolveModels to refs
   /**
    * Add a field. Pass `{ derivedFrom }` so the SDK can back-fill it when
-   * reading documents written before this field existed.
+   * reading records written before this field existed.
    */
   addField<const K extends string, V extends Type>(
     name: K,
