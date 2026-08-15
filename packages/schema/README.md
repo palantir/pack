@@ -1,87 +1,24 @@
 # @palantir/pack.schema
 
-Programmatic API for defining schemas using TypeScript builders, providing type-safe schema definition with records, unions, and migrations.
+TypeScript builders for defining **versioned document schemas** for PACK. You author a schema as a chain of versions; the SDK generator turns it into typed, per-version read and write APIs for your application.
 
-## Overview
+## Records and unions
 
-This package provides builder functions and types for defining document schemas programmatically in TypeScript. It offers an alternative to YAML-based schema definitions, allowing for type-safe schema construction with full IDE support.
+- {@link defineRecord} — a named set of typed fields.
+- {@link defineUnion} — a discriminated choice between record variants.
 
-## Key Exports
+Field types come from the primitives on the namespace — {@link String}, {@link Double}, {@link Boolean}, {@link Optional}, {@link Array} — or a reference to another record or union. Reference a model by passing it directly, or as `() => Model` for forward and circular references.
 
-### Schema Definition Functions
+## Versions
 
-- `defineRecord(name, config)` - Define record types with fields and documentation
-- `defineUnion(name, variants)` - Define discriminated unions of record types
-- `defineMigration(previousSchema, migrationFn)` - Define schema migrations
+A schema is a chain of versions:
 
-### Type System
+- {@link defineSchema} — version 1, the initial set of models.
+- {@link defineSchemaUpdate} — a named change that evolves records through a builder.
+- {@link nextSchema} — compose one or more updates into the next version.
 
-- `Type` - Base type for all PACK field types
-- `String`, `Double` - Primitive field types
-- `Array<T>`, `Optional<T>` - Composite field types
-- `Ref` - References to other defined records/unions
+Export the latest version as the module's default export; the generator walks the chain back to the minimum supported version.
 
-### Utilities
+## Example
 
-- Field validation and resolution utilities
-- Schema conversion and processing functions
-
-## Usage
-
-```typescript
-import * as P from "@palantir/pack.schema";
-
-// Define a record type
-const Position = P.defineRecord("Position", {
-  docs: "A position in 2D space",
-  fields: {
-    x: P.Double,
-    y: P.Double,
-  },
-});
-
-// Define a record with optional fields and references
-const Node = P.defineRecord("Node", {
-  docs: "A node in the graph",
-  extends: [Position],
-  fields: {
-    label: P.Optional(P.String),
-    connections: P.Array(Ref(() => Node)), // Forward reference
-  },
-});
-
-// Define a union type
-const Shape = P.defineUnion("Shape", {
-  circle: Circle,
-  rectangle: Rectangle,
-  node: Node,
-});
-
-// Define a migration
-const v2Schema = P.defineMigration(v1Schema, schema => {
-  // Migration logic
-  return schema;
-});
-```
-
-## Field Types
-
-### Primitives
-
-- `String` - String values
-- `Double` - Numeric values
-- `Unknown` - Any value type
-
-### Composites
-
-- `Array<T>` - Arrays of type T
-- `Optional<T>` - Optional values of type T
-- `Ref<T>` - References to other defined types
-
-## Features
-
-- **Type Safety** - Full TypeScript type checking during schema definition
-- **Forward References** - Support for circular/forward references using functions
-- **Schema Evolution** - Migration system for schema versioning
-- **IDE Support** - IntelliSense and auto-completion for schema building
-- **Validation** - Runtime validation of schema definitions
+{@include ../../docs/guides/_schema-example.md}
