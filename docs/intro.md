@@ -9,4 +9,4 @@ PACK (Platform Application Capabilities Kit) is a framework for building rich, c
 
 PACK is the evolution of battle-tested real-time frameworks used internally at Palantir to build collaborative applications. It's designed for multiplayer apps where everyone needs the same view of data in real time.
 
-Learn more about the [Concepts](/getting-started/concepts) or head straight to the [Quickstart](/getting-started/quickstart).
+Learn more about the [concepts](/getting-started/concepts) or head straight to the [quickstart](/getting-started/quickstart).
