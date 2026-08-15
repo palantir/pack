@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-import type { Toaster } from "@blueprintjs/core";
 import type { PackApp } from "@palantir/pack.core";
 import type {
   ChannelError,
@@ -24,13 +23,15 @@ import type {
 import type { DocumentStatus, WithStateModule } from "@palantir/pack.state.core";
 import { DocumentLoadStatus } from "@palantir/pack.state.core";
 import { useDocumentStatus } from "@palantir/pack.state.react";
+import type { ReactNode } from "react";
 import { useEffect, useRef } from "react";
 import { ChannelErrorToast } from "./ChannelErrorToast.js";
 
-/** Keyed off DocumentStatus so a new channel cannot be silently missed here. */
+/** Document channels surfaced by this hook. */
 const CHANNELS = ["data", "metadata", "presence", "activity"] as const satisfies ReadonlyArray<
   keyof DocumentStatus
 >;
+type ChannelName = (typeof CHANNELS)[number];
 
 /** `key` is undefined once the toast leaves the screen; `error` is kept so we can spot a new one. */
 interface ChannelToastState {
@@ -38,10 +39,41 @@ interface ChannelToastState {
   key: string | undefined;
 }
 
+function dismissTrackedToasts(
+  toaster: ChannelErrorToaster | null,
+  toastStateByChannel: Map<ChannelName, ChannelToastState>,
+): void {
+  const states = [...toastStateByChannel.values()];
+  toastStateByChannel.clear();
+
+  if (toaster != null) {
+    for (const state of states) {
+      if (state.key != null) {
+        toaster.dismiss(state.key);
+      }
+    }
+  }
+}
+
 function isSameChannelError(a: ChannelError, b: ChannelError): boolean {
   return a.code === b.code
     && a.errorInstanceId === b.errorInstanceId
     && a.message === b.message;
+}
+
+/** Minimal toaster API used by {@link useChannelErrorToasts}. */
+export interface ChannelErrorToaster {
+  readonly dismiss: (key: string) => void;
+  readonly show: (
+    props: {
+      readonly icon: "error";
+      readonly intent: "danger";
+      readonly message: ReactNode;
+      readonly onDismiss: (didTimeoutExpire: boolean) => void;
+      readonly timeout: 0;
+    },
+    key?: string,
+  ) => string;
 }
 
 export interface UseChannelErrorToastsArgs {
@@ -67,8 +99,11 @@ export interface UseChannelErrorToastsArgs {
    * @default CHANNEL_ERROR_MESSAGES
    */
   readonly messages?: Partial<Record<ChannelErrorCode, string>>;
-  /** Target toaster, or null while it is still being created. Top-center reads best. */
-  readonly toaster: Toaster | null;
+  /**
+   * Target toaster, or null while it is still being created. It must not enforce `maxToasts`,
+   * because evictions are indistinguishable from user dismissals. Top-center reads best.
+   */
+  readonly toaster: ChannelErrorToaster | null;
 }
 
 /**
@@ -85,7 +120,7 @@ export function useChannelErrorToasts(
   { app, correlationIdLabel, docRef, formatTitle, messages, toaster }: UseChannelErrorToastsArgs,
 ): void {
   const status = useDocumentStatus(app, docRef);
-  const toastStateByChannel = useRef<Map<string, ChannelToastState>>(new Map());
+  const toastStateByChannel = useRef<Map<ChannelName, ChannelToastState>>(new Map());
   // Refs so unmemoized overrides cannot churn the effect.
   const messagesRef = useRef(messages);
   messagesRef.current = messages;
@@ -93,6 +128,12 @@ export function useChannelErrorToasts(
   formatTitleRef.current = formatTitle;
   const correlationIdLabelRef = useRef(correlationIdLabel);
   correlationIdLabelRef.current = correlationIdLabel;
+
+  useEffect(() => {
+    return () => {
+      dismissTrackedToasts(toaster, toastStateByChannel.current);
+    };
+  }, [app, docRef, toaster]);
 
   useEffect(() => {
     if (toaster == null || status == null) {
@@ -121,7 +162,8 @@ export function useChannelErrorToasts(
         continue;
       }
 
-      const key = toaster.show(
+      const next: ChannelToastState = { error, key: undefined };
+      next.key = toaster.show(
         {
           icon: "error",
           intent: "danger",
@@ -135,16 +177,15 @@ export function useChannelErrorToasts(
             />
           ),
           onDismiss: () => {
-            const current = toastStateByChannel.current.get(channel);
-            if (current != null) {
-              current.key = undefined;
+            if (toastStateByChannel.current.get(channel) === next) {
+              next.key = undefined;
             }
           },
           timeout: 0,
         },
         previous?.key,
       );
-      toastStateByChannel.current.set(channel, { error, key });
+      toastStateByChannel.current.set(channel, next);
     }
-  }, [toaster, status]);
+  }, [app, docRef, toaster, status]);
 }
