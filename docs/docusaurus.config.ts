@@ -52,7 +52,7 @@ const config: Config = {
         entryPoints: ["../packages/schema/src/index.ts"],
         tsconfig: "../packages/schema/tsconfig.json",
         out: "api/schema",
-        readme: "none",
+        readme: "../packages/schema/README.md",
         hidePageHeader: true,
         sidebar: { autoConfiguration: true, pretty: true },
       },
@@ -72,6 +72,9 @@ const config: Config = {
             "**/.docusaurus/**",
             "**/src/**",
             "**/static/**",
+            // Underscore-prefixed files are partials (imported into other pages),
+            // not standalone docs. Mirrors Docusaurus's default exclusion.
+            "**/_*.{md,mdx}",
           ],
           routeBasePath: "/",
           sidebarPath: "./sidebars.ts",
@@ -121,7 +124,7 @@ const config: Config = {
           items: [
             {
               label: "Getting Started",
-              to: "/getting-started/installation",
+              to: "/getting-started",
             },
           ],
         },
