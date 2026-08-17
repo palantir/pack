@@ -40,6 +40,7 @@
     "typecheck": "tsc --noEmit --emitDeclarationOnly false"
   },
   "dependencies": {
+    "@base-ui/react": "^1.7.0",
     "@palantir/pack.core": "workspace:*",
     "@palantir/pack.document-schema.model-types": "workspace:*",
     "@palantir/pack.state.core": "workspace:*",
@@ -47,7 +48,8 @@
   },
   "peerDependencies": {
     "@types/react": "^17 || ^18 || ^19",
-    "react": "^17 || ^18 || ^19"
+    "react": "^17 || ^18 || ^19",
+    "react-dom": "^17 || ^18 || ^19"
   },
   "devDependencies": {
     "@palantir/pack.monorepo.tsconfig": "workspace:~",

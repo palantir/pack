@@ -15,135 +15,104 @@
  */
 
 import type { PackApp } from "@palantir/pack.core";
-import type {
-  ChannelError,
-  ChannelErrorCode,
-  DocumentRef,
-} from "@palantir/pack.document-schema.model-types";
-import type { DocumentStatus, WithStateModule } from "@palantir/pack.state.core";
-import { DocumentLoadStatus } from "@palantir/pack.state.core";
+import type { ChannelErrorCode, DocumentRef } from "@palantir/pack.document-schema.model-types";
+import type { WithStateModule } from "@palantir/pack.state.core";
 import { useDocumentStatus } from "@palantir/pack.state.react";
-import type { ReactNode } from "react";
 import { useEffect, useRef } from "react";
-import { ChannelErrorToast } from "./ChannelErrorToast.js";
+import { useToastManager } from "../base-components/toast/Toast.js";
+import { channelErrorContent } from "./channelErrorContent.js";
+import type { ChannelName } from "./channels.js";
+import { channelErrorStates, errorId } from "./channels.js";
 
-/** Document channels surfaced by this hook. */
-const CHANNELS = ["data", "metadata", "presence", "activity"] as const satisfies ReadonlyArray<
-  keyof DocumentStatus
->;
-type ChannelName = (typeof CHANNELS)[number];
-
-/** Identifies one error occurrence so repeated status notifications do not re-show its toast. */
-function errorId(error: ChannelError): string {
-  return [error.code, error.errorInstanceId, error.message ?? ""].join("|");
-}
-
-/** Minimal toaster API used by {@link useChannelErrorToasts}. Blueprint's `Toaster` satisfies it. */
-export interface ChannelErrorToaster {
-  readonly clear: () => void;
-  readonly show: (props: {
-    readonly icon: "error";
-    readonly intent: "danger";
-    readonly message: ReactNode;
-    readonly timeout: 0;
-  }) => void;
+/** One surfaced channel error, as reported to listeners. */
+export interface SurfacedChannelError {
+  /** Which channel failed. */
+  readonly channel: ChannelName;
+  /** The error's code. */
+  readonly code: ChannelErrorCode;
+  /** The toast's id, stable for this occurrence. */
+  readonly id: string;
 }
 
 export interface UseChannelErrorToastsArgs {
-  /** The PackApp instance. */
   readonly app: WithStateModule<PackApp>;
-  /**
-   * Labels the error instance id shown in each toast's footer.
-   *
-   * @default "Error instance ID"
-   */
   readonly correlationIdLabel?: string;
-  /** The document to observe. */
   readonly docRef: DocumentRef;
-  /**
-   * Builds each channel's headline. A function because this hook drives all four channels.
-   *
-   * @default `${Channel} channel error`
-   */
   readonly formatTitle?: (channel: string) => string;
-  /**
-   * Per-code copy overrides. Read when a toast is shown, so changes do not relabel live toasts.
-   *
-   * @default CHANNEL_ERROR_MESSAGES
-   */
   readonly messages?: Partial<Record<ChannelErrorCode, string>>;
-  /** Dedicated toaster, or null while it is still being created. Top-center reads best. */
-  readonly toaster: ChannelErrorToaster | null;
+  readonly onErrorShown?: (error: SurfacedChannelError) => void;
 }
 
 /**
- * Shows a persistent toast for each new error reported by one of a document's four channels. A
- * toast stays up after its channel recovers, but owner cleanup clears the dedicated toaster. A
- * channel repeating the same error gets one toast; a recover-then-fail cycle gets a new one.
- *
- * @example
- * ```tsx
- * useChannelErrorToasts({ app, docRef, toaster });
- * ```
+ * Queues a persistent toast for each new error reported by one of a document's channels. Internal:
+ * it must run inside a `ToastRegion`, so it is reached through `ChannelErrorToasts` rather than
+ * exported.
  */
 export function useChannelErrorToasts(
-  { app, correlationIdLabel, docRef, formatTitle, messages, toaster }: UseChannelErrorToastsArgs,
+  { app, correlationIdLabel, docRef, formatTitle, messages, onErrorShown }:
+    UseChannelErrorToastsArgs,
 ): void {
   const status = useDocumentStatus(app, docRef);
-  const shownErrorIdByChannel = useRef<Map<ChannelName, string>>(new Map());
-  // Refs so unmemoized overrides cannot churn the effect.
+  const { add, close } = useToastManager();
+
+  // The last error surfaced per channel. Kept after the user dismisses a toast so the next
+  // notification does not resurrect it; deleted on recovery so a relapse counts as new.
+  const surfacedByChannel = useRef<Map<ChannelName, string>>(new Map());
+  // Refs so unmemoized overrides and listeners cannot churn the effect.
   const messagesRef = useRef(messages);
   messagesRef.current = messages;
   const formatTitleRef = useRef(formatTitle);
   formatTitleRef.current = formatTitle;
   const correlationIdLabelRef = useRef(correlationIdLabel);
   correlationIdLabelRef.current = correlationIdLabel;
+  const onErrorShownRef = useRef(onErrorShown);
+  onErrorShownRef.current = onErrorShown;
+  const closeRef = useRef(close);
+  closeRef.current = close;
 
   useEffect(() => {
     return () => {
-      toaster?.clear();
-      shownErrorIdByChannel.current.clear();
+      closeRef.current();
+      surfacedByChannel.current.clear();
     };
-  }, [app, docRef, toaster]);
+  }, [app, docRef]);
 
   useEffect(() => {
-    if (toaster == null || status == null) {
+    if (status == null) {
       return;
     }
 
-    for (const channel of CHANNELS) {
-      const channelStatus = status[channel];
-      const error = channelStatus.load === DocumentLoadStatus.ERROR
-        ? channelStatus.error
-        : undefined;
-
+    for (const { channel, error } of channelErrorStates(status)) {
       if (error == null) {
-        // Healthy, so forget the last error: a relapse is worth showing again.
-        shownErrorIdByChannel.current.delete(channel);
+        surfacedByChannel.current.delete(channel);
         continue;
       }
 
-      // `status` is a new object every notification, so this is what stops duplicate toasts.
-      const id = errorId(error);
-      if (shownErrorIdByChannel.current.get(channel) === id) {
+      const id = errorId(channel, error);
+      if (surfacedByChannel.current.get(channel) === id) {
         continue;
       }
-      shownErrorIdByChannel.current.set(channel, id);
+      surfacedByChannel.current.set(channel, id);
 
-      toaster.show({
-        icon: "error",
-        intent: "danger",
-        message: (
-          <ChannelErrorToast
-            channel={channel}
-            correlationIdLabel={correlationIdLabelRef.current}
-            error={error}
-            messages={messagesRef.current}
-            title={formatTitleRef.current?.(channel)}
-          />
-        ),
-        timeout: 0,
+      const { code, correlationId, description, title } = channelErrorContent(channel, error, {
+        formatTitle: formatTitleRef.current,
+        messages: messagesRef.current,
       });
+
+      add({
+        data: { code, correlationId, correlationIdLabel: correlationIdLabelRef.current },
+        description,
+        id,
+        // Errors are the user's problem to act on, so they wait for a dismissal and are announced
+        // urgently rather than politely.
+        priority: "high",
+        timeout: 0,
+        title,
+      });
+      onErrorShownRef.current?.({ channel, code: error.code, id });
     }
-  }, [app, docRef, toaster, status]);
+    // Deliberately not keyed on `app`/`docRef`. `useDocumentStatus` writes its state from an effect,
+    // so those change one render before the new document's status arrives — running here would
+    // surface the previous document's errors right after the cleanup above closed them.
+  }, [add, status]);
 }

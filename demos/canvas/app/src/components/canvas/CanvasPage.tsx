@@ -17,7 +17,7 @@
 import type { Toaster } from "@blueprintjs/core";
 import { Callout, OverlayToaster, Position } from "@blueprintjs/core";
 import type { SupportedVersions } from "@demo/canvas.sdk";
-import { useChannelErrorToasts } from "@palantir/pack.components.react";
+import { ChannelErrorToasts } from "@palantir/pack.components.react";
 import type { DocumentId } from "@palantir/pack.document-schema.model-types";
 import { isValidDocRef } from "@palantir/pack.state.core";
 import type { KeyboardEvent, MouseEvent } from "react";
@@ -46,8 +46,8 @@ export const CanvasPage = () => {
     canvasId as DocumentId | undefined,
     versionOverride,
   );
+  // Only the activity toasts need a Blueprint toaster; `ChannelErrorToasts` brings its own.
   const [toaster, setToaster] = useState<Toaster | null>(null);
-  const [statusToaster, setStatusToaster] = useState<Toaster | null>(null);
 
   useEffect(() => {
     let mounted = true;
@@ -60,21 +60,9 @@ export const CanvasPage = () => {
       }
     });
 
-    OverlayToaster.create({
-      position: Position.TOP,
-    }).then(createdToaster => {
-      if (mounted) {
-        setStatusToaster(createdToaster);
-      }
-    });
-
     return () => {
       mounted = false;
       setToaster(prev => {
-        prev?.clear();
-        return null;
-      });
-      setStatusToaster(prev => {
         prev?.clear();
         return null;
       });
@@ -101,7 +89,6 @@ export const CanvasPage = () => {
   const { remoteUsersByUserId, userIdsBySelectedNodeId } = useRemotePresence(doc);
   const interaction = useCanvasInteraction(doc, broadcastSelection);
   useActivityToast(doc, toaster);
-  useChannelErrorToasts({ app, docRef: doc, toaster: statusToaster });
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
@@ -126,6 +113,7 @@ export const CanvasPage = () => {
 
   return (
     <div className={styles.container} onKeyDown={handleKeyDown} tabIndex={0}>
+      <ChannelErrorToasts app={app} docRef={doc} />
       <CanvasToolbar
         canDelete={interaction.selectedShapeId != null}
         currentColor={interaction.currentColor}

@@ -14,13 +14,7 @@
  * limitations under the License.
  */
 
-export type { BaseChannelErrorToastProps } from "./channelErrorToast/BaseChannelErrorToast.js";
-export { BaseChannelErrorToast } from "./channelErrorToast/BaseChannelErrorToast.js";
-export type { ChannelErrorToastProps } from "./channelErrorToast/ChannelErrorToast.js";
-export { CHANNEL_ERROR_MESSAGES } from "./channelErrorToast/ChannelErrorToast.js";
-export { ChannelErrorToast } from "./channelErrorToast/ChannelErrorToast.js";
-export type {
-  ChannelErrorToaster,
-  UseChannelErrorToastsArgs,
-} from "./channelErrorToast/useChannelErrorToasts.js";
-export { useChannelErrorToasts } from "./channelErrorToast/useChannelErrorToasts.js";
+export { CHANNEL_ERROR_MESSAGES } from "./channelErrorToast/channelErrorContent.js";
+export type { ChannelErrorToastsProps } from "./channelErrorToast/ChannelErrorToasts.js";
+export { ChannelErrorToasts } from "./channelErrorToast/ChannelErrorToasts.js";
+export type { SurfacedChannelError } from "./channelErrorToast/useChannelErrorToasts.js";
