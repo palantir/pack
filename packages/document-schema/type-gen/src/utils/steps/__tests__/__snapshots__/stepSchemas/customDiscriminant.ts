@@ -1,5 +1,5 @@
 
-import { Schema } from "@palantir/pack.schema";
+import { ModelDefs } from "@palantir/pack.schema";
 
 const schema = (
 {
@@ -47,6 +47,6 @@ const schema = (
     }
   }
 }
-) satisfies Schema<any>;
+) satisfies ModelDefs;
 
 export default schema;

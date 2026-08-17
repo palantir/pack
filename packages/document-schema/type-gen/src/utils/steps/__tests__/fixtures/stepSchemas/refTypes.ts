@@ -1,4 +1,4 @@
-import { Schema } from "@palantir/pack.schema";
+import type { ModelDefs } from "@palantir/pack.schema";
 
 const refTypes = {
   "Document": {
@@ -56,6 +56,6 @@ const refTypes = {
       },
     },
   },
-} satisfies Schema<any>;
+} satisfies ModelDefs;
 
 export default refTypes;

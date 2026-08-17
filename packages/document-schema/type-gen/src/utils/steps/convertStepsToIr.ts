@@ -79,7 +79,7 @@ export function convertStepsToIr(
  * everything falls back to `metadata.version` (default 1).
  */
 export function convertSchemaToIr(
-  inputSchema: P.Schema<P.ReturnedSchema>,
+  inputSchema: P.ModelDefs,
   metadata?: SchemaMetadata,
   provenance?: SchemaProvenance,
 ): IRealTimeDocumentSchema {

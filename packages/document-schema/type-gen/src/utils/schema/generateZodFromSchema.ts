@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import type { ReturnedSchema, Schema } from "@palantir/pack.schema";
+import type { ModelDefs } from "@palantir/pack.schema";
 import { generateZodSchemasFromIr } from "../ir/generateZodSchemasFromIr.js";
 import { convertSchemaToIr, type SchemaMetadata } from "../steps/convertStepsToIr.js";
 
@@ -24,8 +24,8 @@ import { convertSchemaToIr, type SchemaMetadata } from "../steps/convertStepsToI
  * @param metadata - Optional schema metadata overrides
  * @returns Generated TypeScript code with Zod schemas
  */
-export async function generateZodFromSchema<T extends ReturnedSchema>(
-  schema: Schema<T>,
+export async function generateZodFromSchema<T extends ModelDefs>(
+  schema: T,
   metadata?: SchemaMetadata,
 ): Promise<string> {
   const irSchema = convertSchemaToIr(

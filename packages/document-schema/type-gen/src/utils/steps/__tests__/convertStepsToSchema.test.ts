@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import type { ReturnedSchema, Schema } from "@palantir/pack.schema";
+import type { ModelDefs } from "@palantir/pack.schema";
 import fs from "fs";
 import path from "path";
 import { describe, expect, it } from "vitest";
@@ -41,7 +41,7 @@ describe("convertStepsToSchema", () => {
       const raw: unknown = YAML.parse(fileContent);
       const parsedSteps = parseMigrationSteps(raw);
       const { recordDefinitions, unionDefinitions } = convertStepsToSchema(parsedSteps);
-      const schema: Schema<ReturnedSchema> = {};
+      const schema: ModelDefs = {};
 
       // Add record definitions using their record names as keys
       recordDefinitions.forEach(record => {
@@ -61,13 +61,13 @@ describe("convertStepsToSchema", () => {
   });
 });
 
-function printSchemaFile(schema: Schema<ReturnedSchema>) {
+function printSchemaFile(schema: ModelDefs) {
   return `
-import { Schema } from "@palantir/pack.schema";
+import { ModelDefs } from "@palantir/pack.schema";
 
 const schema = (
 ${JSON.stringify(schema, null, 2)}
-) satisfies Schema<any>;
+) satisfies ModelDefs;
 
 export default schema;
 `;
