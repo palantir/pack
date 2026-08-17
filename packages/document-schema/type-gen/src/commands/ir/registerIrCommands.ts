@@ -82,20 +82,24 @@ export function registerIrCommands(program: Command): void {
     )
     .option(
       "--first-party",
-      "Deploy as a first-party document type (uses the first-party endpoint; requires --ontology-rid)",
+      "Deploy as a first-party document type (publishes via Backpack's publishFirstPartyDocumentType; requires --backpack-api-url)",
       false,
     )
     .option(
       "-o, --ontology-rid <rid>",
-      "Target ontology RID (required for first-party deploys)",
+      "[deprecated] Ignored for first-party deploys (publish has no ontology binding)",
     )
     .option(
       "-f, --file-system-type <type>",
       "File system type for the document type (ARTIFACTS or COMPASS)",
     )
     .option(
+      "--backpack-api-url <url>",
+      "Backpack REST base URL, required for first-party deploys (commonly <base-url>/backpack/api)",
+    )
+    .option(
       "--first-party-prefix <path>",
-      "Override the API prefix used for first-party requests (e.g. /api/gotham). Defaults to /api.",
+      "[deprecated] Ignored; use --backpack-api-url for first-party deploys",
     )
     .action(irDeployHandler);
 
