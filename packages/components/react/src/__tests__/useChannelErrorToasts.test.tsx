@@ -51,9 +51,10 @@ const ERRORED: DocumentSyncStatus = {
 
 const APP = {} as WithStateModule<PackApp>;
 const DOC_REF = {} as DocumentRef;
+const OTHER_DOC_REF = {} as DocumentRef;
 
 function createMockToaster(): ChannelErrorToaster {
-  return { show: vi.fn() };
+  return { clear: vi.fn(), show: vi.fn() };
 }
 
 describe("useChannelErrorToasts", () => {
@@ -150,10 +151,52 @@ describe("useChannelErrorToasts", () => {
     rerender();
 
     // Dismissal is the user's to make; recovery does not retract the toast.
+    expect(toaster.clear).not.toHaveBeenCalled();
     expect(toaster.show).toHaveBeenCalledTimes(1);
   });
 
-  it("does not re-show the same error after recovery and a relapse", () => {
+  it("clears and re-shows errors when the document changes", () => {
+    mockUseDocumentStatus.mockReturnValue(statusWith({ data: ERRORED }));
+    const toaster = createMockToaster();
+
+    const { rerender } = renderHook(
+      ({ docRef }) => useChannelErrorToasts({ app: APP, docRef, toaster }),
+      { initialProps: { docRef: DOC_REF } },
+    );
+    rerender({ docRef: OTHER_DOC_REF });
+
+    expect(toaster.clear).toHaveBeenCalledTimes(1);
+    expect(toaster.show).toHaveBeenCalledTimes(2);
+  });
+
+  it("clears the old toaster and re-shows errors on its replacement", () => {
+    mockUseDocumentStatus.mockReturnValue(statusWith({ data: ERRORED }));
+    const firstToaster = createMockToaster();
+    const secondToaster = createMockToaster();
+
+    const { rerender } = renderHook(
+      ({ toaster }) => useChannelErrorToasts({ app: APP, docRef: DOC_REF, toaster }),
+      { initialProps: { toaster: firstToaster } },
+    );
+    rerender({ toaster: secondToaster });
+
+    expect(firstToaster.clear).toHaveBeenCalledTimes(1);
+    expect(secondToaster.show).toHaveBeenCalledTimes(1);
+  });
+
+  it("clears the toaster on unmount", () => {
+    mockUseDocumentStatus.mockReturnValue(statusWith({ data: ERRORED }));
+    const toaster = createMockToaster();
+
+    const { unmount } = renderHook(() =>
+      useChannelErrorToasts({ app: APP, docRef: DOC_REF, toaster })
+    );
+    unmount();
+
+    expect(toaster.clear).toHaveBeenCalledTimes(1);
+  });
+
+  it("shows the error again after the channel recovers and relapses", () => {
     mockUseDocumentStatus.mockReturnValue(statusWith({ data: ERRORED }));
     const toaster = createMockToaster();
 
@@ -165,7 +208,22 @@ describe("useChannelErrorToasts", () => {
     mockUseDocumentStatus.mockReturnValue(statusWith({ data: { ...ERRORED } }));
     rerender();
 
-    // Same errorInstanceId means the same occurrence, so it is not worth a second toast.
+    // Recovery clears the channel, so failing again is a new problem worth surfacing.
+    expect(toaster.show).toHaveBeenCalledTimes(2);
+  });
+
+  it("shows one toast while a channel keeps reporting the same error", () => {
+    mockUseDocumentStatus.mockReturnValue(statusWith({ data: ERRORED }));
+    const toaster = createMockToaster();
+
+    const { rerender } = renderHook(() =>
+      useChannelErrorToasts({ app: APP, docRef: DOC_REF, toaster })
+    );
+    for (let i = 0; i < 5; i++) {
+      mockUseDocumentStatus.mockReturnValue(statusWith({ data: { ...ERRORED } }));
+      rerender();
+    }
+
     expect(toaster.show).toHaveBeenCalledTimes(1);
   });
 

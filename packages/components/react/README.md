@@ -10,6 +10,19 @@ has no UI concerns and should not gain any.
 
 ## Usage
 
+```tsx
+import { useChannelErrorToasts } from "@palantir/pack.components.react";
+
+function DocumentErrorToasts({ app, docRef, toaster }) {
+  useChannelErrorToasts({ app, docRef, toaster });
+  return null;
+}
+```
+
+Each distinct channel error produces one persistent toast, which the user dismisses. The hook never
+dismisses a toast on recovery, but it clears its dedicated toaster when the app, document, or
+toaster changes and when the hook unmounts.
+
 ## Conventions
 
 - Components live in `src/<componentName>/`, re-exported from `src/index.ts`.
@@ -26,6 +39,7 @@ a `.css` / `.module.css` file would never reach consumers. Components therefore 
 
 ## Peer dependencies
 
-`@blueprintjs/core` is an **optional** peer dependency. It is used for types only —
-`useStatusErrorToast` takes a `Toaster` you construct, and nothing here imports Blueprint at
-runtime. Components that do not touch a toaster work without Blueprint installed.
+`@blueprintjs/core` is an **optional** peer dependency. `useChannelErrorToasts` accepts a local
+structural toaster interface (`show` and `clear`) which Blueprint's `Toaster` satisfies, so Blueprint
+is absent from the package's runtime and public types. Pass a dedicated toaster because the hook
+clears it during lifecycle cleanup. Any configuration works, including `maxToasts`.
