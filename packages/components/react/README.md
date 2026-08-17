@@ -25,7 +25,7 @@ function DocumentErrorToasts({ app, docRef, toaster }) {
 
 - Components live in `src/<componentName>/`, re-exported from `src/index.ts`.
 - Tests live in `src/__tests__/*.test.tsx` and run under `happy-dom` via `@testing-library/react`.
-- `react` is a peer dependency (`^17 || ^18 || ^19`); do not add it as a direct dependency.
+- `react` and `@types/react` are peer dependencies; do not add them as direct dependencies.
 - **Exported symbols need explicit return types.** `transpileTypes` uses `oxc-transform`'s isolated
   declarations, which cannot infer them.
 
@@ -38,7 +38,12 @@ This will be done in the future when more components are supported.
 
 ## Peer dependencies
 
-`@blueprintjs/core` is an **optional** peer dependency. `useChannelErrorToasts` accepts a local
-structural toaster interface (`show` and `clear`) which Blueprint's `Toaster` satisfies, so Blueprint
-is absent from the package's runtime and public types. Pass a dedicated toaster because the hook
-clears it during lifecycle cleanup. Any configuration works, including `maxToasts`.
+`react` and `@types/react`, both `^17 || ^18 || ^19`. Nothing else.
+
+**No UI component library is a dependency of this package**, declared or otherwise. Where a component
+needs to drive one — a portal host, an overlay, an imperative UI service — it accepts the smallest
+structural interface that does the job, so whatever library the consumer already uses satisfies it
+without this package naming it.
+
+Keep it that way. Anything added here is inherited by every consumer, and a peer that nothing imports
+is worse than none at all: it constrains installs while buying nothing.
