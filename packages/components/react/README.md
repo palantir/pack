@@ -10,6 +10,8 @@ has no UI concerns and should not gain any.
 
 ## Usage
 
+Example:
+
 ```tsx
 import { useChannelErrorToasts } from "@palantir/pack.components.react";
 
@@ -18,10 +20,6 @@ function DocumentErrorToasts({ app, docRef, toaster }) {
   return null;
 }
 ```
-
-Each distinct channel error produces one persistent toast, which the user dismisses. The hook never
-dismisses a toast on recovery, but it clears its dedicated toaster when the app, document, or
-toaster changes and when the hook unmounts.
 
 ## Conventions
 
@@ -36,6 +34,7 @@ toaster changes and when the hook unmounts.
 The build (`monorepo-transpile`) emits JS and types only, and the `exports` map has no CSS entry, so
 a `.css` / `.module.css` file would never reach consumers. Components therefore use **inline
 `style` objects**. Shipping real stylesheets requires extending the build and the exports map first.
+This will be done in the future when more components are supported.
 
 ## Peer dependencies
 
