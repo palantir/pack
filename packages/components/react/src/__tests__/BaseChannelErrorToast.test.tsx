@@ -16,12 +16,12 @@
 
 import { render } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import { BaseErrorToast } from "../errorToast/BaseErrorToast.js";
+import { BaseChannelErrorToast } from "../channelErrorToast/BaseChannelErrorToast.js";
 
-describe("BaseErrorToast", () => {
+describe("BaseChannelErrorToast", () => {
   it("renders title, detail, and a labelled footer", () => {
     const { container } = render(
-      <BaseErrorToast
+      <BaseChannelErrorToast
         code="internalError"
         correlationId="abc-123"
         detail="A server error occurred."
@@ -36,7 +36,7 @@ describe("BaseErrorToast", () => {
 
   it("lets the correlation id label be overridden", () => {
     const { container } = render(
-      <BaseErrorToast
+      <BaseChannelErrorToast
         correlationId="abc-123"
         correlationIdLabel="Support reference"
         detail="d"
@@ -49,7 +49,7 @@ describe("BaseErrorToast", () => {
 
   it("omits the separator when only a code is given", () => {
     const { container } = render(
-      <BaseErrorToast code="internalError" detail="d" title="t" />,
+      <BaseChannelErrorToast code="internalError" detail="d" title="t" />,
     );
 
     expect(container.textContent).toContain("internalError");
@@ -57,7 +57,7 @@ describe("BaseErrorToast", () => {
   });
 
   it("omits the footer entirely when neither code nor correlation id is given", () => {
-    const { container } = render(<BaseErrorToast detail="d" title="t" />);
+    const { container } = render(<BaseChannelErrorToast detail="d" title="t" />);
 
     // Title and detail only.
     expect(container.querySelectorAll("span")).toHaveLength(2);

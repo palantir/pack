@@ -34,7 +34,7 @@ const STYLES = {
   },
 } satisfies Record<string, CSSProperties>;
 
-export interface BaseErrorToastProps {
+export interface BaseChannelErrorToastProps {
   /** Short machine-readable code shown in the footer, e.g. `"internalError"`. */
   readonly code?: string;
   /** Conjure `errorInstanceId` — identifies this one error occurrence in backend logs. */
@@ -52,12 +52,12 @@ export interface BaseErrorToastProps {
 }
 
 /**
- * Presentational toast body. Primitives only, no PACK dependencies, so any error source can use it.
- * See {@link ChannelErrorToast} for the channel-aware version.
+ * Presentational half of {@link ChannelErrorToast}: plain strings in, markup out, with no PACK or
+ * toast-library dependencies. Use it directly to render the same toast body from your own error type.
  */
-export function BaseErrorToast(
+export function BaseChannelErrorToast(
   { code, correlationId, correlationIdLabel = "Error instance ID", detail, title }:
-    BaseErrorToastProps,
+    BaseChannelErrorToastProps,
 ): ReactElement {
   const hasFooter = code != null || correlationId != null;
 

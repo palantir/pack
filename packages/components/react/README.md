@@ -23,7 +23,8 @@ function DocumentErrorToasts({ app, docRef, toaster }) {
 
 ## Conventions
 
-- Components live in `src/<componentName>/`, re-exported from `src/index.ts`.
+- Each component owns one folder, `src/<componentName>/`, re-exported from `src/index.ts`. A
+  component's dependency-free layer is `Base<Name>`.
 - Tests live in `src/__tests__/*.test.tsx` and run under `happy-dom` via `@testing-library/react`.
 - `react` and `@types/react` are peer dependencies; do not add them as direct dependencies.
 - **Exported symbols need explicit return types.** `transpileTypes` uses `oxc-transform`'s isolated

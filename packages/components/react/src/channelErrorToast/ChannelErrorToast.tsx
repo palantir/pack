@@ -17,7 +17,7 @@
 import type { ChannelError } from "@palantir/pack.document-schema.model-types";
 import { ChannelErrorCode } from "@palantir/pack.document-schema.model-types";
 import type { ReactElement } from "react";
-import { BaseErrorToast } from "../errorToast/BaseErrorToast.js";
+import { BaseChannelErrorToast } from "./BaseChannelErrorToast.js";
 
 /** Default copy per error code. Exported so apps can read or spread it when building an override. */
 export const CHANNEL_ERROR_MESSAGES: Readonly<Record<ChannelErrorCode, string>> = {
@@ -61,7 +61,7 @@ export interface ChannelErrorToastProps {
 }
 
 /**
- * Renders a {@link ChannelError} via {@link BaseErrorToast}. Content only — pair it with your own
+ * Renders a {@link ChannelError} via {@link BaseChannelErrorToast}. Content only — pair it with your own
  * toaster, or use `useChannelErrorToasts` to wire up every channel.
  *
  * All copy is overridable via `messages` and `title`; this package ships no i18n.
@@ -70,7 +70,7 @@ export function ChannelErrorToast(
   { channel, correlationIdLabel, error, messages, title }: ChannelErrorToastProps,
 ): ReactElement {
   return (
-    <BaseErrorToast
+    <BaseChannelErrorToast
       // `unknown` categorizes nothing, so it is noise in front of a user. The correlation id still
       // makes the failure findable, and the real cause is logged.
       code={error.code === ChannelErrorCode.UNKNOWN ? undefined : error.code}
