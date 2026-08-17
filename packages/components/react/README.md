@@ -44,6 +44,3 @@ This will be done in the future when more components are supported.
 needs to drive one — a portal host, an overlay, an imperative UI service — it accepts the smallest
 structural interface that does the job, so whatever library the consumer already uses satisfies it
 without this package naming it.
-
-Keep it that way. Anything added here is inherited by every consumer, and a peer that nothing imports
-is worse than none at all: it constrains installs while buying nothing.
