@@ -21,6 +21,8 @@ import { CommanderError } from "commander";
 import { consola } from "consola";
 import { readFileSync } from "fs";
 import { resolve } from "path";
+import type { ConjureDocumentTypeSchema } from "../../utils/ir/convertIrToConjureSchema.js";
+import { convertIrToConjureSchema } from "../../utils/ir/convertIrToConjureSchema.js";
 import { convertIrToWireSchema } from "../../utils/ir/convertIrToWireSchema.js";
 import { resolveIrInput } from "./resolveIrInput.js";
 
@@ -52,13 +54,19 @@ export async function irDeployHandler(options: DeployOptions): Promise<void> {
       JSON.parse(readFileSync(irPath, "utf8")) as unknown,
       irPath,
     );
-    const schema = convertIrToWireSchema(ir);
     const fileSystemType = options.fileSystemType ?? "ARTIFACTS";
 
     if (options.firstParty) {
-      await deployFirstParty(options, ir.name, schema, fileSystemType, owningApplicationId);
+      // Backpack's Conjure endpoint expects the nested-union Conjure shape, not the flat OSDK shape.
+      await deployFirstParty(
+        options,
+        ir.name,
+        convertIrToConjureSchema(ir),
+        fileSystemType,
+        owningApplicationId,
+      );
     } else {
-      await deployThirdParty(options, ir.name, schema, fileSystemType);
+      await deployThirdParty(options, ir.name, convertIrToWireSchema(ir), fileSystemType);
     }
   } catch (error) {
     if (error instanceof CommanderError) {
@@ -119,7 +127,7 @@ interface ConjureErrorBody {
 async function deployFirstParty(
   options: DeployOptions,
   name: string,
-  schema: DocumentTypeSchema,
+  schema: ConjureDocumentTypeSchema,
   fileSystemType: FileSystemType,
   owningApplicationId: string | undefined,
 ): Promise<void> {
