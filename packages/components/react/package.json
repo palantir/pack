@@ -46,16 +46,10 @@
     "@palantir/pack.state.react": "workspace:*"
   },
   "peerDependencies": {
-    "@blueprintjs/core": "^6",
+    "@types/react": "^17 || ^18 || ^19",
     "react": "^17 || ^18 || ^19"
   },
-  "peerDependenciesMeta": {
-    "@blueprintjs/core": {
-      "optional": true
-    }
-  },
   "devDependencies": {
-    "@blueprintjs/core": "^6.4.1",
     "@palantir/pack.monorepo.tsconfig": "workspace:~",
     "@testing-library/react": "^16.3.0",
     "@types/react": "catalog:",
