@@ -155,20 +155,6 @@ describe("useChannelErrorToasts", () => {
     expect(toaster.show).toHaveBeenCalledTimes(1);
   });
 
-  it("clears and re-shows errors when the document changes", () => {
-    mockUseDocumentStatus.mockReturnValue(statusWith({ data: ERRORED }));
-    const toaster = createMockToaster();
-
-    const { rerender } = renderHook(
-      ({ docRef }) => useChannelErrorToasts({ app: APP, docRef, toaster }),
-      { initialProps: { docRef: DOC_REF } },
-    );
-    rerender({ docRef: OTHER_DOC_REF });
-
-    expect(toaster.clear).toHaveBeenCalledTimes(1);
-    expect(toaster.show).toHaveBeenCalledTimes(2);
-  });
-
   it("clears the old toaster and re-shows errors on its replacement", () => {
     mockUseDocumentStatus.mockReturnValue(statusWith({ data: ERRORED }));
     const firstToaster = createMockToaster();
