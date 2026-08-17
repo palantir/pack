@@ -16,7 +16,7 @@
 
 import type { ChannelError } from "@palantir/pack.document-schema.model-types";
 import { ChannelErrorCode } from "@palantir/pack.document-schema.model-types";
-import type { JSX } from "react";
+import type { ReactElement } from "react";
 import { BaseErrorToast } from "../errorToast/BaseErrorToast.js";
 
 /** Default copy per error code. Exported so apps can read or spread it when building an override. */
@@ -68,7 +68,7 @@ export interface ChannelErrorToastProps {
  */
 export function ChannelErrorToast(
   { channel, correlationIdLabel, error, messages, title }: ChannelErrorToastProps,
-): JSX.Element {
+): ReactElement {
   return (
     <BaseErrorToast
       // `unknown` categorizes nothing, so it is noise in front of a user. The correlation id still

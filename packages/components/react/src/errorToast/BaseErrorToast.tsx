@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import type { CSSProperties, JSX } from "react";
+import type { CSSProperties, ReactElement } from "react";
 
 // Inline because the build ships no CSS. Custom properties still resolve here, so consumers can
 // theme by setting `--pack-error-toast-*` on an ancestor.
@@ -58,7 +58,7 @@ export interface BaseErrorToastProps {
 export function BaseErrorToast(
   { code, correlationId, correlationIdLabel = "Error instance ID", detail, title }:
     BaseErrorToastProps,
-): JSX.Element {
+): ReactElement {
   const hasFooter = code != null || correlationId != null;
 
   return (
