@@ -36,13 +36,13 @@ interface DeployOptions {
   readonly parentFolder?: string;
   /** Deprecated/ignored for first-party deploys (publish has no ontology binding); kept so existing invocations don't fail. */
   readonly ontologyRid?: string;
-  /** Deprecated/ignored; first-party deploys call Backpack directly (use backpackApiUrl). Kept so existing invocations don't fail. */
+  /** Deprecated/ignored; first-party deploys call the first-party API directly (use firstPartyApiUrl). Kept so existing invocations don't fail. */
   readonly firstPartyPrefix?: string;
   /**
-   * Backpack Conjure REST base URL (`backpack-rest`), REQUIRED for first-party deploys. The context
-   * path is installation-dependent, so pass the value for your stack (commonly `${baseUrl}/backpack/api`).
+   * First-party document type REST API base URL, REQUIRED for first-party deploys. The context path
+   * is installation-dependent, so pass the value for your stack.
    */
-  readonly backpackApiUrl?: string;
+  readonly firstPartyApiUrl?: string;
 }
 
 export async function irDeployHandler(options: DeployOptions): Promise<void> {
@@ -57,7 +57,7 @@ export async function irDeployHandler(options: DeployOptions): Promise<void> {
     const fileSystemType = options.fileSystemType ?? "ARTIFACTS";
 
     if (options.firstParty) {
-      // Backpack's Conjure endpoint expects the nested-union Conjure shape, not the flat OSDK shape.
+      // The first-party publish endpoint expects the nested-union Conjure shape, not the flat OSDK shape.
       await deployFirstParty(
         options,
         ir.name,
@@ -107,22 +107,26 @@ async function deployThirdParty(
   consola.success("Successfully created document type", result);
 }
 
-/** Subset of Backpack's Conjure error body that we surface to the user. */
+/** Subset of the Conjure error body that we surface to the user. */
 interface ConjureErrorBody {
   readonly errorName?: string;
   readonly errorInstanceId?: string;
 }
 
 /**
- * Publishes a global, name-keyed first-party document type via Backpack's internal-only
- * `publishFirstPartyDocumentType` endpoint. Backpack is not part of the public Foundry API / OSDK,
- * and its generated client lives in an internal registry this public package cannot depend on, so
- * this is a direct authenticated PUT to the Conjure REST route rather than an OSDK/client call.
+ * Publishes a global, name-keyed first-party document type in DEV MODE, via the internal-only
+ * `publishFirstPartyDocumentType` endpoint (a direct authenticated PUT to the first-party Conjure
+ * REST API — this is not part of the public Foundry API / OSDK, and its generated client lives in
+ * an internal registry this public package cannot depend on).
  *
- * Records an unversioned dev-mode type: no ontologyRid/version is sent and no RID is returned (the
- * RID is created lazily on first document creation). Note: Backpack rejects a name that already
- * exists as an old-world RID-keyed type until the one-time backfill migrates it into the asset
- * table; new names publish immediately.
+ * Dev-mode semantics: the schema is recorded unversioned at the dev sentinel (version -1), no RID
+ * is minted, and the per-ontology instance is created lazily on first document creation. Re-running
+ * with the SAME document type name overwrites the definition, so you can iterate on the schema
+ * freely — there is no version bump or backwards-compatibility check until the type graduates to a
+ * real version via an asset deploy.
+ *
+ * Note: a name that already exists as an old-world RID-keyed (non-dev) type is rejected until the
+ * one-time backfill migrates it into the asset store; brand-new names publish immediately.
  */
 async function deployFirstParty(
   options: DeployOptions,
@@ -131,12 +135,12 @@ async function deployFirstParty(
   fileSystemType: FileSystemType,
   owningApplicationId: string | undefined,
 ): Promise<void> {
-  if (options.backpackApiUrl == null || options.backpackApiUrl.length === 0) {
+  if (options.firstPartyApiUrl == null || options.firstPartyApiUrl.length === 0) {
     throw new CommanderError(
       1,
       "EINVAL",
-      "--backpack-api-url is required for first-party deploys. Pass your stack's Backpack REST base "
-        + "URL (commonly <base-url>/backpack/api).",
+      "--first-party-api-url is required for first-party deploys. Pass your stack's first-party "
+        + "document type REST API base URL.",
     );
   }
   if (options.ontologyRid != null) {
@@ -147,12 +151,12 @@ async function deployFirstParty(
   }
   if (options.firstPartyPrefix != null) {
     consola.warn(
-      "--first-party-prefix is ignored: first-party deploys now call Backpack directly. Pass the "
-        + "Backpack REST base URL via --backpack-api-url instead.",
+      "--first-party-prefix is ignored: first-party deploys now call the first-party API directly. "
+        + "Pass its base URL via --first-party-api-url instead.",
     );
   }
 
-  const url = options.backpackApiUrl.replace(/\/+$/, "") + "/publish-first-party-document-type";
+  const url = options.firstPartyApiUrl.replace(/\/+$/, "") + "/publish-first-party-document-type";
 
   // Conjure wire shape for PublishFirstPartyDocumentTypeRequest; the yjs storage union serializes
   // as { type: "yjs", yjs: { schema } }.

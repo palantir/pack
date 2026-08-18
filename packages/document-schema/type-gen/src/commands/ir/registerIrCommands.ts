@@ -82,7 +82,8 @@ export function registerIrCommands(program: Command): void {
     )
     .option(
       "--first-party",
-      "Deploy as a first-party document type (publishes via Backpack's publishFirstPartyDocumentType; requires --backpack-api-url)",
+      "Publish a first-party document type in dev mode: schema is unversioned (version -1) and you "
+        + "can re-run with the same name to iterate on it. Requires --first-party-api-url.",
       false,
     )
     .option(
@@ -94,12 +95,12 @@ export function registerIrCommands(program: Command): void {
       "File system type for the document type (ARTIFACTS or COMPASS)",
     )
     .option(
-      "--backpack-api-url <url>",
-      "Backpack REST base URL, required for first-party deploys (commonly <base-url>/backpack/api)",
+      "--first-party-api-url <url>",
+      "First-party document type REST API base URL, required for first-party deploys (installation-dependent)",
     )
     .option(
       "--first-party-prefix <path>",
-      "[deprecated] Ignored; use --backpack-api-url for first-party deploys",
+      "[deprecated] Ignored; use --first-party-api-url for first-party deploys",
     )
     .action(irDeployHandler);
 

@@ -49,10 +49,10 @@ const FIRST_PARTY_OPTIONS = {
   baseUrl: "https://stack.example.com",
   auth: "test-token",
   firstParty: true,
-  backpackApiUrl: "https://stack.example.com/backpack/api",
+  firstPartyApiUrl: "https://stack.example.com/first-party/api",
 } as const;
 
-const PUBLISH_URL = "https://stack.example.com/backpack/api/publish-first-party-document-type";
+const PUBLISH_URL = "https://stack.example.com/first-party/api/publish-first-party-document-type";
 
 const originalFetch = globalThis.fetch;
 let fetchMock: ReturnType<typeof vi.fn>;
@@ -119,16 +119,16 @@ describe("irDeployHandler — first-party publish", () => {
     expect(publishedBody()).toMatchObject({ fileSystemType: "COMPASS" });
   });
 
-  it("normalizes a trailing slash on --backpack-api-url", async () => {
+  it("normalizes a trailing slash on --first-party-api-url", async () => {
     await irDeployHandler({
       ...FIRST_PARTY_OPTIONS,
-      backpackApiUrl: "https://stack.example.com/backpack/api/",
+      firstPartyApiUrl: "https://stack.example.com/first-party/api/",
     });
 
     expect(fetchCall().url).toBe(PUBLISH_URL);
   });
 
-  it("fails with a CommanderError when --backpack-api-url is missing", async () => {
+  it("fails with a CommanderError when --first-party-api-url is missing", async () => {
     await expect(
       irDeployHandler({
         ir: "ir.json",

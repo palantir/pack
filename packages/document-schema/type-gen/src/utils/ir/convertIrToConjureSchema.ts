@@ -23,9 +23,9 @@ import type {
 } from "../../lib/pack-docschema-api/pack-docschema-ir/index.js";
 
 /**
- * Backpack's Conjure `DocumentTypeSchema` wire shape. We don't depend on the generated Conjure
- * client (it lives in an internal registry this public package can't use), so this is the structural
- * shape the publish endpoint expects; nested payloads are left as `unknown`.
+ * The first-party API's Conjure `DocumentTypeSchema` wire shape. We don't depend on the generated
+ * Conjure client (it lives in an internal registry this public package can't use), so this is the
+ * structural shape the publish endpoint expects; nested payloads are left as `unknown`.
  */
 export interface ConjureDocumentTypeSchema {
   readonly primaryModelKeys: readonly string[];
@@ -33,15 +33,15 @@ export interface ConjureDocumentTypeSchema {
 }
 
 /**
- * Converts the IR schema to Backpack's Conjure wire format.
+ * Converts the IR schema to the first-party API's Conjure wire format.
  *
  * Conjure nests a union's payload under a key matching the discriminant
  * (`{ type: "record", record: { ... } }`) — which is how the IR is already shaped, so this is
  * mostly a pass-through. The one real difference: Conjure models a collection's element type as
  * `FieldValueType { valueType }`, while the IR carries the value union directly, so those get wrapped.
  *
- * Do NOT use {@link convertIrToWireSchema} for Backpack: that flattens unions into the OSDK shape
- * (`{ type: "record", key, name, ... }`), which the Conjure endpoint rejects.
+ * Do NOT use {@link convertIrToWireSchema} for the first-party publish path: that flattens unions
+ * into the OSDK shape (`{ type: "record", key, name, ... }`), which the Conjure endpoint rejects.
  *
  * TODO(follow-up): this parallels {@link convertIrToWireSchema}'s tree walk. Longer term the IR
  * generator could emit the Conjure shape directly, letting this converter be removed.
@@ -119,7 +119,7 @@ function toFieldValueType(value: IFieldValueUnion): unknown {
 /**
  * Value unions are already in the Conjure nested shape, so this is a pass-through — except doubles,
  * whose numeric fields may carry the "NaN" sentinel. Reject it early (matching
- * {@link convertIrToWireSchema}) rather than forward an invalid double to Backpack.
+ * {@link convertIrToWireSchema}) rather than forward an invalid double to the first-party API.
  */
 function convertFieldValueUnion(value: IFieldValueUnion): unknown {
   if (value.type === "double") {
