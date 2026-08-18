@@ -45,6 +45,19 @@ interface DeployOptions {
   readonly firstPartyApiUrl?: string;
 }
 
+/**
+ * Handler for `ir deploy`, which creates a document type from a resolved IR.
+ *
+ * - Third-party (default): creates a versioned document type via the public OSDK
+ *   (`DocumentTypes.create`) under `--parent-folder`.
+ * - First-party (`--first-party`): publishes a global, name-keyed type in DEV MODE via the
+ *   first-party document type API. The schema is unversioned (dev sentinel, version -1), no RID is
+ *   minted, and re-running with the same name overwrites the definition so you can iterate freely.
+ *   This path is dev-only — promoting a type to a real, versioned schema is done separately via an
+ *   asset deploy, not this command.
+ *
+ *   When you call create for this new doc-type, a RID is minted in the resolved ontology.
+ */
 export async function irDeployHandler(options: DeployOptions): Promise<void> {
   try {
     const irPath = resolve(options.ir);
