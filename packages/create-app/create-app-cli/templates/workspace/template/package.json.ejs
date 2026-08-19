@@ -10,7 +10,7 @@
   ],
   "scripts": {
 <% if (answers.firstParty) { -%>
-    "build:asset": "npm --workspace packages/schema run build:asset",
+    "build:asset": "npm --workspace packages/schema run build:asset --",
 <% } -%>
     "build:sdk": "npm --workspace packages/sdk run build",
     "deploy": "npm --workspace packages/schema run deploy",
