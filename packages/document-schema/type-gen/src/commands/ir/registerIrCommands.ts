@@ -82,20 +82,25 @@ export function registerIrCommands(program: Command): void {
     )
     .option(
       "--first-party",
-      "Deploy as a first-party document type (uses the first-party endpoint; requires --ontology-rid)",
+      "Publish a first-party document type in dev mode: schema is unversioned (version -1) and you "
+        + "can re-run with the same name to iterate on it. Requires --first-party-api-url.",
       false,
     )
     .option(
       "-o, --ontology-rid <rid>",
-      "Target ontology RID (required for first-party deploys)",
+      "[deprecated] Ignored for first-party deploys (publish has no ontology binding)",
     )
     .option(
       "-f, --file-system-type <type>",
       "File system type for the document type (ARTIFACTS or COMPASS)",
     )
     .option(
+      "--first-party-api-url <url>",
+      "First-party document type REST API base URL, required for first-party deploys (installation-dependent)",
+    )
+    .option(
       "--first-party-prefix <path>",
-      "Override the API prefix used for first-party requests (e.g. /api/gotham). Defaults to /api.",
+      "[deprecated] Ignored; use --first-party-api-url for first-party deploys",
     )
     .action(irDeployHandler);
 
