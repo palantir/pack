@@ -144,5 +144,10 @@ export function registerIrCommands(program: Command): void {
       "--compatibility-range-output <file>",
       "Output path for the schema compatibility range JSON (defaults to a sibling of --output with '-schema-compatibility-range' suffix)",
     )
+    .option(
+      "--force-overwrite",
+      "Mark the asset so backwards-compatibility validation is skipped when the platform processes it",
+      false,
+    )
     .action(irGenAssetHandler);
 }

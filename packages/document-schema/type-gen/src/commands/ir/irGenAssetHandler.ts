@@ -28,6 +28,7 @@ interface IrGenAssetOptions {
   readonly output: string;
   readonly fileSystemType?: FileSystemType;
   readonly compatibilityRangeOutput?: string;
+  readonly forceOverwrite?: boolean;
 }
 
 interface SchemaCompatibilityRangeFile {
@@ -57,6 +58,10 @@ function deriveCompatibilityRangePath(assetOutputPath: string): string {
  * document type asset must exist on disk so the platform can discover it and
  * register the document type automatically at deploy time. Most users should
  * use `ir deploy` to register document types via the Foundry API instead.
+ *
+ * `--force-overwrite` writes `forceOverwrite: true` onto the asset, telling the
+ * platform to skip incremental schema validation when it picks the asset up. It
+ * is a transient processing directive, not persisted with the document type.
  *
  * If you are unsure whether you need this command, you almost certainly do not.
  */
@@ -97,7 +102,14 @@ export function irGenAssetHandler(options: IrGenAssetOptions): void {
       fileSystemType,
       schemaVersion: latestVersion,
       ...(owningApplicationId != null ? { owningApplicationId } : {}),
+      ...(options.forceOverwrite ? { forceOverwrite: true } : {}),
     };
+
+    if (options.forceOverwrite) {
+      consola.warn(
+        "--force-overwrite is set: the platform will skip backwards-compatibility validation when processing this asset.",
+      );
+    }
 
     const outputDir = dirname(outputPath);
     if (!existsSync(outputDir)) {
@@ -135,6 +147,9 @@ export function irGenAssetHandler(options: IrGenAssetOptions): void {
     consola.info(`   File system type: ${fileSystemType}`);
     if (owningApplicationId != null) {
       consola.info(`   Owning application id: ${owningApplicationId}`);
+    }
+    if (options.forceOverwrite) {
+      consola.info("   Force overwrite: true");
     }
   } catch (error) {
     if (error instanceof CommanderError) {
