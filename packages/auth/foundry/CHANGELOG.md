@@ -1,5 +1,12 @@
 # @palantir/pack.auth.foundry
 
+## 0.25.0
+
+### Patch Changes
+
+- @palantir/pack.auth@0.25.0
+- @palantir/pack.core@0.25.0
+
 ## 0.24.0
 
 ### Patch Changes
