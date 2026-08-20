@@ -1,5 +1,20 @@
 # @palantir/pack.app
 
+## 0.25.0
+
+### Minor Changes
+
+- 51295ea: Drop documentTypeName from the PageEnv
+
+### Patch Changes
+
+- @palantir/pack.auth@0.25.0
+- @palantir/pack.auth.foundry@0.25.0
+- @palantir/pack.core@0.25.0
+- @palantir/pack.state.core@0.25.0
+- @palantir/pack.state.demo@0.25.0
+- @palantir/pack.state.foundry@0.25.0
+
 ## 0.24.0
 
 ### Minor Changes

@@ -1,5 +1,25 @@
 # @palantir/pack.document-schema.type-gen
 
+## 0.25.0
+
+### Minor Changes
+
+- f455d89: Add `--force-overwrite` to `ir asset`. When set, the generated document type asset carries
+  `forceOverwrite: true`, telling the platform to skip incremental schema validation when it
+  processes the asset — the asset-track counterpart to `ir update-schema --force-overwrite`.
+  The generated workspace app's root `build:asset` script now forwards extra args to the schema
+  package so the flag reaches the underlying `ir asset` invocation.
+- 61fd33d: `ir deploy --first-party` now publishes to the first-party document type API directly (internal-only), instead of the deprecated `createFirstPartyDocumentType` OSDK endpoint.
+
+  This is a **dev-mode** workflow: the schema is recorded unversioned (version `-1`), no RID is minted, and the per-ontology instance is created lazily on first document creation. Re-run with the same document type name to iterate on the schema freely — versioning and backwards-compatibility only apply once the type graduates to a real version via an asset deploy.
+
+  **Caller migration:** first-party deploys now require `--first-party-api-url` (your stack's first-party document type REST API base URL; installation-dependent). The previous `--first-party-prefix` and `--ontology-rid` options are accepted but ignored with a warning, so scripts that set `--first-party-prefix` must switch to `--first-party-api-url`.
+
+### Patch Changes
+
+- @palantir/pack.document-schema.model-types@0.25.0
+- @palantir/pack.schema@0.25.0
+
 ## 0.24.0
 
 ### Minor Changes
