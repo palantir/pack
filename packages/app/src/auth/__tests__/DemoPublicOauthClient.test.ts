@@ -252,6 +252,49 @@ describe("DemoPublicOauthClient", () => {
       expect(listener).toHaveBeenCalledTimes(1);
     });
 
+    it("should drop the pending callback when a valid token already exists", async () => {
+      const state = "test-state";
+      const token: Token = {
+        access_token: "existing-token",
+        expires_at: Date.now() + 3600000,
+        expires_in: 3600,
+        refresh_token: "refresh-token",
+      };
+      localStorage.setItem("demo-oauth-token", JSON.stringify(token));
+      sessionStorage.setItem("demo-oauth-state", state);
+      sessionStorage.setItem("demo-oauth-return-url", "https://test.foundry.com/original");
+      simulateOAuthCallback(state, "test-code");
+
+      const client = createDemoPublicOauthClient(CLIENT_ID, FOUNDRY_URL, REDIRECT_URL);
+      await client.signIn();
+
+      expect(window.history.replaceState).toHaveBeenCalledWith(
+        {},
+        "",
+        "https://test.foundry.com/original",
+      );
+      expect(sessionStorage.getItem("demo-oauth-state")).toBeNull();
+      expect(sessionStorage.getItem("demo-oauth-return-url")).toBeNull();
+    });
+
+    it("should leave unrelated callback params alone", async () => {
+      const token: Token = {
+        access_token: "existing-token",
+        expires_at: Date.now() + 3600000,
+        expires_in: 3600,
+        refresh_token: "refresh-token",
+      };
+      localStorage.setItem("demo-oauth-token", JSON.stringify(token));
+      sessionStorage.setItem("demo-oauth-state", "our-state");
+      simulateOAuthCallback("someone-elses-state", "test-code");
+
+      const client = createDemoPublicOauthClient(CLIENT_ID, FOUNDRY_URL, REDIRECT_URL);
+      await client.signIn();
+
+      expect(window.history.replaceState).not.toHaveBeenCalled();
+      expect(sessionStorage.getItem("demo-oauth-state")).toBe("our-state");
+    });
+
     it("should store token in localStorage after callback", async () => {
       const state = "test-state";
       const code = "test-code";

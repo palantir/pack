@@ -72,9 +72,7 @@ export class DemoPublicOauthClient {
       return undefined;
     }
 
-    sessionStorage.removeItem("demo-oauth-state");
-    sessionStorage.removeItem("demo-oauth-code-verifier");
-    sessionStorage.removeItem("demo-oauth-return-url");
+    this.clearCallbackSession();
 
     const token = this.generateToken();
     this.currentToken = token;
@@ -86,6 +84,34 @@ export class DemoPublicOauthClient {
     }
 
     return token;
+  }
+
+  /**
+   * Abandons a pending callback we no longer need to consume, restoring the URL it came from.
+   * Only touches a callback whose state matches ours, so unrelated `code`/`state` params on the
+   * page are left alone.
+   */
+  private discardPendingCallback(): void {
+    const params = new URLSearchParams(window.location.search);
+    const state = params.get("state");
+
+    if (params.get("code") == null || state == null) {
+      return;
+    }
+
+    if (sessionStorage.getItem("demo-oauth-state") !== state) {
+      return;
+    }
+
+    const returnUrl = sessionStorage.getItem("demo-oauth-return-url");
+    this.clearCallbackSession();
+    window.history.replaceState({}, "", returnUrl ?? "/");
+  }
+
+  private clearCallbackSession(): void {
+    sessionStorage.removeItem("demo-oauth-state");
+    sessionStorage.removeItem("demo-oauth-code-verifier");
+    sessionStorage.removeItem("demo-oauth-return-url");
   }
 
   getToken = async (): Promise<string> => {
@@ -131,6 +157,7 @@ export class DemoPublicOauthClient {
     // 1. Already holding a valid token (in memory or restored from storage).
     const existingToken = this.getTokenOrUndefined() != null ? this.currentToken : undefined;
     if (existingToken != null) {
+      this.discardPendingCallback();
       this.fireEvent("signIn", new CustomEvent("signIn", { detail: existingToken }));
       return existingToken;
     }
