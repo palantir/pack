@@ -14,18 +14,42 @@
  * limitations under the License.
  */
 
-import type { DocumentId, DocumentSchema } from "@palantir/pack.document-schema.model-types";
+import type {
+  DocumentId,
+  DocumentSchema,
+  Model,
+  RecordId,
+} from "@palantir/pack.document-schema.model-types";
 import { Metadata } from "@palantir/pack.document-schema.model-types";
 import { describe, expect, it } from "vitest";
+import { z } from "zod";
 import { internalCreateInMemoryDocumentService } from "../service/InMemoryDocumentService.js";
 import { createDocRef } from "../types/DocumentRefImpl.js";
 import type { DocumentStatus } from "../types/DocumentService.js";
 import { DocumentLiveStatus, DocumentLoadStatus } from "../types/DocumentService.js";
+import { createRecordRef } from "../types/RecordRefImpl.js";
 import { createTestApp } from "./testUtils.js";
 
 const DOCUMENT_ID = "test-doc" as DocumentId;
 
 const testSchema = {
+  [Metadata]: {
+    version: 1,
+  },
+} as const satisfies DocumentSchema;
+
+interface Thing {
+  id: string;
+}
+
+const thingZodSchema = z.object({ id: z.string() });
+
+const recordSchema = {
+  Thing: {
+    __type: {} as Thing,
+    zodSchema: thingZodSchema,
+    [Metadata]: { name: "Thing" },
+  } satisfies Model<Thing, typeof thingZodSchema>,
   [Metadata]: {
     version: 1,
   },
@@ -243,6 +267,29 @@ describe("Document Status Tracking", () => {
     const status = service.getDocumentStatus(docRef);
     expect(status.data.load).toBe(DocumentLoadStatus.UNLOADED);
     expect(status.data.live).toBe(DocumentLiveStatus.DISCONNECTED);
+  });
+
+  it("should reset data status when the last data subscription is an onRecordInvalid", async () => {
+    const mockApp = createTestApp();
+    const service = internalCreateInMemoryDocumentService(mockApp, { autoCreateDocuments: true });
+    const docRef = createDocRef(mockApp, DOCUMENT_ID, recordSchema);
+    const recordRef = createRecordRef(
+      service,
+      docRef,
+      "record-1" as RecordId,
+      recordSchema.Thing,
+    );
+
+    const unsubscribe = service.onRecordInvalid(recordRef, () => {});
+    await service.waitForDataLoad(docRef);
+    expect(service.getDocumentStatus(docRef).data.load).toBe(DocumentLoadStatus.LOADED);
+
+    // onRecordInvalid is a data subscription like any other, so closing the last one must run the
+    // shared close path and reset the load. This service never sets `live`, so the liveness half
+    // of that reset is covered against DemoDocumentService instead.
+    unsubscribe();
+    const status = service.getDocumentStatus(docRef);
+    expect(status.data.load).toBe(DocumentLoadStatus.UNLOADED);
   });
 
   it("should reload after a close/reopen cycle", async () => {

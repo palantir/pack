@@ -402,6 +402,7 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
     internalDoc.metadataSubscriptionOpenToken = openToken;
 
     this.updateMetadataStatus(internalDoc, docRef, {
+      live: DocumentLiveStatus.CONNECTING,
       load: DocumentLoadStatus.LOADING,
     });
 
@@ -434,6 +435,7 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
           error: toUnknownChannelError(
             new Error("Failed to load document metadata", { cause: e }),
           ),
+          live: DocumentLiveStatus.ERROR,
           load: DocumentLoadStatus.ERROR,
         });
       });
@@ -456,6 +458,9 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
           return;
         }
         internalDoc.metadataSubscriptionId = subscriptionId;
+        this.updateMetadataStatus(internalDoc, docRef, {
+          live: DocumentLiveStatus.CONNECTED,
+        });
       })
       .catch((e: unknown) => {
         if (!this.isMetadataOpenGeneration(internalDoc, docRef, openToken)) {
@@ -470,6 +475,14 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
         }
         this.logger.error("Failed to subscribe to metadata updates", e, {
           docId: docRef.id,
+        });
+        // `load` is deliberately omitted so it stays LOADED: the metadata itself was fetched over
+        // HTTP and is valid, only the live updates channel is dead — which is what `live` exists to
+        // express. `error` is still set so the failed liveness is explainable; omitting `load` also
+        // means the merge preserves it rather than clearing the error.
+        this.updateMetadataStatus(internalDoc, docRef, {
+          error: toUnknownChannelError(e),
+          live: DocumentLiveStatus.ERROR,
         });
       });
   }
@@ -506,6 +519,9 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
     internalDoc.dataSubscriptionOpenToken = openToken;
 
     this.updateDataStatus(internalDoc, docRef, {
+      // The channel is opening from here, not from startDocumentSync — that only runs once the
+      // metadata round-trip below completes, leaving a DISCONNECTED window without this.
+      live: DocumentLiveStatus.CONNECTING,
       load: DocumentLoadStatus.LOADING,
     });
     if (internalDoc.metadataStatus.load === DocumentLoadStatus.ERROR) {
@@ -553,6 +569,9 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
           error: toUnknownChannelError(
             new Error("Failed to load document metadata before data sync", { cause: e }),
           ),
+          // A failed open is not a closed channel; DISCONNECTED here would be indistinguishable
+          // from a deliberate teardown. Matches the FoundryEventService subscribe-failure path.
+          live: DocumentLiveStatus.ERROR,
           load: DocumentLoadStatus.ERROR,
         });
       });
@@ -601,7 +620,19 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
     }
     if (internalDoc.metadataStatus.load === DocumentLoadStatus.LOADING) {
       this.updateMetadataStatus(internalDoc, docRef, {
+        live: DocumentLiveStatus.DISCONNECTED,
         load: DocumentLoadStatus.UNLOADED,
+      });
+    } else if (
+      internalDoc.metadataStatus.live !== DocumentLiveStatus.DISCONNECTED
+      || internalDoc.metadataStatus.error != null
+    ) {
+      this.updateMetadataStatus(internalDoc, docRef, {
+        live: DocumentLiveStatus.DISCONNECTED,
+        // Replaying the current load is a no-op for `load` itself but lets updateChannelStatus
+        // drop a subscription error: closing on purpose is not a failure. A load of ERROR is
+        // preserved, since that error describes the metadata, not the channel.
+        load: internalDoc.metadataStatus.load,
       });
     }
   }
