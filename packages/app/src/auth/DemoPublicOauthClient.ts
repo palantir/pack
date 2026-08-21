@@ -48,23 +48,28 @@ export class DemoPublicOauthClient {
     this.eventListeners = new Map();
 
     this.loadTokenFromStorage();
-    this.handleCallbackIfPresent();
   }
 
-  private handleCallbackIfPresent(): void {
+  /**
+   * Completes a pending redirect if the current URL carries our callback params.
+   *
+   * Must NOT be called from the constructor: the `signIn` event it fires would be
+   * emitted before consumers (eg AuthServicePublic) have attached their listeners.
+   */
+  private handleCallbackIfPresent(): Token | undefined {
     const params = new URLSearchParams(window.location.search);
     const code = params.get("code");
     const state = params.get("state");
 
     if (code == null || state == null) {
-      return;
+      return undefined;
     }
 
     const savedState = sessionStorage.getItem("demo-oauth-state");
     const returnUrl = sessionStorage.getItem("demo-oauth-return-url");
 
     if (savedState !== state) {
-      return;
+      return undefined;
     }
 
     sessionStorage.removeItem("demo-oauth-state");
@@ -79,12 +84,20 @@ export class DemoPublicOauthClient {
     if (returnUrl != null) {
       window.history.replaceState({}, "", returnUrl);
     }
+
+    return token;
   }
 
   getToken = async (): Promise<string> => {
     const token = this.getTokenOrUndefined();
     if (token != null) {
       return token;
+    }
+
+    // Complete a pending redirect before concluding we're unauthenticated.
+    const callbackToken = this.handleCallbackIfPresent();
+    if (callbackToken != null) {
+      return callbackToken.access_token;
     }
 
     if (this.autoSignIn) {
@@ -109,7 +122,26 @@ export class DemoPublicOauthClient {
     return this.currentToken.access_token;
   };
 
+  /**
+   * Mirrors the real PublicOauthClient contract: exhaust every non-interactive path
+   * before redirecting. Redirecting unconditionally causes a reload loop for consumers
+   * that call signIn() to kick off the auth flow.
+   */
   signIn = async (): Promise<Token> => {
+    // 1. Already holding a valid token (in memory or restored from storage).
+    const existingToken = this.getTokenOrUndefined() != null ? this.currentToken : undefined;
+    if (existingToken != null) {
+      this.fireEvent("signIn", new CustomEvent("signIn", { detail: existingToken }));
+      return existingToken;
+    }
+
+    // 2. Returning from a redirect - complete it instead of starting another.
+    const callbackToken = this.handleCallbackIfPresent();
+    if (callbackToken != null) {
+      return callbackToken;
+    }
+
+    // 3. No token and nothing to complete, so redirect.
     const state = Math.random().toString(36).substring(7);
     const code = Math.random().toString(36).substring(2);
 
@@ -122,7 +154,10 @@ export class DemoPublicOauthClient {
 
     window.location.href = callbackUrl.toString();
 
-    return new Promise(() => {});
+    // Give the navigation time to happen. Throwing (rather than hanging forever) keeps
+    // `await signIn()` callers from deadlocking if it doesn't.
+    await this.delay(1000);
+    throw new Error("Unable to redirect");
   };
 
   signOut = async (): Promise<void> => {

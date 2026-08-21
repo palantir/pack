@@ -15,8 +15,10 @@
  */
 
 import { Button, ButtonGroup } from "@blueprintjs/core";
+import { AuthState } from "@palantir/pack.auth";
+import { useAuthState } from "@palantir/pack.state.react";
 import React, { useCallback } from "react";
-import { FILE_SYSTEM_TYPE } from "../../app.js";
+import { app, FILE_SYSTEM_TYPE } from "../../app.js";
 import type { CanvasDocument } from "../../hooks/useCanvasDocuments.js";
 import { useCanvasDocuments } from "../../hooks/useCanvasDocuments.js";
 import { CreateFileDialog } from "./CreateCanvasDialog.js";
@@ -26,6 +28,7 @@ import { DocumentTypeMetadata } from "./DocumentTypeMetadata.js";
 import css from "./HomePage.module.css";
 
 export const HomePage = React.memo(function HomePage() {
+  const authState = useAuthState(app);
   const {
     currentPage,
     documents,
@@ -43,6 +46,22 @@ export const HomePage = React.memo(function HomePage() {
   const showCreateDialog = useCallback(() => {
     setCreateDialogIsOpen(true);
   }, []);
+
+  if (authState === AuthState.Error) {
+    return (
+      <div className={css.pageWrapper}>
+        <div className={css.loading}>Authentication error</div>
+      </div>
+    );
+  }
+
+  if (authState !== AuthState.Authenticated) {
+    return (
+      <div className={css.pageWrapper}>
+        <div className={css.loading}>Signing in...</div>
+      </div>
+    );
+  }
 
   // Only show full-page loading on initial load, not during pagination
   const isInitialLoading = isLoading && documents.length === 0;
