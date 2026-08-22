@@ -107,7 +107,7 @@ describe("DemoPublicOauthClient", () => {
         autoSignIn: true,
       });
 
-      void client();
+      void client().catch(() => {});
 
       await vi.waitFor(() => {
         expect(window.location.href).toContain("code=");
@@ -165,7 +165,7 @@ describe("DemoPublicOauthClient", () => {
     it("should redirect to callback URL with code and state", () => {
       const client = createDemoPublicOauthClient(CLIENT_ID, FOUNDRY_URL, REDIRECT_URL);
 
-      void client.signIn();
+      void client.signIn().catch(() => {});
 
       expect(window.location.href).toContain(REDIRECT_URL);
       expect(window.location.href).toContain("code=");
@@ -175,7 +175,7 @@ describe("DemoPublicOauthClient", () => {
     it("should store state and return URL in sessionStorage", () => {
       const client = createDemoPublicOauthClient(CLIENT_ID, FOUNDRY_URL, REDIRECT_URL);
 
-      void client.signIn();
+      void client.signIn().catch(() => {});
 
       expect(sessionStorage.getItem("demo-oauth-state")).toBeDefined();
       expect(sessionStorage.getItem("demo-oauth-return-url")).toBe("https://test.foundry.com/");
@@ -183,7 +183,25 @@ describe("DemoPublicOauthClient", () => {
   });
 
   describe("OAuth callback", () => {
-    it("should handle callback and generate token", () => {
+    it("should not handle callback in the constructor", async () => {
+      const state = "test-state";
+      const code = "test-code";
+
+      sessionStorage.setItem("demo-oauth-state", state);
+      simulateOAuthCallback(state, code);
+
+      const client = createDemoPublicOauthClient(CLIENT_ID, FOUNDRY_URL, REDIRECT_URL);
+
+      // The callback must only be completed from signIn()/getToken(), otherwise the
+      // signIn event fires before consumers can attach listeners.
+      expect(client.getTokenOrUndefined()).toBeUndefined();
+
+      await client.signIn();
+
+      expect(client.getTokenOrUndefined()).toBeDefined();
+    });
+
+    it("should handle callback and generate token", async () => {
       const state = "test-state";
       const code = "test-code";
 
@@ -192,20 +210,100 @@ describe("DemoPublicOauthClient", () => {
       simulateOAuthCallback(state, code);
 
       const client = createDemoPublicOauthClient(CLIENT_ID, FOUNDRY_URL, REDIRECT_URL);
+      await client.signIn();
 
       const token = client.getTokenOrUndefined();
       expect(token).toBeDefined();
       expect(token).toMatch(/^demo\./);
     });
 
-    it("should store token in localStorage after callback", () => {
+    it("should not redirect again when completing a callback", async () => {
+      const state = "test-state";
+      const code = "test-code";
+      const hrefBefore = window.location.href;
+
+      sessionStorage.setItem("demo-oauth-state", state);
+      simulateOAuthCallback(state, code);
+
+      const client = createDemoPublicOauthClient(CLIENT_ID, FOUNDRY_URL, REDIRECT_URL);
+      await client.signIn();
+
+      expect(window.location.href).toBe(hrefBefore);
+    });
+
+    it("should not redirect when a valid token already exists", async () => {
+      const token: Token = {
+        access_token: "existing-token",
+        expires_at: Date.now() + 3600000,
+        expires_in: 3600,
+        refresh_token: "refresh-token",
+      };
+      localStorage.setItem("demo-oauth-token", JSON.stringify(token));
+      const hrefBefore = window.location.href;
+
+      const client = createDemoPublicOauthClient(CLIENT_ID, FOUNDRY_URL, REDIRECT_URL);
+      const listener = vi.fn();
+      client.addEventListener("signIn", listener);
+
+      const result = await client.signIn();
+
+      expect(result.access_token).toBe("existing-token");
+      expect(window.location.href).toBe(hrefBefore);
+      expect(listener).toHaveBeenCalledTimes(1);
+    });
+
+    it("should drop the pending callback when a valid token already exists", async () => {
+      const state = "test-state";
+      const token: Token = {
+        access_token: "existing-token",
+        expires_at: Date.now() + 3600000,
+        expires_in: 3600,
+        refresh_token: "refresh-token",
+      };
+      localStorage.setItem("demo-oauth-token", JSON.stringify(token));
+      sessionStorage.setItem("demo-oauth-state", state);
+      sessionStorage.setItem("demo-oauth-return-url", "https://test.foundry.com/original");
+      simulateOAuthCallback(state, "test-code");
+
+      const client = createDemoPublicOauthClient(CLIENT_ID, FOUNDRY_URL, REDIRECT_URL);
+      await client.signIn();
+
+      expect(window.history.replaceState).toHaveBeenCalledWith(
+        {},
+        "",
+        "https://test.foundry.com/original",
+      );
+      expect(sessionStorage.getItem("demo-oauth-state")).toBeNull();
+      expect(sessionStorage.getItem("demo-oauth-return-url")).toBeNull();
+    });
+
+    it("should leave unrelated callback params alone", async () => {
+      const token: Token = {
+        access_token: "existing-token",
+        expires_at: Date.now() + 3600000,
+        expires_in: 3600,
+        refresh_token: "refresh-token",
+      };
+      localStorage.setItem("demo-oauth-token", JSON.stringify(token));
+      sessionStorage.setItem("demo-oauth-state", "our-state");
+      simulateOAuthCallback("someone-elses-state", "test-code");
+
+      const client = createDemoPublicOauthClient(CLIENT_ID, FOUNDRY_URL, REDIRECT_URL);
+      await client.signIn();
+
+      expect(window.history.replaceState).not.toHaveBeenCalled();
+      expect(sessionStorage.getItem("demo-oauth-state")).toBe("our-state");
+    });
+
+    it("should store token in localStorage after callback", async () => {
       const state = "test-state";
       const code = "test-code";
 
       sessionStorage.setItem("demo-oauth-state", state);
       simulateOAuthCallback(state, code);
 
-      createDemoPublicOauthClient(CLIENT_ID, FOUNDRY_URL, REDIRECT_URL);
+      const client = createDemoPublicOauthClient(CLIENT_ID, FOUNDRY_URL, REDIRECT_URL);
+      await client.signIn();
 
       const stored = localStorage.getItem("demo-oauth-token");
       expect(stored).toBeDefined();
@@ -218,7 +316,7 @@ describe("DemoPublicOauthClient", () => {
       });
     });
 
-    it("should fire signIn event after callback", () => {
+    it("should fire signIn event after callback", async () => {
       const state = "test-state";
       const code = "test-code";
       const listener = vi.fn();
@@ -229,10 +327,24 @@ describe("DemoPublicOauthClient", () => {
       const client = createDemoPublicOauthClient(CLIENT_ID, FOUNDRY_URL, REDIRECT_URL);
       client.addEventListener("signIn", listener);
 
-      expect(listener).toHaveBeenCalledTimes(0);
+      await client.signIn();
+
+      expect(listener).toHaveBeenCalledTimes(1);
     });
 
-    it("should reject callback with mismatched state", () => {
+    it("should complete the callback from getToken", async () => {
+      const state = "test-state";
+      const code = "test-code";
+
+      sessionStorage.setItem("demo-oauth-state", state);
+      simulateOAuthCallback(state, code);
+
+      const client = createDemoPublicOauthClient(CLIENT_ID, FOUNDRY_URL, REDIRECT_URL);
+
+      await expect(client()).resolves.toMatch(/^demo\./);
+    });
+
+    it("should reject callback with mismatched state", async () => {
       const state = "test-state";
       const code = "test-code";
 
@@ -241,11 +353,12 @@ describe("DemoPublicOauthClient", () => {
 
       const client = createDemoPublicOauthClient(CLIENT_ID, FOUNDRY_URL, REDIRECT_URL);
 
+      await expect(client()).rejects.toThrow("Not authenticated");
       expect(client.getTokenOrUndefined()).toBeUndefined();
       expect(localStorage.getItem("demo-oauth-token")).toBeNull();
     });
 
-    it("should use custom userId in generated token", () => {
+    it("should use custom userId in generated token", async () => {
       const state = "test-state";
       const code = "test-code";
 
@@ -255,6 +368,7 @@ describe("DemoPublicOauthClient", () => {
       const client = createDemoPublicOauthClient(CLIENT_ID, FOUNDRY_URL, REDIRECT_URL, {
         mockUserId: "custom-user-123",
       });
+      await client.signIn();
 
       const token = client.getTokenOrUndefined();
       if (!token) throw new Error("Expected token");
@@ -262,7 +376,7 @@ describe("DemoPublicOauthClient", () => {
       expect(payload.sub).toBe("custom-user-123");
     });
 
-    it("should include foundry URL in generated token", () => {
+    it("should include foundry URL in generated token", async () => {
       const state = "test-state";
       const code = "test-code";
 
@@ -270,6 +384,7 @@ describe("DemoPublicOauthClient", () => {
       simulateOAuthCallback(state, code);
 
       const client = createDemoPublicOauthClient(CLIENT_ID, FOUNDRY_URL, REDIRECT_URL);
+      await client.signIn();
 
       const token = client.getTokenOrUndefined();
       if (!token) throw new Error("Expected token");
@@ -412,10 +527,10 @@ describe("DemoPublicOauthClient", () => {
       client.addEventListener("signIn", listener);
       client.removeEventListener("signIn", listener);
 
-      expect(() => client.signIn()).not.toThrow();
+      expect(() => void client.signIn().catch(() => {})).not.toThrow();
     });
 
-    it("should handle multiple listeners for same event", () => {
+    it("should handle multiple listeners for same event", async () => {
       const state = "test-state";
       const code = "test-code";
       const listener1 = vi.fn();
@@ -428,8 +543,10 @@ describe("DemoPublicOauthClient", () => {
       client.addEventListener("signIn", listener1);
       client.addEventListener("signIn", listener2);
 
-      expect(listener1).toHaveBeenCalledTimes(0);
-      expect(listener2).toHaveBeenCalledTimes(0);
+      await client.signIn();
+
+      expect(listener1).toHaveBeenCalledTimes(1);
+      expect(listener2).toHaveBeenCalledTimes(1);
     });
 
     it("should handle null listener gracefully", () => {
