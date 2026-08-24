@@ -1,5 +1,20 @@
 # @palantir/pack.app
 
+## 0.26.0
+
+### Minor Changes
+
+- 10bc060: Fix reload loop in demo mode: DemoPublicOauthClient now completes the OAuth callback from signIn()/getToken() instead of its constructor, and signIn() no longer redirects when a valid token already exists
+
+### Patch Changes
+
+- @palantir/pack.auth@0.26.0
+- @palantir/pack.auth.foundry@0.26.0
+- @palantir/pack.core@0.26.0
+- @palantir/pack.state.core@0.26.0
+- @palantir/pack.state.demo@0.26.0
+- @palantir/pack.state.foundry@0.26.0
+
 ## 0.25.0
 
 ### Minor Changes

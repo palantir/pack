@@ -1,5 +1,11 @@
 # @palantir/pack.create-app
 
+## 0.26.0
+
+### Patch Changes
+
+- @palantir/pack.codegen.core@0.26.0
+
 ## 0.25.0
 
 ### Minor Changes
