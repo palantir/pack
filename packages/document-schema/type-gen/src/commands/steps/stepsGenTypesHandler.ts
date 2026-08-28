@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import type { ReturnedSchema } from "@palantir/pack.schema";
+import type { ModelDefs } from "@palantir/pack.schema";
 import { CommanderError } from "commander";
 import { consola } from "consola";
 import * as fs from "fs";
@@ -62,7 +62,7 @@ export function stepsGenTypesHandler(options: TypesGenOptions): void {
 
   const { recordDefinitions, unionDefinitions } = convertStepsToSchema(steps);
 
-  const schema: ReturnedSchema = {
+  const schema: ModelDefs = {
     ...Object.fromEntries(recordDefinitions.map(def => [def.name, def])),
     ...Object.fromEntries(unionDefinitions.map(def => [def.name, def])),
   };

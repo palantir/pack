@@ -21,12 +21,6 @@ import { ModelDefType } from "./defs.js";
 import type { Ref, Type } from "./primitives.js";
 import { isRecordDef, isUnionDef } from "./utils.js";
 
-/** Soon to be deprecated - Use `ModelDefs` instead. */
-export type ReturnedSchema = ModelDefs;
-
-/** Soon to be deprecated - use `ModelDefs` instead. */
-export type Schema<T extends ModelDefs> = T;
-
 export type SchemaBuilder<T extends ModelDefs> = {
   [k in keyof T]: T[k] extends UnionDef<infer R> ? UnionBuilder<R>
     : T[k] extends RecordDef<infer R> ? RecordBuilder<R>

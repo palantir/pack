@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import type { ReturnedSchema, Schema } from "@palantir/pack.schema";
+import type { ModelDefs } from "@palantir/pack.schema";
 import fs from "fs";
 import path from "path";
 import { describe, expect, it } from "vitest";
@@ -43,7 +43,7 @@ describe("generateTypes", () => {
 
     it(`should handle ${testName}`, async () => {
       const inputSchema = await import(path.join(fixturesInputDir, testFile)) as {
-        default: Schema<ReturnedSchema>;
+        default: ModelDefs;
       };
       const result = generateTypesFromSchema(inputSchema.default);
 
