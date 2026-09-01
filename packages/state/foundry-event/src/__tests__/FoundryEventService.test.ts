@@ -464,6 +464,39 @@ describe("FoundryEventService", () => {
       expect(publishCallsFor("doc-1")).toHaveLength(2);
     });
 
+    it("acks duplicate echoed updates without processing their zero revision", async () => {
+      const { session, yDoc, sendServerMessage } = await startSyncedDoc();
+
+      yDoc.getMap("Shape").set("shape-1", new Y.Map());
+      const editId = (publishCallsFor("doc-1")[0]![1] as { editId: string }).editId;
+
+      sendServerMessage({
+        baseRevisionId: "1",
+        clientId: session.clientId,
+        clientSupportedVersionRange: { minVersion: 1, maxVersion: 1 },
+        editIds: [editId],
+        revisionId: "0",
+        type: "update",
+      });
+
+      // The duplicate ack stops retries but does not reset the tracked revision to zero.
+      vi.advanceTimersByTime(2_000);
+      expect(publishCallsFor("doc-1")).toHaveLength(1);
+
+      sendServerMessage({
+        baseRevisionId: "1",
+        clientId: "other-client",
+        clientSupportedVersionRange: { minVersion: 1, maxVersion: 1 },
+        editIds: [],
+        revisionId: "2",
+        type: "update",
+      });
+      expect(logger.error).not.toHaveBeenCalledWith(
+        "Got unexpected update for baseRevisionId",
+        expect.anything(),
+      );
+    });
+
     it("does not ack tracked updates for updates from other clients", async () => {
       const { yDoc, sendServerMessage } = await startSyncedDoc();
 

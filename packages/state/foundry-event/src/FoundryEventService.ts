@@ -561,6 +561,11 @@ class FoundryEventServiceImpl implements FoundryEventService {
         // Our own updates are echoed back so we can stop tracking them.
         if (clientId === session.clientId) {
           session.outbox?.ack(editIds);
+          // A zero revision indicates a duplicate ack: the server has already processed this update.
+          // This revision's baseRevisionId may have occurred in the past and should not be used to bump session.lastRevisionId.
+          if (Number(revisionId) === 0) {
+            break;
+          }
         }
 
         const data = update != null && typeof update.data === "string"
