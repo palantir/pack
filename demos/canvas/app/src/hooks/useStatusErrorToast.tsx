@@ -17,7 +17,6 @@
 import type { Toaster } from "@blueprintjs/core";
 import type { PackApp } from "@palantir/pack.core";
 import type { DocumentRef } from "@palantir/pack.document-schema.model-types";
-import type { WithStateModule } from "@palantir/pack.state.core";
 import { DocumentLoadStatus } from "@palantir/pack.state.core";
 import { useDocumentStatus } from "@palantir/pack.state.react";
 import { useEffect, useRef } from "react";
@@ -31,7 +30,7 @@ const CHANNELS = ["data", "metadata", "presence", "activity"] as const;
  * rendering the typed ChannelError. Pass a top-center positioned toaster.
  */
 export function useStatusErrorToast(
-  app: WithStateModule<PackApp>,
+  app: PackApp,
   docRef: DocumentRef,
   toaster: Toaster | null,
 ): void {

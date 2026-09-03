@@ -44,9 +44,7 @@ export const app = initPackApp(osdkClient, {
     : undefined,
   ontologyRid: ONTOLOGY_RID,
   logLevel: "info",
-})
-  .withState()
-  .build();
+}).build();
 
 // The shared, typed document schema for this app, from the generated SDK. Reuse
 // this wherever a `DocumentSchema` is required, e.g. `useSearchDocuments`.

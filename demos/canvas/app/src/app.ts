@@ -86,6 +86,4 @@ export const app = initPackApp(osdkClient, {
   demoMode: isDemoEnv(),
   logLevel: "info",
   ontologyRid: ONTOLOGY_RID,
-})
-  .withState()
-  .build();
+}).build();

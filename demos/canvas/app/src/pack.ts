@@ -18,7 +18,6 @@ import type { SupportedVersions, VersionedDocRef } from "@demo/canvas.sdk";
 import { asVersioned, DocumentModel } from "@demo/canvas.sdk";
 import type { PackApp } from "@palantir/pack.core";
 import type { DocumentId } from "@palantir/pack.document-schema.model-types";
-import type { WithStateModule } from "@palantir/pack.state.core";
 import { useDocRef } from "@palantir/pack.state.react";
 import { getShapeUpdatedActivitySummary } from "./utils/activityMessages.js";
 
@@ -81,7 +80,7 @@ export interface UseCanvasDocRefResult {
 }
 
 export function useCanvasDocRef(
-  app: WithStateModule<PackApp>,
+  app: PackApp,
   canvasId: DocumentId | undefined,
   versionOverride?: SupportedVersions,
 ): UseCanvasDocRefResult {

@@ -78,7 +78,6 @@ const WORKSPACE_FILES = [
   "packages/app/src/main.tsx",
   "packages/app/src/App.tsx",
   "packages/app/src/AuthCallback.tsx",
-  "packages/app/src/hooks/usePackApp.ts",
   "packages/app/src/packApp.ts",
 ];
 

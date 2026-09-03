@@ -15,7 +15,7 @@
  */
 
 import type { PackApp } from "@palantir/pack.core";
-import type { DocumentType, WithStateModule } from "@palantir/pack.state.core";
+import type { DocumentType } from "@palantir/pack.state.core";
 import { useEffect, useState } from "react";
 
 interface UseDocumentTypeMetadataResult {
@@ -30,7 +30,7 @@ interface UseDocumentTypeMetadataResult {
  * the app's bound ontology, since a document type name is only unique within an ontology.
  */
 export function useDocumentTypeMetadata(
-  app: WithStateModule<PackApp>,
+  app: PackApp,
   documentTypeName: string,
 ): UseDocumentTypeMetadataResult {
   const [isLoading, setIsLoading] = useState(false);

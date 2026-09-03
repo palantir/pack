@@ -27,12 +27,14 @@ import { initPackApp } from "../utils/initPackApp.js";
 import { getPageEnv } from "../utils/getPageEnv.js";
 vi.mock("../utils/getPageEnv.js");
 
-vi.mock("../utils/getDocumentServiceConfig.js", () => ({
-  getDocumentServiceConfig: vi.fn(() => [
-    { key: Symbol.for("test-document-service") },
-    {},
-  ]),
-}));
+// Stub out the document service, but register it under the real module key so that the
+// state module (initialized by initPackApp) resolves it.
+vi.mock("../utils/getDocumentServiceConfig.js", async () => {
+  const { createDocumentServiceConfig } = await import("@palantir/pack.state.core");
+  return {
+    getDocumentServiceConfig: vi.fn(() => createDocumentServiceConfig(() => ({}) as never, {})),
+  };
+});
 
 const TEST_FOUNDRY_URL = "https://test.palantir.com";
 const TEST_FOUNDRY_URL_WITH_SLASH = "https://test.palantir.com/";

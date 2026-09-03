@@ -71,4 +71,6 @@ export {
 } from "./types/RecordCollectionRefImpl.js";
 export { createRecordRef, invalidRecordRef, isValidRecordRef } from "./types/RecordRefImpl.js";
 export { getStateModule, STATE_MODULE_ACCESSOR } from "./types/StateModule.js";
+// WithStateModule is still exported for compatibility; `state` is now on PackApp directly.
+// eslint-disable-next-line @typescript-eslint/no-deprecated
 export type { StateModule, WithStateModule } from "./types/StateModule.js";

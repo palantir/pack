@@ -20,7 +20,7 @@ import type {
   DocumentMetadata,
   DocumentSchema,
 } from "@palantir/pack.document-schema.model-types";
-import type { DocumentSort, WithStateModule } from "@palantir/pack.state.core";
+import type { DocumentSort } from "@palantir/pack.state.core";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 const DEFAULT_PAGE_SIZE = 10;
@@ -39,7 +39,7 @@ interface UseSearchDocumentsResult {
 }
 
 export function useSearchDocuments<T extends DocumentSchema>(
-  app: WithStateModule<PackApp>,
+  app: PackApp,
   documentTypeName: string,
   schema: T,
   documentName?: string,

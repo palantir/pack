@@ -59,6 +59,22 @@ export const STATE_MODULE_KEY: ModuleKey<StateModuleImpl> = {
     return new StateModuleImpl(documentService);
   },
 };
+/**
+ * Declares the `state` accessor on PackApp so consumers get it from the base type.
+ *
+ * The accessor is installed at runtime by initPackApp; this tells the type system it is
+ * always present. Augmenting from here (rather than declaring it in pack.core) keeps
+ * pack.core free of any dependency on the state module.
+ */
+declare module "@palantir/pack.core" {
+  interface PackApp {
+    readonly state: StateModule;
+  }
+}
+
+/**
+ * @deprecated `state` is now declared on PackApp directly, so this is a no-op. Use `PackApp`.
+ */
 export type WithStateModule<T> = T & { readonly [STATE_MODULE_ACCESSOR]: StateModule };
 
 export interface StateModule {

@@ -15,10 +15,9 @@
  */
 
 import { Button, Callout, Popover, Spinner, Tag } from "@blueprintjs/core";
-import { useDocumentTypeMetadata } from "@palantir/pack.state.react";
+import { useDocumentTypeMetadata, usePackApp } from "@palantir/pack.state.react";
 import React from "react";
 import { DOCUMENT_TYPE_NAME } from "../../app.js";
-import { usePackApp } from "../../hooks/usePackApp.js";
 import css from "./DocumentTypeMetadata.module.css";
 
 function MetadataRow({ label, children }: {

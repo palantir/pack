@@ -22,6 +22,19 @@ import type { TokenChangeCallback } from "./TokenChange.js";
 import type { UserRef } from "./UserRef.js";
 
 /**
+ * Declares the `auth` accessor on PackApp so consumers get it from the base type.
+ *
+ * The accessor is installed at runtime by initPackApp; this tells the type system it is
+ * always present. Augmenting from here (rather than declaring it in pack.core) keeps
+ * pack.core free of any dependency on the auth module.
+ */
+declare module "@palantir/pack.core" {
+  interface PackApp {
+    readonly auth: AuthModule;
+  }
+}
+
+/**
  * AuthModule provides unified authentication services for PACK applications.
  *
  * It wraps OSDK OAuth clients and provides a consistent interface for authentication

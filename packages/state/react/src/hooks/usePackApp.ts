@@ -21,7 +21,8 @@ const PACK_CONTEXT = createContext<PackApp | null>(null);
 
 // TODO: this should move to a pack.app.react package as it has nothing to do with state.
 export function usePackApp(): PackApp;
-export function usePackApp(throwOnMissing: true): PackApp | null;
+export function usePackApp(throwOnMissing: true): PackApp;
+export function usePackApp(throwOnMissing: false): PackApp | null;
 export function usePackApp(throwOnMissing = true): PackApp | null {
   const packApp = useContext(PACK_CONTEXT);
   if (packApp == null && throwOnMissing) {

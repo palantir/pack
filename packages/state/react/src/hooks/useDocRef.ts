@@ -20,7 +20,7 @@ import type {
   DocumentRef,
   DocumentSchema,
 } from "@palantir/pack.document-schema.model-types";
-import { invalidDocRef, type WithStateModule } from "@palantir/pack.state.core";
+import { invalidDocRef } from "@palantir/pack.state.core";
 import { useMemo } from "react";
 
 /**
@@ -54,7 +54,7 @@ import { useMemo } from "react";
  * ```
  */
 export function useDocRef<D extends DocumentSchema>(
-  app: WithStateModule<PackApp>,
+  app: PackApp,
   docSchema: D,
   documentId: DocumentId | undefined,
 ): DocumentRef<D> {
