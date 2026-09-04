@@ -64,6 +64,22 @@ function resolveFieldArg<T extends FieldArg>(value: T): ResolvedFieldArg<T> {
   return resolved as ResolvedFieldArg<T>;
 }
 
+/**
+ * Define a **record**: a named set of typed fields, the basic building block of
+ * a schema.
+ *
+ * Each field's type is a primitive ({@link String}, {@link Double}, …), a
+ * composite ({@link Optional}, {@link Array}), or a reference to another record
+ * or union — passed directly, or as `() => Model` for forward references.
+ *
+ * @example
+ * ```ts
+ * const ShapeBox = defineRecord("ShapeBox", {
+ *   docs: "A box.",
+ *   fields: { top: Double, left: Double, color: Optional(String) },
+ * });
+ * ```
+ */
 export function defineRecord<const T extends FieldArgs>(
   name: string,
   record: RecordArgs<T>,
