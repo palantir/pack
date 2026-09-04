@@ -52,6 +52,7 @@ import type {
   TypedPublishChannelId,
   TypedReceiveChannelId,
 } from "./types/EventService.js";
+import { createUnackedUpdateOutbox, type UnackedUpdateOutbox } from "./unackedUpdateOutbox.js";
 
 // TODO: replace with @osdk/foundry.pack types when they land.
 export interface PresenceSubscriptionOptions {
@@ -114,6 +115,8 @@ interface SyncSessionInternal extends SyncSession {
     doc: y.Doc,
     transaction: y.Transaction,
   ) => void;
+  /** Published updates awaiting ack; created on sync start, cleared on stop. */
+  outbox?: UnackedUpdateOutbox;
   yDoc?: y.Doc;
 }
 
@@ -191,6 +194,7 @@ class FoundryEventServiceImpl implements FoundryEventService {
         documentSubscriptionId: undefined,
         lastRevisionId: undefined,
         localYDocUpdateHandler: undefined,
+        outbox: undefined,
         yDoc: undefined,
       };
       this.sessions.set(sessionId, session);
@@ -216,6 +220,19 @@ class FoundryEventServiceImpl implements FoundryEventService {
     }
     session.yDoc = yDoc;
 
+    // Resends published updates until the server acks them (see handleDocumentUpdateMessage).
+    const outbox = createUnackedUpdateOutbox(unackedUpdates => {
+      for (const { publishMessage, sendCount } of unackedUpdates) {
+        this.logger.debug("Resending unacked document update", {
+          docId: documentId,
+          editId: publishMessage.editId,
+          sendCount,
+        });
+        this.publishDocumentUpdate(documentId, publishMessage);
+      }
+    });
+    session.outbox = outbox;
+
     const localYDocUpdateHandler = (
       update: Uint8Array,
       origin: unknown,
@@ -235,7 +252,6 @@ class FoundryEventServiceImpl implements FoundryEventService {
         return;
       }
 
-      const publishChannelId = getDocumentPublishChannelId(documentId);
       const editId = generateId();
       const description = isEditDescription(origin)
         ? createDocumentEditDescription(origin)
@@ -253,14 +269,8 @@ class FoundryEventServiceImpl implements FoundryEventService {
           data: Base64.fromUint8Array(update),
         },
       };
-      void this.eventService.publish(
-        publishChannelId,
-        publishMessage,
-      ).catch((error: unknown) => {
-        this.logger.error("Failed to publish document update", error, {
-          docId: documentId,
-        });
-      });
+      outbox.add(editId, publishMessage);
+      this.publishDocumentUpdate(documentId, publishMessage);
     };
 
     session.localYDocUpdateHandler = localYDocUpdateHandler;
@@ -489,6 +499,8 @@ class FoundryEventServiceImpl implements FoundryEventService {
       this.eventService.unsubscribe(internalSession.documentSubscriptionId);
       internalSession.documentSubscriptionId = undefined;
     }
+    internalSession.outbox?.clear();
+    internalSession.outbox = undefined;
     internalSession.lastRevisionId = undefined;
     internalSession.yDoc = undefined;
   }
@@ -505,6 +517,22 @@ class FoundryEventServiceImpl implements FoundryEventService {
     }
     this.stopDocumentSync(session);
     this.sessions.delete(sessionId);
+  }
+
+  private publishDocumentUpdate(
+    documentId: DocumentId,
+    publishMessage: DocumentPublishMessage,
+  ): void {
+    const publishChannelId = getDocumentPublishChannelId(documentId);
+    void this.eventService.publish(
+      publishChannelId,
+      publishMessage,
+    ).catch((error: unknown) => {
+      this.logger.error("Failed to publish document update", error, {
+        docId: documentId,
+        editId: publishMessage.editId,
+      });
+    });
   }
 
   private handleDocumentUpdateMessage(
@@ -528,7 +556,17 @@ class FoundryEventServiceImpl implements FoundryEventService {
         });
         break;
       case "update":
-        const { baseRevisionId, clientId, revisionId, update } = message;
+        const { baseRevisionId, clientId, editIds, revisionId, update } = message;
+
+        // Our own updates are echoed back so we can stop tracking them.
+        if (clientId === session.clientId) {
+          session.outbox?.ack(editIds);
+          // A zero revision indicates a duplicate ack: the server has already processed this update.
+          // This revision's baseRevisionId may have occurred in the past and should not be used to bump session.lastRevisionId.
+          if (Number(revisionId) === 0) {
+            break;
+          }
+        }
 
         const data = update != null && typeof update.data === "string"
           ? Base64.toUint8Array(update.data)

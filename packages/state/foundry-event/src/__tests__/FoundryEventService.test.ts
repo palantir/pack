@@ -21,7 +21,7 @@ import {
   addDocumentUpdateSchemaVersionToTransaction,
   type DocumentSyncStatus,
 } from "@palantir/pack.state.core";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import * as Y from "yjs";
 import { createFoundryEventService } from "../FoundryEventService.js";
 import type { SubscriptionId } from "../types/EventService.js";
@@ -390,5 +390,145 @@ describe("FoundryEventService", () => {
     );
 
     expect(secondSession.clientId).not.toBe(firstSession.clientId);
+  });
+
+  describe("unacked update outbox", () => {
+    beforeEach(() => {
+      vi.useFakeTimers();
+    });
+
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    const publishCallsFor = (documentId: string) =>
+      mocks.eventService.publish.mock.calls.filter(
+        ([channel]) => channel === `/document/${documentId}/publish`,
+      );
+
+    const startSyncedDoc = async () => {
+      let updateCallback: ((message: DocumentUpdateMessage) => void) | undefined;
+      mocks.eventService.subscribe.mockImplementation((_channel, callback) => {
+        updateCallback = callback as (message: DocumentUpdateMessage) => void;
+        return Promise.resolve("document-sub" as SubscriptionId);
+      });
+
+      const yDoc = new Y.Doc();
+      const service = createFoundryEventService(app);
+      const session = service.startDocumentSync(
+        "doc-1" as DocumentId,
+        yDoc,
+        { maxVersion: 1, minVersion: 1 },
+        () => {},
+      );
+
+      await Promise.resolve();
+      // Establish an initial revision so that local edits are allowed to publish.
+      updateCallback!({
+        baseRevisionId: "0",
+        clientId: "server",
+        clientSupportedVersionRange: { minVersion: 1, maxVersion: 1 },
+        editIds: [],
+        revisionId: "1",
+        type: "update",
+      });
+
+      return { service, session, yDoc, sendServerMessage: updateCallback! };
+    };
+
+    it("resends unacked updates and stops once the server acks", async () => {
+      const { session, yDoc, sendServerMessage } = await startSyncedDoc();
+
+      // A local edit publishes once and is tracked for resend until acked.
+      yDoc.getMap("Shape").set("shape-1", new Y.Map());
+      expect(publishCallsFor("doc-1")).toHaveLength(1);
+      const editId = (publishCallsFor("doc-1")[0]![1] as { editId: string }).editId;
+
+      // Still unacked after 2s, so it is resent with the same editId.
+      vi.advanceTimersByTime(2_000);
+      expect(publishCallsFor("doc-1")).toHaveLength(2);
+      expect((publishCallsFor("doc-1")[1]![1] as { editId: string }).editId).toBe(editId);
+
+      // The server echoes our clientId + editId back as an ack.
+      sendServerMessage({
+        baseRevisionId: "1",
+        clientId: session.clientId,
+        clientSupportedVersionRange: { minVersion: 1, maxVersion: 1 },
+        editIds: [editId],
+        revisionId: "2",
+        type: "update",
+      });
+
+      // No further resends once acked.
+      vi.advanceTimersByTime(6_000);
+      expect(publishCallsFor("doc-1")).toHaveLength(2);
+    });
+
+    it("acks duplicate echoed updates without processing their zero revision", async () => {
+      const { session, yDoc, sendServerMessage } = await startSyncedDoc();
+
+      yDoc.getMap("Shape").set("shape-1", new Y.Map());
+      const editId = (publishCallsFor("doc-1")[0]![1] as { editId: string }).editId;
+
+      sendServerMessage({
+        baseRevisionId: "1",
+        clientId: session.clientId,
+        clientSupportedVersionRange: { minVersion: 1, maxVersion: 1 },
+        editIds: [editId],
+        revisionId: "0",
+        type: "update",
+      });
+
+      // The duplicate ack stops retries but does not reset the tracked revision to zero.
+      vi.advanceTimersByTime(2_000);
+      expect(publishCallsFor("doc-1")).toHaveLength(1);
+
+      sendServerMessage({
+        baseRevisionId: "1",
+        clientId: "other-client",
+        clientSupportedVersionRange: { minVersion: 1, maxVersion: 1 },
+        editIds: [],
+        revisionId: "2",
+        type: "update",
+      });
+      expect(logger.error).not.toHaveBeenCalledWith(
+        "Got unexpected update for baseRevisionId",
+        expect.anything(),
+      );
+    });
+
+    it("does not ack tracked updates for updates from other clients", async () => {
+      const { yDoc, sendServerMessage } = await startSyncedDoc();
+
+      yDoc.getMap("Shape").set("shape-1", new Y.Map());
+      expect(publishCallsFor("doc-1")).toHaveLength(1);
+      const editId = (publishCallsFor("doc-1")[0]![1] as { editId: string }).editId;
+
+      // An update from a different client, even one referencing our editId, is not an ack.
+      sendServerMessage({
+        baseRevisionId: "1",
+        clientId: "other-client",
+        clientSupportedVersionRange: { minVersion: 1, maxVersion: 1 },
+        editIds: [editId],
+        revisionId: "2",
+        type: "update",
+      });
+
+      // Still unacked, so it is resent.
+      vi.advanceTimersByTime(2_000);
+      expect(publishCallsFor("doc-1")).toHaveLength(2);
+    });
+
+    it("stops resending after document sync is stopped", async () => {
+      const { service, session, yDoc } = await startSyncedDoc();
+
+      yDoc.getMap("Shape").set("shape-1", new Y.Map());
+      expect(publishCallsFor("doc-1")).toHaveLength(1);
+
+      service.stopDocumentSync(session);
+
+      vi.advanceTimersByTime(6_000);
+      expect(publishCallsFor("doc-1")).toHaveLength(1);
+    });
   });
 });
