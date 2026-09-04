@@ -40,6 +40,7 @@ import type {
   CreateDocumentMetadata,
   DocumentType,
   InternalYjsDoc,
+  SearchDocumentsOptions,
   SearchDocumentsResult,
   UpdateDocumentMetadata,
 } from "@palantir/pack.state.core";
@@ -271,12 +272,7 @@ export class DemoDocumentService extends BaseYjsDocumentService<DemoInternalDoc>
   readonly searchDocuments = async <T extends DocumentSchema>(
     documentTypeName: string,
     schema: T,
-    options?: {
-      documentName?: string;
-      pageSize?: number;
-      pageToken?: string;
-      ontologyRid?: string;
-    },
+    options?: SearchDocumentsOptions,
   ): Promise<SearchDocumentsResult> => {
     await this.metadataStore.whenReady();
     return this.metadataStore.searchDocuments(documentTypeName, options);

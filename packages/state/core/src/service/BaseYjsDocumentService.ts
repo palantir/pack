@@ -57,6 +57,7 @@ import type {
   RecordCollectionChangeCallback,
   RecordDeleteCallback,
   RecordInvalidCallback,
+  SearchDocumentsOptions,
   SearchDocumentsResult,
   UpdateDocumentMetadata,
 } from "../types/DocumentService.js";
@@ -189,12 +190,7 @@ export abstract class BaseYjsDocumentService<TDoc extends InternalYjsDoc = Inter
   abstract readonly searchDocuments: <T extends DocumentSchema>(
     documentTypeName: string,
     schema: T,
-    options?: {
-      documentName?: string;
-      pageSize?: number;
-      pageToken?: string;
-      ontologyRid?: string;
-    },
+    options?: SearchDocumentsOptions,
   ) => Promise<SearchDocumentsResult>;
 
   abstract readonly updateDocument: (

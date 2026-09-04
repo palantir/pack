@@ -205,6 +205,20 @@ describe("Foundry Security Conversion", () => {
       );
     });
 
+    it("forwards orderBy on the request when provided", async () => {
+      vi.mocked(Documents.search).mockResolvedValue({ data: [] });
+
+      await service.searchDocuments("SecureType", testSchema, {
+        orderBy: { direction: "DESC", field: "LAST_MODIFIED_TIME" },
+      });
+
+      const request = vi.mocked(Documents.search).mock.calls[0]?.[1];
+      expect(request?.requestBody.orderBy).toEqual({
+        direction: "DESC",
+        field: "LAST_MODIFIED_TIME",
+      });
+    });
+
     it("leaves ontologyRid undefined when not provided", async () => {
       vi.mocked(Documents.search).mockResolvedValue({ data: [] });
 
