@@ -20,7 +20,7 @@ import type {
   DocumentMetadata,
   DocumentSchema,
 } from "@palantir/pack.document-schema.model-types";
-import type { WithStateModule } from "@palantir/pack.state.core";
+import type { DocumentSort, WithStateModule } from "@palantir/pack.state.core";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 const DEFAULT_PAGE_SIZE = 10;
@@ -44,6 +44,7 @@ export function useSearchDocuments<T extends DocumentSchema>(
   schema: T,
   documentName?: string,
   pageSize: number = DEFAULT_PAGE_SIZE,
+  orderBy?: DocumentSort,
 ): UseSearchDocumentsResult {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<Error | undefined>(undefined);
@@ -54,6 +55,8 @@ export function useSearchDocuments<T extends DocumentSchema>(
   const [currentPage, setCurrentPage] = useState(1);
 
   const pendingRequestRef = useRef<number>(0);
+  const orderByDirection = orderBy?.direction;
+  const orderByField = orderBy?.field;
 
   const search = useCallback(
     async (
@@ -70,7 +73,14 @@ export function useSearchDocuments<T extends DocumentSchema>(
         const searchResult = await app.state.searchDocuments(
           documentTypeName,
           schema,
-          { documentName: searchDocumentName, pageSize: searchPageSize, pageToken },
+          {
+            documentName: searchDocumentName,
+            orderBy: orderByDirection == null || orderByField == null
+              ? undefined
+              : { direction: orderByDirection, field: orderByField },
+            pageSize: searchPageSize,
+            pageToken,
+          },
         );
         if (requestRef === pendingRequestRef.current) {
           setResults(searchResult.data);
@@ -87,13 +97,13 @@ export function useSearchDocuments<T extends DocumentSchema>(
         }
       }
     },
-    [app.state, documentTypeName, schema],
+    [app.state, documentTypeName, orderByDirection, orderByField, schema],
   );
 
   useEffect(() => {
     setCurrentPage(1);
     setNextPageToken(undefined);
-  }, [documentName, pageSize]);
+  }, [documentName, orderByDirection, orderByField, pageSize]);
 
   useEffect(() => {
     if (currentPage === 1) {

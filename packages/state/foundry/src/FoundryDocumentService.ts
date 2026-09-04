@@ -54,6 +54,7 @@ import type {
   DocumentType,
   FileSystemType,
   InternalYjsDoc,
+  SearchDocumentsOptions,
   SearchDocumentsResult,
   UpdateDocumentMetadata,
 } from "@palantir/pack.state.core";
@@ -234,17 +235,13 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
   readonly searchDocuments = async <T extends DocumentSchema>(
     documentTypeName: string,
     schema: T,
-    options?: {
-      documentName?: string;
-      pageSize?: number;
-      pageToken?: string;
-      ontologyRid?: string;
-    },
+    options?: SearchDocumentsOptions,
   ): Promise<SearchDocumentsResult> => {
     const request: SearchDocumentsRequest = {
       documentTypeName,
       requestBody: {
         query: options?.documentName != null ? { documentName: options.documentName } : undefined,
+        orderBy: options?.orderBy,
         pageSize: options?.pageSize,
         pageToken: options?.pageToken,
         ontologyRid: options?.ontologyRid,
