@@ -40,7 +40,7 @@ import {
   type PackApp,
   type PackAppInternal,
 } from "@palantir/pack.core";
-import { getStateModule } from "@palantir/pack.state.core";
+import { getStateModule, type WithStateModule } from "@palantir/pack.state.core";
 import { getDocumentServiceConfig } from "./getDocumentServiceConfig.js";
 import { getPageEnv } from "./getPageEnv.js";
 
@@ -72,8 +72,6 @@ export type WithNamedModules<T extends Record<string, ModuleConfig>> = {
 
 /**
  * Pack app with auth module automatically added
- *
- * @deprecated `auth` is now declared on PackApp directly, so this is a no-op. Use `PackApp`.
  */
 export type PackAppWithAuth = PackApp & {
   readonly auth: AuthModule;
@@ -99,11 +97,8 @@ export interface AppBuilders {
 
   /**
    * Configure state module and add state accessor.
-   *
-   * @deprecated The state module is now always initialized by initPackApp and `state` is
-   * declared on PackApp, so this is a no-op and can be removed from builder chains.
    */
-  withState(): SimplifyOmit<this, keyof AppBuilders> & AppBuilders;
+  withState(): SimplifyOmit<WithStateModule<this>, keyof AppBuilders> & AppBuilders;
 }
 
 /**
@@ -116,13 +111,13 @@ export interface AppBuilders {
 export function initPackApp(
   client: Client,
   options: AppOptions,
-): PackApp & AppBuilders {
-  // The `auth` and `state` accessors are installed at runtime; PackApp declares them via
-  // module augmentation in pack.auth / pack.state.core, so the cast below is sound.
+): PackAppWithAuth & AppBuilders {
+  // PackAppInternal -> PackApp is tricky due to module accessors (eg 'state').
+  // This probably needs some rethinking, but we ideally want to maintain inversion of dependencies
   return new PackAppImpl(
     client,
     options,
-  ) satisfies PackAppInternal as unknown as PackApp & AppBuilders;
+  ) satisfies PackAppInternal as unknown as PackAppWithAuth & AppBuilders;
 }
 
 function getOsdkClientSharedContext(value: SharedClient): OsdkClientSharedContext {
@@ -166,10 +161,8 @@ class PackAppImpl implements PackAppInternal, AppBuilders {
       this.#moduleConfigs[moduleKey.key] = config;
     }
 
-    // Always initialize the auth and state modules, so that the `auth` and `state`
-    // accessors declared on PackApp are always present.
+    // Always initialize the auth module
     getAuthModule(this);
-    getStateModule(this);
   }
 
   build(): this {
@@ -283,9 +276,10 @@ class PackAppImpl implements PackAppInternal, AppBuilders {
       & AppBuilders;
   }
 
-  withState(): SimplifyOmit<this, keyof AppBuilders> & AppBuilders {
-    // No-op: the state module is initialized in the constructor. Retained for compatibility.
-    return this as unknown as SimplifyOmit<this, keyof AppBuilders> & AppBuilders;
+  withState(): SimplifyOmit<WithStateModule<this>, keyof AppBuilders> & AppBuilders {
+    // Initialize and register the state accessor using the internal function
+    getStateModule(this);
+    return this as unknown as SimplifyOmit<WithStateModule<this>, keyof AppBuilders> & AppBuilders;
   }
 }
 

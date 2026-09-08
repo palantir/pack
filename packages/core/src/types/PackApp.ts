@@ -83,9 +83,6 @@ export function assertIsAppInternal(
 ): asserts app is PackAppInternal;
 export function assertIsAppInternal(
   app: PackApp | PackAppInternal,
-): asserts app is PackAppInternal;
-export function assertIsAppInternal(
-  app: PackApp | PackAppInternal,
 ): asserts app is PackAppInternal {
   invariant("getModule" in app, "App is not an PackAppInternal");
 }

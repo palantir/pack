@@ -317,6 +317,14 @@ describe("create-app createCommand", () => {
           expect(sdkIndex).toContain(
             `export const DOCUMENT_TYPE_NAME = "${testCase.answers.documentTypeName as string}"`,
           );
+
+          const packAppSource = fs.readFileSync(
+            path.join(projectDir, "packages/app/src/packApp.ts"),
+            "utf8",
+          );
+          expect(packAppSource).toContain(".withState()");
+          expect(packAppSource).toContain("createPackAppContext(app)");
+          expect(files).not.toContain("packages/app/src/hooks/usePackApp.ts");
         }
       });
     });

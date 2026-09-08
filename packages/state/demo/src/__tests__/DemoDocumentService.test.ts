@@ -236,18 +236,6 @@ describe("DemoDocumentService", () => {
     await new Promise(resolve => setTimeout(resolve, 100));
   });
 
-  it("should not open IndexedDB when the state module initializes", () => {
-    const openSpy = vi.spyOn(indexedDB, "open");
-
-    try {
-      getStateModule(app);
-
-      expect(openSpy).not.toHaveBeenCalled();
-    } finally {
-      openSpy.mockRestore();
-    }
-  });
-
   it("should create and load a document", async () => {
     const stateModule = getStateModule(app);
 

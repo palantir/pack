@@ -15,9 +15,9 @@
  */
 
 import type { DocumentId } from "@palantir/pack.document-schema.model-types";
-import { usePackApp, useSearchDocuments } from "@palantir/pack.state.react";
+import { useSearchDocuments } from "@palantir/pack.state.react";
 import { useCallback } from "react";
-import { DOCUMENT_TYPE_NAME } from "../app.js";
+import { DOCUMENT_TYPE_NAME, usePackApp } from "../app.js";
 import { CanvasSchema } from "../pack.js";
 
 export interface CanvasDocument {

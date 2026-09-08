@@ -1,6 +1,6 @@
-import { usePackApp, useSearchDocuments } from "@palantir/pack.state.react";
+import { useSearchDocuments } from "@palantir/pack.state.react";
 import { AuthCallback } from "./AuthCallback.js";
-import { AppSchema, DOCUMENT_TYPE_NAME } from "./packApp.js";
+import { AppSchema, DOCUMENT_TYPE_NAME, usePackApp } from "./packApp.js";
 
 export function App(): React.JSX.Element {
   // Minimal routing: render the OAuth callback handler at /auth/callback, and the

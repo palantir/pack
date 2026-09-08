@@ -16,7 +16,7 @@
 
 import type { PackApp } from "@palantir/pack.core";
 import type { DocumentRef } from "@palantir/pack.document-schema.model-types";
-import type { DocumentStatus } from "@palantir/pack.state.core";
+import type { DocumentStatus, WithStateModule } from "@palantir/pack.state.core";
 import { isValidDocRef } from "@palantir/pack.state.core";
 import { useEffect, useState } from "react";
 
@@ -44,7 +44,7 @@ import { useEffect, useState } from "react";
  * ```
  */
 export function useDocumentStatus(
-  app: PackApp,
+  app: WithStateModule<PackApp>,
   docRef: DocumentRef | undefined,
 ): DocumentStatus | undefined {
   const [status, setStatus] = useState<DocumentStatus>();

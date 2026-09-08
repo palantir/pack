@@ -1,6 +1,7 @@
 import { createClient } from "@osdk/client";
 import { createPublicOauthClient } from "@osdk/oauth";
 import { getPageEnvOrThrow, initPackApp } from "@palantir/pack.app";
+import { createPackAppContext } from "@palantir/pack.state.react";
 import { DocumentModel } from "<%= answers.scope %>.sdk";
 
 // The document type name is generated into the SDK from your schema's
@@ -44,7 +45,11 @@ export const app = initPackApp(osdkClient, {
     : undefined,
   ontologyRid: ONTOLOGY_RID,
   logLevel: "info",
-}).build();
+})
+  .withState()
+  .build();
+
+export const { PackAppProvider, usePackApp } = createPackAppContext(app);
 
 // The shared, typed document schema for this app, from the generated SDK. Reuse
 // this wherever a `DocumentSchema` is required, e.g. `useSearchDocuments`.

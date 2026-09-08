@@ -16,7 +16,6 @@
 
 export type { AuthModule } from "@palantir/pack.auth";
 export type { AppConfig, PackApp, TokenProvider } from "@palantir/pack.core";
-export type { StateModule } from "@palantir/pack.state.core";
 export {
   createDemoPublicOauthClient,
   DemoPublicOauthClient,
