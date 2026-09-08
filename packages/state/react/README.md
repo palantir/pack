@@ -17,6 +17,17 @@ This package provides React-specific bindings for PACK's state management system
 
 ## Usage
 
+Create a typed provider and hook next to the configured app. This preserves accessors added by
+`.withState()` for example, instead of narrowing the app back to the base `PackApp` type.
+
+```typescript
+import { initPackApp } from "@palantir/pack.app";
+import { createPackAppContext } from "@palantir/pack.state.react";
+
+export const app = initPackApp(client, options).withState().build();
+export const { PackAppProvider, usePackApp } = createPackAppContext(app);
+```
+
 ```typescript
 import { createRecordCollectionRef, createRecordRef } from "@palantir/pack.state.core";
 import {
