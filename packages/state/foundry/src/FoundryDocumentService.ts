@@ -170,7 +170,7 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
     metadata: CreateDocumentMetadata,
     schema: T,
   ): Promise<DocumentRef<T>> => {
-    const { documentTypeName, name, parent, parentFolderRid, security } = metadata;
+    const { description, documentTypeName, name, parent, parentFolderRid, security } = metadata;
     const preview = this.config.usePreviewApi ?? DEFAULT_USE_PREVIEW_API;
     const wireSecurity = getWireSecurity(security);
 
@@ -178,6 +178,7 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
     if (parent == null) {
       const ontologyRid = metadata.ontologyRid ?? await getOntologyRid(this.app);
       const request: CreateDocumentRequest = {
+        ...(description != null ? { description } : {}),
         documentTypeName,
         name,
         ontologyRid,
@@ -214,6 +215,7 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
 
       const request: CreateDocumentV2Request = {
         requestBody: {
+          ...(description != null ? { description } : {}),
           documentTypeName,
           name,
           parent,
