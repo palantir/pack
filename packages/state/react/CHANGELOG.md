@@ -1,5 +1,22 @@
 # @palantir/pack.state.react
 
+## 0.27.0
+
+### Minor Changes
+
+- aa09906: Add document search ordering by name, creation time, last-modified time, or last-view time.
+  Foundry-backed searches forward the ordering to the server, and `useSearchDocuments` accepts
+  ordering as an optional sixth argument.
+
+### Patch Changes
+
+- Updated dependencies [064eee7]
+- Updated dependencies [aa09906]
+  - @palantir/pack.state.core@0.27.0
+  - @palantir/pack.auth@0.27.0
+  - @palantir/pack.core@0.27.0
+  - @palantir/pack.document-schema.model-types@0.27.0
+
 ## 0.26.0
 
 ### Patch Changes
