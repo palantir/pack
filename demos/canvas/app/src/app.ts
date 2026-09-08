@@ -25,6 +25,7 @@ import {
   initPackApp,
   isDemoEnv,
 } from "@palantir/pack.app";
+import { createPackAppContext } from "@palantir/pack.state.react";
 
 const ALLOW_DEV_TOKEN = true;
 
@@ -89,3 +90,5 @@ export const app = initPackApp(osdkClient, {
 })
   .withState()
   .build();
+
+export const { PackAppProvider, usePackApp } = createPackAppContext(app);

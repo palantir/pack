@@ -78,7 +78,6 @@ const WORKSPACE_FILES = [
   "packages/app/src/main.tsx",
   "packages/app/src/App.tsx",
   "packages/app/src/AuthCallback.tsx",
-  "packages/app/src/hooks/usePackApp.ts",
   "packages/app/src/packApp.ts",
 ];
 
@@ -318,6 +317,14 @@ describe("create-app createCommand", () => {
           expect(sdkIndex).toContain(
             `export const DOCUMENT_TYPE_NAME = "${testCase.answers.documentTypeName as string}"`,
           );
+
+          const packAppSource = fs.readFileSync(
+            path.join(projectDir, "packages/app/src/packApp.ts"),
+            "utf8",
+          );
+          expect(packAppSource).toContain(".withState()");
+          expect(packAppSource).toContain("createPackAppContext(app)");
+          expect(files).not.toContain("packages/app/src/hooks/usePackApp.ts");
         }
       });
     });
