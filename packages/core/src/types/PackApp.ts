@@ -21,8 +21,9 @@ import type { ModuleKey } from "./ModuleKey.js";
 /**
  * PackApp provides access to various pack subsystems.
  *
- * Auth is added automatically by `initPackApp`. Optional modules become available after they are
- * configured through the app builder. For example, call `.withState()` to add `app.state`.
+ * `initPackApp` automatically initializes auth and adds `app.auth`. Optional modules can be
+ * initialized through builder methods. Call `.withState()` to initialize state and add the typed
+ * `app.state` accessor.
  *
  * @example
  * ```typescript
