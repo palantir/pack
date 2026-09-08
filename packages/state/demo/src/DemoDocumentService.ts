@@ -237,6 +237,7 @@ export class DemoDocumentService extends BaseYjsDocumentService<DemoInternalDoc>
 
   readonly createDocument = async <T extends DocumentSchema>(
     {
+      description,
       documentTypeName,
       name,
       security = EMPTY_DOCUMENT_SECURITY,
@@ -254,6 +255,7 @@ export class DemoDocumentService extends BaseYjsDocumentService<DemoInternalDoc>
     const operationalVersion = schemaMeta.minSupportedVersion ?? schemaMeta.version;
 
     const metadata: DocumentMetadata = {
+      ...(description != null ? { description } : {}),
       documentTypeName,
       name,
       operationalVersion,
