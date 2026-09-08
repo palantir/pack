@@ -78,7 +78,6 @@ export function createPackAppContext<TApp extends PackApp>(
 
 const PACK_CONTEXT = createContext<PackApp | null>(null);
 
-// TODO: this should move to a pack.app.react package as it has nothing to do with state.
 export function usePackApp(): PackApp;
 export function usePackApp(throwOnMissing: true): PackApp;
 export function usePackApp(throwOnMissing: false): PackApp | null;
