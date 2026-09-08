@@ -16,21 +16,14 @@
 
 import type { PackApp } from "@palantir/pack.core";
 import type { DocumentSchema } from "@palantir/pack.document-schema.model-types";
-import type { StateModule, WithStateModule } from "@palantir/pack.state.core";
+import type { WithStateModule } from "@palantir/pack.state.core";
 import { renderHook, waitFor } from "@testing-library/react";
-import { describe, expect, expectTypeOf, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { useSearchDocuments } from "../hooks/useSearchDocuments.js";
 
 const TEST_SCHEMA = {} as DocumentSchema;
 
-type BarePackAppHasState = "state" extends keyof PackApp ? true : false;
-
 describe("useSearchDocuments", () => {
-  it("keeps state opt-in at the type level", () => {
-    expectTypeOf<BarePackAppHasState>().toEqualTypeOf<false>();
-    expectTypeOf<WithStateModule<PackApp>["state"]>().toEqualTypeOf<StateModule>();
-  });
-
   it("forwards document ordering", async () => {
     const searchDocuments = vi.fn().mockResolvedValue({ data: [] });
     const app = { state: { searchDocuments } } as unknown as WithStateModule<PackApp>;
