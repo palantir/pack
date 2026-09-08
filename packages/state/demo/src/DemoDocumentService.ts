@@ -96,7 +96,7 @@ interface DemoInternalDoc extends InternalYjsDoc {
 export class DemoDocumentService extends BaseYjsDocumentService<DemoInternalDoc> {
   private readonly clientId: string;
   private readonly dbPrefix: string;
-  private readonly metadataStore: MetadataStore;
+  private metadataStoreInstance: MetadataStore | undefined;
 
   constructor(app: PackAppInternal, options: DemoDocumentServiceOptions = {}) {
     super(app, app.config.logger.child({}, { level: "debug", msgPrefix: "DemoDocumentService" }), {
@@ -105,7 +105,11 @@ export class DemoDocumentService extends BaseYjsDocumentService<DemoInternalDoc>
 
     this.clientId = getOrCreateClientId();
     this.dbPrefix = options.dbPrefix ?? "pack-demo";
-    this.metadataStore = new MetadataStore(this.dbPrefix);
+  }
+
+  private get metadataStore(): MetadataStore {
+    // IndexedDB may not exist in Node or SSR, so wait until a document operation needs it.
+    return this.metadataStoreInstance ??= new MetadataStore(this.dbPrefix);
   }
 
   private static readonly SCHEMA_VERSION_KEY_PREFIX = "pack-demo-schema-version:";
