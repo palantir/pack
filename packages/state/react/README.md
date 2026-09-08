@@ -28,6 +28,26 @@ export const app = initPackApp(client, options).withState().build();
 export const { PackAppProvider, usePackApp } = createPackAppContext(app);
 ```
 
+If the app is created asynchronously, create the typed context first and pass the finished app to
+the provider:
+
+```tsx
+async function initializePackApp() {
+  // await any required setup
+  return initPackApp(client, options).withState().build();
+}
+
+type App = Awaited<ReturnType<typeof initializePackApp>>;
+
+export const { PackAppProvider, usePackApp } = createPackAppContext<App>();
+
+const app = await initializePackApp();
+
+<PackAppProvider value={app}>
+  <App />
+</PackAppProvider>;
+```
+
 ```typescript
 import { createRecordCollectionRef, createRecordRef } from "@palantir/pack.state.core";
 import {
