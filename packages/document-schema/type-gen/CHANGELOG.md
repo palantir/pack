@@ -1,5 +1,12 @@
 # @palantir/pack.document-schema.type-gen
 
+## 0.27.0
+
+### Patch Changes
+
+- @palantir/pack.document-schema.model-types@0.27.0
+- @palantir/pack.schema@0.27.0
+
 ## 0.26.0
 
 ### Patch Changes
