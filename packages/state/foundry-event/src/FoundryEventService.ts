@@ -72,8 +72,8 @@ export interface PresencePublishOptions {
 
 const UPDATE_ORIGIN_REMOTE = "remote" as const;
 
-/** Queue depth at which held updates stop looking like a normal load and start looking stuck. */
-const PENDING_PUBLISH_WARN_THRESHOLD = 100;
+/** Caps memory growth during a stalled load; later updates are logged and dropped. */
+const PENDING_PUBLISH_MAX = 100;
 
 const getDocumentUpdatesChannelId = (
   documentId: DocumentId,
@@ -111,6 +111,8 @@ export interface SyncSession {
 }
 
 interface SyncSessionInternal extends SyncSession {
+  /** Tracks callback/ack races; false means recovery was already reported. */
+  dataChannelFailed?: boolean;
   documentSubscriptionId?: SubscriptionId;
   lastRevisionId?: number;
   localYDocUpdateHandler?: (
@@ -203,6 +205,7 @@ class FoundryEventServiceImpl implements FoundryEventService {
     if (!session) {
       session = {
         clientId: crypto.randomUUID(),
+        dataChannelFailed: undefined,
         documentId,
         documentSubscriptionId: undefined,
         lastRevisionId: undefined,
@@ -275,11 +278,6 @@ class FoundryEventServiceImpl implements FoundryEventService {
 
     const channelId = getDocumentUpdatesChannelId(documentId);
 
-    // Scoped to this sync generation. CometD dispatches a transport response's messages
-    // synchronously while the subscribe promise resolves on a microtask, so a channel error
-    // delivered alongside the ack would otherwise be overwritten by the promotion below.
-    let channelFailed = false;
-
     this.eventService.subscribe(
       channelId,
       (message: DocumentUpdateMessage) => {
@@ -287,7 +285,7 @@ class FoundryEventServiceImpl implements FoundryEventService {
           return;
         }
         if (message.type === "error") {
-          channelFailed = true;
+          session.dataChannelFailed = true;
         }
         this.handleDocumentUpdateMessage(session, message, yDoc, onStatusChange);
       },
@@ -299,7 +297,7 @@ class FoundryEventServiceImpl implements FoundryEventService {
     ).then(subscriptionId => {
       if (session.localYDocUpdateHandler === localYDocUpdateHandler) {
         session.documentSubscriptionId = subscriptionId;
-        if (!channelFailed) {
+        if (session.dataChannelFailed === undefined) {
           // The channel is subscribed, so the data channel is live. Reported separately from
           // `load`, which stays LOADING until the first update arrives. Matches how the activity
           // and presence channels report liveness on subscription establishment.
@@ -509,6 +507,7 @@ class FoundryEventServiceImpl implements FoundryEventService {
       this.eventService.unsubscribe(internalSession.documentSubscriptionId);
       internalSession.documentSubscriptionId = undefined;
     }
+    internalSession.dataChannelFailed = undefined;
     internalSession.outbox?.clear();
     internalSession.outbox = undefined;
     internalSession.lastRevisionId = undefined;
@@ -566,12 +565,17 @@ class FoundryEventServiceImpl implements FoundryEventService {
     };
 
     if (session.lastRevisionId == null) {
+      if (session.pendingPublishes.length >= PENDING_PUBLISH_MAX) {
+        this.logger.error("Dropping local document update; the hold queue is full", {
+          docId: session.documentId,
+          editId: publishMessage.editId,
+          pendingCount: session.pendingPublishes.length,
+        });
+        return;
+      }
       session.pendingPublishes.push(publishMessage);
       const pendingCount = session.pendingPublishes.length;
-      // Nothing bounds the queue: an initial load that never completes grows it for as long as
-      // edits keep arriving. Warn on crossing the threshold rather than dropping edits, since
-      // dropping is the failure this queue exists to prevent.
-      if (pendingCount === PENDING_PUBLISH_WARN_THRESHOLD) {
+      if (pendingCount === PENDING_PUBLISH_MAX) {
         this.logger.warn("Local document updates are piling up while the initial load completes", {
           docId: session.documentId,
           pendingCount,
@@ -734,7 +738,12 @@ class FoundryEventServiceImpl implements FoundryEventService {
         // The revision is known, so anything held during the load can go out now.
         this.flushPendingPublishes(session);
 
+        const dataChannelRecovered = session.dataChannelFailed === true;
+        if (dataChannelRecovered) {
+          session.dataChannelFailed = false;
+        }
         onStatusChange({
+          ...(dataChannelRecovered ? { live: DocumentLiveStatus.CONNECTED } : {}),
           load: DocumentLoadStatus.LOADED,
         });
 

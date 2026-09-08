@@ -647,6 +647,26 @@ describe("FoundryEventService", () => {
       expect(mocks.eventService.publish).not.toHaveBeenCalled();
     });
 
+    it("drops writes after the hold queue reaches its limit", async () => {
+      const yDoc = new Y.Doc();
+      const { deliverInitialRevision } = startSyncCapturingServer(yDoc);
+      await Promise.resolve();
+
+      for (let index = 0; index < 101; index += 1) {
+        yDoc.getMap("Shape").set(`shape-${index}`, "during-load");
+      }
+      deliverInitialRevision();
+
+      expect(mocks.eventService.publish).toHaveBeenCalledTimes(100);
+      const peerDoc = applyPublishedUpdates();
+      expect(peerDoc.getMap("Shape").get("shape-99")).toBe("during-load");
+      expect(peerDoc.getMap("Shape").get("shape-100")).toBeUndefined();
+      expect(logger.error).toHaveBeenCalledWith(
+        expect.stringContaining("hold queue is full"),
+        expect.objectContaining({ docId: "doc-1", pendingCount: 100 }),
+      );
+    });
+
     it("warns rather than staying silent when a load never completes", async () => {
       const yDoc = new Y.Doc();
       const { service } = startSyncCapturingServer(yDoc);
@@ -682,6 +702,14 @@ describe("FoundryEventService", () => {
       field: K,
     ): DocumentSyncStatus[K] | undefined {
       return statusUpdates.filter(s => s[field] !== undefined).at(-1)?.[field];
+    }
+
+    function selectLiveUpdates(
+      statusUpdates: Array<Partial<DocumentSyncStatus>>,
+    ): DocumentLiveStatus[] {
+      return statusUpdates.flatMap(
+        (status): DocumentLiveStatus[] => status.live == null ? [] : [status.live],
+      );
     }
 
     it("reports CONNECTING while the subscription is being established", () => {
@@ -764,6 +792,133 @@ describe("FoundryEventService", () => {
 
       expect(latest(statusUpdates, "live")).toBe(DocumentLiveStatus.ERROR);
       expect(latest(statusUpdates, "load")).toBe(DocumentLoadStatus.ERROR);
+    });
+
+    it("restores CONNECTED once a message proves the channel works again", async () => {
+      let updateCallback: ((message: DocumentUpdateMessage) => void) | undefined;
+      mocks.eventService.subscribe.mockImplementation(
+        (_channel, callback): Promise<SubscriptionId> => {
+          updateCallback = callback as (message: DocumentUpdateMessage) => void;
+          return Promise.resolve("document-sub" as SubscriptionId);
+        },
+      );
+      const service = createFoundryEventService(app);
+      const { statusUpdates, onStatusChange } = collectStatus();
+
+      service.startDocumentSync(
+        "doc-1" as DocumentId,
+        new Y.Doc(),
+        { maxVersion: 1, minVersion: 1 },
+        onStatusChange,
+      );
+      await Promise.resolve();
+      updateCallback?.({
+        code: "REVISION_TOO_OLD",
+        errorInstanceId: "error-instance-1",
+        type: "error",
+      } as unknown as DocumentUpdateMessage);
+      updateCallback?.({
+        baseRevisionId: "0",
+        clientId: "server",
+        clientSupportedVersionRange: { maxVersion: 1, minVersion: 1 },
+        editIds: [],
+        revisionId: "1",
+        type: "update",
+      });
+      updateCallback?.({
+        baseRevisionId: "1",
+        clientId: "server",
+        clientSupportedVersionRange: { maxVersion: 1, minVersion: 1 },
+        editIds: [],
+        revisionId: "2",
+        type: "update",
+      });
+
+      expect(selectLiveUpdates(statusUpdates)).toEqual([
+        DocumentLiveStatus.CONNECTING,
+        DocumentLiveStatus.CONNECTED,
+        DocumentLiveStatus.ERROR,
+        DocumentLiveStatus.CONNECTED,
+      ]);
+      expect(latest(statusUpdates, "load")).toBe(DocumentLoadStatus.LOADED);
+    });
+
+    it("reports recovery once when an update arrives before the subscribe ack", async () => {
+      mocks.eventService.subscribe.mockImplementation(
+        (_channel, callback): Promise<SubscriptionId> => {
+          const handleUpdate = callback as (message: DocumentUpdateMessage) => void;
+          const subscribed = Promise.resolve("document-sub" as SubscriptionId);
+          handleUpdate({
+            code: "REVISION_TOO_OLD",
+            errorInstanceId: "error-instance-1",
+            type: "error",
+          } as unknown as DocumentUpdateMessage);
+          handleUpdate({
+            baseRevisionId: "0",
+            clientId: "server",
+            clientSupportedVersionRange: { maxVersion: 1, minVersion: 1 },
+            editIds: [],
+            revisionId: "1",
+            type: "update",
+          });
+          return subscribed;
+        },
+      );
+      const service = createFoundryEventService(app);
+      const { statusUpdates, onStatusChange } = collectStatus();
+
+      service.startDocumentSync(
+        "doc-1" as DocumentId,
+        new Y.Doc(),
+        { maxVersion: 1, minVersion: 1 },
+        onStatusChange,
+      );
+      await Promise.resolve();
+
+      expect(selectLiveUpdates(statusUpdates)).toEqual([
+        DocumentLiveStatus.CONNECTING,
+        DocumentLiveStatus.ERROR,
+        DocumentLiveStatus.CONNECTED,
+      ]);
+    });
+
+    it("clears channel failure when sync stops", async () => {
+      const updateCallbacks: Array<(message: DocumentUpdateMessage) => void> = [];
+      mocks.eventService.subscribe.mockImplementation(
+        (_channel, callback): Promise<SubscriptionId> => {
+          updateCallbacks.push(callback as (message: DocumentUpdateMessage) => void);
+          return Promise.resolve(`document-sub-${updateCallbacks.length}` as SubscriptionId);
+        },
+      );
+      const service = createFoundryEventService(app);
+      const firstStatus = collectStatus();
+      const session = service.startDocumentSync(
+        "doc-1" as DocumentId,
+        new Y.Doc(),
+        { maxVersion: 1, minVersion: 1 },
+        firstStatus.onStatusChange,
+      );
+      await Promise.resolve();
+      updateCallbacks[0]?.({
+        code: "REVISION_TOO_OLD",
+        errorInstanceId: "error-instance-1",
+        type: "error",
+      } as unknown as DocumentUpdateMessage);
+
+      service.stopDocumentSync(session);
+      const secondStatus = collectStatus();
+      service.startDocumentSync(
+        "doc-1" as DocumentId,
+        new Y.Doc(),
+        { maxVersion: 1, minVersion: 1 },
+        secondStatus.onStatusChange,
+      );
+      await Promise.resolve();
+
+      expect(selectLiveUpdates(secondStatus.statusUpdates)).toEqual([
+        DocumentLiveStatus.CONNECTING,
+        DocumentLiveStatus.CONNECTED,
+      ]);
     });
 
     it("leaves liveness alone when a revision gap makes local state stale", async () => {
