@@ -56,6 +56,22 @@ describe("createPackAppContext", () => {
     expectTypeOf(result.current).toEqualTypeOf<TestPackApp | null>();
     expect(result.current).toBeNull();
   });
+
+  it("preserves an explicit app type when the app is created later", () => {
+    const app: TestPackApp = mockDeep<TestPackApp>();
+    const buildApp = () => Promise.resolve(app);
+    type App = Awaited<ReturnType<typeof buildApp>>;
+    const { PackAppProvider, usePackApp } = createPackAppContext<App>();
+
+    function Wrapper({ children }: PropsWithChildren) {
+      return <PackAppProvider value={app}>{children}</PackAppProvider>;
+    }
+
+    const { result } = renderHook(() => usePackApp(), { wrapper: Wrapper });
+
+    expect(result.current).toBe(app);
+    expectTypeOf(result.current.testModule).toEqualTypeOf<TestModule>();
+  });
 });
 
 describe("default PackApp context", () => {
