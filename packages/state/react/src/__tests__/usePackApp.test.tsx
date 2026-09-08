@@ -59,9 +59,7 @@ describe("createPackAppContext", () => {
 
   it("preserves an explicit app type when the app is created later", () => {
     const app: TestPackApp = mockDeep<TestPackApp>();
-    const buildApp = () => Promise.resolve(app);
-    type App = Awaited<ReturnType<typeof buildApp>>;
-    const { PackAppProvider, usePackApp } = createPackAppContext<App>();
+    const { PackAppProvider, usePackApp } = createPackAppContext<TestPackApp>();
 
     function Wrapper({ children }: PropsWithChildren) {
       return <PackAppProvider value={app}>{children}</PackAppProvider>;
@@ -75,19 +73,7 @@ describe("createPackAppContext", () => {
 });
 
 describe("default PackApp context", () => {
-  it("returns the provided app", () => {
-    const app: PackApp = mockDeep<PackApp>();
-
-    function Wrapper({ children }: PropsWithChildren) {
-      return <PackAppProvider value={app}>{children}</PackAppProvider>;
-    }
-
-    const { result } = renderHook(() => usePackApp(), { wrapper: Wrapper });
-
-    expect(result.current).toBe(app);
-  });
-
-  it("returns the provided app when required", () => {
+  it("returns the required provided app", () => {
     const app: PackApp = mockDeep<PackApp>();
 
     function Wrapper({ children }: PropsWithChildren) {

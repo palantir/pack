@@ -48,6 +48,7 @@ export function createPackAppContext<TApp extends PackApp>(
   app?: TApp,
 ): BoundPackAppContext<TApp> | PackAppContext<TApp> {
   const packContext = createContext<TApp | null>(null);
+  const useTypedPackApp = createUsePackApp(packContext);
 
   if (app == null) {
     function PackAppValueProvider({
@@ -59,7 +60,7 @@ export function createPackAppContext<TApp extends PackApp>(
 
     return {
       PackAppProvider: PackAppValueProvider,
-      usePackApp: createUsePackApp(packContext),
+      usePackApp: useTypedPackApp,
     };
   }
 
@@ -71,7 +72,7 @@ export function createPackAppContext<TApp extends PackApp>(
 
   return {
     PackAppProvider: BoundPackAppProvider,
-    usePackApp: createUsePackApp(packContext),
+    usePackApp: useTypedPackApp,
   };
 }
 
