@@ -72,8 +72,7 @@ export interface PresencePublishOptions {
 
 const UPDATE_ORIGIN_REMOTE = "remote" as const;
 
-/** Caps memory growth during a stalled load; later updates are logged and dropped. */
-const PENDING_PUBLISH_MAX = 100;
+const PENDING_PUBLISH_WARN_THRESHOLD = 100;
 
 const getDocumentUpdatesChannelId = (
   documentId: DocumentId,
@@ -565,17 +564,10 @@ class FoundryEventServiceImpl implements FoundryEventService {
     };
 
     if (session.lastRevisionId == null) {
-      if (session.pendingPublishes.length >= PENDING_PUBLISH_MAX) {
-        this.logger.error("Dropping local document update; the hold queue is full", {
-          docId: session.documentId,
-          editId: publishMessage.editId,
-          pendingCount: session.pendingPublishes.length,
-        });
-        return;
-      }
+      // Dropping an update leaves a gap in Yjs client clocks that blocks later edits on peers.
       session.pendingPublishes.push(publishMessage);
       const pendingCount = session.pendingPublishes.length;
-      if (pendingCount === PENDING_PUBLISH_MAX) {
+      if (pendingCount === PENDING_PUBLISH_WARN_THRESHOLD) {
         this.logger.warn("Local document updates are piling up while the initial load completes", {
           docId: session.documentId,
           pendingCount,

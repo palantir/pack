@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-import type { DocumentUpdateMessage } from "@osdk/foundry.pack";
+import type { DocumentPublishMessage, DocumentUpdateMessage } from "@osdk/foundry.pack";
 import type { PackAppInternal } from "@palantir/pack.core";
-import type { DocumentId } from "@palantir/pack.document-schema.model-types";
+import { type DocumentId, Metadata } from "@palantir/pack.document-schema.model-types";
 import {
   addDocumentUpdateSchemaVersionToTransaction,
   DocumentLiveStatus,
@@ -536,6 +536,15 @@ describe("FoundryEventService", () => {
   });
 
   describe("updates made before the initial revision is known", () => {
+    beforeEach((): void => {
+      vi.useFakeTimers();
+      logger.warn.mockClear();
+    });
+
+    afterEach((): void => {
+      vi.useRealTimers();
+    });
+
     /** Server acknowledgement that establishes lastRevisionId and completes the initial load. */
     function initialRevision(): DocumentUpdateMessage {
       return {
@@ -580,7 +589,7 @@ describe("FoundryEventService", () => {
       return snapshots;
     }
 
-    function startSyncCapturingServer(yDoc: Y.Doc): {
+    function startSyncCapturingServer(yDoc: Y.Doc, maxVersion = 1): {
       service: ReturnType<typeof createFoundryEventService>;
       deliverInitialRevision: () => void;
     } {
@@ -594,7 +603,7 @@ describe("FoundryEventService", () => {
       service.startDocumentSync(
         "doc-1" as DocumentId,
         yDoc,
-        { maxVersion: 1, minVersion: 1 },
+        { maxVersion, minVersion: 1 },
         () => {},
       );
 
@@ -647,24 +656,77 @@ describe("FoundryEventService", () => {
       expect(mocks.eventService.publish).not.toHaveBeenCalled();
     });
 
-    it("drops writes after the hold queue reaches its limit", async () => {
+    it.each([99, 100, 101])(
+      "preserves causal history across %i held writes",
+      async (pendingCount): Promise<void> => {
+        const yDoc = new Y.Doc();
+        const { deliverInitialRevision } = startSyncCapturingServer(yDoc);
+        await Promise.resolve();
+
+        for (let index = 0; index < pendingCount; index += 1) {
+          yDoc.getMap("Shape").set(`shape-${index}`, "during-load");
+        }
+        expect(mocks.eventService.publish).not.toHaveBeenCalled();
+        expect(logger.warn).toHaveBeenCalledTimes(pendingCount >= 100 ? 1 : 0);
+        deliverInitialRevision();
+        yDoc.getMap("Shape").set("after-load", "still-syncing");
+
+        const peerDoc = applyPublishedUpdates();
+        expect(peerDoc.getMap("Shape").get("after-load")).toBe("still-syncing");
+        expect(peerDoc.getMap("Shape").toJSON()).toEqual(yDoc.getMap("Shape").toJSON());
+        expect(mocks.eventService.publish).toHaveBeenCalledTimes(pendingCount + 1);
+      },
+    );
+
+    it("flushes a large backlog as individual edits with their original metadata", async (): Promise<void> => {
       const yDoc = new Y.Doc();
-      const { deliverInitialRevision } = startSyncCapturingServer(yDoc);
+      const { deliverInitialRevision } = startSyncCapturingServer(yDoc, 2);
       await Promise.resolve();
 
       for (let index = 0; index < 101; index += 1) {
-        yDoc.getMap("Shape").set(`shape-${index}`, "during-load");
+        yDoc.transact((transaction): void => {
+          addDocumentUpdateSchemaVersionToTransaction(transaction, index % 2 + 1);
+          yDoc.getMap("Shape").set(`shape-${index}`, "x".repeat(1_024));
+        }, {
+          data: { index },
+          model: { [Metadata]: { name: "shape-edited" } },
+          schemaVersion: 3,
+        });
       }
       deliverInitialRevision();
 
-      expect(mocks.eventService.publish).toHaveBeenCalledTimes(100);
-      const peerDoc = applyPublishedUpdates();
-      expect(peerDoc.getMap("Shape").get("shape-99")).toBe("during-load");
-      expect(peerDoc.getMap("Shape").get("shape-100")).toBeUndefined();
-      expect(logger.error).toHaveBeenCalledWith(
-        expect.stringContaining("hold queue is full"),
-        expect.objectContaining({ docId: "doc-1", pendingCount: 100 }),
+      const messages = mocks.eventService.publish.mock.calls.map(
+        ([, message]): DocumentPublishMessage => message as DocumentPublishMessage,
       );
+      expect(messages).toHaveLength(101);
+      expect(new Set(messages.map((message): string => message.editId)).size).toBe(101);
+
+      const peerDoc = new Y.Doc();
+      let serializedSize = 0;
+      for (const [index, message] of messages.entries()) {
+        expect(message.documentUpdateSchemaVersion).toBe(index % 2 + 1);
+        expect(message.description).toEqual({
+          eventData: { data: { index }, eventType: "shape-edited", schemaVersion: 3 },
+        });
+        const envelope = JSON.stringify({ channel: "/document/doc-1/publish", data: message });
+        expect(envelope.length).toBeLessThan(65_536);
+        serializedSize += envelope.length;
+        const updateData: unknown = message.yjsUpdate.data;
+        if (typeof updateData !== "string") {
+          throw new Error("Expected a base64-encoded Yjs update");
+        }
+        Y.applyUpdate(peerDoc, Base64.toUint8Array(updateData));
+        expect(peerDoc.getMap("Shape").size).toBe(index + 1);
+      }
+      expect(serializedSize).toBeGreaterThan(65_536);
+      expect(peerDoc.getMap("Shape").toJSON()).toEqual(yDoc.getMap("Shape").toJSON());
+
+      vi.advanceTimersByTime(2_000);
+      expect(
+        mocks.eventService.publish.mock.calls.slice(101).map(
+          ([, message]): DocumentPublishMessage => message as DocumentPublishMessage,
+        ),
+      ).toEqual(messages);
     });
 
     it("warns rather than staying silent when a load never completes", async () => {
