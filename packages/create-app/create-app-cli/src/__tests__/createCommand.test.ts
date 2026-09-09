@@ -22,6 +22,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createCommand, TEMPLATES } from "../commands/create.js";
 
 interface PackageJson {
+  readonly dependencies?: Record<string, string>;
   readonly name: string;
   readonly scripts?: Record<string, string>;
 }
@@ -323,7 +324,13 @@ describe("create-app createCommand", () => {
             "utf8",
           );
           expect(packAppSource).toContain(".withState()");
+          expect(packAppSource).toContain("from \"@palantir/pack.app.react\"");
           expect(packAppSource).toContain("createPackAppContext(app)");
+
+          const appPackageJson = fs.readJSONSync(
+            path.join(projectDir, "packages/app/package.json"),
+          ) as PackageJson;
+          expect(appPackageJson.dependencies).toHaveProperty("@palantir/pack.app.react");
           expect(files).not.toContain("packages/app/src/hooks/usePackApp.ts");
         }
       });

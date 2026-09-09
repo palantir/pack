@@ -23,8 +23,6 @@ export { useDocumentStatus } from "./hooks/useDocumentStatus.js";
 export { useDocumentTypeMetadata } from "./hooks/useDocumentTypeMetadata.js";
 export { useOnDocActivityEvents } from "./hooks/useOnDocActivityEvents.js";
 export { useOnDocPresenceEvents } from "./hooks/useOnDocPresenceEvents.js";
-export { createPackAppContext, PackAppProvider, usePackApp } from "./hooks/usePackApp.js";
-export type { BoundPackAppContext, PackAppContext, UsePackApp } from "./hooks/usePackApp.js";
 export { useRecord } from "./hooks/useRecord.js";
 export { useRecords } from "./hooks/useRecords.js";
 export { useSearchDocuments } from "./hooks/useSearchDocuments.js";

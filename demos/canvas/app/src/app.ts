@@ -25,7 +25,7 @@ import {
   initPackApp,
   isDemoEnv,
 } from "@palantir/pack.app";
-import { createPackAppContext } from "@palantir/pack.state.react";
+import { createPackAppContext } from "@palantir/pack.app.react";
 
 const ALLOW_DEV_TOKEN = true;
 
