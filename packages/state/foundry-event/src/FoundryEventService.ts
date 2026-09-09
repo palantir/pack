@@ -403,6 +403,7 @@ class FoundryEventServiceImpl implements FoundryEventService {
         }
         this.handleDocumentUpdateMessage(
           session,
+          syncToken,
           message,
           yDoc,
           clientSupportedVersionRange,
@@ -782,6 +783,7 @@ class FoundryEventServiceImpl implements FoundryEventService {
 
   private handleDocumentUpdateMessage(
     session: SyncSessionInternal,
+    syncToken: object,
     message: DocumentUpdateMessage,
     yDoc: y.Doc,
     clientSupportedVersionRange: ClientSupportedVersionRange,
@@ -863,6 +865,9 @@ class FoundryEventServiceImpl implements FoundryEventService {
               lastRevisionId: session.lastRevisionId,
               message: messageDetail,
             });
+            if (session.syncToken !== syncToken) {
+              return;
+            }
             onStatusChange({
               error: toUnknownChannelError(
                 new Error(
@@ -874,6 +879,11 @@ class FoundryEventServiceImpl implements FoundryEventService {
             });
             return;
           }
+        }
+
+        // Yjs observers can stop or replace the sync run during applyUpdate.
+        if (session.syncToken !== syncToken) {
+          return;
         }
         session.lastRevisionId = Number(revisionId);
 

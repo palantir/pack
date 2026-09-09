@@ -625,7 +625,7 @@ describe("FoundryEventService", () => {
     });
 
     /** Server acknowledgement that establishes lastRevisionId and completes the initial load. */
-    function initialRevision(): DocumentUpdateMessage {
+    function initialRevision(): Extract<DocumentUpdateMessage, { type: "update" }> {
       return {
         baseRevisionId: "0",
         clientId: "server",
@@ -866,6 +866,96 @@ describe("FoundryEventService", () => {
       const peerShapes = applyPublishedUpdates().getMap("Shape");
       expect(peerShapes.get("shape-1")).toBe("held-across-stop");
       expect(peerShapes.get("shape-2")).toBe("written-while-stopped");
+    });
+
+    describe("sync stopped by a remote update observer", () => {
+      beforeEach((): void => {
+        vi.useFakeTimers();
+      });
+
+      afterEach((): void => {
+        vi.useRealTimers();
+      });
+
+      it.each([
+        { restartDuringUpdate: false, throwInObserver: false },
+        { restartDuringUpdate: true, throwInObserver: false },
+        { restartDuringUpdate: false, throwInObserver: true },
+        { restartDuringUpdate: true, throwInObserver: true },
+      ])(
+        "holds writes until the next revision (restart=$restartDuringUpdate, throw=$throwInObserver)",
+        async ({ restartDuringUpdate, throwInObserver }): Promise<void> => {
+          const updateCallbacks: Array<(message: DocumentUpdateMessage) => void> = [];
+          mocks.eventService.subscribe.mockImplementation(
+            (_channel, callback): Promise<SubscriptionId> => {
+              updateCallbacks.push(callback as (message: DocumentUpdateMessage) => void);
+              return Promise.resolve(`sub-${updateCallbacks.length}` as SubscriptionId);
+            },
+          );
+          const service = createFoundryEventService(app);
+          const yDoc = new Y.Doc();
+          const onStatusChange = vi.fn();
+          const onRestartedStatusChange = vi.fn();
+          const session = service.startDocumentSync(
+            "doc-1" as DocumentId,
+            yDoc,
+            { maxVersion: 1, minVersion: 1 },
+            onStatusChange,
+          );
+          const restartSync = (): void => {
+            service.startDocumentSync(
+              "doc-1" as DocumentId,
+              yDoc,
+              { maxVersion: 1, minVersion: 1 },
+              onRestartedStatusChange,
+            );
+          };
+          await Promise.resolve();
+          onStatusChange.mockClear();
+          yDoc.getMap("Shape").set("before-stop", "held");
+
+          const serverYDoc = new Y.Doc();
+          serverYDoc.getMap("Shape").set("server-shape", "remote");
+          const stopFromObserver = (): void => {
+            yDoc.getMap("Shape").unobserve(stopFromObserver);
+            service.stopDocumentSync(session);
+            if (restartDuringUpdate) {
+              restartSync();
+            }
+            if (throwInObserver) {
+              throw new Error("Observer failed after stopping sync");
+            }
+          };
+          yDoc.getMap("Shape").observe(stopFromObserver);
+          updateCallbacks[0]?.({
+            ...initialRevision(),
+            update: { data: Base64.fromUint8Array(Y.encodeStateAsUpdate(serverYDoc)) },
+          });
+
+          yDoc.getMap("Shape").set("after-stop", "also-held");
+          expect(mocks.eventService.publish).not.toHaveBeenCalled();
+          expect(onStatusChange).not.toHaveBeenCalled();
+          if (!restartDuringUpdate) {
+            restartSync();
+          }
+          await Promise.resolve();
+          expect(onRestartedStatusChange).not.toHaveBeenCalledWith(
+            expect.objectContaining({ load: DocumentLoadStatus.LOADED }),
+          );
+
+          updateCallbacks[1]?.(initialRevision());
+
+          expect(mocks.eventService.publish).toHaveBeenCalledTimes(2);
+          expect(applyPublishedUpdates().getMap("Shape").toJSON()).toEqual({
+            "before-stop": "held",
+            "after-stop": "also-held",
+          });
+          expect(onRestartedStatusChange).toHaveBeenLastCalledWith({
+            load: DocumentLoadStatus.LOADED,
+          });
+          service.disposeDocument("doc-1" as DocumentId);
+        },
+      );
     });
 
     it("starts sync with a replacement Y.Doc after the previous run stops", async () => {
