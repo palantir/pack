@@ -1,5 +1,27 @@
 # @palantir/pack.state.react
 
+## 0.28.0
+
+### Minor Changes
+
+- 1754366: Move the Pack app React context APIs from `@palantir/pack.state.react` into the new
+  `@palantir/pack.app.react` package. Update the workspace template to import the APIs from their new
+  package.
+- fe23935: Add `createPackAppContext(app)`, which creates a React provider and hook bound to the exact
+  configured app type. Apps created asynchronously can instead call `createPackAppContext<App>()`
+  and pass the finished app to the provider later. State remains opt-in through `.withState()`, while
+  state, auth, and named module accessors now survive the React context without consumer casts.
+
+  The workspace template now uses the bound context and no longer generates a cast wrapper. This
+  also fixes the `usePackApp` overloads for required and optional providers.
+
+### Patch Changes
+
+- @palantir/pack.auth@0.28.0
+- @palantir/pack.core@0.28.0
+- @palantir/pack.document-schema.model-types@0.28.0
+- @palantir/pack.state.core@0.28.0
+
 ## 0.27.0
 
 ### Minor Changes

@@ -1,5 +1,13 @@
 # @palantir/pack.state.demo
 
+## 0.28.0
+
+### Patch Changes
+
+- @palantir/pack.core@0.28.0
+- @palantir/pack.document-schema.model-types@0.28.0
+- @palantir/pack.state.core@0.28.0
+
 ## 0.27.0
 
 ### Minor Changes
