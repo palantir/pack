@@ -10,7 +10,7 @@ A document type's schema can change over time. You can add fields, split one fie
 
 The **schema version** is a monotonically increasing integer (v1, v2, v3, …). See [Writing a Schema](./schemas.md) for how to author these.
 
-When you deploy, the backend enforces that the new version is exactly one higher than the currently deployed version, and that the change is backwards-compatible. If you need to bypass that validation, pass `--force-overwrite`.
+When you update yur schema (using the `update-schema` command), the backend enforces that the new version is exactly one higher than the currently deployed version, and that the change is backwards-compatible. If you need to bypass that validation, pass `--force-overwrite`.
 
 ## Reading documents
 
@@ -37,7 +37,7 @@ The types are exhaustive: if you miss an entry (or add one that isn't needed), t
 
 ## Writing documents
 
-During a rolling deploy, old and new copies of your app run side by side. All clients operating on a document must be writing at the same schema version. We call this the **operational version**. This prevents cases where newer clients are writing fields that older clients don't understand. The operational version is monotonically increasing, computed by the backend, and passed to the client. Typically, this will be the highest schema version that _every_ deployed copy can handle, computed from the set of currently in-use compatibility ranges.
+During a rolling deploy, old and new copies of your app run side by side. All clients operating on a document must be writing at the same schema version. We call this the **operational version**. This prevents cases where newer clients are writing fields that older clients don't understand. The operational version is monotonically increasing, computed by the backend, and passed to the client in the document's metadata. Typically, this will be the highest schema version that _every_ deployed copy can handle, computed from the set of currently in-use compatibility ranges.
 
 ### Version guards
 
@@ -46,7 +46,10 @@ Your SDK may know a newer schema version than the one currently in operation. Fo
 Wrap each write in a **version guard** so you only ever write fields the operational version supports. The generated `matchVersion` helper runs the branch for the document's version and hands back a `doc` with types narrowed. Each branch can only touch that version's fields, and the guard is exhaustive, so a new schema version fails to compile until you handle it everywhere.
 
 ```ts
-import { matchVersion } from "@demo/canvas.sdk";
+import { asVersioned, matchVersion } from "@demo/canvas.sdk";
+
+
+const doc = asVersioned(docRef);
 
 matchVersion(doc, {
   // v1 only knows `color`.
