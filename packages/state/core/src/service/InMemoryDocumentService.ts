@@ -35,6 +35,7 @@ import { createDocRef } from "../types/DocumentRefImpl.js";
 import type {
   DocumentService,
   DocumentType,
+  SearchDocumentsOptions,
   SearchDocumentsResult,
   UpdateDocumentMetadata,
 } from "../types/DocumentService.js";
@@ -113,12 +114,7 @@ class InMemoryDocumentService extends BaseYjsDocumentService {
   readonly searchDocuments = <T extends DocumentSchema>(
     documentTypeName: string,
     schema: T,
-    options?: {
-      documentName?: string;
-      pageSize?: number;
-      pageToken?: string;
-      ontologyRid?: string;
-    },
+    options?: SearchDocumentsOptions,
   ): Promise<SearchDocumentsResult> => {
     const results: Array<DocumentMetadata & { readonly id: DocumentId }> = [];
     const { documentName, pageSize } = options ?? {};

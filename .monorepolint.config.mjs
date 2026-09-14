@@ -504,6 +504,7 @@ const packages = {
 
   // Library packages (default rules)
   "@palantir/pack.app": {},
+  "@palantir/pack.app.react": {},
   "@palantir/pack.auth": {},
   "@palantir/pack.auth.foundry": {},
   "@palantir/pack.core": {},

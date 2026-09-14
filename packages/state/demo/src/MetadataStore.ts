@@ -15,7 +15,7 @@
  */
 
 import type { DocumentId, DocumentMetadata } from "@palantir/pack.document-schema.model-types";
-import type { SearchDocumentsResult } from "@palantir/pack.state.core";
+import type { SearchDocumentsOptions, SearchDocumentsResult } from "@palantir/pack.state.core";
 import { IndexeddbPersistence } from "y-indexeddb";
 import * as Y from "yjs";
 
@@ -57,7 +57,7 @@ export class MetadataStore {
 
   searchDocuments(
     typeName: string,
-    options?: { documentName?: string; pageSize?: number; pageToken?: string },
+    options?: SearchDocumentsOptions,
   ): SearchDocumentsResult {
     const allResults: Array<DocumentMetadata & { readonly id: DocumentId }> = [];
 

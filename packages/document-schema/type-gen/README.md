@@ -72,6 +72,20 @@ type-gen ir update-schema -i <ir.json> -b <base-url> -a <token> -o <ontology-rid
 `ir asset` (generate an asset JSON consumed by backpack's asset-track loader) remains available;
 the deploy/update-schema REST commands are IR-sourced.
 
+```bash
+# Generate the asset JSON (plus a sibling schema compatibility range JSON)
+type-gen ir asset -i <ir.json> -o <asset.json> [-f ARTIFACTS|COMPASS] [--force-overwrite]
+```
+
+`--force-overwrite` writes `forceOverwrite: true` onto the asset so the platform skips
+backwards-compatibility validation when it processes it. Note the flag lands on the underlying `ir asset`
+invocation, so passing it through a `build:asset` package script differs by package manager:
+
+```bash
+pnpm run build:asset --force-overwrite      # pnpm forwards a literal `--`, so omit it
+npm  run build:asset -- --force-overwrite   # npm requires `--`
+```
+
 ### Examples
 
 #### Generating TypeScript Types from YAML

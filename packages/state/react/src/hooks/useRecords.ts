@@ -20,6 +20,7 @@ import type {
   RecordCollectionRef,
   RecordRef,
 } from "@palantir/pack.document-schema.model-types";
+import { invalidRecordCollectionRef, isValidDocRef } from "@palantir/pack.state.core";
 import { useEffect, useMemo, useState } from "react";
 
 const EMPTY_RECORD_REFS: readonly RecordRef[] = Object.freeze([]);
@@ -89,6 +90,9 @@ export function useRecords<M extends Model>(
   const collectionRef = useMemo(() => {
     if ("model" in docOrCollectionRef) {
       return docOrCollectionRef;
+    }
+    if (!isValidDocRef(docOrCollectionRef)) {
+      return invalidRecordCollectionRef<M>();
     }
     return docOrCollectionRef.getRecords(modelSchema!);
   }, [docOrCollectionRef, modelSchema]);

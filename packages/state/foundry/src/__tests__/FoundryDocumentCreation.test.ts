@@ -101,6 +101,7 @@ describe("FoundryDocumentService document creation", () => {
 
     await service.createDocument(
       {
+        description: "Legacy description",
         documentTypeName: "com.palantir.pack.test",
         name: "Legacy document",
         parentFolderRid: "ri.compass.main.folder.legacy",
@@ -111,6 +112,7 @@ describe("FoundryDocumentService document creation", () => {
     expect(Documents.create).toHaveBeenCalledWith(
       mockOsdkClient,
       {
+        description: "Legacy description",
         documentTypeName: "com.palantir.pack.test",
         name: "Legacy document",
         ontologyRid: "ri.ontology..default",
@@ -130,6 +132,7 @@ describe("FoundryDocumentService document creation", () => {
 
     await service.createDocument(
       {
+        description: "V2 description",
         documentTypeName: "com.palantir.pack.test",
         name: "V2 document",
         parent: {
@@ -144,6 +147,7 @@ describe("FoundryDocumentService document creation", () => {
       mockOsdkClient,
       {
         requestBody: {
+          description: "V2 description",
           documentTypeName: "com.palantir.pack.test",
           name: "V2 document",
           parent: {

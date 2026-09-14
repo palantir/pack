@@ -50,12 +50,16 @@ export { DocumentLiveStatus, DocumentLoadStatus } from "./types/DocumentService.
 export type {
   DocumentMetadataChangeCallback,
   DocumentService,
+  DocumentSort,
+  DocumentSortDirection,
+  DocumentSortField,
   DocumentStateChangeCallback,
   DocumentStatus,
   DocumentStatusChangeCallback,
   DocumentSyncStatus,
   DocumentType,
   RecordInvalidCallback,
+  SearchDocumentsOptions,
   SearchDocumentsResult,
   UpdateDocumentMetadata,
 } from "./types/DocumentService.js";

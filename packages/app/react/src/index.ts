@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 Palantir Technologies, Inc. All rights reserved.
+ * Copyright 2026 Palantir Technologies, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +14,5 @@
  * limitations under the License.
  */
 
-import { usePackApp as pack_usePackApp } from "@palantir/pack.state.react";
-import type { app } from "../app.js";
-
-export const usePackApp = pack_usePackApp as () => typeof app;
+export { createPackAppContext, PackAppProvider, usePackApp } from "./hooks/usePackApp.js";
+export type { BoundPackAppContext, PackAppContext, UsePackApp } from "./hooks/usePackApp.js";

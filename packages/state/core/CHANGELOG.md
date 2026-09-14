@@ -1,5 +1,42 @@
 # @palantir/pack.state.core
 
+## 0.28.0
+
+### Patch Changes
+
+- @palantir/pack.core@0.28.0
+- @palantir/pack.document-schema.model-types@0.28.0
+
+## 0.27.0
+
+### Minor Changes
+
+- 064eee7: Allow `app.state.createDocument` callers to set an optional description. Foundry forwards the
+  description through both the legacy and V2 create endpoints, and the demo service preserves it in
+  document metadata.
+- aa09906: Add document search ordering by name, creation time, last-modified time, or last-view time.
+  Foundry-backed searches forward the ordering to the server, and `useSearchDocuments` accepts
+  ordering as an optional sixth argument.
+
+### Patch Changes
+
+- @palantir/pack.core@0.27.0
+- @palantir/pack.document-schema.model-types@0.27.0
+
+## 0.26.0
+
+### Patch Changes
+
+- @palantir/pack.core@0.26.0
+- @palantir/pack.document-schema.model-types@0.26.0
+
+## 0.25.0
+
+### Patch Changes
+
+- @palantir/pack.core@0.25.0
+- @palantir/pack.document-schema.model-types@0.25.0
+
 ## 0.24.0
 
 ### Minor Changes

@@ -40,6 +40,7 @@ import type {
   CreateDocumentMetadata,
   DocumentType,
   InternalYjsDoc,
+  SearchDocumentsOptions,
   SearchDocumentsResult,
   UpdateDocumentMetadata,
 } from "@palantir/pack.state.core";
@@ -236,6 +237,7 @@ export class DemoDocumentService extends BaseYjsDocumentService<DemoInternalDoc>
 
   readonly createDocument = async <T extends DocumentSchema>(
     {
+      description,
       documentTypeName,
       name,
       security = EMPTY_DOCUMENT_SECURITY,
@@ -253,6 +255,7 @@ export class DemoDocumentService extends BaseYjsDocumentService<DemoInternalDoc>
     const operationalVersion = schemaMeta.minSupportedVersion ?? schemaMeta.version;
 
     const metadata: DocumentMetadata = {
+      ...(description != null ? { description } : {}),
       documentTypeName,
       name,
       operationalVersion,
@@ -271,12 +274,7 @@ export class DemoDocumentService extends BaseYjsDocumentService<DemoInternalDoc>
   readonly searchDocuments = async <T extends DocumentSchema>(
     documentTypeName: string,
     schema: T,
-    options?: {
-      documentName?: string;
-      pageSize?: number;
-      pageToken?: string;
-      ontologyRid?: string;
-    },
+    options?: SearchDocumentsOptions,
   ): Promise<SearchDocumentsResult> => {
     await this.metadataStore.whenReady();
     return this.metadataStore.searchDocuments(documentTypeName, options);
@@ -367,6 +365,7 @@ export class DemoDocumentService extends BaseYjsDocumentService<DemoInternalDoc>
       return;
     }
     this.updateMetadataStatus(internalDoc, docRef, {
+      live: DocumentLiveStatus.CONNECTING,
       load: DocumentLoadStatus.LOADING,
     });
 
@@ -376,6 +375,7 @@ export class DemoDocumentService extends BaseYjsDocumentService<DemoInternalDoc>
       if (metadata == null) {
         this.updateMetadataStatus(internalDoc, docRef, {
           error: toUnknownChannelError(new Error("Document not found")),
+          live: DocumentLiveStatus.ERROR,
           load: DocumentLoadStatus.ERROR,
         });
         return;
@@ -391,11 +391,13 @@ export class DemoDocumentService extends BaseYjsDocumentService<DemoInternalDoc>
       });
 
       this.updateMetadataStatus(internalDoc, docRef, {
+        live: DocumentLiveStatus.CONNECTED,
         load: DocumentLoadStatus.LOADED,
       });
     }).catch((error: unknown) => {
       this.updateMetadataStatus(internalDoc, docRef, {
         error: toUnknownChannelError(error),
+        live: DocumentLiveStatus.ERROR,
         load: DocumentLoadStatus.ERROR,
       });
     });
@@ -455,9 +457,14 @@ export class DemoDocumentService extends BaseYjsDocumentService<DemoInternalDoc>
   }
 
   protected onMetadataSubscriptionClosed(
-    _internalDoc: DemoInternalDoc,
-    _docRef: DocumentRef,
+    internalDoc: DemoInternalDoc,
+    docRef: DocumentRef,
   ): void {
+    if (internalDoc.metadataStatus.live !== DocumentLiveStatus.DISCONNECTED) {
+      this.updateMetadataStatus(internalDoc, docRef, {
+        live: DocumentLiveStatus.DISCONNECTED,
+      });
+    }
   }
 
   protected onDataSubscriptionClosed(

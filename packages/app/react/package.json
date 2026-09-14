@@ -1,8 +1,7 @@
 {
-  "name": "@palantir/pack.app",
-  "version": "0.24.0",
-  "description": "PACK main package",
-  "author": "",
+  "name": "@palantir/pack.app.react",
+  "version": "0.28.0",
+  "description": "React bindings for PACK applications",
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
@@ -41,24 +40,19 @@
     "typecheck": "tsc --noEmit --emitDeclarationOnly false"
   },
   "dependencies": {
-    "@palantir/pack.auth": "workspace:*",
-    "@palantir/pack.auth.foundry": "workspace:*",
-    "@palantir/pack.core": "workspace:*",
-    "@palantir/pack.state.core": "workspace:*",
-    "@palantir/pack.state.demo": "workspace:*",
-    "@palantir/pack.state.foundry": "workspace:*",
-    "remeda": "catalog:",
-    "tiny-invariant": "catalog:"
+    "@palantir/pack.core": "workspace:*"
   },
   "peerDependencies": {
-    "@osdk/api": "catalog:",
-    "@osdk/client": "catalog:",
-    "@osdk/oauth": "catalog:",
-    "@osdk/shared.client2": "catalog:"
+    "react": "^17 || ^18 || ^19"
   },
   "devDependencies": {
     "@palantir/pack.monorepo.tsconfig": "workspace:~",
+    "@testing-library/react": "^16.3.0",
+    "@types/react": "catalog:",
+    "@types/react-dom": "catalog:",
     "happy-dom": "catalog:",
+    "react": "^18",
+    "react-dom": "^18",
     "rimraf": "catalog:",
     "tslib": "catalog:",
     "typescript": "catalog:",
@@ -67,6 +61,9 @@
   "publishConfig": {
     "access": "public"
   },
+  "keywords": [
+    "pack"
+  ],
   "main": "./build/cjs/index.js",
   "module": "./build/esm/index.js",
   "types": "./build/cjs/index.d.ts",

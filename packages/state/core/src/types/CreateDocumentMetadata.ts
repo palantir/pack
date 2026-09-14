@@ -27,8 +27,9 @@ export type CreateDocumentParent =
   };
 
 interface CreateDocumentMetadataBase {
-  readonly name: string;
+  readonly description?: string;
   readonly documentTypeName: string;
+  readonly name: string;
   readonly security?: DocumentSecurity;
 }
 

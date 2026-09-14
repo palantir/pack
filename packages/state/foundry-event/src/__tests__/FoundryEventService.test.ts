@@ -14,14 +14,17 @@
  * limitations under the License.
  */
 
-import type { DocumentUpdateMessage } from "@osdk/foundry.pack";
+import type { DocumentPublishMessage, DocumentUpdateMessage } from "@osdk/foundry.pack";
 import type { PackAppInternal } from "@palantir/pack.core";
-import type { DocumentId } from "@palantir/pack.document-schema.model-types";
+import { type DocumentId, Metadata } from "@palantir/pack.document-schema.model-types";
 import {
   addDocumentUpdateSchemaVersionToTransaction,
+  DocumentLiveStatus,
+  DocumentLoadStatus,
   type DocumentSyncStatus,
 } from "@palantir/pack.state.core";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { Base64 } from "js-base64";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import * as Y from "yjs";
 import { createFoundryEventService } from "../FoundryEventService.js";
 import type { SubscriptionId } from "../types/EventService.js";
@@ -390,5 +393,654 @@ describe("FoundryEventService", () => {
     );
 
     expect(secondSession.clientId).not.toBe(firstSession.clientId);
+  });
+
+  describe("unacked update outbox", () => {
+    beforeEach(() => {
+      vi.useFakeTimers();
+    });
+
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    const publishCallsFor = (documentId: string) =>
+      mocks.eventService.publish.mock.calls.filter(
+        ([channel]) => channel === `/document/${documentId}/publish`,
+      );
+
+    const startSyncedDoc = async () => {
+      let updateCallback: ((message: DocumentUpdateMessage) => void) | undefined;
+      mocks.eventService.subscribe.mockImplementation((_channel, callback) => {
+        updateCallback = callback as (message: DocumentUpdateMessage) => void;
+        return Promise.resolve("document-sub" as SubscriptionId);
+      });
+
+      const yDoc = new Y.Doc();
+      const service = createFoundryEventService(app);
+      const session = service.startDocumentSync(
+        "doc-1" as DocumentId,
+        yDoc,
+        { maxVersion: 1, minVersion: 1 },
+        () => {},
+      );
+
+      await Promise.resolve();
+      // Establish an initial revision so that local edits are allowed to publish.
+      updateCallback!({
+        baseRevisionId: "0",
+        clientId: "server",
+        clientSupportedVersionRange: { minVersion: 1, maxVersion: 1 },
+        editIds: [],
+        revisionId: "1",
+        type: "update",
+      });
+
+      return { service, session, yDoc, sendServerMessage: updateCallback! };
+    };
+
+    it("resends unacked updates and stops once the server acks", async () => {
+      const { session, yDoc, sendServerMessage } = await startSyncedDoc();
+
+      // A local edit publishes once and is tracked for resend until acked.
+      yDoc.getMap("Shape").set("shape-1", new Y.Map());
+      expect(publishCallsFor("doc-1")).toHaveLength(1);
+      const editId = (publishCallsFor("doc-1")[0]![1] as { editId: string }).editId;
+
+      // Still unacked after 2s, so it is resent with the same editId.
+      vi.advanceTimersByTime(2_000);
+      expect(publishCallsFor("doc-1")).toHaveLength(2);
+      expect((publishCallsFor("doc-1")[1]![1] as { editId: string }).editId).toBe(editId);
+
+      // The server echoes our clientId + editId back as an ack.
+      sendServerMessage({
+        baseRevisionId: "1",
+        clientId: session.clientId,
+        clientSupportedVersionRange: { minVersion: 1, maxVersion: 1 },
+        editIds: [editId],
+        revisionId: "2",
+        type: "update",
+      });
+
+      // No further resends once acked.
+      vi.advanceTimersByTime(6_000);
+      expect(publishCallsFor("doc-1")).toHaveLength(2);
+    });
+
+    it("acks duplicate echoed updates without processing their zero revision", async () => {
+      const { session, yDoc, sendServerMessage } = await startSyncedDoc();
+
+      yDoc.getMap("Shape").set("shape-1", new Y.Map());
+      const editId = (publishCallsFor("doc-1")[0]![1] as { editId: string }).editId;
+
+      sendServerMessage({
+        baseRevisionId: "1",
+        clientId: session.clientId,
+        clientSupportedVersionRange: { minVersion: 1, maxVersion: 1 },
+        editIds: [editId],
+        revisionId: "0",
+        type: "update",
+      });
+
+      // The duplicate ack stops retries but does not reset the tracked revision to zero.
+      vi.advanceTimersByTime(2_000);
+      expect(publishCallsFor("doc-1")).toHaveLength(1);
+
+      sendServerMessage({
+        baseRevisionId: "1",
+        clientId: "other-client",
+        clientSupportedVersionRange: { minVersion: 1, maxVersion: 1 },
+        editIds: [],
+        revisionId: "2",
+        type: "update",
+      });
+      expect(logger.error).not.toHaveBeenCalledWith(
+        "Got unexpected update for baseRevisionId",
+        expect.anything(),
+      );
+    });
+
+    it("does not ack tracked updates for updates from other clients", async () => {
+      const { yDoc, sendServerMessage } = await startSyncedDoc();
+
+      yDoc.getMap("Shape").set("shape-1", new Y.Map());
+      expect(publishCallsFor("doc-1")).toHaveLength(1);
+      const editId = (publishCallsFor("doc-1")[0]![1] as { editId: string }).editId;
+
+      // An update from a different client, even one referencing our editId, is not an ack.
+      sendServerMessage({
+        baseRevisionId: "1",
+        clientId: "other-client",
+        clientSupportedVersionRange: { minVersion: 1, maxVersion: 1 },
+        editIds: [editId],
+        revisionId: "2",
+        type: "update",
+      });
+
+      // Still unacked, so it is resent.
+      vi.advanceTimersByTime(2_000);
+      expect(publishCallsFor("doc-1")).toHaveLength(2);
+    });
+
+    it("stops resending after document sync is stopped", async () => {
+      const { service, session, yDoc } = await startSyncedDoc();
+
+      yDoc.getMap("Shape").set("shape-1", new Y.Map());
+      expect(publishCallsFor("doc-1")).toHaveLength(1);
+
+      service.stopDocumentSync(session);
+
+      vi.advanceTimersByTime(6_000);
+      expect(publishCallsFor("doc-1")).toHaveLength(1);
+    });
+  });
+
+  describe("updates made before the initial revision is known", () => {
+    beforeEach((): void => {
+      vi.useFakeTimers();
+      logger.warn.mockClear();
+    });
+
+    afterEach((): void => {
+      vi.useRealTimers();
+    });
+
+    /** Server acknowledgement that establishes lastRevisionId and completes the initial load. */
+    function initialRevision(): DocumentUpdateMessage {
+      return {
+        baseRevisionId: "0",
+        clientId: "server",
+        clientSupportedVersionRange: { maxVersion: 1, minVersion: 1 },
+        editIds: [],
+        revisionId: "1",
+        type: "update",
+      };
+    }
+
+    /** Rebuild what a peer would see from every update this client published, in order. */
+    function applyPublishedUpdates(): Y.Doc {
+      const peerDoc = new Y.Doc();
+      for (const call of mocks.eventService.publish.mock.calls) {
+        const message = call[1] as PublishedDocumentUpdate;
+        const data = message.yjsUpdate?.data;
+        if (typeof data === "string") {
+          Y.applyUpdate(peerDoc, Base64.toUint8Array(data));
+        }
+      }
+      return peerDoc;
+    }
+
+    /**
+     * Keys a peer would observe after each published update, in publish order. The merged end
+     * state cannot distinguish flush order — Yjs buffers an update whose dependencies have not
+     * arrived and integrates it later — so only the intermediate states pin FIFO.
+     */
+    function publishedKeySnapshots(): string[][] {
+      const peerDoc = new Y.Doc();
+      const snapshots: string[][] = [];
+      for (const call of mocks.eventService.publish.mock.calls) {
+        const message = call[1] as PublishedDocumentUpdate;
+        const data = message.yjsUpdate?.data;
+        if (typeof data === "string") {
+          Y.applyUpdate(peerDoc, Base64.toUint8Array(data));
+        }
+        snapshots.push([...peerDoc.getMap("Shape").keys()].sort());
+      }
+      return snapshots;
+    }
+
+    function startSyncCapturingServer(yDoc: Y.Doc, maxVersion = 1): {
+      service: ReturnType<typeof createFoundryEventService>;
+      deliverInitialRevision: () => void;
+    } {
+      let updateCallback: ((message: DocumentUpdateMessage) => void) | undefined;
+      mocks.eventService.subscribe.mockImplementation((_channel, callback) => {
+        updateCallback = callback as (message: DocumentUpdateMessage) => void;
+        return Promise.resolve("sub-1" as SubscriptionId);
+      });
+
+      const service = createFoundryEventService(app);
+      service.startDocumentSync(
+        "doc-1" as DocumentId,
+        yDoc,
+        { maxVersion, minVersion: 1 },
+        () => {},
+      );
+
+      return { service, deliverInitialRevision: () => updateCallback?.(initialRevision()) };
+    }
+
+    it("holds a write made during the load instead of dropping it", async () => {
+      const yDoc = new Y.Doc();
+      const { deliverInitialRevision } = startSyncCapturingServer(yDoc);
+      await Promise.resolve();
+
+      // The handler is attached but lastRevisionId is still unknown. This previously logged
+      // "Cannot publish document update before initial load is complete" and discarded the update.
+      yDoc.getMap("Shape").set("shape-1", "during-load");
+      expect(mocks.eventService.publish).not.toHaveBeenCalled();
+
+      deliverInitialRevision();
+
+      expect(mocks.eventService.publish).toHaveBeenCalledTimes(1);
+      expect(applyPublishedUpdates().getMap("Shape").get("shape-1")).toBe("during-load");
+    });
+
+    it("preserves the order of writes held across the load", async () => {
+      const yDoc = new Y.Doc();
+      const { deliverInitialRevision } = startSyncCapturingServer(yDoc);
+      await Promise.resolve();
+
+      yDoc.getMap("Shape").set("first", "during-load");
+      yDoc.getMap("Shape").set("second", "also-during-load");
+      deliverInitialRevision();
+      yDoc.getMap("Shape").set("third", "after-load");
+
+      expect(mocks.eventService.publish).toHaveBeenCalledTimes(3);
+      // Asserted per-update rather than on the merged result: applying all three into one doc
+      // passes just as well for a reversed flush, so it would not test order at all.
+      expect(publishedKeySnapshots()).toEqual([
+        ["first"],
+        ["first", "second"],
+        ["first", "second", "third"],
+      ]);
+    });
+
+    it("publishes nothing when no local write was made during the load", async () => {
+      const yDoc = new Y.Doc();
+      const { deliverInitialRevision } = startSyncCapturingServer(yDoc);
+      await Promise.resolve();
+
+      deliverInitialRevision();
+
+      expect(mocks.eventService.publish).not.toHaveBeenCalled();
+    });
+
+    it.each([99, 100, 101])(
+      "preserves causal history across %i held writes",
+      async (pendingCount): Promise<void> => {
+        const yDoc = new Y.Doc();
+        const { deliverInitialRevision } = startSyncCapturingServer(yDoc);
+        await Promise.resolve();
+
+        for (let index = 0; index < pendingCount; index += 1) {
+          yDoc.getMap("Shape").set(`shape-${index}`, "during-load");
+        }
+        expect(mocks.eventService.publish).not.toHaveBeenCalled();
+        expect(logger.warn).toHaveBeenCalledTimes(pendingCount >= 100 ? 1 : 0);
+        deliverInitialRevision();
+        yDoc.getMap("Shape").set("after-load", "still-syncing");
+
+        const peerDoc = applyPublishedUpdates();
+        expect(peerDoc.getMap("Shape").get("after-load")).toBe("still-syncing");
+        expect(peerDoc.getMap("Shape").toJSON()).toEqual(yDoc.getMap("Shape").toJSON());
+        expect(mocks.eventService.publish).toHaveBeenCalledTimes(pendingCount + 1);
+      },
+    );
+
+    it("flushes a large backlog as individual edits with their original metadata", async (): Promise<void> => {
+      const yDoc = new Y.Doc();
+      const { deliverInitialRevision } = startSyncCapturingServer(yDoc, 2);
+      await Promise.resolve();
+
+      for (let index = 0; index < 101; index += 1) {
+        yDoc.transact((transaction): void => {
+          addDocumentUpdateSchemaVersionToTransaction(transaction, index % 2 + 1);
+          yDoc.getMap("Shape").set(`shape-${index}`, "x".repeat(1_024));
+        }, {
+          data: { index },
+          model: { [Metadata]: { name: "shape-edited" } },
+          schemaVersion: 3,
+        });
+      }
+      deliverInitialRevision();
+
+      const messages = mocks.eventService.publish.mock.calls.map(
+        ([, message]): DocumentPublishMessage => message as DocumentPublishMessage,
+      );
+      expect(messages).toHaveLength(101);
+      expect(new Set(messages.map((message): string => message.editId)).size).toBe(101);
+
+      const peerDoc = new Y.Doc();
+      let serializedSize = 0;
+      for (const [index, message] of messages.entries()) {
+        expect(message.documentUpdateSchemaVersion).toBe(index % 2 + 1);
+        expect(message.description).toEqual({
+          eventData: { data: { index }, eventType: "shape-edited", schemaVersion: 3 },
+        });
+        const envelope = JSON.stringify({ channel: "/document/doc-1/publish", data: message });
+        expect(envelope.length).toBeLessThan(65_536);
+        serializedSize += envelope.length;
+        const updateData: unknown = message.yjsUpdate.data;
+        if (typeof updateData !== "string") {
+          throw new Error("Expected a base64-encoded Yjs update");
+        }
+        Y.applyUpdate(peerDoc, Base64.toUint8Array(updateData));
+        expect(peerDoc.getMap("Shape").size).toBe(index + 1);
+      }
+      expect(serializedSize).toBeGreaterThan(65_536);
+      expect(peerDoc.getMap("Shape").toJSON()).toEqual(yDoc.getMap("Shape").toJSON());
+
+      vi.advanceTimersByTime(2_000);
+      expect(
+        mocks.eventService.publish.mock.calls.slice(101).map(
+          ([, message]): DocumentPublishMessage => message as DocumentPublishMessage,
+        ),
+      ).toEqual(messages);
+    });
+
+    it("warns rather than staying silent when a load never completes", async () => {
+      const yDoc = new Y.Doc();
+      const { service } = startSyncCapturingServer(yDoc);
+      await Promise.resolve();
+
+      yDoc.getMap("Shape").set("shape-1", "never-published");
+      logger.warn.mockClear();
+
+      // The load never established a revision, so the held update has nothing to publish against
+      // and is dropped. It must not be dropped quietly.
+      service.stopDocumentSync({ clientId: "unused", documentId: "doc-1" as DocumentId });
+
+      expect(mocks.eventService.publish).not.toHaveBeenCalled();
+      expect(logger.warn).toHaveBeenCalledWith(
+        expect.stringContaining("Discarding local document updates"),
+        expect.objectContaining({ discardedCount: 1 }),
+      );
+    });
+  });
+
+  describe("data channel liveness", () => {
+    function collectStatus(): {
+      statusUpdates: Array<Partial<DocumentSyncStatus>>;
+      onStatusChange: (status: Partial<DocumentSyncStatus>) => void;
+    } {
+      const statusUpdates: Array<Partial<DocumentSyncStatus>> = [];
+      return { statusUpdates, onStatusChange: status => statusUpdates.push(status) };
+    }
+
+    /** Latest reported value of a single status field, since updates are partial. */
+    function latest<K extends keyof DocumentSyncStatus>(
+      statusUpdates: Array<Partial<DocumentSyncStatus>>,
+      field: K,
+    ): DocumentSyncStatus[K] | undefined {
+      return statusUpdates.filter(s => s[field] !== undefined).at(-1)?.[field];
+    }
+
+    function selectLiveUpdates(
+      statusUpdates: Array<Partial<DocumentSyncStatus>>,
+    ): DocumentLiveStatus[] {
+      return statusUpdates.flatMap(
+        (status): DocumentLiveStatus[] => status.live == null ? [] : [status.live],
+      );
+    }
+
+    it("reports CONNECTING while the subscription is being established", () => {
+      mocks.eventService.subscribe.mockReturnValue(new Promise(() => {}));
+      const service = createFoundryEventService(app);
+      const { statusUpdates, onStatusChange } = collectStatus();
+
+      service.startDocumentSync(
+        "doc-1" as DocumentId,
+        new Y.Doc(),
+        { maxVersion: 1, minVersion: 1 },
+        onStatusChange,
+      );
+
+      expect(latest(statusUpdates, "live")).toBe(DocumentLiveStatus.CONNECTING);
+      expect(latest(statusUpdates, "load")).toBe(DocumentLoadStatus.LOADING);
+    });
+
+    it("reports CONNECTED once the subscription is established", async () => {
+      mocks.eventService.subscribe.mockResolvedValue("document-sub" as SubscriptionId);
+      const service = createFoundryEventService(app);
+      const { statusUpdates, onStatusChange } = collectStatus();
+
+      service.startDocumentSync(
+        "doc-1" as DocumentId,
+        new Y.Doc(),
+        { maxVersion: 1, minVersion: 1 },
+        onStatusChange,
+      );
+      await Promise.resolve();
+
+      expect(latest(statusUpdates, "live")).toBe(DocumentLiveStatus.CONNECTED);
+      // Liveness is independent of the load: no update has arrived yet.
+      expect(latest(statusUpdates, "load")).toBe(DocumentLoadStatus.LOADING);
+    });
+
+    it("stays CONNECTED after the document finishes loading", async () => {
+      let updateCallback: ((message: DocumentUpdateMessage) => void) | undefined;
+      mocks.eventService.subscribe.mockImplementation((_channel, callback) => {
+        updateCallback = callback as (message: DocumentUpdateMessage) => void;
+        return Promise.resolve("document-sub" as SubscriptionId);
+      });
+      const service = createFoundryEventService(app);
+      const { statusUpdates, onStatusChange } = collectStatus();
+
+      service.startDocumentSync(
+        "doc-1" as DocumentId,
+        new Y.Doc(),
+        { maxVersion: 1, minVersion: 1 },
+        onStatusChange,
+      );
+      await Promise.resolve();
+      updateCallback?.({
+        baseRevisionId: "0",
+        clientId: "server",
+        clientSupportedVersionRange: { maxVersion: 1, minVersion: 1 },
+        editIds: [],
+        revisionId: "1",
+        type: "update",
+      });
+
+      // The reported regression: data synced correctly while live read DISCONNECTED forever.
+      expect(latest(statusUpdates, "load")).toBe(DocumentLoadStatus.LOADED);
+      expect(latest(statusUpdates, "live")).toBe(DocumentLiveStatus.CONNECTED);
+    });
+
+    it("reports ERROR when the subscription cannot be established", async () => {
+      mocks.eventService.subscribe.mockRejectedValue(new Error("no socket"));
+      const service = createFoundryEventService(app);
+      const { statusUpdates, onStatusChange } = collectStatus();
+
+      service.startDocumentSync(
+        "doc-1" as DocumentId,
+        new Y.Doc(),
+        { maxVersion: 1, minVersion: 1 },
+        onStatusChange,
+      );
+      await Promise.resolve();
+      await Promise.resolve();
+
+      expect(latest(statusUpdates, "live")).toBe(DocumentLiveStatus.ERROR);
+      expect(latest(statusUpdates, "load")).toBe(DocumentLoadStatus.ERROR);
+    });
+
+    it("restores CONNECTED once a message proves the channel works again", async () => {
+      let updateCallback: ((message: DocumentUpdateMessage) => void) | undefined;
+      mocks.eventService.subscribe.mockImplementation(
+        (_channel, callback): Promise<SubscriptionId> => {
+          updateCallback = callback as (message: DocumentUpdateMessage) => void;
+          return Promise.resolve("document-sub" as SubscriptionId);
+        },
+      );
+      const service = createFoundryEventService(app);
+      const { statusUpdates, onStatusChange } = collectStatus();
+
+      service.startDocumentSync(
+        "doc-1" as DocumentId,
+        new Y.Doc(),
+        { maxVersion: 1, minVersion: 1 },
+        onStatusChange,
+      );
+      await Promise.resolve();
+      updateCallback?.({
+        code: "REVISION_TOO_OLD",
+        errorInstanceId: "error-instance-1",
+        type: "error",
+      } as unknown as DocumentUpdateMessage);
+      updateCallback?.({
+        baseRevisionId: "0",
+        clientId: "server",
+        clientSupportedVersionRange: { maxVersion: 1, minVersion: 1 },
+        editIds: [],
+        revisionId: "1",
+        type: "update",
+      });
+      updateCallback?.({
+        baseRevisionId: "1",
+        clientId: "server",
+        clientSupportedVersionRange: { maxVersion: 1, minVersion: 1 },
+        editIds: [],
+        revisionId: "2",
+        type: "update",
+      });
+
+      expect(selectLiveUpdates(statusUpdates)).toEqual([
+        DocumentLiveStatus.CONNECTING,
+        DocumentLiveStatus.CONNECTED,
+        DocumentLiveStatus.ERROR,
+        DocumentLiveStatus.CONNECTED,
+      ]);
+      expect(latest(statusUpdates, "load")).toBe(DocumentLoadStatus.LOADED);
+    });
+
+    it("reports recovery once when an update arrives before the subscribe ack", async () => {
+      mocks.eventService.subscribe.mockImplementation(
+        (_channel, callback): Promise<SubscriptionId> => {
+          const handleUpdate = callback as (message: DocumentUpdateMessage) => void;
+          const subscribed = Promise.resolve("document-sub" as SubscriptionId);
+          handleUpdate({
+            code: "REVISION_TOO_OLD",
+            errorInstanceId: "error-instance-1",
+            type: "error",
+          } as unknown as DocumentUpdateMessage);
+          handleUpdate({
+            baseRevisionId: "0",
+            clientId: "server",
+            clientSupportedVersionRange: { maxVersion: 1, minVersion: 1 },
+            editIds: [],
+            revisionId: "1",
+            type: "update",
+          });
+          return subscribed;
+        },
+      );
+      const service = createFoundryEventService(app);
+      const { statusUpdates, onStatusChange } = collectStatus();
+
+      service.startDocumentSync(
+        "doc-1" as DocumentId,
+        new Y.Doc(),
+        { maxVersion: 1, minVersion: 1 },
+        onStatusChange,
+      );
+      await Promise.resolve();
+
+      expect(selectLiveUpdates(statusUpdates)).toEqual([
+        DocumentLiveStatus.CONNECTING,
+        DocumentLiveStatus.ERROR,
+        DocumentLiveStatus.CONNECTED,
+      ]);
+    });
+
+    it("clears channel failure when sync stops", async () => {
+      const updateCallbacks: Array<(message: DocumentUpdateMessage) => void> = [];
+      mocks.eventService.subscribe.mockImplementation(
+        (_channel, callback): Promise<SubscriptionId> => {
+          updateCallbacks.push(callback as (message: DocumentUpdateMessage) => void);
+          return Promise.resolve(`document-sub-${updateCallbacks.length}` as SubscriptionId);
+        },
+      );
+      const service = createFoundryEventService(app);
+      const firstStatus = collectStatus();
+      const session = service.startDocumentSync(
+        "doc-1" as DocumentId,
+        new Y.Doc(),
+        { maxVersion: 1, minVersion: 1 },
+        firstStatus.onStatusChange,
+      );
+      await Promise.resolve();
+      updateCallbacks[0]?.({
+        code: "REVISION_TOO_OLD",
+        errorInstanceId: "error-instance-1",
+        type: "error",
+      } as unknown as DocumentUpdateMessage);
+
+      service.stopDocumentSync(session);
+      const secondStatus = collectStatus();
+      service.startDocumentSync(
+        "doc-1" as DocumentId,
+        new Y.Doc(),
+        { maxVersion: 1, minVersion: 1 },
+        secondStatus.onStatusChange,
+      );
+      await Promise.resolve();
+
+      expect(selectLiveUpdates(secondStatus.statusUpdates)).toEqual([
+        DocumentLiveStatus.CONNECTING,
+        DocumentLiveStatus.CONNECTED,
+      ]);
+    });
+
+    it("leaves liveness alone when a revision gap makes local state stale", async () => {
+      let updateCallback: ((message: DocumentUpdateMessage) => void) | undefined;
+      mocks.eventService.subscribe.mockImplementation((_channel, callback) => {
+        updateCallback = callback as (message: DocumentUpdateMessage) => void;
+        return Promise.resolve("document-sub" as SubscriptionId);
+      });
+      const service = createFoundryEventService(app);
+      const { statusUpdates, onStatusChange } = collectStatus();
+
+      service.startDocumentSync(
+        "doc-1" as DocumentId,
+        new Y.Doc(),
+        { maxVersion: 1, minVersion: 1 },
+        onStatusChange,
+      );
+      await Promise.resolve();
+      const update = (baseRevisionId: string, revisionId: string): DocumentUpdateMessage => ({
+        baseRevisionId,
+        clientId: "server",
+        clientSupportedVersionRange: { maxVersion: 1, minVersion: 1 },
+        editIds: [],
+        revisionId,
+        type: "update",
+      });
+      updateCallback?.(update("0", "1"));
+      // Skips revision 2, so the local state is stale even though the socket is fine.
+      updateCallback?.(update("7", "8"));
+
+      expect(latest(statusUpdates, "load")).toBe(DocumentLoadStatus.ERROR);
+      expect(latest(statusUpdates, "live")).toBe(DocumentLiveStatus.CONNECTED);
+    });
+
+    it("does not promote to CONNECTED when a channel error arrives with the subscribe ack", async () => {
+      // CometD dispatches every message in one transport response synchronously, but the
+      // subscribe promise's continuation is a microtask. A channel error delivered in the same
+      // batch as the ack therefore always lands before the promotion runs.
+      mocks.eventService.subscribe.mockImplementation((_channel, callback) => {
+        const subscribed = Promise.resolve("document-sub" as SubscriptionId);
+        (callback as (message: DocumentUpdateMessage) => void)({
+          code: "REVISION_TOO_OLD",
+          errorInstanceId: "error-instance-1",
+          type: "error",
+        } as unknown as DocumentUpdateMessage);
+        return subscribed;
+      });
+      const service = createFoundryEventService(app);
+      const { statusUpdates, onStatusChange } = collectStatus();
+
+      service.startDocumentSync(
+        "doc-1" as DocumentId,
+        new Y.Doc(),
+        { maxVersion: 1, minVersion: 1 },
+        onStatusChange,
+      );
+      await Promise.resolve();
+
+      expect(latest(statusUpdates, "live")).toBe(DocumentLiveStatus.ERROR);
+      expect(latest(statusUpdates, "load")).toBe(DocumentLoadStatus.ERROR);
+    });
   });
 });

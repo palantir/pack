@@ -44,6 +44,7 @@ import type {
   RecordCollectionChangeCallback,
   RecordDeleteCallback,
   RecordInvalidCallback,
+  SearchDocumentsOptions,
   SearchDocumentsResult,
   UpdateDocumentMetadata,
 } from "./DocumentService.js";
@@ -87,12 +88,7 @@ export interface StateModule {
   readonly searchDocuments: <T extends DocumentSchema>(
     documentTypeName: string,
     schema: T,
-    options?: {
-      documentName?: string;
-      pageSize?: number;
-      pageToken?: string;
-      ontologyRid?: string;
-    },
+    options?: SearchDocumentsOptions,
   ) => Promise<SearchDocumentsResult>;
 
   readonly updateDocument: (
@@ -278,12 +274,7 @@ export class StateModuleImpl implements StateModule {
   async searchDocuments<T extends DocumentSchema>(
     documentTypeName: string,
     schema: T,
-    options?: {
-      documentName?: string;
-      pageSize?: number;
-      pageToken?: string;
-      ontologyRid?: string;
-    },
+    options?: SearchDocumentsOptions,
   ): Promise<SearchDocumentsResult> {
     return this.documentService.searchDocuments(documentTypeName, schema, options);
   }

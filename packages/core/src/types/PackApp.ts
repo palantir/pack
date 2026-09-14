@@ -21,23 +21,22 @@ import type { ModuleKey } from "./ModuleKey.js";
 /**
  * PackApp provides access to various pack subsystems.
  *
- * Specific modules are available after configuration and through declarations mixed in by import.
- * Eg for state system, if you import @palantir/pack.state.core you will have access to `app.state` accessor.
- * Similarly, auth is added automatically by initPackApp.
+ * `initPackApp` automatically initializes auth and adds `app.auth`. Optional modules are added
+ * through builder methods. For example, `.withState()` initializes PACK's document state module
+ * and adds the typed `app.state` accessor.
  *
  * @example
  * ```typescript
- * import { DocumentRef } from '@palantir/pack.state.core';
  * import { DocSchema } from '@my-app/schema';
  *
- * const app = initPackApp({
- *   tokenProvider: () => 'your-token',
- *   moduleConfigs: {
- *     ...createPackDocumentServiceConfig({appId: 'your-app-id', documentType: 'your-document-type'})
- *   },
- * });
+ * const app = initPackApp(client, {
+ *   app: { appId: 'your-app-id' },
+ *   ontologyRid: 'your-ontology-rid',
+ * })
+ *   .withState()
+ *   .build();
  *
- * const docRef = app.state.createDocRef(docSchema, 'your-document-id');
+ * const docRef = app.state.createDocRef('your-document-id', DocSchema);
  * const doc = await docRef.getSnapshot(); // get pojo of your doc state.
  * ```
  */

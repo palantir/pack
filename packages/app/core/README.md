@@ -39,8 +39,14 @@ const app = initPackApp(client, {
     appId: "your-app-id",
     appVersion: "1.0.0",
   },
-});
+})
+  .withState()
+  .build();
 ```
+
+`.withState()` initializes PACK's document state module and adds `app.state`. This is not React
+component state; it is the API for documents, records, search, presence, and related state services.
+State is optional, so applications that do not use those APIs do not initialize the module.
 
 ### Authentication Options
 

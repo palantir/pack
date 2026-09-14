@@ -111,6 +111,27 @@ export interface SearchDocumentsResult {
   readonly nextPageToken?: string;
 }
 
+export type DocumentSortField =
+  | "NAME"
+  | "CREATED_TIME"
+  | "LAST_MODIFIED_TIME"
+  | "LAST_VIEW_TIME";
+
+export type DocumentSortDirection = "ASC" | "DESC";
+
+export interface DocumentSort {
+  readonly direction: DocumentSortDirection;
+  readonly field: DocumentSortField;
+}
+
+export interface SearchDocumentsOptions {
+  readonly documentName?: string;
+  readonly ontologyRid?: string;
+  readonly orderBy?: DocumentSort;
+  readonly pageSize?: number;
+  readonly pageToken?: string;
+}
+
 /**
  * Metadata for a document type, as loaded from the platform.
  */
@@ -151,12 +172,7 @@ export interface DocumentService {
   readonly searchDocuments: <T extends DocumentSchema>(
     documentTypeName: string,
     schema: T,
-    options?: {
-      documentName?: string;
-      pageSize?: number;
-      pageToken?: string;
-      ontologyRid?: string;
-    },
+    options?: SearchDocumentsOptions,
   ) => Promise<SearchDocumentsResult>;
 
   readonly updateDocument: (

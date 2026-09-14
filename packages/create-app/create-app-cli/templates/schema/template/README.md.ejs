@@ -33,6 +33,13 @@ document type asset to bundle with your first-party application:
 npm run build:asset   # -> build/asset.json
 ```
 
+If a schema change would fail the platform's backwards-compatibility validation and you need to
+overwrite it anyway, pass `--force-overwrite`:
+
+```bash
+npm run build:asset -- --force-overwrite
+```
+
 To iterate against a dev stack before the asset ships, you can deploy the document type
 directly (set the environment variables first):
 

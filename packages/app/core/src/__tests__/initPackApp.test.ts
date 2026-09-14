@@ -19,20 +19,25 @@ import type { Client } from "@osdk/client";
 import { createClient } from "@osdk/client";
 import { MinimalLogger } from "@osdk/client/internal";
 import { createConfidentialOauthClient, createPublicOauthClient } from "@osdk/oauth";
-import type { AppOptions } from "@palantir/pack.core";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import type { AppOptions, ModuleKey } from "@palantir/pack.core";
+import type { DocumentService, StateModule } from "@palantir/pack.state.core";
+import { beforeEach, describe, expect, expectTypeOf, it, vi } from "vitest";
+import { mockDeep } from "vitest-mock-extended";
 import { initPackApp } from "../utils/initPackApp.js";
 
 // Mock external dependencies
 import { getPageEnv } from "../utils/getPageEnv.js";
 vi.mock("../utils/getPageEnv.js");
 
-vi.mock("../utils/getDocumentServiceConfig.js", () => ({
-  getDocumentServiceConfig: vi.fn(() => [
-    { key: Symbol.for("test-document-service") },
-    {},
-  ]),
-}));
+// Register the stub under the real module key so the withState test can initialize it.
+vi.mock("../utils/getDocumentServiceConfig.js", async () => {
+  const { createDocumentServiceConfig } = await import("@palantir/pack.state.core");
+  return {
+    getDocumentServiceConfig: vi.fn(() =>
+      createDocumentServiceConfig(() => mockDeep<DocumentService>(), {})
+    ),
+  };
+});
 
 const TEST_FOUNDRY_URL = "https://test.palantir.com";
 const TEST_FOUNDRY_URL_WITH_SLASH = "https://test.palantir.com/";
@@ -50,6 +55,15 @@ const TEST_APP_CONFIG = Object.freeze({
 const APP_CONFIG = Object.freeze({
   app: TEST_APP_CONFIG,
 });
+
+interface TestModule {
+  readonly value: string;
+}
+
+const TEST_MODULE_KEY = {
+  initModule: (): TestModule => ({ value: "test" }),
+  key: Symbol("test-module"),
+} satisfies ModuleKey<TestModule>;
 
 describe("initPackApp", () => {
   // Set up default mock return values
@@ -102,6 +116,28 @@ describe("initPackApp", () => {
       expect(app.config.app).toEqual(TEST_APP_CONFIG);
       expect(app.config.remote.baseUrl).toBe(TEST_FOUNDRY_URL_WITH_SLASH);
       expect(app.config.osdkClient).toBe(client);
+    });
+
+    it("should leave state uninitialized until requested", () => {
+      const client = createTestPublicClient();
+
+      const app = initPackApp(client, APP_CONFIG);
+
+      expect("state" in app).toBe(false);
+    });
+
+    it("should preserve named module types when adding state", () => {
+      const client = createTestPublicClient();
+
+      const app = initPackApp(client, APP_CONFIG)
+        .withNamed({ testModule: TEST_MODULE_KEY })
+        .withState()
+        .build();
+
+      expect(app.testModule.value).toBe("test");
+      expect(app.state).toBeDefined();
+      expectTypeOf(app.testModule).toEqualTypeOf<TestModule>();
+      expectTypeOf(app.state).toEqualTypeOf<StateModule>();
     });
 
     it("should create app from confidential OSDK client", () => {

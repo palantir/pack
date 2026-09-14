@@ -48,6 +48,13 @@ to bundle with your application:
 npm run build:asset
 ```
 
+If a schema change would fail the platform's backwards-compatibility validation and you need to
+overwrite it anyway, pass `--force-overwrite`:
+
+```bash
+npm run build:asset -- --force-overwrite
+```
+
 To iterate against a dev stack before the asset ships, deploy the document type directly
 (set `FOUNDRY_URL`, `FOUNDRY_TOKEN`, and `ONTOLOGY_RID` first):
 

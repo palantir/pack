@@ -1,5 +1,63 @@
 # @palantir/pack.state.foundry-event
 
+## 0.28.0
+
+### Minor Changes
+
+- 50d8b43: Stop discarding local writes made while a document's initial load is in flight. Between the Yjs `update` listener being attached in `startDocumentSync` and the server's first revision arriving, local updates hit a `lastRevisionId == null` check and were dropped with only a log line. The publish payload carries no revision of its own — the server resolves a publish against the revision the client last acknowledged on its update subscription — so there was nothing to publish against yet. Nothing surfaced the loss: the writing client read its own value back correctly, while the update never reached the server and peers never saw it. Those updates are now held and flushed in order once the first revision establishes `lastRevisionId`.
+
+  Two cases that were previously silent now say so. Held updates that are still queued when sync stops are discarded with a warning rather than quietly, since a load that never completes leaves them with nothing to publish against. A queue that grows past a threshold warns that the load looks stuck instead of accumulating unnoticed.
+
+  Two windows remain, both of them earlier than the one this fixes, and both still silent.
+
+  Writes made before any data subscription opens are still lost: the `update` listener is only attached when the first data subscription registers, so those transactions produce no event to publish.
+
+  Writes made _during_ the open are also still lost. `FoundryDocumentService.onDataSubscriptionOpened` reports `load: LOADING` and `live: CONNECTING`, then awaits `waitForMetadataLoad` — an HTTP round-trip — before calling `startDocumentSync`, which is where the publish-side listener is attached. Across that window the document already reports itself as loading, but a write produces no publish event at all, so it is dropped with neither a queue entry nor a log line. That window is plausibly longer than the one the queue covers. Closing it means hoisting the hold into `FoundryDocumentService`, which owns the `Y.Doc` for the whole open, rather than `FoundryEventService`, which does not exist until `startDocumentSync` runs.
+
+### Patch Changes
+
+- @palantir/pack.auth@0.28.0
+- @palantir/pack.core@0.28.0
+- @palantir/pack.document-schema.model-types@0.28.0
+- @palantir/pack.state.core@0.28.0
+
+## 0.27.0
+
+### Minor Changes
+
+- 399dd27: Maintain `live` status for the data and metadata channels. `DocumentStatus` exposes a `live: DocumentLiveStatus` per channel, but the Foundry implementation only ever set it for activity and presence — so `data.live` read `disconnected` permanently against a real stack while data synced perfectly, and `metadata.live` was never set by either implementation. A connection indicator bound to `data.live` therefore worked throughout development against `DemoDocumentService` and then read "disconnected" forever in production.
+
+  The data channel now reports `CONNECTING` while its subscription is being established, `CONNECTED` once it is, and `ERROR` if it cannot be established or the server sends a channel error. Data-integrity failures that leave the socket healthy — a revision gap, or an update that will not apply — continue to affect `load` only. The metadata channel reports liveness for its updates subscription in both the Foundry and Demo implementations, including `ERROR` — with the causing error attached — when the subscription fails while the metadata itself remains loaded over HTTP, which is precisely the distinction `live` exists to express.
+
+- 90464a3: Track published document updates until the server acks them (via the echoed `editId`), resending any that go unacked, so client→server delivery is resilient to dropped publishes. Resends re-publish the same message verbatim so the server can dedupe by `editId`.
+
+### Patch Changes
+
+- Updated dependencies [064eee7]
+- Updated dependencies [aa09906]
+  - @palantir/pack.state.core@0.27.0
+  - @palantir/pack.auth@0.27.0
+  - @palantir/pack.core@0.27.0
+  - @palantir/pack.document-schema.model-types@0.27.0
+
+## 0.26.0
+
+### Patch Changes
+
+- @palantir/pack.auth@0.26.0
+- @palantir/pack.core@0.26.0
+- @palantir/pack.document-schema.model-types@0.26.0
+- @palantir/pack.state.core@0.26.0
+
+## 0.25.0
+
+### Patch Changes
+
+- @palantir/pack.auth@0.25.0
+- @palantir/pack.core@0.25.0
+- @palantir/pack.document-schema.model-types@0.25.0
+- @palantir/pack.state.core@0.25.0
+
 ## 0.24.0
 
 ### Minor Changes
