@@ -501,7 +501,7 @@ importers:
         version: 5.9.3
       vitest-mock-extended:
         specifier: 'catalog:'
-        version: 3.1.0(typescript@5.9.3)(vitest@4.1.10(@types/node@22.19.1)(@vitest/coverage-v8@4.0.14(vitest@4.0.14(@types/node@22.19.1)(happy-dom@20.0.11)(jiti@1.21.7)(lightningcss@1.32.0)(terser@5.48.0)(yaml@2.8.2)))(happy-dom@20.0.11)(vite@7.2.6(@types/node@22.19.1)(jiti@1.21.7)(lightningcss@1.32.0)(terser@5.48.0)(yaml@2.8.2)))
+        version: 3.1.0(typescript@5.9.3)(vitest@4.1.10(@types/node@22.19.1)(@vitest/coverage-v8@4.0.14(vitest@4.0.14(@types/node@22.19.1)(happy-dom@20.0.11)(jiti@1.21.7)(lightningcss@1.32.0)(terser@5.48.0)(yaml@2.8.2)))(happy-dom@20.0.11)(vite@7.2.6(@types/node@22.19.1)(jiti@1.21.7)(lightningcss@1.32.0)(terser@5.48.0)(yaml@2.9.0)))
 
   packages/auth/core:
     dependencies:
@@ -15691,7 +15691,7 @@ snapshots:
 
   '@testing-library/react@16.3.0(@testing-library/dom@10.4.1)(@types/react-dom@18.3.7(@types/react@18.3.27))(@types/react@18.3.27)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)':
     dependencies:
-      '@babel/runtime': 7.28.4
+      '@babel/runtime': 7.29.7
       '@testing-library/dom': 10.4.1
       react: 19.2.0
       react-dom: 19.2.0(react@19.2.0)
@@ -16141,6 +16141,14 @@ snapshots:
       '@vitest/utils': 4.1.10
       chai: 6.2.2
       tinyrainbow: 3.1.0
+
+  '@vitest/mocker@4.0.14(vite@7.2.6(@types/node@20.19.19)(jiti@1.21.7)(lightningcss@1.32.0)(terser@5.48.0)(yaml@2.9.0))':
+    dependencies:
+      '@vitest/spy': 4.0.14
+      estree-walker: 3.0.3
+      magic-string: 0.30.21
+    optionalDependencies:
+      vite: 7.2.6(@types/node@20.19.19)(jiti@1.21.7)(lightningcss@1.32.0)(terser@5.48.0)(yaml@2.9.0)
 
   '@vitest/mocker@4.0.14(vite@7.2.6(@types/node@22.19.1)(jiti@1.21.7)(lightningcss@1.32.0)(terser@5.48.0)(yaml@2.8.2))':
     dependencies:
@@ -22436,7 +22444,7 @@ snapshots:
   vitest@4.0.14(@types/node@20.19.19)(happy-dom@20.0.11)(jiti@1.21.7)(lightningcss@1.32.0)(terser@5.48.0)(yaml@2.9.0):
     dependencies:
       '@vitest/expect': 4.0.14
-      '@vitest/mocker': 4.0.14(vite@7.2.6(@types/node@22.19.1)(jiti@1.21.7)(lightningcss@1.32.0)(terser@5.48.0)(yaml@2.8.2))
+      '@vitest/mocker': 4.0.14(vite@7.2.6(@types/node@20.19.19)(jiti@1.21.7)(lightningcss@1.32.0)(terser@5.48.0)(yaml@2.9.0))
       '@vitest/pretty-format': 4.0.14
       '@vitest/runner': 4.0.14
       '@vitest/snapshot': 4.0.14
