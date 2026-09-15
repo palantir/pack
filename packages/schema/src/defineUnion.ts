@@ -39,6 +39,20 @@ export type UnionArgs<T extends UnionVariantArgs> = {
   readonly variants: T;
 };
 
+/**
+ * Define a **union**: a discriminated choice between several record variants. A
+ * value of the union is exactly one of its variants, tagged by the
+ * `discriminant` field (default `"type"`).
+ *
+ * @example
+ * ```ts
+ * const NodeShape = defineUnion("NodeShape", {
+ *   discriminant: "shapeType",
+ *   docs: "The shape of a node.",
+ *   variants: { box: ShapeBox, circle: ShapeCircle },
+ * });
+ * ```
+ */
 export function defineUnion<const TVariants extends UnionVariantArgs>(
   name: string,
   {

@@ -27,6 +27,11 @@ export type ReturnedSchema = ModelDefs;
 /** Soon to be deprecated - use `ModelDefs` instead. */
 export type Schema<T extends ModelDefs> = T;
 
+/**
+ * The set of builders handed to a {@link SchemaUpdate} callback — one
+ * {@link RecordBuilder} or {@link UnionBuilder} per existing model, keyed by
+ * model name. Mutate the ones you're changing and return the results.
+ */
 export type SchemaBuilder<T extends ModelDefs> = {
   [k in keyof T]: T[k] extends UnionDef<infer R> ? UnionBuilder<R>
     : T[k] extends RecordDef<infer R> ? RecordBuilder<R>
@@ -43,31 +48,47 @@ export type SchemaBuilder<T extends ModelDefs> = {
  * parameter.
  */
 export interface UpgradeFieldOptions<TOld extends Record<string, unknown>> {
+  /**
+   * The existing fields this new field is derived from. The runtime read lens
+   * uses this to know when to back-fill the field for records written by an
+   * older version; the app supplies the actual upgrade function at boot.
+   */
   readonly derivedFrom: ReadonlyArray<keyof TOld & string>;
 }
 
+/** Options passed as the third argument to {@link RecordBuilder.addField}. */
 export type FieldOptions = UpgradeFieldOptions<Record<string, unknown>>;
 
+/** Evolves a record within a {@link SchemaUpdate}. Obtain one from the {@link SchemaBuilder} and finish with `build()`. */
 export interface RecordBuilder<T extends Record<string, Type>> {
   // TODO: builders should support arg types and resolveModels to refs
+  /**
+   * Add a field. Pass `{ derivedFrom }` so the SDK can back-fill it when
+   * reading records written before this field existed.
+   */
   addField<const K extends string, V extends Type>(
     name: K,
     type: V,
     options?: FieldOptions,
   ): RecordBuilder<T & { [k in K]: V }>;
+  /** Mark a field deprecated, with an optional message pointing at its replacement. */
   deprecateField<K extends keyof T & string>(
     name: K,
     message?: string,
   ): RecordBuilder<T>;
+  /** Produce the updated {@link RecordDef}. */
   build(): RecordDef<T>;
 }
 
+/** Evolves a union within a {@link SchemaUpdate}. Obtain one from the {@link SchemaBuilder} and finish with `build()`. */
 export interface UnionBuilder<S extends UnionVariants> {
   // TODO: builders should support arg types and resolveModels to refs
+  /** Add a variant, referencing a record (or a `Ref` to one). */
   addVariant<const K extends string>(
     name: K,
     modelDefOrRef: UnionVariantArg,
   ): UnionBuilder<S & { [k in K]: Ref }>;
+  /** Produce the updated {@link UnionDef}. */
   build(): UnionDef<S>;
 }
 
@@ -312,6 +333,14 @@ export function applyMigration<
   };
 }
 
+/**
+ * Lower-level alternative to the {@link nextSchema}/{@link defineSchemaUpdate}
+ * chain: apply a migration callback and return only the merged models, dropping
+ * the per-field upgrade and deprecation metadata.
+ *
+ * @deprecated Use the {@link nextSchema}/{@link defineSchemaUpdate} chain to
+ * build versioned schemas. This function will be removed in a future version.
+ */
 export function defineMigration<
   const T extends ModelDefs,
   const S extends ModelDefs,

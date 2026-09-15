@@ -31,14 +31,17 @@ export const TypeKind = {
 
 export type TypeKind = typeof TypeKind[keyof typeof TypeKind];
 
+/** A UTF-8 string field. */
 export type String = {
   readonly type: typeof TypeKind.STRING;
 };
 
+/** A double-precision floating point number field. */
 export type Double = {
   readonly type: typeof TypeKind.DOUBLE;
 };
 
+/** A boolean field. */
 export type Boolean = {
   readonly type: typeof TypeKind.BOOLEAN;
 };
@@ -48,23 +51,26 @@ interface TypeBase {
   readonly type: TypeKind;
 }
 
+/** A list of `T`. Nested arrays are not supported — wrap the inner array in a record. */
 export type Array<T extends TypeBase = TypeBase> = {
   readonly type: typeof TypeKind.ARRAY;
   readonly items: T;
 };
 
-// A reference to a record or a union type
+/** A reference to another record or union in the same schema. */
 export type Ref = {
   readonly type: typeof TypeKind.REF;
   readonly refType: "record" | "union"; // TODO: do we care?
   readonly name: string;
 };
 
+/** A `T` that may be absent. Nested optionals are not supported. */
 export type Optional<T extends TypeBase = TypeBase> = {
   readonly type: typeof TypeKind.OPTIONAL;
   readonly item: T;
 };
 
+/** An opaque, arbitrary JSON value. */
 export type Unknown = {
   readonly type: typeof TypeKind.UNKNOWN;
 };
@@ -89,6 +95,7 @@ export type UserRef = {
   readonly type: typeof TypeKind.USER_REF;
 };
 
+/** Any valid field type: a primitive, a composite (`Array`/`Optional`), or a `Ref`. */
 export type Type =
   | Array
   | Boolean
@@ -103,15 +110,21 @@ export type Type =
   | Unknown
   | UserRef;
 
+/** A UTF-8 string field. */
 export const String: String = { type: TypeKind.STRING };
+/** A double-precision floating point number field. */
 export const Double: Double = { type: TypeKind.DOUBLE };
+/** A boolean field. */
 export const Boolean: Boolean = { type: TypeKind.BOOLEAN };
+/** An opaque, arbitrary JSON value. */
 export const Unknown: Unknown = { type: TypeKind.UNKNOWN };
+/** A reference to a Foundry resource. */
 export const ResourceRef: ResourceRef = { type: TypeKind.RESOURCE_REF };
 function unwrapOneOptional(t: TypeBase): TypeBase {
   return t.type === TypeKind.OPTIONAL && "item" in t ? (t as { item: TypeBase }).item : t;
 }
 
+/** Build an array field whose elements are `item`. */
 export const Array = <T extends TypeBase>(item: T): Array<T> => {
   if (unwrapOneOptional(item).type === TypeKind.ARRAY) {
     throw new Error(
@@ -121,6 +134,7 @@ export const Array = <T extends TypeBase>(item: T): Array<T> => {
   }
   return { type: TypeKind.ARRAY, items: item };
 };
+/** Build an optional field wrapping `item`, marking it as possibly absent. */
 export const Optional = <T extends TypeBase>(item: T): Optional<T> => {
   if (item.type === TypeKind.OPTIONAL) {
     throw new Error("Nested optionals (Optional(Optional(...))) are not supported.");

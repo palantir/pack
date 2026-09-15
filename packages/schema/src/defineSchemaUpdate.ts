@@ -19,6 +19,7 @@ import { applyMigration } from "./defineMigration.js";
 import type { ModelDefs } from "./defs.js";
 import { isRecordDef } from "./utils.js";
 
+/** Version 1 of a schema, produced by {@link defineSchema}. */
 export interface InitialSchema<T extends ModelDefs = ModelDefs> {
   readonly type: "initial";
   readonly version: 1;
@@ -37,6 +38,7 @@ export interface FieldDeprecationInfo {
 }
 export type VersionDeprecations = Record<string, Record<string, FieldDeprecationInfo>>;
 
+/** Version 2 or later of a schema, produced by {@link nextSchema}. Links back to the `previous` version. */
 export interface VersionedSchema<T extends ModelDefs = ModelDefs> {
   readonly type: "versioned";
   readonly models: T;
@@ -46,19 +48,48 @@ export interface VersionedSchema<T extends ModelDefs = ModelDefs> {
   readonly deprecations?: VersionDeprecations;
 }
 
+/** Any version of a schema: the {@link InitialSchema} (v1) or a {@link VersionedSchema} (v2+). */
 export type SchemaDefinition<T extends ModelDefs = ModelDefs> =
   | InitialSchema<T>
   | VersionedSchema<T>;
 
+/**
+ * Define version 1 of a schema from its initial set of models (records and
+ * unions). Later versions extend it via {@link nextSchema} and
+ * {@link defineSchemaUpdate}.
+ *
+ * @example
+ * ```ts
+ * const schemaV1 = defineSchema({ ShapeBox, NodeShape });
+ * ```
+ */
 export function defineSchema<T extends ModelDefs>(models: T): InitialSchema<T> {
   return { type: "initial", version: 1, models };
 }
 
+/** A named schema change created by {@link defineSchemaUpdate} and applied with {@link SchemaVersionBuilder.addSchemaUpdate}. */
 export interface SchemaUpdate<T extends ModelDefs, S extends ModelDefs> {
   readonly name: string;
   readonly migration: (schema: SchemaBuilder<T>) => S;
 }
 
+/**
+ * Define a named, reusable schema change. The callback receives a
+ * {@link SchemaBuilder} — one builder per existing model — and returns the
+ * records and unions it changed or added.
+ *
+ * @param name - A stable identifier for this change, used to track the migration.
+ * @example
+ * ```ts
+ * const splitColor = defineSchemaUpdate("splitColor", schema => {
+ *   const ShapeBox = schema.ShapeBox
+ *     .addField("fillColor", Optional(String), { derivedFrom: ["color"] })
+ *     .deprecateField("color", "Use fillColor instead.")
+ *     .build();
+ *   return { ShapeBox };
+ * });
+ * ```
+ */
 export function defineSchemaUpdate<T extends ModelDefs, S extends ModelDefs>(
   name: string,
   migration: (schema: SchemaBuilder<T>) => S,
@@ -66,11 +97,15 @@ export function defineSchemaUpdate<T extends ModelDefs, S extends ModelDefs>(
   return { name, migration };
 }
 
+/** Accumulates {@link SchemaUpdate}s onto the previous version. Create one with {@link nextSchema} and finish with `build()`. */
 export interface SchemaVersionBuilder<T extends ModelDefs> {
+  /** Apply a named change from {@link defineSchemaUpdate} to this version. */
   addSchemaUpdate<S extends ModelDefs>(
     update: SchemaUpdate<T, S>,
   ): SchemaVersionBuilder<T & S>;
+  /** Attach explicit field migrations, supplementing the `derivedFrom` sugar on `addField`. */
   withMigrations(migrations: VersionMigrations): SchemaVersionBuilder<T>;
+  /** Produce the finished {@link VersionedSchema}. */
   build(): VersionedSchema<T>;
 }
 
@@ -215,6 +250,15 @@ class SchemaVersionBuilderImpl<T extends ModelDefs> implements SchemaVersionBuil
   }
 }
 
+/**
+ * Start building the next version of a schema. Chain {@link SchemaVersionBuilder.addSchemaUpdate}
+ * calls and finish with `build()`; the new version is the previous one's plus one.
+ *
+ * @example
+ * ```ts
+ * const schemaV2 = nextSchema(schemaV1).addSchemaUpdate(splitColor).build();
+ * ```
+ */
 export function nextSchema<T extends ModelDefs>(
   previous: SchemaDefinition<T>,
 ): SchemaVersionBuilder<T> {
