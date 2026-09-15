@@ -15,7 +15,7 @@
  */
 
 /**
- * Reason a document channel subscription (data, presence, activity) failed.
+ * Reason a document channel (data, presence, activity) failed.
  * UI can branch on this to decide how to react.
  */
 export const ChannelErrorCode = {
@@ -27,13 +27,15 @@ export const ChannelErrorCode = {
   OPERATIONAL_VERSION_BUMPED: "operationalVersionBumped",
   /** Server-side internal error. */
   INTERNAL_ERROR: "internalError",
+  /** Local document updates were not acknowledged after repeated sends. */
+  UPDATE_NOT_ACKNOWLEDGED: "updateNotAcknowledged",
   /** Any other failure (transport error, or an unrecognized server code). */
   UNKNOWN: "unknown",
 } as const;
 export type ChannelErrorCode = typeof ChannelErrorCode[keyof typeof ChannelErrorCode];
 
 /**
- * A typed error describing why a channel subscription failed.
+ * A typed error describing a document channel failure.
  */
 export interface ChannelError {
   readonly code: ChannelErrorCode;
@@ -41,6 +43,8 @@ export interface ChannelError {
   readonly errorInstanceId: string;
   /** Optional human-readable detail (e.g. for UNKNOWN/client-side errors). */
   readonly message?: string;
+  /** Requires a fresh document before editing can resume; reconnecting does not clear it. */
+  readonly requiresRefresh?: boolean;
 }
 
 /**

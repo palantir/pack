@@ -31,6 +31,8 @@ import type {
 import { getAuthModule } from "@palantir/pack.auth";
 import { generateId, justOnce, type PackAppInternal } from "@palantir/pack.core";
 import {
+  type ChannelError,
+  ChannelErrorCode,
   type DocumentId,
   type EditDescription,
   getMetadata,
@@ -113,6 +115,8 @@ interface SyncSessionInternal extends SyncSession {
   /** Tracks callback/ack races; false means recovery was already reported. */
   dataChannelFailed?: boolean;
   documentSubscriptionId?: SubscriptionId;
+  /** Refresh-required errors persist across subscription restarts of the same local document. */
+  error?: ChannelError;
   lastRevisionId?: number;
   localYDocUpdateHandler?: (
     update: Uint8Array,
@@ -120,6 +124,8 @@ interface SyncSessionInternal extends SyncSession {
     doc: y.Doc,
     transaction: y.Transaction,
   ) => void;
+  /** TEMP local test: this edit is dropped on its initial send and every retry. */
+  mockDroppedEditId?: DocumentPublishMessage["editId"];
   /** Published updates awaiting ack; created on sync start, cleared on stop. */
   outbox?: UnackedUpdateOutbox;
   /**
@@ -236,7 +242,6 @@ class FoundryEventServiceImpl implements FoundryEventService {
     }
     session.yDoc = yDoc;
 
-    // Resends published updates until the server acks them (see handleDocumentUpdateMessage).
     const outbox = createUnackedUpdateOutbox(unackedUpdates => {
       for (const { publishMessage, sendCount } of unackedUpdates) {
         this.logger.debug("Resending unacked document update", {
@@ -244,8 +249,28 @@ class FoundryEventServiceImpl implements FoundryEventService {
           editId: publishMessage.editId,
           sendCount,
         });
-        this.publishDocumentUpdate(documentId, publishMessage);
+        this.publishDocumentUpdate(session, publishMessage);
       }
+    }, {
+      isConnected: () => this.eventService.isConnected(),
+      onRequiresRefresh: unackedUpdates => {
+        if (session.outbox !== outbox || session.error?.requiresRefresh === true) {
+          return;
+        }
+        session.error = {
+          code: ChannelErrorCode.UPDATE_NOT_ACKNOWLEDGED,
+          errorInstanceId: "",
+          message: "Document updates were not acknowledged. Refresh to continue editing.",
+          requiresRefresh: true,
+        };
+        session.outbox = undefined;
+        session.pendingPublishes = [];
+        this.logger.error("Document sync failed after repeated unacknowledged updates", {
+          docId: documentId,
+          editIds: unackedUpdates.map(update => update.publishMessage.editId),
+        });
+        onStatusChange({ error: session.error });
+      },
     });
     session.outbox = outbox;
 
@@ -255,7 +280,7 @@ class FoundryEventServiceImpl implements FoundryEventService {
       _doc: y.Doc,
       transaction: y.Transaction,
     ) => {
-      if (origin === UPDATE_ORIGIN_REMOTE) {
+      if (origin === UPDATE_ORIGIN_REMOTE || session.error?.requiresRefresh === true) {
         return;
       }
 
@@ -271,6 +296,7 @@ class FoundryEventServiceImpl implements FoundryEventService {
     yDoc.on("update", localYDocUpdateHandler);
 
     onStatusChange({
+      error: session.error,
       live: DocumentLiveStatus.CONNECTING,
       load: DocumentLoadStatus.LOADING,
     });
@@ -552,6 +578,9 @@ class FoundryEventServiceImpl implements FoundryEventService {
       documentUpdateSchemaVersion: number;
     },
   ): void {
+    if (session.error?.requiresRefresh === true) {
+      return;
+    }
     const publishMessage: DocumentPublishMessage = {
       clientId: session.clientId,
       clientSupportedVersionRange,
@@ -592,15 +621,40 @@ class FoundryEventServiceImpl implements FoundryEventService {
     session: SyncSessionInternal,
     publishMessage: DocumentPublishMessage,
   ): void {
+    if (session.error?.requiresRefresh === true) {
+      return;
+    }
     session.outbox?.add(publishMessage.editId, publishMessage);
-    this.publishDocumentUpdate(session.documentId, publishMessage);
+
+    // TEMP local test: randomly lose one edit per document, while later edits still publish.
+    if (
+      session.mockDroppedEditId == null
+      && typeof window !== "undefined"
+      && (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1")
+      && Math.random() < 0.1
+    ) {
+      session.mockDroppedEditId = publishMessage.editId;
+      this.logger.warn("TEMP: simulating a permanently dropped document update", {
+        docId: session.documentId,
+        editId: publishMessage.editId,
+      });
+    }
+    this.publishDocumentUpdate(session, publishMessage);
   }
 
   /** Send without tracking. The resend loop calls this directly, since it is already tracked. */
   private publishDocumentUpdate(
-    documentId: DocumentId,
+    session: SyncSessionInternal,
     publishMessage: DocumentPublishMessage,
   ): void {
+    if (session.error?.requiresRefresh === true) {
+      return;
+    }
+    // TEMP local test: retain the same missing edit across retries so it can never be acked.
+    if (publishMessage.editId === session.mockDroppedEditId) {
+      return;
+    }
+    const { documentId } = session;
     const publishChannelId = getDocumentPublishChannelId(documentId);
     void this.eventService.publish(
       publishChannelId,
@@ -615,7 +669,7 @@ class FoundryEventServiceImpl implements FoundryEventService {
 
   /** Flush updates held while the revision was unknown, preserving the order they were made in. */
   private flushPendingPublishes(session: SyncSessionInternal): void {
-    if (session.pendingPublishes.length === 0) {
+    if (session.error?.requiresRefresh === true || session.pendingPublishes.length === 0) {
       return;
     }
 

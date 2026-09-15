@@ -31,6 +31,10 @@ import { useEffect, useState } from "react";
  * `status.<channel>.error` holds a typed {@link ChannelError} the UI can branch
  * on (e.g. `code === "clientVersionTooLow"`).
  *
+ * When `status.data.error?.requiresRefresh` is true, make the editor read-only
+ * and show a persistent Refresh action. Local writes stay blocked until a fresh
+ * document is loaded, including across LOADED updates and component remounts.
+ *
  * @param app The PackApp instance.
  * @param docRef The document to observe, or undefined.
  * @returns The latest DocumentStatus, or undefined before the first update.
