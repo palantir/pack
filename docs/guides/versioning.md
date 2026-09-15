@@ -10,7 +10,7 @@ A document type's schema can change over time. You can add fields, split one fie
 
 The **schema version** is a monotonically increasing integer (v1, v2, v3, …). See [Writing a Schema](./schemas.md) for how to author these.
 
-When you update yur schema (using the `update-schema` command), the backend enforces that the new version is exactly one higher than the currently deployed version, and that the change is backwards-compatible. If you need to bypass that validation, pass `--force-overwrite`.
+When you update your schema (using the `update-schema` command), the backend enforces that the new version is exactly one higher than the currently deployed version, and that the change is backwards-compatible. If you need to bypass that validation, pass `--force-overwrite`.
 
 ## Reading documents
 
