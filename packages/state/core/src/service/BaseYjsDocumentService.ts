@@ -745,11 +745,16 @@ export abstract class BaseYjsDocumentService<TDoc extends InternalYjsDoc = Inter
     this.notifyStatusSubscribers(internalDoc, recordRef.docRef);
   }
 
-  private assertWritable(internalDoc: TDoc): void {
+  private refreshRequiredError(internalDoc: TDoc, docRef: DocumentRef): Error | undefined {
     const { error } = internalDoc.dataStatus;
-    if (error?.requiresRefresh === true) {
-      throw new Error("Refresh to continue editing.", { cause: error });
+    if (error?.requiresRefresh !== true) {
+      return undefined;
     }
+    this.logger.error("Ignoring local write: document requires a refresh", {
+      docId: docRef.id,
+      code: error.code,
+    });
+    return new Error("Refresh to continue editing.", { cause: error });
   }
 
   readonly setRecord = <R extends Model>(
@@ -761,7 +766,10 @@ export abstract class BaseYjsDocumentService<TDoc extends InternalYjsDoc = Inter
       internalDoc != null,
       `Cannot set record as document not found: ${recordRef.docRef.id}`,
     );
-    this.assertWritable(internalDoc);
+    const refreshRequired = this.refreshRequiredError(internalDoc, recordRef.docRef);
+    if (refreshRequired != null) {
+      return Promise.reject(refreshRequired);
+    }
 
     // TODO: you cannot resurrect tomb stoned records I think, so need to check for that before notify
     // TODO: perhaps we just call this via onRecordSet instead?
@@ -802,7 +810,10 @@ export abstract class BaseYjsDocumentService<TDoc extends InternalYjsDoc = Inter
       internalDoc != null,
       `Cannot update record as document not found: ${recordRef.docRef.id}`,
     );
-    this.assertWritable(internalDoc);
+    const refreshRequired = this.refreshRequiredError(internalDoc, recordRef.docRef);
+    if (refreshRequired != null) {
+      return Promise.reject(refreshRequired);
+    }
 
     const storageName = getMetadata(recordRef.model).name;
     const { snapshot: currentState, thrown } = this.getRecordSnapshotChecked(
@@ -859,7 +870,10 @@ export abstract class BaseYjsDocumentService<TDoc extends InternalYjsDoc = Inter
       internalDoc != null,
       `Cannot start transaction as document not found: ${docRef.id}`,
     );
-    this.assertWritable(internalDoc);
+    // Sync and returns void, so there is no promise to reject: skip the body and log.
+    if (this.refreshRequiredError(internalDoc, docRef) != null) {
+      return;
+    }
 
     internalDoc.yDoc.transact(fn, description);
   };
@@ -1150,7 +1164,10 @@ export abstract class BaseYjsDocumentService<TDoc extends InternalYjsDoc = Inter
       return Promise.resolve();
     }
 
-    this.assertWritable(internalDoc);
+    const refreshRequired = this.refreshRequiredError(internalDoc, record.docRef);
+    if (refreshRequired != null) {
+      return Promise.reject(refreshRequired);
+    }
     const storageName = getMetadata(record.model).name;
     const recordsCollection = YjsSchemaMapper.getRecordsMap(internalDoc.yDoc, storageName);
 
