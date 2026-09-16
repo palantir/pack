@@ -15,6 +15,7 @@
  */
 
 import type { DocumentPublishMessage, EditId } from "@osdk/foundry.pack";
+import type { Mock } from "vitest";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   createUnackedUpdateOutbox,
@@ -33,6 +34,11 @@ function makePublishMessage(editId: string): DocumentPublishMessage {
 
 function editIds(updates: readonly UnackedUpdate[]): string[] {
   return updates.map(update => update.publishMessage.editId);
+}
+
+/** sendCount of the update in the most recent resend. Starts at 1 for the initial send. */
+function lastSendCount(resend: Mock<ResendHandler>): number {
+  return resend.mock.calls.at(-1)![0][0]!.sendCount;
 }
 
 describe("createUnackedUpdateOutbox", () => {
@@ -78,8 +84,7 @@ describe("createUnackedUpdateOutbox", () => {
 
     expect(resend).toHaveBeenCalledTimes(1);
     expect(editIds(resend.mock.calls[0]![0])).toEqual(["e1"]);
-    // sendCount starts at 1 (initial send) and increments on each resend.
-    expect(resend.mock.calls[0]![0][0]!.sendCount).toBe(2);
+    expect(lastSendCount(resend)).toBe(2);
   });
 
   it("keeps resending an unacked update until it is acked", () => {
@@ -95,7 +100,7 @@ describe("createUnackedUpdateOutbox", () => {
     vi.advanceTimersByTime(6_000); // three resend ticks
 
     expect(resend).toHaveBeenCalledTimes(3);
-    expect(resend.mock.calls[2]![0][0]!.sendCount).toBe(4);
+    expect(lastSendCount(resend)).toBe(4);
 
     outbox.ack(["e1" as EditId]);
     resend.mockClear();
@@ -159,10 +164,10 @@ describe("createUnackedUpdateOutbox", () => {
     const outbox = createUnackedUpdateOutbox(resend, { onRequiresRefresh });
     outbox.add("e1" as EditId, makePublishMessage("e1"));
 
-    vi.advanceTimersByTime(10_000);
+    vi.advanceTimersByTime(10_000); // five 2s ticks: sendCount reaches the cap of 6
     expect(resend).toHaveBeenCalledTimes(5);
     expect(onRequiresRefresh).not.toHaveBeenCalled();
-    expect(resend.mock.calls.at(-1)![0][0]!.sendCount).toBe(6);
+    expect(lastSendCount(resend)).toBe(6);
 
     // Include a newer edit: the whole document stops, including its healthy queue entries.
     outbox.add("e2" as EditId, makePublishMessage("e2"));
@@ -185,7 +190,7 @@ describe("createUnackedUpdateOutbox", () => {
     const onRequiresRefresh = vi.fn<(updates: readonly UnackedUpdate[]) => void>();
     const outbox = createUnackedUpdateOutbox(vi.fn(), { onRequiresRefresh });
     outbox.add("e1" as EditId, makePublishMessage("e1"));
-    vi.advanceTimersByTime(10_000);
+    vi.advanceTimersByTime(10_000); // five 2s ticks: sendCount reaches the cap of 6
     outbox.ack(["e1" as EditId]);
     vi.advanceTimersByTime(60_000);
     expect(onRequiresRefresh).not.toHaveBeenCalled();
@@ -214,7 +219,7 @@ describe("createUnackedUpdateOutbox", () => {
     connected = true;
     vi.advanceTimersByTime(2_000);
     expect(resend).toHaveBeenCalledTimes(5);
-    expect(resend.mock.calls.at(-1)![0][0]!.sendCount).toBe(6);
+    expect(lastSendCount(resend)).toBe(6);
     vi.advanceTimersByTime(2_000);
     expect(editIds(onRequiresRefresh.mock.calls[0]![0])).toEqual(["e1"]);
   });
