@@ -27,6 +27,8 @@ const CODE_MESSAGES: Record<ChannelErrorCode, string> = {
   [ChannelErrorCode.REVISION_TOO_OLD]: "Your session is out of date. Please reload.",
   [ChannelErrorCode.INTERNAL_ERROR]: "A server error occurred.",
   [ChannelErrorCode.UNKNOWN]: "The connection encountered an error.",
+  [ChannelErrorCode.UPDATE_NOT_ACKNOWLEDGED]:
+    "Recent changes may not have saved. Refresh to continue editing.",
 };
 
 interface StatusErrorToastProps {
@@ -36,6 +38,15 @@ interface StatusErrorToastProps {
 }
 
 export const StatusErrorToast = ({ channel, error }: StatusErrorToastProps) => {
+  if (error.code === ChannelErrorCode.UPDATE_NOT_ACKNOWLEDGED) {
+    return (
+      <div className={styles.container}>
+        <span className={styles.title}>Editing paused</span>
+        <span>{CODE_MESSAGES[error.code]}</span>
+      </div>
+    );
+  }
+
   return (
     <div className={styles.container}>
       <span className={styles.title}>
