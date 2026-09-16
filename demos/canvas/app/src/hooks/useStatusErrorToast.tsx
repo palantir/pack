@@ -48,7 +48,11 @@ export function useStatusErrorToast(
       const channelStatus = status[channel];
       const existingKey = toastKeys.current.get(channel);
 
-      if (channelStatus.load === DocumentLoadStatus.ERROR && channelStatus.error != null) {
+      if (
+        channelStatus.error != null
+        && (channelStatus.error.requiresRefresh === true
+          || channelStatus.load === DocumentLoadStatus.ERROR)
+      ) {
         const key = toaster.show(
           {
             icon: "error",
