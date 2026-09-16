@@ -61,13 +61,19 @@ describe("EventServiceCometD Reconnection Handling", () => {
   let mockCometD: MockProxy<CometD>;
   let service: EventServiceCometD;
   let handshakeCallback: Callback | undefined;
+  let connectCallback: Callback | undefined;
 
   beforeEach(() => {
     vi.useFakeTimers();
     mockCometD = mock();
     handshakeCallback = undefined;
+    connectCallback = undefined;
+    mockCometD.isDisconnected.mockReturnValue(false);
 
     mockCometD.addListener.mockImplementation((channel: string, callback: Callback) => {
+      if (channel === "/meta/connect") {
+        connectCallback = callback;
+      }
       if (channel === "/meta/handshake") {
         handshakeCallback = callback;
         setTimeout(() => {
@@ -121,6 +127,53 @@ describe("EventServiceCometD Reconnection Handling", () => {
     });
     await vi.runAllTimersAsync();
   }
+
+  describe("connection state", () => {
+    async function initialize(): Promise<void> {
+      const subscribeCapture = createSubscribeCapture(mockCometD);
+      const subscriptionPromise = service.subscribe(
+        "/test/channel" as TypedReceiveChannelId<object>,
+        vi.fn(),
+      );
+      await vi.runAllTimersAsync();
+      subscribeCapture.subscribeCallback?.({ channel: "/test/channel", successful: true });
+      await subscriptionPromise;
+    }
+
+    function sendConnect(successful: boolean): void {
+      if (connectCallback == null) {
+        throw new Error("Connect callback not captured");
+      }
+      connectCallback({ channel: "/meta/connect", successful });
+    }
+
+    it("should follow the heartbeat replies rather than the handshake", async () => {
+      expect(service.isConnected()).toBe(false);
+      await initialize();
+      // A successful handshake alone is not proof that traffic is flowing.
+      expect(service.isConnected()).toBe(false);
+
+      sendConnect(true);
+      expect(service.isConnected()).toBe(true);
+      sendConnect(false);
+      expect(service.isConnected()).toBe(false);
+      sendConnect(true);
+      expect(service.isConnected()).toBe(true);
+    });
+
+    it("should report disconnected on a failed handshake or an explicit disconnect", async () => {
+      await initialize();
+      sendConnect(true);
+
+      handshakeCallback!({ channel: "/meta/handshake", successful: false });
+      expect(service.isConnected()).toBe(false);
+
+      // A reply that races an explicit disconnect must not resurrect the connection.
+      mockCometD.isDisconnected.mockReturnValue(true);
+      sendConnect(true);
+      expect(service.isConnected()).toBe(false);
+    });
+  });
 
   describe("initial handshake", () => {
     it("should detect initial handshake and log appropriately", async () => {

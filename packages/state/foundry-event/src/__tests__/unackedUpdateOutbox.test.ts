@@ -45,7 +45,7 @@ describe("createUnackedUpdateOutbox", () => {
   });
 
   it("tracks added updates until they are acked", () => {
-    const outbox = createUnackedUpdateOutbox(vi.fn());
+    const outbox = createUnackedUpdateOutbox(vi.fn(), { onRequiresRefresh: vi.fn() });
 
     expect(outbox.hasUnackedUpdates()).toBe(false);
     expect(outbox.size()).toBe(0);
@@ -67,6 +67,7 @@ describe("createUnackedUpdateOutbox", () => {
   it("resends an update once it has been unacked past the threshold", () => {
     const resend = vi.fn<ResendHandler>();
     const outbox = createUnackedUpdateOutbox(resend, {
+      onRequiresRefresh: vi.fn(),
       resendIntervalMs: 2_000,
       resendAfterMs: 2_000,
     });
@@ -84,6 +85,7 @@ describe("createUnackedUpdateOutbox", () => {
   it("keeps resending an unacked update until it is acked", () => {
     const resend = vi.fn<ResendHandler>();
     const outbox = createUnackedUpdateOutbox(resend, {
+      onRequiresRefresh: vi.fn(),
       resendIntervalMs: 2_000,
       resendAfterMs: 2_000,
     });
@@ -105,6 +107,7 @@ describe("createUnackedUpdateOutbox", () => {
   it("does not resend an update before the staleness threshold", () => {
     const resend = vi.fn<ResendHandler>();
     const outbox = createUnackedUpdateOutbox(resend, {
+      onRequiresRefresh: vi.fn(),
       resendIntervalMs: 1_000,
       resendAfterMs: 1_500,
     });
@@ -126,6 +129,7 @@ describe("createUnackedUpdateOutbox", () => {
   it("stops resending after it is cleared", () => {
     const resend = vi.fn<ResendHandler>();
     const outbox = createUnackedUpdateOutbox(resend, {
+      onRequiresRefresh: vi.fn(),
       resendIntervalMs: 2_000,
       resendAfterMs: 2_000,
     });
@@ -140,12 +144,78 @@ describe("createUnackedUpdateOutbox", () => {
   });
 
   it("ignores acks for updates it is not tracking", () => {
-    const outbox = createUnackedUpdateOutbox(vi.fn());
+    const outbox = createUnackedUpdateOutbox(vi.fn(), { onRequiresRefresh: vi.fn() });
 
     outbox.add("e1" as EditId, makePublishMessage("e1"));
     outbox.ack(["unknown" as EditId]);
 
     expect(outbox.size()).toBe(1);
     expect(outbox.hasUnackedUpdates()).toBe(true);
+  });
+
+  it("fails once when six actual sends remain unacked and never rearms", () => {
+    const resend = vi.fn<ResendHandler>();
+    const onRequiresRefresh = vi.fn<(updates: readonly UnackedUpdate[]) => void>();
+    const outbox = createUnackedUpdateOutbox(resend, { onRequiresRefresh });
+    outbox.add("e1" as EditId, makePublishMessage("e1"));
+
+    vi.advanceTimersByTime(10_000);
+    expect(resend).toHaveBeenCalledTimes(5);
+    expect(onRequiresRefresh).not.toHaveBeenCalled();
+    expect(resend.mock.calls.at(-1)![0][0]!.sendCount).toBe(6);
+
+    // Include a newer edit: the whole document stops, including its healthy queue entries.
+    outbox.add("e2" as EditId, makePublishMessage("e2"));
+    vi.advanceTimersByTime(2_000);
+    expect(onRequiresRefresh).toHaveBeenCalledOnce();
+    expect(editIds(onRequiresRefresh.mock.calls[0]![0])).toEqual(["e1"]);
+    expect(outbox.size()).toBe(0);
+    expect(resend).toHaveBeenCalledTimes(5);
+
+    outbox.clear();
+    outbox.ack(["e1" as EditId]);
+    outbox.add("e3" as EditId, makePublishMessage("e3"));
+    vi.advanceTimersByTime(60_000);
+    expect(outbox.size()).toBe(0);
+    expect(onRequiresRefresh).toHaveBeenCalledOnce();
+    expect(resend).toHaveBeenCalledTimes(5);
+  });
+
+  it("accepts an ack after the sixth send before the next retry check", () => {
+    const onRequiresRefresh = vi.fn<(updates: readonly UnackedUpdate[]) => void>();
+    const outbox = createUnackedUpdateOutbox(vi.fn(), { onRequiresRefresh });
+    outbox.add("e1" as EditId, makePublishMessage("e1"));
+    vi.advanceTimersByTime(10_000);
+    outbox.ack(["e1" as EditId]);
+    vi.advanceTimersByTime(60_000);
+    expect(onRequiresRefresh).not.toHaveBeenCalled();
+    expect(outbox.size()).toBe(0);
+  });
+
+  it("holds the retry budget while disconnected and resumes it on reconnect", () => {
+    const resend = vi.fn<ResendHandler>();
+    const onRequiresRefresh = vi.fn<(updates: readonly UnackedUpdate[]) => void>();
+    let connected = true;
+    const outbox = createUnackedUpdateOutbox(resend, {
+      isConnected: () => connected,
+      onRequiresRefresh,
+    });
+    outbox.add("e1" as EditId, makePublishMessage("e1"));
+
+    // Spend most of the budget, then drop: an outage far past the cutoff must not exhaust it.
+    vi.advanceTimersByTime(8_000);
+    expect(resend).toHaveBeenCalledTimes(4);
+    connected = false;
+    vi.advanceTimersByTime(600_000);
+    expect(resend).toHaveBeenCalledTimes(4);
+    expect(onRequiresRefresh).not.toHaveBeenCalled();
+
+    // Reconnecting resumes where it left off: the update is already stale, so it resends at once.
+    connected = true;
+    vi.advanceTimersByTime(2_000);
+    expect(resend).toHaveBeenCalledTimes(5);
+    expect(resend.mock.calls.at(-1)![0][0]!.sendCount).toBe(6);
+    vi.advanceTimersByTime(2_000);
+    expect(editIds(onRequiresRefresh.mock.calls[0]![0])).toEqual(["e1"]);
   });
 });

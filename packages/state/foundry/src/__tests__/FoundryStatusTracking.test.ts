@@ -22,7 +22,7 @@ import type {
 } from "@osdk/foundry.pack";
 import { Documents } from "@osdk/foundry.pack";
 import type { PackAppInternal } from "@palantir/pack.core";
-import type { DocumentId, DocumentSchema } from "@palantir/pack.document-schema.model-types";
+import type { DocumentId, DocumentSchema, Model } from "@palantir/pack.document-schema.model-types";
 import { ChannelErrorCode, Metadata } from "@palantir/pack.document-schema.model-types";
 import {
   createDocRef,
@@ -38,6 +38,7 @@ import type {
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { MockProxy } from "vitest-mock-extended";
 import { mock } from "vitest-mock-extended";
+import { encodeStateAsUpdate } from "yjs";
 import type { FoundryDocumentService } from "../FoundryDocumentService.js";
 import { internalCreateFoundryDocumentService } from "../FoundryDocumentService.js";
 
@@ -1207,6 +1208,104 @@ describe("Foundry Document Status Tracking", () => {
       expect(service.getDocumentStatus(docRef).metadata.live).toBe(
         DocumentLiveStatus.DISCONNECTED,
       );
+    });
+  });
+
+  describe("refresh-required document errors", () => {
+    const Shape = {
+      __type: { value: "" },
+      [Metadata]: { name: "Shape" },
+      // Placeholder: snapshot validation is skipped when safeParse is absent.
+      zodSchema: {} as Model["zodSchema"],
+    };
+    const schema = {
+      Shape,
+      [Metadata]: { version: 1 },
+    } as const satisfies DocumentSchema;
+
+    const refreshError = {
+      code: ChannelErrorCode.UPDATE_NOT_ACKNOWLEDGED,
+      errorInstanceId: "",
+      message: "Refresh to continue.",
+      requiresRefresh: true,
+    };
+
+    it("should preserve the first refresh-required error through statuses and remounts", async () => {
+      const doc = createDocRef(mockApp, "refresh-doc", schema);
+      const unsubscribe = service.onStateChange(doc, () => {});
+      await vi.runAllTimersAsync();
+      const onStatus = mockEventService.startDocumentSync.mock.calls.at(-1)![3];
+      onStatus({ error: refreshError });
+      onStatus({ load: DocumentLoadStatus.LOADED });
+      onStatus({ error: { code: ChannelErrorCode.UNKNOWN, errorInstanceId: "server-error" } });
+      expect(service.getDocumentStatus(doc).data.error).toEqual(refreshError);
+      onStatus({ error: { ...refreshError, message: "Later failure" } });
+      expect(service.getDocumentStatus(doc).data.error).toEqual(refreshError);
+
+      unsubscribe();
+      expect(service.getDocumentStatus(doc).data.load).toBe(DocumentLoadStatus.UNLOADED);
+      expect(service.getDocumentStatus(doc).data.error).toEqual(refreshError);
+      const unsubscribeAgain = service.onStateChange(doc, () => {});
+      await vi.runAllTimersAsync();
+      expect(service.getDocumentStatus(doc).data.load).toBe(DocumentLoadStatus.LOADED);
+      expect(service.getDocumentStatus(doc).data.error).toEqual(refreshError);
+      unsubscribeAgain();
+
+      await service.deleteDocument(doc);
+      expect(service.getDocumentStatus(doc).data.error).toBeUndefined();
+    });
+
+    it("should block every record mutation before changing Yjs, leaving other documents writable", async () => {
+      const doc = createDocRef(mockApp, "refresh-doc", schema);
+      const unsubscribe = service.onStateChange(doc, () => {});
+      await vi.runAllTimersAsync();
+      const record = service.getCreateRecordRef(doc, "shape-1", schema.Shape);
+      await service.setRecord(record, { value: "saved" });
+      const [, yDoc, , onStatus] = mockEventService.startDocumentSync.mock.calls.at(-1)!;
+      const before = encodeStateAsUpdate(yDoc);
+      onStatus({ error: refreshError });
+
+      const mutations = [
+        () => service.setRecord(record, { value: "changed" }),
+        () => service.updateRecord(record, { value: "changed" }),
+        () => service.deleteRecord(record),
+        () =>
+          service.setCollectionRecord(
+            service.getCreateRecordCollectionRef(doc, schema.Shape),
+            "new-shape",
+            { value: "new" },
+          ),
+      ];
+      // Rejections, never throws: a throw would abort the caller's event handler.
+      for (const mutate of mutations) {
+        await expect(mutate()).rejects.toThrow("Refresh");
+        expect(encodeStateAsUpdate(yDoc)).toEqual(before);
+      }
+      const transactionBody = vi.fn();
+      expect(() => service.withTransaction(doc, transactionBody)).not.toThrow();
+      expect(transactionBody).not.toHaveBeenCalled();
+      expect(encodeStateAsUpdate(yDoc)).toEqual(before);
+      expect(await service.getRecordSnapshot(record)).toEqual({ value: "saved" });
+
+      const otherDoc = createDocRef(mockApp, "healthy-doc", schema);
+      const otherRecord = service.getCreateRecordRef(otherDoc, "shape-2", schema.Shape);
+      await service.setRecord(otherRecord, { value: "still editable" });
+      expect(await service.getRecordSnapshot(otherRecord)).toEqual({ value: "still editable" });
+      unsubscribe();
+    });
+
+    it("should not treat an ordinary channel error as a write restriction", async () => {
+      const doc = createDocRef(mockApp, "recoverable-doc", schema);
+      const unsubscribe = service.onStateChange(doc, () => {});
+      await vi.runAllTimersAsync();
+      mockEventService.startDocumentSync.mock.calls.at(-1)![3]({
+        error: { code: ChannelErrorCode.UNKNOWN, errorInstanceId: "" },
+        load: DocumentLoadStatus.ERROR,
+      });
+      const record = service.getCreateRecordRef(doc, "shape", schema.Shape);
+      await service.setRecord(record, { value: "editable" });
+      expect(await service.getRecordSnapshot(record)).toEqual({ value: "editable" });
+      unsubscribe();
     });
   });
 });

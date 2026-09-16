@@ -124,8 +124,6 @@ interface SyncSessionInternal extends SyncSession {
     doc: y.Doc,
     transaction: y.Transaction,
   ) => void;
-  /** TEMP local test: this edit is dropped on its initial send and every retry. */
-  mockDroppedEditId?: DocumentPublishMessage["editId"];
   /** Published updates awaiting ack; created on sync start, cleared on stop. */
   outbox?: UnackedUpdateOutbox;
   /**
@@ -625,20 +623,6 @@ class FoundryEventServiceImpl implements FoundryEventService {
       return;
     }
     session.outbox?.add(publishMessage.editId, publishMessage);
-
-    // TEMP local test: randomly lose one edit per document, while later edits still publish.
-    if (
-      session.mockDroppedEditId == null
-      && typeof window !== "undefined"
-      && (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1")
-      && Math.random() < 0.1
-    ) {
-      session.mockDroppedEditId = publishMessage.editId;
-      this.logger.warn("TEMP: simulating a permanently dropped document update", {
-        docId: session.documentId,
-        editId: publishMessage.editId,
-      });
-    }
     this.publishDocumentUpdate(session, publishMessage);
   }
 
@@ -648,10 +632,6 @@ class FoundryEventServiceImpl implements FoundryEventService {
     publishMessage: DocumentPublishMessage,
   ): void {
     if (session.error?.requiresRefresh === true) {
-      return;
-    }
-    // TEMP local test: retain the same missing edit across retries so it can never be acked.
-    if (publishMessage.editId === session.mockDroppedEditId) {
       return;
     }
     const { documentId } = session;
