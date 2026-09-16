@@ -434,7 +434,8 @@ export abstract class BaseYjsDocumentService<TDoc extends InternalYjsDoc = Inter
     },
   ): void {
     const current = internalDoc[channel];
-    // Subscription resets reuse the Y.Doc; a refresh-required error belongs to that document.
+    // UNLOADED/LOADED clear ordinary errors, but a reset reuses the same Y.Doc —
+    // so a refresh-required error has to outlive it.
     const error = current.error?.requiresRefresh === true ? current.error : update.error
       ?? (update.load === DocumentLoadStatus.LOADED || update.load === DocumentLoadStatus.UNLOADED
         ? undefined
@@ -870,7 +871,6 @@ export abstract class BaseYjsDocumentService<TDoc extends InternalYjsDoc = Inter
       internalDoc != null,
       `Cannot start transaction as document not found: ${docRef.id}`,
     );
-    // Sync and returns void, so there is no promise to reject: skip the body and log.
     if (this.refreshRequiredError(internalDoc, docRef) != null) {
       return;
     }
