@@ -147,10 +147,11 @@ describe("EventServiceCometD Reconnection Handling", () => {
       connectCallback({ channel: "/meta/connect", successful });
     }
 
-    it("should follow the heartbeat replies rather than the handshake", async () => {
+    it("should track the heartbeat replies, not the handshake", async () => {
       expect(service.isConnected()).toBe(false);
       await initialize();
-      // A successful handshake alone is not proof that traffic is flowing.
+      // The handshake succeeded, but no heartbeat has come back yet, so we do not
+      // know whether messages are actually getting through.
       expect(service.isConnected()).toBe(false);
 
       sendConnect(true);
@@ -168,7 +169,8 @@ describe("EventServiceCometD Reconnection Handling", () => {
       handshakeCallback!({ channel: "/meta/handshake", successful: false });
       expect(service.isConnected()).toBe(false);
 
-      // A reply that races an explicit disconnect must not resurrect the connection.
+      // A late heartbeat reply can arrive after we have already disconnected.
+      // It should not put us back into a connected state.
       mockCometD.isDisconnected.mockReturnValue(true);
       sendConnect(true);
       expect(service.isConnected()).toBe(false);

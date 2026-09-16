@@ -36,7 +36,7 @@ function editIds(updates: readonly UnackedUpdate[]): string[] {
   return updates.map(update => update.publishMessage.editId);
 }
 
-/** sendCount of the update in the most recent resend. Starts at 1 for the initial send. */
+/** How many times the update in the latest resend has been sent. The first send counts as 1. */
 function lastSendCount(resend: Mock<ResendHandler>): number {
   return resend.mock.calls.at(-1)![0][0]!.sendCount;
 }
@@ -158,18 +158,17 @@ describe("createUnackedUpdateOutbox", () => {
     expect(outbox.hasUnackedUpdates()).toBe(true);
   });
 
-  it("fails once when six actual sends remain unacked and never rearms", () => {
+  it("gives up after six sends with no ack, and stays given up", () => {
     const resend = vi.fn<ResendHandler>();
     const onRequiresRefresh = vi.fn<(updates: readonly UnackedUpdate[]) => void>();
     const outbox = createUnackedUpdateOutbox(resend, { onRequiresRefresh });
     outbox.add("e1" as EditId, makePublishMessage("e1"));
 
-    vi.advanceTimersByTime(10_000); // five 2s ticks: sendCount reaches the cap of 6
+    vi.advanceTimersByTime(10_000); // Five resends, two seconds apart, so e1 has been sent 6 times.
     expect(resend).toHaveBeenCalledTimes(5);
     expect(onRequiresRefresh).not.toHaveBeenCalled();
     expect(lastSendCount(resend)).toBe(6);
 
-    // Include a newer edit: the whole document stops, including its healthy queue entries.
     outbox.add("e2" as EditId, makePublishMessage("e2"));
     vi.advanceTimersByTime(2_000);
     expect(onRequiresRefresh).toHaveBeenCalledOnce();
@@ -186,18 +185,18 @@ describe("createUnackedUpdateOutbox", () => {
     expect(resend).toHaveBeenCalledTimes(5);
   });
 
-  it("accepts an ack after the sixth send before the next retry check", () => {
+  it("accepts a late ack that lands just before it would have given up", () => {
     const onRequiresRefresh = vi.fn<(updates: readonly UnackedUpdate[]) => void>();
     const outbox = createUnackedUpdateOutbox(vi.fn(), { onRequiresRefresh });
     outbox.add("e1" as EditId, makePublishMessage("e1"));
-    vi.advanceTimersByTime(10_000); // five 2s ticks: sendCount reaches the cap of 6
+    vi.advanceTimersByTime(10_000); // Five resends, two seconds apart, so e1 has been sent 6 times.
     outbox.ack(["e1" as EditId]);
     vi.advanceTimersByTime(60_000);
     expect(onRequiresRefresh).not.toHaveBeenCalled();
     expect(outbox.size()).toBe(0);
   });
 
-  it("holds the retry budget while disconnected and resumes it on reconnect", () => {
+  it("pauses retries while offline and picks them up again on reconnect", () => {
     const resend = vi.fn<ResendHandler>();
     const onRequiresRefresh = vi.fn<(updates: readonly UnackedUpdate[]) => void>();
     let connected = true;
@@ -207,7 +206,8 @@ describe("createUnackedUpdateOutbox", () => {
     });
     outbox.add("e1" as EditId, makePublishMessage("e1"));
 
-    // Spend most of the budget, then drop: an outage far past the cutoff must not exhaust it.
+    // Use up most of the retries, then go offline. Even a very long outage should not
+    // use up the rest of them.
     vi.advanceTimersByTime(8_000);
     expect(resend).toHaveBeenCalledTimes(4);
     connected = false;
@@ -215,7 +215,7 @@ describe("createUnackedUpdateOutbox", () => {
     expect(resend).toHaveBeenCalledTimes(4);
     expect(onRequiresRefresh).not.toHaveBeenCalled();
 
-    // Reconnecting resumes where it left off: the update is already stale, so it resends at once.
+    // Back online. The update is already overdue, so it goes out on the next tick.
     connected = true;
     vi.advanceTimersByTime(2_000);
     expect(resend).toHaveBeenCalledTimes(5);

@@ -1215,7 +1215,6 @@ describe("Foundry Document Status Tracking", () => {
     const Shape = {
       __type: { value: "" },
       [Metadata]: { name: "Shape" },
-      // Placeholder: snapshot validation is skipped when safeParse is absent.
       zodSchema: {} as Model["zodSchema"],
     };
     const schema = {
@@ -1230,7 +1229,7 @@ describe("Foundry Document Status Tracking", () => {
       requiresRefresh: true,
     };
 
-    it("should preserve the first refresh-required error through statuses and remounts", async () => {
+    it("should keep the first refresh error, ignoring later errors and remounts", async () => {
       const doc = createDocRef(mockApp, "refresh-doc", schema);
       const unsubscribe = service.onStateChange(doc, () => {});
       await vi.runAllTimersAsync();
@@ -1255,7 +1254,7 @@ describe("Foundry Document Status Tracking", () => {
       expect(service.getDocumentStatus(doc).data.error).toBeUndefined();
     });
 
-    it("should block every record mutation before changing Yjs, leaving other documents writable", async () => {
+    it("should block every kind of write without touching the doc, and leave other docs alone", async () => {
       const doc = createDocRef(mockApp, "refresh-doc", schema);
       const unsubscribe = service.onStateChange(doc, () => {});
       await vi.runAllTimersAsync();
@@ -1276,7 +1275,7 @@ describe("Foundry Document Status Tracking", () => {
             { value: "new" },
           ),
       ];
-      // Rejections, never throws: a throw would abort the caller's event handler.
+      // These reject rather than throw. Throwing would kill the caller's event handler.
       for (const mutate of mutations) {
         await expect(mutate()).rejects.toThrow("Refresh");
         expect(encodeStateAsUpdate(yDoc)).toEqual(before);
@@ -1294,7 +1293,7 @@ describe("Foundry Document Status Tracking", () => {
       unsubscribe();
     });
 
-    it("should not treat an ordinary channel error as a write restriction", async () => {
+    it("should still allow writes after an ordinary channel error", async () => {
       const doc = createDocRef(mockApp, "recoverable-doc", schema);
       const unsubscribe = service.onStateChange(doc, () => {});
       await vi.runAllTimersAsync();

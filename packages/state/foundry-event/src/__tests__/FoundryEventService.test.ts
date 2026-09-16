@@ -530,7 +530,7 @@ describe("FoundryEventService", () => {
       expect(publishCallsFor("doc-1")).toHaveLength(2);
     });
 
-    it("stops outgoing edits when refresh is required while still applying remote updates", async () => {
+    it("stops sending local edits once a refresh is needed, but still takes remote ones", async () => {
       const { service, session, statusUpdates, yDoc, sendServerMessage } = await startSyncedDoc();
       yDoc.getMap("Shape").set("local", new Y.Map());
       vi.advanceTimersByTime(10_000);
@@ -557,7 +557,8 @@ describe("FoundryEventService", () => {
       });
       expect(yDoc.getMap("Shape").get("remote")).toBe("new remote content");
       expect(statusUpdates.at(-1)?.load).toBe(DocumentLoadStatus.LOADED);
-      // Bypass the SDK guard to prove the outgoing event-service guard is independent.
+      // Write straight to the Y.Doc, skipping the SDK's own block, to check that the
+      // event service refuses to send it on its own.
       yDoc.getMap("Shape").set("after-error", new Y.Map());
       const firstEdit = publishCallsFor("doc-1")[0]![1] as DocumentPublishMessage;
       sendServerMessage({
@@ -573,7 +574,7 @@ describe("FoundryEventService", () => {
       service.stopDocumentSync(session);
     });
 
-    it("preserves refresh-required state through sync restart until the document is disposed", async () => {
+    it("keeps the refresh requirement across a sync restart, until the document is thrown away", async () => {
       const { service, session, statusUpdates, yDoc } = await startSyncedDoc();
       yDoc.getMap("Shape").set("local", new Y.Map());
       vi.advanceTimersByTime(12_000);
@@ -607,7 +608,7 @@ describe("FoundryEventService", () => {
       expect(publishCallsFor("doc-1")).toHaveLength(6);
       service.stopDocumentSync(restarted);
 
-      // Disposing the document is the only thing that clears it.
+      // Throwing the document away is the only thing that clears the requirement.
       service.disposeDocument("doc-1");
       const freshStatuses: Array<Partial<DocumentSyncStatus>> = [];
       const freshSession = service.startDocumentSync("doc-1", new Y.Doc(), {
@@ -618,7 +619,7 @@ describe("FoundryEventService", () => {
       service.stopDocumentSync(freshSession);
     });
 
-    it("lets ambiguous publish failures retry until the same retry cutoff", async () => {
+    it("treats a failed send the same as an unanswered one, and gives up at the same point", async () => {
       const { service, session, statusUpdates, yDoc } = await startSyncedDoc();
       mocks.eventService.publish.mockRejectedValue(new Error("Transport failed"));
       yDoc.getMap("Shape").set("local", new Y.Map());
@@ -632,18 +633,20 @@ describe("FoundryEventService", () => {
       service.stopDocumentSync(session);
     });
 
-    it("does not require refresh during a transport outage, only after reconnecting", async () => {
+    it("does not ask for a refresh while the network is down, only once it is back", async () => {
       const { service, session, statusUpdates, yDoc, sendServerMessage } = await startSyncedDoc();
       mocks.eventService.isConnected.mockReturnValue(false);
       yDoc.getMap("Shape").set("local", new Y.Map());
       const sentDuringOutage = publishCallsFor("doc-1").length;
 
-      // An outage far longer than the retry window must not freeze a healthy document.
+      // The outage lasts far longer than the retry window, but a healthy document
+      // should not get locked just because the network was down.
       vi.advanceTimersByTime(600_000);
       expect(statusUpdates.every(status => status.error?.requiresRefresh !== true)).toBe(true);
       expect(publishCallsFor("doc-1")).toHaveLength(sentDuringOutage);
 
-      // Reconnecting and acking the update clears it, proving the budget was only held.
+      // Once back online the update goes out and gets acked, which shows the retries
+      // were only paused rather than used up.
       mocks.eventService.isConnected.mockReturnValue(true);
       vi.advanceTimersByTime(2_000);
       const resent = publishCallsFor("doc-1");
