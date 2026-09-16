@@ -557,8 +557,7 @@ describe("FoundryEventService", () => {
       });
       expect(yDoc.getMap("Shape").get("remote")).toBe("new remote content");
       expect(statusUpdates.at(-1)?.load).toBe(DocumentLoadStatus.LOADED);
-      // Write straight to the Y.Doc, skipping the SDK's own block, to check that the
-      // event service refuses to send it on its own.
+
       yDoc.getMap("Shape").set("after-error", new Y.Map());
       const firstEdit = publishCallsFor("doc-1")[0]![1] as DocumentPublishMessage;
       sendServerMessage({
