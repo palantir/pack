@@ -218,7 +218,8 @@ export async function createProject(
       const steps = templateConfig.nextSteps?.(finalContext)
         ?? getNextSteps({
           projectName,
-          skipInstall: options.skipInstall,
+          skipInstall: finalContext.options.skipInstall
+            || finalContext.templateConfig.installDependencies === false,
         });
       for (const step of steps) {
         logger.info(`  ${step}`);
