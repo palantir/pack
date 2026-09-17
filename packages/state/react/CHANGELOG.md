@@ -1,5 +1,18 @@
 # @palantir/pack.state.react
 
+## 0.29.0
+
+### Minor Changes
+
+- 03bb432: Return an empty array from useRecords when the document reference is invalid, so it can be used with useDocRef before a document ID is available.
+
+### Patch Changes
+
+- @palantir/pack.auth@0.29.0
+- @palantir/pack.core@0.29.0
+- @palantir/pack.document-schema.model-types@0.29.0
+- @palantir/pack.state.core@0.29.0
+
 ## 0.28.0
 
 ### Minor Changes

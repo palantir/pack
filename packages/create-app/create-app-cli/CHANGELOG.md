@@ -1,5 +1,16 @@
 # @palantir/pack.create-app
 
+## 0.29.0
+
+### Minor Changes
+
+- f854a63: Allow create-pack-app to use templates from local folders or installed npm packages. Templates can run a repository's package creator before adding files, skip the generator's npm install, and print their own setup instructions.
+
+### Patch Changes
+
+- Updated dependencies [f854a63]
+  - @palantir/pack.codegen.core@0.29.0
+
 ## 0.28.0
 
 ### Minor Changes
