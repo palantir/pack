@@ -16,7 +16,11 @@
 
 import type { DocumentPublishMessage, DocumentUpdateMessage } from "@osdk/foundry.pack";
 import type { PackAppInternal } from "@palantir/pack.core";
-import { type DocumentId, Metadata } from "@palantir/pack.document-schema.model-types";
+import {
+  ChannelErrorCode,
+  type DocumentId,
+  Metadata,
+} from "@palantir/pack.document-schema.model-types";
 import {
   addDocumentUpdateSchemaVersionToTransaction,
   DocumentLiveStatus,
@@ -38,6 +42,7 @@ interface PublishedDocumentUpdate {
 
 const mocks = vi.hoisted(() => {
   const eventService = {
+    isConnected: vi.fn(),
     publish: vi.fn(),
     setLogLevel: vi.fn(),
     subscribe: vi.fn(),
@@ -69,6 +74,8 @@ const app = {
 
 describe("FoundryEventService", () => {
   beforeEach(() => {
+    mocks.eventService.isConnected.mockReset();
+    mocks.eventService.isConnected.mockReturnValue(true);
     mocks.eventService.publish.mockReset();
     mocks.eventService.publish.mockResolvedValue(undefined);
     mocks.eventService.subscribe.mockReset();
@@ -418,11 +425,12 @@ describe("FoundryEventService", () => {
 
       const yDoc = new Y.Doc();
       const service = createFoundryEventService(app);
+      const statusUpdates: Array<Partial<DocumentSyncStatus>> = [];
       const session = service.startDocumentSync(
         "doc-1" as DocumentId,
         yDoc,
         { maxVersion: 1, minVersion: 1 },
-        () => {},
+        status => statusUpdates.push(status),
       );
 
       await Promise.resolve();
@@ -436,7 +444,7 @@ describe("FoundryEventService", () => {
         type: "update",
       });
 
-      return { service, session, yDoc, sendServerMessage: updateCallback! };
+      return { service, session, statusUpdates, yDoc, sendServerMessage: updateCallback! };
     };
 
     it("resends unacked updates and stops once the server acks", async () => {
@@ -520,6 +528,139 @@ describe("FoundryEventService", () => {
       // Still unacked, so it is resent.
       vi.advanceTimersByTime(2_000);
       expect(publishCallsFor("doc-1")).toHaveLength(2);
+    });
+
+    it("stops sending local edits once a refresh is needed, but still takes remote ones", async () => {
+      const { service, session, statusUpdates, yDoc, sendServerMessage } = await startSyncedDoc();
+      yDoc.getMap("Shape").set("local", new Y.Map());
+      vi.advanceTimersByTime(10_000);
+      expect(publishCallsFor("doc-1")).toHaveLength(6);
+      expect(statusUpdates.some(status => status.error?.requiresRefresh === true)).toBe(false);
+      vi.advanceTimersByTime(2_000);
+      const refreshStatuses = statusUpdates.filter(status =>
+        status.error?.requiresRefresh === true
+      );
+      expect(refreshStatuses).toHaveLength(1);
+      expect(refreshStatuses[0]?.error?.code).toBe(ChannelErrorCode.UPDATE_NOT_ACKNOWLEDGED);
+      expect(mocks.eventService.unsubscribe).not.toHaveBeenCalled();
+
+      const remoteDoc = new Y.Doc();
+      remoteDoc.getMap("Shape").set("remote", "new remote content");
+      sendServerMessage({
+        baseRevisionId: "1",
+        clientId: "other-client",
+        clientSupportedVersionRange: { maxVersion: 1, minVersion: 1 },
+        editIds: [],
+        revisionId: "2",
+        type: "update",
+        update: { data: Base64.fromUint8Array(Y.encodeStateAsUpdate(remoteDoc)) },
+      });
+      expect(yDoc.getMap("Shape").get("remote")).toBe("new remote content");
+      expect(statusUpdates.at(-1)?.load).toBe(DocumentLoadStatus.LOADED);
+
+      yDoc.getMap("Shape").set("after-error", new Y.Map());
+      const firstEdit = publishCallsFor("doc-1")[0]![1] as DocumentPublishMessage;
+      sendServerMessage({
+        baseRevisionId: "0",
+        clientId: session.clientId,
+        clientSupportedVersionRange: { maxVersion: 1, minVersion: 1 },
+        editIds: [firstEdit.editId],
+        revisionId: "0",
+        type: "update",
+      });
+      vi.advanceTimersByTime(60_000);
+      expect(publishCallsFor("doc-1")).toHaveLength(6);
+      service.stopDocumentSync(session);
+    });
+
+    it("keeps the refresh requirement across a sync restart, until the document is thrown away", async () => {
+      const { service, session, statusUpdates, yDoc } = await startSyncedDoc();
+      yDoc.getMap("Shape").set("local", new Y.Map());
+      vi.advanceTimersByTime(12_000);
+      const refreshError = statusUpdates.find(status => status.error?.requiresRefresh === true)
+        ?.error;
+      expect(refreshError).toBeDefined();
+      service.stopDocumentSync(session);
+      const restartStatuses: Array<Partial<DocumentSyncStatus>> = [];
+      const restarted = service.startDocumentSync(
+        "doc-1",
+        yDoc,
+        { minVersion: 1, maxVersion: 1 },
+        status => restartStatuses.push(status),
+      );
+      await Promise.resolve();
+      expect(restartStatuses.some(status => status.error === refreshError)).toBe(true);
+      yDoc.getMap("Shape").set("before-load", new Y.Map());
+      const receive = mocks.eventService.subscribe.mock.calls.at(-1)![1] as (
+        message: DocumentUpdateMessage,
+      ) => void;
+      receive({
+        baseRevisionId: "0",
+        revisionId: "1",
+        clientId: "server",
+        clientSupportedVersionRange: { maxVersion: 1, minVersion: 1 },
+        editIds: [],
+        type: "update",
+      });
+      yDoc.getMap("Shape").set("after-load", new Y.Map());
+      vi.advanceTimersByTime(20_000);
+      expect(publishCallsFor("doc-1")).toHaveLength(6);
+      service.stopDocumentSync(restarted);
+
+      // Throwing the document away is the only thing that clears the requirement.
+      service.disposeDocument("doc-1");
+      const freshStatuses: Array<Partial<DocumentSyncStatus>> = [];
+      const freshSession = service.startDocumentSync("doc-1", new Y.Doc(), {
+        minVersion: 1,
+        maxVersion: 1,
+      }, status => freshStatuses.push(status));
+      expect(freshStatuses.every(status => status.error?.requiresRefresh !== true)).toBe(true);
+      service.stopDocumentSync(freshSession);
+    });
+
+    it("treats a failed send the same as an unanswered one, and gives up at the same point", async () => {
+      const { service, session, statusUpdates, yDoc } = await startSyncedDoc();
+      mocks.eventService.publish.mockRejectedValue(new Error("Transport failed"));
+      yDoc.getMap("Shape").set("local", new Y.Map());
+      await vi.advanceTimersByTimeAsync(2_000);
+      expect(statusUpdates.every(status => status.error?.requiresRefresh !== true)).toBe(true);
+      expect(publishCallsFor("doc-1")).toHaveLength(2);
+      await vi.advanceTimersByTimeAsync(10_000);
+      expect(statusUpdates.filter(status => status.error?.requiresRefresh === true)).toHaveLength(
+        1,
+      );
+      service.stopDocumentSync(session);
+    });
+
+    it("does not ask for a refresh while the network is down, only once it is back", async () => {
+      const { service, session, statusUpdates, yDoc, sendServerMessage } = await startSyncedDoc();
+      mocks.eventService.isConnected.mockReturnValue(false);
+      yDoc.getMap("Shape").set("local", new Y.Map());
+      const sentDuringOutage = publishCallsFor("doc-1").length;
+
+      // The outage lasts far longer than the retry window, but a healthy document
+      // should not get locked just because the network was down.
+      vi.advanceTimersByTime(600_000);
+      expect(statusUpdates.every(status => status.error?.requiresRefresh !== true)).toBe(true);
+      expect(publishCallsFor("doc-1")).toHaveLength(sentDuringOutage);
+
+      // Once back online the update goes out and gets acked, which shows the retries
+      // were only paused rather than used up.
+      mocks.eventService.isConnected.mockReturnValue(true);
+      vi.advanceTimersByTime(2_000);
+      const resent = publishCallsFor("doc-1");
+      expect(resent.length).toBeGreaterThan(sentDuringOutage);
+      sendServerMessage({
+        baseRevisionId: "1",
+        clientId: session.clientId,
+        clientSupportedVersionRange: { maxVersion: 1, minVersion: 1 },
+        editIds: [(resent.at(-1)![1] as DocumentPublishMessage).editId],
+        revisionId: "2",
+        type: "update",
+      });
+      vi.advanceTimersByTime(60_000);
+      expect(statusUpdates.every(status => status.error?.requiresRefresh !== true)).toBe(true);
+      service.stopDocumentSync(session);
     });
 
     it("stops resending after document sync is stopped", async () => {
