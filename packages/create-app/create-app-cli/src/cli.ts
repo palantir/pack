@@ -25,7 +25,10 @@ export function cli(args: string[]): void {
     .description("Scaffold a new Palantir PACK schema package or application starter")
     .version("0.0.1")
     .argument("[project-name]", "directory to create the project in")
-    .option("-t, --template <template>", "template to use (schema or workspace)")
+    .option(
+      "-t, --template <template>",
+      "built-in template (schema or workspace), local template folder, or installed npm package",
+    )
     .option(
       "--first-party",
       "scaffold a first-party pack (asset-based, com.palantir.pack.<asset>.<name> document type)",

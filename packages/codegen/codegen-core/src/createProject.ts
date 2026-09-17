@@ -209,13 +209,18 @@ export async function createProject(
 
     // Generate project
     const generator = new Generator(context, templateDir, logger);
-    await generator.generate();
+    const finalContext = await generator.generate();
 
     if (!options.dryRun) {
       logger.success(`🎉 ${entity} created successfully!`);
       logger.info(`Next steps:`);
-      const nextSteps = options.messaging?.nextSteps ?? defaultNextSteps;
-      for (const step of nextSteps({ projectName, skipInstall: options.skipInstall })) {
+      const getNextSteps = options.messaging?.nextSteps ?? defaultNextSteps;
+      const steps = templateConfig.nextSteps?.(finalContext)
+        ?? getNextSteps({
+          projectName,
+          skipInstall: options.skipInstall,
+        });
+      for (const step of steps) {
         logger.info(`  ${step}`);
       }
     } else {
