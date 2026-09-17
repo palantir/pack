@@ -35,6 +35,8 @@ export interface GeneratorOptions {
 export interface TemplateConfig {
   readonly name: string;
   readonly description?: string;
+  readonly installDependencies?: boolean;
+  readonly nextSteps?: (context: GeneratorContext) => readonly string[];
   readonly prompts?: PromptQuestion[];
   readonly templateFiles?: readonly string[];
   readonly staticFiles?: readonly string[];

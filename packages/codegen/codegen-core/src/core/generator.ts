@@ -34,35 +34,26 @@ export class Generator {
     private readonly logger: Logger,
   ) {}
 
-  async generate(): Promise<void> {
-    const { outputPath, options } = this.context;
-
-    // Create output directory
-    if (!options.dryRun) {
-      await fs.ensureDir(outputPath);
-    }
-
-    // Run beforeGenerate hook
+  async generate(): Promise<GeneratorContext> {
+    // Some package creators require a folder that does not exist yet.
     await this.runHook("beforeGenerate");
 
-    // Process template files
+    if (!this.context.options.dryRun) {
+      await fs.ensureDir(this.context.outputPath);
+    }
+
     await this.processTemplateFiles();
-
-    // Copy static files
     await this.copyStaticFiles();
-
-    // Copy schema directory if provided
     await this.copySchemaDirectory();
-
-    // Run afterGenerate hook
     await this.runHook("afterGenerate");
 
-    // Install dependencies if not skipped
-    if (!options.skipInstall && !options.dryRun) {
+    const { options, outputPath, templateConfig } = this.context;
+    if (!options.skipInstall && !options.dryRun && templateConfig.installDependencies !== false) {
       await this.installDependencies();
     }
 
     this.logger.success(`✨ SDK generated successfully at ${outputPath}`);
+    return this.context;
   }
 
   private async processTemplateFiles(): Promise<void> {

@@ -218,19 +218,27 @@ export async function createCommand(
       }
     }
 
-    const selected = TEMPLATES.find(t => t.value === template);
-    if (!selected) {
-      throw new Error(
-        `Unknown template "${template}". Valid templates: ${
-          TEMPLATES.map(t => t.value).join(", ")
-        }`,
-      );
+    const builtInTemplate = TEMPLATES.find(t => t.value === template);
+    const configAnswers = await loadConfigAnswers(options.config);
+    if (!builtInTemplate) {
+      if (options.firstParty != null) {
+        configAnswers.firstParty = options.firstParty;
+      }
+      if (options.owningApplicationId != null) {
+        configAnswers.owningApplicationId = options.owningApplicationId;
+      }
+      await createProject(project, {
+        ...options,
+        config: configAnswers,
+        template,
+        messaging: { entity: "PACK app" },
+      });
+      return;
     }
 
     // Resolve first-party vs third-party inputs. First-party packs build a document
     // type asset (and may declare an owning application); third-party packs deploy the
     // document type to a Foundry stack.
-    const configAnswers = await loadConfigAnswers(options.config);
     const firstParty = resolveFirstParty(options, configAnswers);
     const documentTypeName = await resolveDocumentTypeName(
       configAnswers,
@@ -252,19 +260,13 @@ export async function createCommand(
       delete answers.owningApplicationId;
     }
 
-    const templateDir = await resolveTemplateDir(selected.value);
-
     await createProject(project, {
-      template: templateDir,
+      ...options,
+      template: await resolveTemplateDir(builtInTemplate.value),
       config: answers,
-      skipInstall: options.skipInstall,
-      verbose: options.verbose,
-      dryRun: options.dryRun,
-      nonInteractive: options.nonInteractive,
-      overwrite: options.overwrite,
       messaging: {
-        entity: selected.entity,
-        nextSteps: nextSteps(selected.value, firstParty),
+        entity: builtInTemplate.entity,
+        nextSteps: nextSteps(builtInTemplate.value, firstParty),
       },
     });
   } catch (error) {

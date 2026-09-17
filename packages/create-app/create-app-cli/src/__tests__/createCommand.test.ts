@@ -244,6 +244,36 @@ describe("create-app createCommand", () => {
     expect(exitSpy).toHaveBeenCalledWith(1);
   });
 
+  it("uses a custom template's own default answers", async () => {
+    const templateDir = path.join(tmpRoot, "external-template");
+    fs.outputJSONSync(path.join(templateDir, "package.json"), { type: "module" });
+    fs.writeFileSync(
+      path.join(templateDir, "template.config.js"),
+      `
+      export default {
+        name: "external-app",
+        installDependencies: false,
+        prompts: [
+          { type: "input", name: "documentTypeName", default: "com.palantir.pack.external.note" },
+          { type: "confirm", name: "firstParty", default: true },
+        ],
+      };
+    `,
+    );
+    fs.outputFileSync(
+      path.join(templateDir, "template", "answers.json.ejs"),
+      "<%- JSON.stringify(answers) %>",
+    );
+
+    await createCommand("external-app", { template: templateDir, nonInteractive: true });
+
+    expect(exitSpy).not.toHaveBeenCalled();
+    expect(fs.readJSONSync(path.join(tmpRoot, "external-app", "answers.json"))).toEqual({
+      documentTypeName: "com.palantir.pack.external.note",
+      firstParty: true,
+    });
+  });
+
   for (const testCase of CASES) {
     describe(testCase.label, () => {
       it("generates a fully-rendered, valid project", async () => {
