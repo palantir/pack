@@ -30,6 +30,16 @@ export interface UnackedUpdate {
 export type ResendHandler = (updates: readonly UnackedUpdate[]) => void;
 
 export interface UnackedUpdateOutboxOptions {
+  /** Called once when the retry limit is exhausted. */
+  readonly onRequiresRefresh: (updates: readonly UnackedUpdate[]) => void;
+  /**
+   * Whether the transport can currently reach the server. The retry is only spent while
+   * this is true, so a missing ack always means the server did not answer rather than that nothing
+   * could get there. Defaults to always connected.
+   */
+  readonly isConnected?: () => boolean;
+  /** Fail on a retry check when an update's actual send count exceeds this. Defaults to 5. */
+  readonly maxSendCount?: number;
   /** How often the resend loop runs, in ms. Defaults to 2000. */
   readonly resendIntervalMs?: number;
   /** Resend an update once it has been unacked this long, in ms. Defaults to 2000. */
@@ -38,7 +48,7 @@ export interface UnackedUpdateOutboxOptions {
   readonly now?: () => number;
 }
 
-/** Tracks published updates until the server acks them, resending any that stay unacked. */
+/** Tracks published updates until acknowledged or the document fails. */
 export interface UnackedUpdateOutbox {
   /** Track a published update so it is resent until acked. */
   add(editId: EditId, publishMessage: DocumentPublishMessage): void;
@@ -52,18 +62,23 @@ export interface UnackedUpdateOutbox {
 
 const DEFAULT_RESEND_INTERVAL_MS = 2_000;
 const DEFAULT_RESEND_AFTER_MS = 2_000;
+const DEFAULT_MAX_SEND_COUNT = 5;
 
 export function createUnackedUpdateOutbox(
   resend: ResendHandler,
-  options: UnackedUpdateOutboxOptions = {},
+  options: UnackedUpdateOutboxOptions,
 ): UnackedUpdateOutbox {
   const {
+    onRequiresRefresh,
+    isConnected = () => true,
+    maxSendCount = DEFAULT_MAX_SEND_COUNT,
     resendIntervalMs = DEFAULT_RESEND_INTERVAL_MS,
     resendAfterMs = DEFAULT_RESEND_AFTER_MS,
     now = Date.now,
   } = options;
 
   const unackedUpdates = new Map<EditId, UnackedUpdate>();
+  let failed = false;
   // Runs only while updates are unacked: started on the first add, stopped once drained.
   let resendTimer: ReturnType<typeof setInterval> | undefined;
 
@@ -86,24 +101,40 @@ export function createUnackedUpdateOutbox(
       return;
     }
 
+    if (!isConnected()) {
+      return;
+    }
+
     const current = now();
     const stale: UnackedUpdate[] = [];
     for (const update of unackedUpdates.values()) {
       if (current - update.timeAdded >= resendAfterMs) {
-        update.sendCount += 1;
         stale.push(update);
       }
     }
 
-    // TODO(follow-up): escalate to a fatal state / resubscribe once an update stays
-    // unacked too long; for now it is resent until acked or the sync is stopped.
+    const exhausted = stale.filter(update => update.sendCount > maxSendCount);
+    if (exhausted.length > 0) {
+      failed = true;
+      unackedUpdates.clear();
+      stopResendLoop();
+      onRequiresRefresh(exhausted);
+      return;
+    }
+
     if (stale.length > 0) {
+      for (const update of stale) {
+        update.sendCount += 1;
+      }
       resend(stale);
     }
   }
 
   return {
     add(editId, publishMessage) {
+      if (failed) {
+        return;
+      }
       unackedUpdates.set(editId, {
         publishMessage,
         timeAdded: now(),

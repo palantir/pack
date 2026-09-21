@@ -30,6 +30,7 @@ import { lazyLoadCometD } from "./lazyLoadCometD.js";
 const BEARER_TOKEN_FIELD = "bearer-token";
 const EXTENSION_ACK = "AckExtension";
 const EXTENSION_HANDSHAKE_TOKEN = "handshakeToken";
+const META_CHANNEL_CONNECT = "/meta/connect";
 const META_CHANNEL_HANDSHAKE = "/meta/handshake";
 
 interface Subscription {
@@ -81,6 +82,7 @@ export class EventServiceCometD implements EventService {
   private readonly tokenExtension = new TokenExtension();
   private nextSubscriptionHandle = 0;
   private cometd?: CometD;
+  private connected = false;
 
   constructor(
     private readonly app: PackAppInternal,
@@ -111,6 +113,19 @@ export class EventServiceCometD implements EventService {
 
         // TODO: Support binary messages
         // this.cometd.registerExtension(BINARY_EXTENSION_NAME, new BinaryExtension());
+
+        // TODO: surface connection changes, which currently
+        // tracks subscriptions and can remain CONNECTED during an outage.
+        this.cometd.addListener(META_CHANNEL_CONNECT, message => {
+          const wasConnected = this.connected;
+          this.connected = message.successful === true && !this.cometd!.isDisconnected();
+          if (wasConnected !== this.connected) {
+            this.logger.info("CometD connection state changed", {
+              connected: this.connected,
+              error: this.connected ? undefined : extractCometDError(message),
+            });
+          }
+        });
       }
 
       await new Promise<void>((resolve, reject) => {
@@ -118,6 +133,9 @@ export class EventServiceCometD implements EventService {
           META_CHANNEL_HANDSHAKE,
           message => {
             const { clientId, connectionType, successful } = message;
+            if (!successful) {
+              this.connected = false;
+            }
             if (successful) {
               this.logger.info("CometD handshake successful", { clientId, connectionType });
               resolve();
@@ -272,6 +290,10 @@ export class EventServiceCometD implements EventService {
         }
       },
     );
+  }
+
+  isConnected(): boolean {
+    return this.connected;
   }
 
   async publish<T extends object>(

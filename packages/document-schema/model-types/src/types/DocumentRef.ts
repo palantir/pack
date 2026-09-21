@@ -285,6 +285,10 @@ export interface DocumentRef<D extends DocumentSchema = DocumentSchema> {
    * The data parameter is `never` on the base interface — narrow the ref to a
    * version-specific type (via the generated SDK's `asVersioned` +
    * `switch (doc.version)`) before calling this method.
+   *
+   * Rejects without applying the write while the document requires a refresh
+   * (`status.data.error.requiresRefresh`). Handle the rejection — an unhandled
+   * one surfaces as an `unhandledrejection`.
    */
   updateRecord(ref: RecordRef, data: never): Promise<void>;
 
@@ -293,9 +297,17 @@ export interface DocumentRef<D extends DocumentSchema = DocumentSchema> {
    *
    * The data parameter is `never` on the base interface — narrow to a
    * version-specific type before calling this method.
+   *
+   * Rejects without applying the write while the document requires a refresh;
+   * see {@link updateRecord}.
    */
   setRecord(model: Model, id: RecordId, data: never): Promise<void>;
 
-  /** Delete a record. Version-agnostic — callable without narrowing. */
+  /**
+   * Delete a record. Version-agnostic — callable without narrowing.
+   *
+   * Rejects without applying the delete while the document requires a refresh;
+   * see {@link updateRecord}.
+   */
   deleteRecord<M extends Model>(ref: RecordRef<M>): Promise<void>;
 }

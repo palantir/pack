@@ -420,8 +420,8 @@ export abstract class BaseYjsDocumentService<TDoc extends InternalYjsDoc = Inter
   }
 
   /**
-   * Update one channel's status. The error (if any) is stored on the channel's
-   * DocumentSyncStatus; it is cleared when the channel is reset or loaded.
+   * Update one channel's status. Ordinary errors clear on reset/load;
+   * refresh-required errors stay attached to the local document.
    */
   private updateChannelStatus(
     internalDoc: TDoc,
@@ -434,7 +434,9 @@ export abstract class BaseYjsDocumentService<TDoc extends InternalYjsDoc = Inter
     },
   ): void {
     const current = internalDoc[channel];
-    const error = update.error
+    // UNLOADED/LOADED clear ordinary errors, but a reset reuses the same Y.Doc —
+    // so a refresh-required error has to outlive it.
+    const error = current.error?.requiresRefresh === true ? current.error : update.error
       ?? (update.load === DocumentLoadStatus.LOADED || update.load === DocumentLoadStatus.UNLOADED
         ? undefined
         : current.error);
@@ -744,6 +746,18 @@ export abstract class BaseYjsDocumentService<TDoc extends InternalYjsDoc = Inter
     this.notifyStatusSubscribers(internalDoc, recordRef.docRef);
   }
 
+  private refreshRequiredError(internalDoc: TDoc, docRef: DocumentRef): Error | undefined {
+    const { error } = internalDoc.dataStatus;
+    if (error?.requiresRefresh !== true) {
+      return undefined;
+    }
+    this.logger.error("Ignoring local write: document requires a refresh", {
+      docId: docRef.id,
+      code: error.code,
+    });
+    return new Error("Refresh to continue editing.", { cause: error });
+  }
+
   readonly setRecord = <R extends Model>(
     recordRef: RecordRef<R>,
     state: ModelData<R>,
@@ -753,6 +767,10 @@ export abstract class BaseYjsDocumentService<TDoc extends InternalYjsDoc = Inter
       internalDoc != null,
       `Cannot set record as document not found: ${recordRef.docRef.id}`,
     );
+    const refreshRequired = this.refreshRequiredError(internalDoc, recordRef.docRef);
+    if (refreshRequired != null) {
+      return Promise.reject(refreshRequired);
+    }
 
     // TODO: you cannot resurrect tomb stoned records I think, so need to check for that before notify
     // TODO: perhaps we just call this via onRecordSet instead?
@@ -793,6 +811,10 @@ export abstract class BaseYjsDocumentService<TDoc extends InternalYjsDoc = Inter
       internalDoc != null,
       `Cannot update record as document not found: ${recordRef.docRef.id}`,
     );
+    const refreshRequired = this.refreshRequiredError(internalDoc, recordRef.docRef);
+    if (refreshRequired != null) {
+      return Promise.reject(refreshRequired);
+    }
 
     const storageName = getMetadata(recordRef.model).name;
     const { snapshot: currentState, thrown } = this.getRecordSnapshotChecked(
@@ -849,6 +871,9 @@ export abstract class BaseYjsDocumentService<TDoc extends InternalYjsDoc = Inter
       internalDoc != null,
       `Cannot start transaction as document not found: ${docRef.id}`,
     );
+    if (this.refreshRequiredError(internalDoc, docRef) != null) {
+      return;
+    }
 
     internalDoc.yDoc.transact(fn, description);
   };
@@ -1139,6 +1164,10 @@ export abstract class BaseYjsDocumentService<TDoc extends InternalYjsDoc = Inter
       return Promise.resolve();
     }
 
+    const refreshRequired = this.refreshRequiredError(internalDoc, record.docRef);
+    if (refreshRequired != null) {
+      return Promise.reject(refreshRequired);
+    }
     const storageName = getMetadata(record.model).name;
     const recordsCollection = YjsSchemaMapper.getRecordsMap(internalDoc.yDoc, storageName);
 

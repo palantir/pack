@@ -51,6 +51,13 @@ export interface EventService {
   ): void;
 
   /**
+   * Whether the transport can currently carry messages to the server. False before the connection
+   * is established and while it is down, so callers can tell "the server did not answer" from
+   * "nothing could reach the server".
+   */
+  isConnected(): boolean;
+
+  /**
    * Publish to a channel.
    * @param channel Channel to publish to.
    * @param content Payload object to push to channel.

@@ -15,6 +15,7 @@
  */
 
 import type { DocumentPublishMessage, EditId } from "@osdk/foundry.pack";
+import type { Mock } from "vitest";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   createUnackedUpdateOutbox,
@@ -35,6 +36,11 @@ function editIds(updates: readonly UnackedUpdate[]): string[] {
   return updates.map(update => update.publishMessage.editId);
 }
 
+/** How many times the update in the latest resend has been sent. The first send counts as 1. */
+function lastSendCount(resend: Mock<ResendHandler>): number {
+  return resend.mock.calls.at(-1)![0][0]!.sendCount;
+}
+
 describe("createUnackedUpdateOutbox", () => {
   beforeEach(() => {
     vi.useFakeTimers();
@@ -45,7 +51,7 @@ describe("createUnackedUpdateOutbox", () => {
   });
 
   it("tracks added updates until they are acked", () => {
-    const outbox = createUnackedUpdateOutbox(vi.fn());
+    const outbox = createUnackedUpdateOutbox(vi.fn(), { onRequiresRefresh: vi.fn() });
 
     expect(outbox.hasUnackedUpdates()).toBe(false);
     expect(outbox.size()).toBe(0);
@@ -67,6 +73,7 @@ describe("createUnackedUpdateOutbox", () => {
   it("resends an update once it has been unacked past the threshold", () => {
     const resend = vi.fn<ResendHandler>();
     const outbox = createUnackedUpdateOutbox(resend, {
+      onRequiresRefresh: vi.fn(),
       resendIntervalMs: 2_000,
       resendAfterMs: 2_000,
     });
@@ -77,13 +84,13 @@ describe("createUnackedUpdateOutbox", () => {
 
     expect(resend).toHaveBeenCalledTimes(1);
     expect(editIds(resend.mock.calls[0]![0])).toEqual(["e1"]);
-    // sendCount starts at 1 (initial send) and increments on each resend.
-    expect(resend.mock.calls[0]![0][0]!.sendCount).toBe(2);
+    expect(lastSendCount(resend)).toBe(2);
   });
 
   it("keeps resending an unacked update until it is acked", () => {
     const resend = vi.fn<ResendHandler>();
     const outbox = createUnackedUpdateOutbox(resend, {
+      onRequiresRefresh: vi.fn(),
       resendIntervalMs: 2_000,
       resendAfterMs: 2_000,
     });
@@ -93,7 +100,7 @@ describe("createUnackedUpdateOutbox", () => {
     vi.advanceTimersByTime(6_000); // three resend ticks
 
     expect(resend).toHaveBeenCalledTimes(3);
-    expect(resend.mock.calls[2]![0][0]!.sendCount).toBe(4);
+    expect(lastSendCount(resend)).toBe(4);
 
     outbox.ack(["e1" as EditId]);
     resend.mockClear();
@@ -105,6 +112,7 @@ describe("createUnackedUpdateOutbox", () => {
   it("does not resend an update before the staleness threshold", () => {
     const resend = vi.fn<ResendHandler>();
     const outbox = createUnackedUpdateOutbox(resend, {
+      onRequiresRefresh: vi.fn(),
       resendIntervalMs: 1_000,
       resendAfterMs: 1_500,
     });
@@ -126,6 +134,7 @@ describe("createUnackedUpdateOutbox", () => {
   it("stops resending after it is cleared", () => {
     const resend = vi.fn<ResendHandler>();
     const outbox = createUnackedUpdateOutbox(resend, {
+      onRequiresRefresh: vi.fn(),
       resendIntervalMs: 2_000,
       resendAfterMs: 2_000,
     });
@@ -140,12 +149,78 @@ describe("createUnackedUpdateOutbox", () => {
   });
 
   it("ignores acks for updates it is not tracking", () => {
-    const outbox = createUnackedUpdateOutbox(vi.fn());
+    const outbox = createUnackedUpdateOutbox(vi.fn(), { onRequiresRefresh: vi.fn() });
 
     outbox.add("e1" as EditId, makePublishMessage("e1"));
     outbox.ack(["unknown" as EditId]);
 
     expect(outbox.size()).toBe(1);
     expect(outbox.hasUnackedUpdates()).toBe(true);
+  });
+
+  it("gives up after six sends with no ack, and stays given up", () => {
+    const resend = vi.fn<ResendHandler>();
+    const onRequiresRefresh = vi.fn<(updates: readonly UnackedUpdate[]) => void>();
+    const outbox = createUnackedUpdateOutbox(resend, { onRequiresRefresh });
+    outbox.add("e1" as EditId, makePublishMessage("e1"));
+
+    vi.advanceTimersByTime(10_000); // Five resends, two seconds apart, so e1 has been sent 6 times.
+    expect(resend).toHaveBeenCalledTimes(5);
+    expect(onRequiresRefresh).not.toHaveBeenCalled();
+    expect(lastSendCount(resend)).toBe(6);
+
+    outbox.add("e2" as EditId, makePublishMessage("e2"));
+    vi.advanceTimersByTime(2_000);
+    expect(onRequiresRefresh).toHaveBeenCalledOnce();
+    expect(editIds(onRequiresRefresh.mock.calls[0]![0])).toEqual(["e1"]);
+    expect(outbox.size()).toBe(0);
+    expect(resend).toHaveBeenCalledTimes(5);
+
+    outbox.clear();
+    outbox.ack(["e1" as EditId]);
+    outbox.add("e3" as EditId, makePublishMessage("e3"));
+    vi.advanceTimersByTime(60_000);
+    expect(outbox.size()).toBe(0);
+    expect(onRequiresRefresh).toHaveBeenCalledOnce();
+    expect(resend).toHaveBeenCalledTimes(5);
+  });
+
+  it("accepts a late ack that lands just before it would have given up", () => {
+    const onRequiresRefresh = vi.fn<(updates: readonly UnackedUpdate[]) => void>();
+    const outbox = createUnackedUpdateOutbox(vi.fn(), { onRequiresRefresh });
+    outbox.add("e1" as EditId, makePublishMessage("e1"));
+    vi.advanceTimersByTime(10_000); // Five resends, two seconds apart, so e1 has been sent 6 times.
+    outbox.ack(["e1" as EditId]);
+    vi.advanceTimersByTime(60_000);
+    expect(onRequiresRefresh).not.toHaveBeenCalled();
+    expect(outbox.size()).toBe(0);
+  });
+
+  it("pauses retries while offline and picks them up again on reconnect", () => {
+    const resend = vi.fn<ResendHandler>();
+    const onRequiresRefresh = vi.fn<(updates: readonly UnackedUpdate[]) => void>();
+    let connected = true;
+    const outbox = createUnackedUpdateOutbox(resend, {
+      isConnected: () => connected,
+      onRequiresRefresh,
+    });
+    outbox.add("e1" as EditId, makePublishMessage("e1"));
+
+    // Use up most of the retries, then go offline. Even a very long outage should not
+    // use up the rest of them.
+    vi.advanceTimersByTime(8_000);
+    expect(resend).toHaveBeenCalledTimes(4);
+    connected = false;
+    vi.advanceTimersByTime(600_000);
+    expect(resend).toHaveBeenCalledTimes(4);
+    expect(onRequiresRefresh).not.toHaveBeenCalled();
+
+    // Back online. The update is already overdue, so it goes out on the next tick.
+    connected = true;
+    vi.advanceTimersByTime(2_000);
+    expect(resend).toHaveBeenCalledTimes(5);
+    expect(lastSendCount(resend)).toBe(6);
+    vi.advanceTimersByTime(2_000);
+    expect(editIds(onRequiresRefresh.mock.calls[0]![0])).toEqual(["e1"]);
   });
 });
