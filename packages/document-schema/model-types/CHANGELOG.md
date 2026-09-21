@@ -1,5 +1,15 @@
 # @palantir/pack.document-schema.model-types
 
+## 0.30.0
+
+### Minor Changes
+
+- 08633a3: Expose a persistent refresh-required document error when updates remain unacknowledged after the retry limit. Stop outgoing updates and block local record writes until a fresh document is loaded, while continuing to receive remote changes. The retry limit is only spent while the transport is connected, so a network outage no longer counts against it.
+
+### Patch Changes
+
+- @palantir/pack.core@0.30.0
+
 ## 0.29.0
 
 ### Patch Changes
