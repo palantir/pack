@@ -344,6 +344,8 @@ export class EventServiceCometD implements EventService {
       logLevel,
       autoBatch: true,
       maxSendBayeuxMessageSize: 1000048576, // 1 MiB cap, can be increased as necessary
+      // need to be careful as backend currently has a hard limit on JSON string length
+      // of 50 MiB which is the absolute limit of what we can send
     });
   }
 }
