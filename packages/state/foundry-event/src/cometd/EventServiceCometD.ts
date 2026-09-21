@@ -343,7 +343,7 @@ export class EventServiceCometD implements EventService {
       maxNetworkDelay: 30_000,
       logLevel,
       autoBatch: true,
-      maxSendBayeuxMessageSize: 65536,
+      maxSendBayeuxMessageSize: 1000048576, // 1 MiB cap, can be increased as necessary
     });
   }
 }
