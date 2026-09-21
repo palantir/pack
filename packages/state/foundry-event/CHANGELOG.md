@@ -1,5 +1,20 @@
 # @palantir/pack.state.foundry-event
 
+## 0.30.0
+
+### Minor Changes
+
+- 08633a3: Expose a persistent refresh-required document error when updates remain unacknowledged after the retry limit. Stop outgoing updates and block local record writes until a fresh document is loaded, while continuing to receive remote changes. The retry limit is only spent while the transport is connected, so a network outage no longer counts against it.
+- 81c2fb0: Increase the outgoing CometD message limit from 64 KiB to 1 MiB so larger document updates can sync.
+
+### Patch Changes
+
+- Updated dependencies [08633a3]
+  - @palantir/pack.document-schema.model-types@0.30.0
+  - @palantir/pack.state.core@0.30.0
+  - @palantir/pack.auth@0.30.0
+  - @palantir/pack.core@0.30.0
+
 ## 0.29.0
 
 ### Patch Changes

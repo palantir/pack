@@ -1,5 +1,13 @@
 # @palantir/pack.sdkgen.pack-template
 
+## 0.30.0
+
+### Patch Changes
+
+- Updated dependencies [08633a3]
+  - @palantir/pack.document-schema.model-types@0.30.0
+  - @palantir/pack.document-schema.type-gen@0.30.0
+
 ## 0.29.0
 
 ### Patch Changes
