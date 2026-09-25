@@ -324,16 +324,28 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
     ontologyRid?: string,
   ): Promise<DocumentType> => {
     const resolvedOntologyRid = ontologyRid ?? await getOntologyRid(this.app);
+    const preview = this.config.usePreviewApi ?? DEFAULT_USE_PREVIEW_API;
 
-    const documentType = await DocumentTypes.loadByNameV2(
-      this.app.config.osdkClient,
-      { documentTypeName, ontologyRid: resolvedOntologyRid },
-      {
-        preview: this.config.usePreviewApi ?? DEFAULT_USE_PREVIEW_API,
-      },
-    );
-
-    return getLocalDocumentType(documentType);
+    try {
+      const documentType = await DocumentTypes.loadByNameV2(
+        this.app.config.osdkClient,
+        { documentTypeName, ontologyRid: resolvedOntologyRid },
+        { preview },
+      );
+      return getLocalDocumentType(documentType);
+    } catch (e) {
+      if (!isLoadByNameNotSupported(e)) {
+        throw e;
+      }
+      // Types with a globally unique name aren't loadable through the ontology-scoped path; load
+      // them by a name reference instead.
+      const documentType = await DocumentTypes.loadV2(
+        this.app.config.osdkClient,
+        { documentTypeReference: { type: "name", name: documentTypeName } },
+        { preview },
+      );
+      return getLocalDocumentType(documentType);
+    }
   };
 
   readonly getDocumentType = async (
@@ -1012,6 +1024,13 @@ function getLocalDocumentMetadata(
     updatedBy: wireDocument.updatedBy,
     updatedTime: wireDocument.updatedTime,
   };
+}
+
+function isLoadByNameNotSupported(error: unknown): boolean {
+  return typeof error === "object"
+    && error != null
+    && (error as { errorName?: unknown }).errorName
+      === "FirstPartyDocumentTypeLoadByNameNotSupported";
 }
 
 function getLocalDocumentType(wireDocumentType: WireDocumentTypeV2): DocumentType {
