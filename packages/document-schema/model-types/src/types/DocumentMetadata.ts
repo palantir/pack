@@ -56,7 +56,16 @@ export interface DocumentMetadata {
   readonly documentTypeName: string;
   readonly name: string;
   readonly operations?: readonly DocumentOperation[];
-  readonly ontologyRid: string;
+  /**
+   * The ontology the document belongs to. Absent for documents with no ontology
+   * (e.g. home folders); never assume or fabricate one when missing.
+   */
+  readonly ontologyRid?: string;
+  /**
+   * Whether presence is supported for this document.
+   * Skip presence only when explicitly false; true or absent preserves presence.
+   */
+  readonly presenceSupported?: boolean;
   /**
    * The schema version this document is currently operating at.
    * Calculated and set by the backend; only increases (one-way ratchet).

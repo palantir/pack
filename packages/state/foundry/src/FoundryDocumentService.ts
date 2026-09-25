@@ -22,7 +22,7 @@ import type {
   DiscretionaryPrincipal as WireDiscretionaryPrincipal,
   Document as WireDocument,
   DocumentSecurity as WireDocumentSecurity,
-  DocumentType as WireDocumentType,
+  DocumentTypeV2 as WireDocumentTypeV2,
   SearchDocumentsRequest,
 } from "@osdk/foundry.pack";
 import { Documents, DocumentTypes } from "@osdk/foundry.pack";
@@ -122,11 +122,6 @@ interface FoundryInternalDoc extends InternalYjsDoc {
   presenceSubscribers?: Set<PresenceSubscriber>;
   presenceSubscriptionId?: SubscriptionId;
   syncSession?: SyncSession;
-}
-
-// TODO: remove once foundry sdk is updated.
-interface WireDocumentWithOperationalVersion extends WireDocument {
-  readonly operationalVersion?: number;
 }
 
 export class FoundryDocumentService extends BaseYjsDocumentService<FoundryInternalDoc> {
@@ -330,7 +325,7 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
   ): Promise<DocumentType> => {
     const resolvedOntologyRid = ontologyRid ?? await getOntologyRid(this.app);
 
-    const documentType = await DocumentTypes.loadByName(
+    const documentType = await DocumentTypes.loadByNameV2(
       this.app.config.osdkClient,
       { documentTypeName, ontologyRid: resolvedOntologyRid },
       {
@@ -344,9 +339,9 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
   readonly getDocumentType = async (
     documentTypeRid: string,
   ): Promise<DocumentType> => {
-    const documentType = await DocumentTypes.get(
+    const documentType = await DocumentTypes.loadV2(
       this.app.config.osdkClient,
-      documentTypeRid,
+      { documentTypeReference: { type: "rid", rid: documentTypeRid } },
       {
         preview: this.config.usePreviewApi ?? DEFAULT_USE_PREVIEW_API,
       },
@@ -776,6 +771,9 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
     options?: PresenceSubscriptionOptions,
   ): Unsubscribe {
     const { internalDoc } = this.getCreateInternalDoc(docRef);
+    if (this.isPresenceDisabled(internalDoc)) {
+      return () => {};
+    }
     const subscriber: PresenceSubscriber = {
       callback: event => callback(docRef, event),
       ignoreSelfUpdates: options?.ignoreSelfUpdates ?? true,
@@ -899,6 +897,10 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
     eventData: ModelData<M>,
     options?: PresencePublishOptions,
   ): void {
+    if (this.isPresenceDisabled(this.documents.get(docRef.id))) {
+      return;
+    }
+
     const eventType = getMetadata(model).name;
 
     void this.eventService
@@ -915,6 +917,10 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
           docId: docRef.id,
         });
       });
+  }
+
+  private isPresenceDisabled(internalDoc: FoundryInternalDoc | undefined): boolean {
+    return internalDoc?.metadata?.presenceSupported === false;
   }
 }
 
@@ -990,7 +996,7 @@ function getLocalPrincipal(
 }
 
 function getLocalDocumentMetadata(
-  wireDocument: WireDocumentWithOperationalVersion,
+  wireDocument: WireDocument,
 ): DocumentMetadata {
   return {
     createdBy: wireDocument.createdBy,
@@ -1001,18 +1007,20 @@ function getLocalDocumentMetadata(
     operationalVersion: wireDocument.operationalVersion,
     operations: wireDocument.operations,
     ontologyRid: wireDocument.ontologyRid,
+    presenceSupported: wireDocument.presenceSupported,
     security: getLocalSecurity(wireDocument.security),
     updatedBy: wireDocument.updatedBy,
     updatedTime: wireDocument.updatedTime,
   };
 }
 
-function getLocalDocumentType(wireDocumentType: WireDocumentType): DocumentType {
+function getLocalDocumentType(wireDocumentType: WireDocumentTypeV2): DocumentType {
+  const { reference } = wireDocumentType;
   return {
-    rid: wireDocumentType.rid,
+    rid: reference.type === "rid" ? reference.rid : undefined,
     name: wireDocumentType.name,
     operationalVersion: wireDocumentType.operationalVersion,
-    fileSystemType: wireDocumentType.fileSystemType as FileSystemType | undefined,
+    fileSystemType: wireDocumentType.fileSystemType as FileSystemType,
     owningApplicationId: wireDocumentType.owningApplicationId,
   };
 }
