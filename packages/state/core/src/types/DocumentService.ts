@@ -136,7 +136,6 @@ export interface SearchDocumentsOptions {
  * Metadata for a document type, as loaded from the platform.
  */
 export interface DocumentType {
-  /** Set for ontology-scoped document types; unset when the type is identified by name alone. */
   readonly rid?: string;
   readonly name: string;
   readonly operationalVersion?: number;
@@ -201,9 +200,9 @@ export interface DocumentService {
   ) => number;
 
   /**
-   * Loads a document type's metadata by its name, scoped to an ontology. A document type name is
-   * only unique within an ontology, so the ontology defaults to the app's bound ontology when not
-   * provided. To load a document type whose name is not ontology-scoped, load it by its rid instead.
+   * Loads a document type's metadata by its name, scoped to an ontology (defaults to the app's bound
+   * ontology). Document types keyed by a global name rather than a rid must be loaded by rid via
+   * getDocumentType instead.
    */
   readonly loadDocumentTypeByName: (
     documentTypeName: string,
