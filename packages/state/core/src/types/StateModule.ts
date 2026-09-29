@@ -127,24 +127,29 @@ export interface StateModule {
     options?: CreatePublishedVersionOptions,
   ) => Promise<CreatePublishedVersionResult>;
 
+  /** Returns an empty array when the document has no active published versions. */
   readonly listPublishedVersions: (
     docRef: DocumentRef,
   ) => Promise<readonly PublishedVersion[]>;
 
+  /** Rejects with `InvalidPublishedVersionRef` or `PublishedVersionNotFound` for a bad or missing ref. */
   readonly getPublishedVersion: (
     docRef: DocumentRef,
     ref: PublishedVersionRef,
   ) => Promise<PublishedVersion>;
 
+  /** Rejects with `NoActivePublishedVersion` when none exist; use `listPublishedVersions` to check. */
   readonly getLatestPublishedVersion: (
     docRef: DocumentRef,
   ) => Promise<PublishedVersion>;
 
+  /** Rejects with `InvalidPublishedVersionRef` or `PublishedVersionNotFound` for a bad or missing ref. */
   readonly getPublishedVersionContents: (
     docRef: DocumentRef,
     ref: PublishedVersionRef,
   ) => Promise<Uint8Array>;
 
+  /** Rejects with `NoActivePublishedVersion` when no active published version exists. */
   readonly getLatestPublishedVersionContents: (
     docRef: DocumentRef,
   ) => Promise<Uint8Array>;

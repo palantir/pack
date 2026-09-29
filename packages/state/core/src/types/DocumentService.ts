@@ -264,7 +264,8 @@ export interface DocumentService {
   ) => Promise<CreatePublishedVersionResult>;
 
   /**
-   * Lists the document's active published versions, latest-first.
+   * Lists the document's active published versions, latest-first. Returns an empty array if none
+   * exist.
    */
   readonly listPublishedVersions: (
     docRef: DocumentRef,
@@ -272,7 +273,8 @@ export interface DocumentService {
 
   /**
    * Returns a published version's metadata (name, description, creator, timestamp) by ref, without
-   * its content.
+   * its content. Rejects with `InvalidPublishedVersionRef` for a malformed ref or
+   * `PublishedVersionNotFound` if the version is missing or deleted.
    */
   readonly getPublishedVersion: (
     docRef: DocumentRef,
@@ -281,6 +283,8 @@ export interface DocumentService {
 
   /**
    * Returns the metadata of the resolved latest active published version, without its content.
+   * Rejects with `NoActivePublishedVersion` if the document has no active published version. Use
+   * `listPublishedVersions` to check for an empty list without an error.
    */
   readonly getLatestPublishedVersion: (
     docRef: DocumentRef,
@@ -288,7 +292,9 @@ export interface DocumentService {
 
   /**
    * Returns a published version's frozen content by ref as a merged binary Yjs update. Apply it to a
-   * fresh `Y.Doc` via `Y.applyUpdate` to reconstruct the document at that version.
+   * fresh `Y.Doc` via `Y.applyUpdate` to reconstruct the document at that version. Rejects with
+   * `InvalidPublishedVersionRef` for a malformed ref or `PublishedVersionNotFound` if the version
+   * is missing or deleted.
    */
   readonly getPublishedVersionContents: (
     docRef: DocumentRef,
@@ -298,6 +304,7 @@ export interface DocumentService {
   /**
    * Returns the resolved latest active published version's frozen content as a merged binary Yjs
    * update. Apply it to a fresh `Y.Doc` via `Y.applyUpdate` to reconstruct the document.
+   * Rejects with `NoActivePublishedVersion` if the document has no active published version.
    */
   readonly getLatestPublishedVersionContents: (
     docRef: DocumentRef,
