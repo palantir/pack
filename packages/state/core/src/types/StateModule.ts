@@ -29,6 +29,8 @@ import type {
   PresenceEvent,
   PresencePublishOptions,
   PresenceSubscriptionOptions,
+  PublishedVersion,
+  PublishedVersionRef,
   RecordCollectionRef,
   RecordId,
   RecordRef,
@@ -38,6 +40,8 @@ import { getMetadata } from "@palantir/pack.document-schema.model-types";
 import { DOCUMENT_SERVICE_MODULE_KEY } from "../DocumentServiceModule.js";
 import type { CreateDocumentMetadata } from "./CreateDocumentMetadata.js";
 import type {
+  CreatePublishedVersionOptions,
+  CreatePublishedVersionResult,
   DocumentService,
   DocumentType,
   RecordChangeCallback,
@@ -117,6 +121,38 @@ export interface StateModule {
   readonly resolveDocumentApplication: (
     docRef: DocumentRef,
   ) => Promise<string | undefined>;
+
+  readonly createPublishedVersion: (
+    docRef: DocumentRef,
+    options?: CreatePublishedVersionOptions,
+  ) => Promise<CreatePublishedVersionResult>;
+
+  readonly listPublishedVersions: (
+    docRef: DocumentRef,
+  ) => Promise<readonly PublishedVersion[]>;
+
+  readonly getPublishedVersion: (
+    docRef: DocumentRef,
+    ref: PublishedVersionRef,
+  ) => Promise<PublishedVersion>;
+
+  readonly getLatestPublishedVersion: (
+    docRef: DocumentRef,
+  ) => Promise<PublishedVersion>;
+
+  readonly getPublishedVersionContents: (
+    docRef: DocumentRef,
+    ref: PublishedVersionRef,
+  ) => Promise<Uint8Array>;
+
+  readonly getLatestPublishedVersionContents: (
+    docRef: DocumentRef,
+  ) => Promise<Uint8Array>;
+
+  readonly deletePublishedVersion: (
+    docRef: DocumentRef,
+    ref: PublishedVersionRef,
+  ) => Promise<void>;
 
   readonly getDocumentSnapshot: <T extends DocumentSchema>(
     docRef: DocumentRef<T>,
@@ -316,6 +352,52 @@ export class StateModuleImpl implements StateModule {
     docRef: DocumentRef,
   ): Promise<string | undefined> {
     return this.documentService.resolveDocumentApplication(docRef);
+  }
+
+  async createPublishedVersion(
+    docRef: DocumentRef,
+    options?: CreatePublishedVersionOptions,
+  ): Promise<CreatePublishedVersionResult> {
+    return this.documentService.createPublishedVersion(docRef, options);
+  }
+
+  async listPublishedVersions(
+    docRef: DocumentRef,
+  ): Promise<readonly PublishedVersion[]> {
+    return this.documentService.listPublishedVersions(docRef);
+  }
+
+  async getPublishedVersion(
+    docRef: DocumentRef,
+    ref: PublishedVersionRef,
+  ): Promise<PublishedVersion> {
+    return this.documentService.getPublishedVersion(docRef, ref);
+  }
+
+  async getLatestPublishedVersion(
+    docRef: DocumentRef,
+  ): Promise<PublishedVersion> {
+    return this.documentService.getLatestPublishedVersion(docRef);
+  }
+
+  async getPublishedVersionContents(
+    docRef: DocumentRef,
+    ref: PublishedVersionRef,
+  ): Promise<Uint8Array> {
+    return this.documentService.getPublishedVersionContents(docRef, ref);
+  }
+
+  async getLatestPublishedVersionContents(
+    docRef: DocumentRef,
+  ): Promise<Uint8Array> {
+    return this.documentService.getLatestPublishedVersionContents(docRef);
+  }
+
+  async deletePublishedVersion(
+    docRef: DocumentRef,
+    ref: PublishedVersionRef,
+  ): Promise<void> {
+    return this.documentService.deletePublishedVersion(docRef, ref);
   }
 
   async getDocumentSnapshot<T extends DocumentSchema>(
