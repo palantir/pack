@@ -48,6 +48,8 @@ export type {
 export { createDocRef, invalidDocRef, isValidDocRef } from "./types/DocumentRefImpl.js";
 export { DocumentLiveStatus, DocumentLoadStatus } from "./types/DocumentService.js";
 export type {
+  CreatePublishedVersionOptions,
+  CreatePublishedVersionResult,
   DocumentMetadataChangeCallback,
   DocumentService,
   DocumentSort,

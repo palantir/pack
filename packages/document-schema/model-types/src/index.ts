@@ -76,6 +76,7 @@ export type {
   PresenceEventDataDeparted,
   PresenceEventDataUnknown,
 } from "./types/PresenceEvent.js";
+export type { PublishedVersion, PublishedVersionRef } from "./types/PublishedVersion.js";
 export { RecordCollectionRefBrand } from "./types/RecordCollectionRef.js";
 export type { RecordCollectionRef } from "./types/RecordCollectionRef.js";
 export { RecordRefBrand } from "./types/RecordRef.js";
