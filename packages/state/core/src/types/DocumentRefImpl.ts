@@ -215,8 +215,9 @@ class PublishedVersionDocumentRefImpl<T extends DocumentSchema> extends Document
     this.publishedVersion = publishedVersion;
   }
 
-  // Both of these route by the record's own document, so a draft record passed here would edit the
-  // draft. The other writes route through this ref and are rejected by its read-only service.
+  // Both of these route by the record's own document, so a live draft record passed here would
+  // edit the live draft. The other writes route through this ref and are rejected by its read-only
+  // service.
   override updateRecord(_ref: RecordRef, _data: unknown): Promise<void> {
     return Promise.reject(new Error(PUBLISHED_VERSION_READ_ONLY_MESSAGE));
   }

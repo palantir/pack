@@ -70,30 +70,30 @@ const V7: PublishedVersion = { createdAt: "2026-01-01T00:00:00Z", name: "v7", re
 
 describe("PublishedVersionDocumentService", () => {
   let app: PackAppInternal;
-  let draft: DocumentRef<typeof schema>;
+  let liveDraft: DocumentRef<typeof schema>;
   let service: BaseYjsDocumentService;
   let state: StateModule;
   let contents: Uint8Array;
 
-  // Opens a read-only copy of the draft as it was when the test started.
-  const openCopy = () => openPublishedVersionDocRef(app, service, draft, contents, V7);
+  // Opens a read-only copy of the live draft as it was when the test started.
+  const openCopy = () => openPublishedVersionDocRef(app, service, liveDraft, contents, V7);
 
   beforeEach(async () => {
     app = createTestApp();
     state = getStateModule(app);
     service = app.getModule(DOCUMENT_SERVICE_MODULE_KEY) as BaseYjsDocumentService;
 
-    draft = await state.createDocument(METADATA, schema);
-    await state.setCollectionRecord(draft.getRecords(UserModel), ALICE_ID, ALICE);
-    contents = Y.encodeStateAsUpdate(service.getYDocForTesting(draft.id)!);
+    liveDraft = await state.createDocument(METADATA, schema);
+    await state.setCollectionRecord(liveDraft.getRecords(UserModel), ALICE_ID, ALICE);
+    contents = Y.encodeStateAsUpdate(service.getYDocForTesting(liveDraft.id)!);
   });
 
   it("reads the snapshot through records and collections", async () => {
     const published = openCopy();
 
     expect(isPublishedVersionDocRef(published)).toBe(true);
-    expect(isPublishedVersionDocRef(draft)).toBe(false);
-    expect(published.id).toBe(draft.id);
+    expect(isPublishedVersionDocRef(liveDraft)).toBe(false);
+    expect(published.id).toBe(liveDraft.id);
     expect(published.publishedVersion).toBe(V7);
 
     const users = published.getRecords(UserModel);
@@ -107,25 +107,25 @@ describe("PublishedVersionDocumentService", () => {
     unsubscribe();
   });
 
-  it("does not see draft edits made after it was loaded", async () => {
+  it("does not see live draft edits made after it was loaded", async () => {
     const published = openCopy();
 
-    const draftUsers = draft.getRecords(UserModel);
-    await state.setCollectionRecord(draftUsers, "bob" as RecordId, { id: "bob", name: "Bob" });
-    await state.updateRecord(draftUsers.get(ALICE_ID)!, { name: "Alice Renamed" });
+    const liveDraftUsers = liveDraft.getRecords(UserModel);
+    await state.setCollectionRecord(liveDraftUsers, "bob" as RecordId, { id: "bob", name: "Bob" });
+    await state.updateRecord(liveDraftUsers.get(ALICE_ID)!, { name: "Alice Renamed" });
 
-    expect(draftUsers.size).toBe(2);
+    expect(liveDraftUsers.size).toBe(2);
     expect(published.getRecords(UserModel).size).toBe(1);
     await expect(published.getRecords(UserModel).get(ALICE_ID)?.getSnapshot()).resolves.toEqual(
       ALICE,
     );
   });
 
-  it("rejects every write and leaves the draft untouched", async () => {
+  it("rejects every write and leaves the live draft untouched", async () => {
     const published = openCopy();
     const publishedUsers = published.getRecords(UserModel);
     const publishedAlice = publishedUsers.get(ALICE_ID)!;
-    const draftAlice = draft.getRecords(UserModel).get(ALICE_ID)!;
+    const liveDraftAlice = liveDraft.getRecords(UserModel).get(ALICE_ID)!;
     const bob = { id: "bob", name: "Bob" };
 
     await expect(state.setCollectionRecord(publishedUsers, "bob" as RecordId, bob)).rejects
@@ -140,30 +140,34 @@ describe("PublishedVersionDocumentService", () => {
     await expect(published.setRecord(UserModel, "bob" as RecordId, bob as never)).rejects.toThrow(
       "read-only",
     );
-    // These take the record's own ref, so a draft record must not be edited through the published
-    // version doc ref.
-    await expect(published.updateRecord(draftAlice, { name: "Changed" } as never)).rejects.toThrow(
-      "read-only",
-    );
-    await expect(published.deleteRecord(draftAlice)).rejects.toThrow("read-only");
+    // These take the record's own ref, so a live draft record must not be edited through the
+    // published version doc ref.
+    await expect(published.updateRecord(liveDraftAlice, { name: "Changed" } as never)).rejects
+      .toThrow(
+        "read-only",
+      );
+    await expect(published.deleteRecord(liveDraftAlice)).rejects.toThrow("read-only");
     expect(() => published.withTransaction(() => {})).toThrow("read-only");
 
-    await expect(draftAlice.getSnapshot()).resolves.toEqual(ALICE);
-    expect(draft.getRecords(UserModel).size).toBe(1);
+    await expect(liveDraftAlice.getSnapshot()).resolves.toEqual(ALICE);
+    expect(liveDraft.getRecords(UserModel).size).toBe(1);
     expect(publishedUsers.size).toBe(1);
   });
 
-  it("rejects document-level writes without reaching the draft service", async () => {
+  it("rejects document-level writes without reaching the live draft service", async () => {
     const published = openCopy();
-    const draftWrites = [vi.spyOn(service, "updateDocument"), vi.spyOn(service, "deleteDocument")];
+    const liveDraftWrites = [
+      vi.spyOn(service, "updateDocument"),
+      vi.spyOn(service, "deleteDocument"),
+    ];
 
     await expect(state.updateDocument(published, { name: "Renamed" })).rejects.toThrow(
       "read-only",
     );
     await expect(state.deleteDocument(published)).rejects.toThrow("read-only");
 
-    for (const draftWrite of draftWrites) {
-      expect(draftWrite).not.toHaveBeenCalled();
+    for (const liveDraftWrite of liveDraftWrites) {
+      expect(liveDraftWrite).not.toHaveBeenCalled();
     }
   });
 
@@ -172,8 +176,8 @@ describe("PublishedVersionDocumentService", () => {
     const loaded = { live: DocumentLiveStatus.DISCONNECTED, load: DocumentLoadStatus.LOADED };
 
     expect(state.getDocumentStatus(published).data).toMatchObject(loaded);
-    // Status for the published version doc ref comes from its own copy, not the draft.
-    expect(state.getDocumentStatus(draft).data.load).toBe(DocumentLoadStatus.UNLOADED);
+    // Status for the published version doc ref comes from its own copy, not the live draft.
+    expect(state.getDocumentStatus(liveDraft).data.load).toBe(DocumentLoadStatus.UNLOADED);
 
     const unsubscribe = published.onStateChange(() => {});
     await expect(state.waitForDataLoad(published)).resolves.toBeUndefined();
@@ -185,13 +189,13 @@ describe("PublishedVersionDocumentService", () => {
     unsubscribeAgain();
   });
 
-  it("keeps the draft ref stable and borrows the draft's metadata and version", () => {
+  it("keeps the live draft ref stable and borrows the live draft's metadata and version", () => {
     const published = openCopy();
 
-    expect(state.createDocRef(draft.id, schema)).toBe(draft);
+    expect(state.createDocRef(liveDraft.id, schema)).toBe(liveDraft);
     expect(state.createRecordRef(published, ALICE_ID, UserModel).docRef).toBe(published);
     expect(published.getRecords(UserModel).docRef).toBe(published);
-    expect(published.version).toBe(draft.version);
+    expect(published.version).toBe(liveDraft.version);
 
     const onMetadataChange = vi.fn();
     const unsubscribe = published.onMetadataChange(onMetadataChange);
@@ -202,7 +206,7 @@ describe("PublishedVersionDocumentService", () => {
     unsubscribe();
   });
 
-  it("fails instead of reading the draft for a copy of a published version doc ref", () => {
+  it("fails instead of reading the live draft for a copy of a published version doc ref", () => {
     const copy = { ...openCopy() } as unknown as DocumentRef<typeof schema>;
 
     expect(() => state.getDocumentStatus(copy)).toThrow("is a copy");
@@ -210,6 +214,6 @@ describe("PublishedVersionDocumentService", () => {
 
   it("throws when the contents can't be applied", () => {
     const badContents = new Uint8Array([255, 255, 255]);
-    expect(() => openPublishedVersionDocRef(app, service, draft, badContents, V7)).toThrow();
+    expect(() => openPublishedVersionDocRef(app, service, liveDraft, badContents, V7)).toThrow();
   });
 });
