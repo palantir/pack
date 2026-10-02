@@ -1016,11 +1016,11 @@ export abstract class BaseYjsDocumentService<TDoc extends InternalYjsDoc = Inter
         currentDoc.yDocUpdateHandler = undefined;
       }
 
-      this.closeDataSubscription(currentDoc, internalDocRef);
+      this.closeDataSubscriptionIfUnused(currentDoc, internalDocRef);
     };
   };
 
-  private closeDataSubscription(currentDoc: TDoc, docRef: DocumentRef): void {
+  private closeDataSubscriptionIfUnused(currentDoc: TDoc, docRef: DocumentRef): void {
     const hasDataSubs = currentDoc.docStateSubscribers.size > 0
       || currentDoc.recordSubscriptions.size > 0
       || Array.from(currentDoc.collectionSubscriptions.values()).some(subs =>
@@ -1360,7 +1360,7 @@ export abstract class BaseYjsDocumentService<TDoc extends InternalYjsDoc = Inter
 
       this.cleanupCollectionListenerIfUnused(currentDoc, record.docRef.id, storageName);
 
-      this.closeDataSubscription(currentDoc, internalDocRef);
+      this.closeDataSubscriptionIfUnused(currentDoc, internalDocRef);
     };
   };
 
@@ -1398,7 +1398,7 @@ export abstract class BaseYjsDocumentService<TDoc extends InternalYjsDoc = Inter
 
       this.cleanupCollectionListenerIfUnused(currentDoc, record.docRef.id, storageName);
 
-      this.closeDataSubscription(currentDoc, internalDocRef);
+      this.closeDataSubscriptionIfUnused(currentDoc, internalDocRef);
     };
   };
 
@@ -1446,7 +1446,7 @@ export abstract class BaseYjsDocumentService<TDoc extends InternalYjsDoc = Inter
 
       this.cleanupCollectionListenerIfUnused(currentDoc, record.docRef.id, storageName);
 
-      this.closeDataSubscription(currentDoc, internalDocRef);
+      this.closeDataSubscriptionIfUnused(currentDoc, internalDocRef);
     };
   };
 
@@ -1553,7 +1553,7 @@ export abstract class BaseYjsDocumentService<TDoc extends InternalYjsDoc = Inter
       const storageName = getMetadata(collection.model).name;
       this.cleanupCollectionListenerIfUnused(currentDoc, collection.docRef.id, storageName);
 
-      this.closeDataSubscription(currentDoc, internalDocRef);
+      this.closeDataSubscriptionIfUnused(currentDoc, internalDocRef);
     };
   }
 
