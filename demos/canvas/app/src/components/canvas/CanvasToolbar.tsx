@@ -15,10 +15,15 @@
  */
 
 import type { VersionedDocRef } from "@demo/canvas.sdk";
+import { matchVersion, NodeShapeModel } from "@demo/canvas.sdk";
+import { isDemoEnv } from "@palantir/pack.app";
+import { generateId } from "@palantir/pack.core";
+import type { RecordId } from "@palantir/pack.document-schema.model-types";
 import { useDocMetadata } from "@palantir/pack.state.react";
 import type { ChangeEvent } from "react";
 import { memo, useState } from "react";
 import type { ToolMode } from "../../hooks/useCanvasInteraction.js";
+import { createLargePayloadTestShape } from "../../utils/createLargePayloadTestShape.js";
 import { AVAILABLE_COLORS } from "../../utils/getDefaultColor.js";
 import { ActivityPanel } from "./ActivityPanel.js";
 import styles from "./CanvasToolbar.module.css";
@@ -48,7 +53,10 @@ export const CanvasToolbar = memo(function CanvasToolbar({
   onToolChange,
 }: CanvasToolbarProps) {
   const { metadata } = useDocMetadata(doc);
+  const [isCreatingLargePayload, setIsCreatingLargePayload] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [largePayloadDocumentId, setLargePayloadDocumentId] = useState<string>();
+  const [largePayloadError, setLargePayloadError] = useState<string>();
 
   const handleColorChange = (e: ChangeEvent<HTMLSelectElement>) => {
     onColorChange(e.target.value);
@@ -56,6 +64,33 @@ export const CanvasToolbar = memo(function CanvasToolbar({
 
   const handleOpacityChange = (e: ChangeEvent<HTMLInputElement>) => {
     onOpacityChange(Number(e.target.value));
+  };
+
+  const handleTestLargePayload = async (base64Characters: number) => {
+    setIsCreatingLargePayload(true);
+    setLargePayloadDocumentId(doc.id);
+    setLargePayloadError(undefined);
+
+    try {
+      const id = `payload-test-${generateId()}` as RecordId;
+      const shape = createLargePayloadTestShape(base64Characters);
+      const shapeV2 = {
+        ...shape,
+        fillColor: "#dc3545",
+        opacity: 1,
+        strokeColor: "#dc3545",
+      };
+
+      await matchVersion(doc, {
+        1: doc => doc.setRecord(NodeShapeModel, id, { ...shape, color: "#dc3545" }),
+        2: doc => doc.setRecord(NodeShapeModel, id, shapeV2),
+        3: doc => doc.setRecord(NodeShapeModel, id, shapeV2),
+      });
+    } catch (error) {
+      setLargePayloadError(error instanceof Error ? error.message : "Failed to create test update");
+    } finally {
+      setIsCreatingLargePayload(false);
+    }
   };
 
   return (
@@ -145,6 +180,33 @@ export const CanvasToolbar = memo(function CanvasToolbar({
           Delete
         </button>
       </div>
+
+      {import.meta.env.DEV && globalThis.location.hostname === "localhost" && !isDemoEnv() && (
+        <div className={styles.toolGroup}>
+          <button
+            className={styles.button}
+            disabled={metadata == null || isCreatingLargePayload}
+            onClick={() =>
+              handleTestLargePayload(512 * 1024)}
+            title="Adds a box with a ~512 KiB update (under the limit). Use a disposable canvas."
+            type="button"
+          >
+            Test ~512 KiB update
+          </button>
+          <button
+            className={styles.button}
+            disabled={metadata == null || isCreatingLargePayload}
+            onClick={() => handleTestLargePayload(1024 * 1024)}
+            title="Adds a box with a ~1 MiB update. Use a disposable canvas."
+            type="button"
+          >
+            Test ~1 MiB update
+          </button>
+          {largePayloadDocumentId === doc.id && largePayloadError != null && (
+            <span role="alert">{largePayloadError}</span>
+          )}
+        </div>
+      )}
 
       <div className={styles.toolGroup}>
         <span style={{ fontSize: 12, color: "#8a9ba8" }}>v{doc.version}</span>
