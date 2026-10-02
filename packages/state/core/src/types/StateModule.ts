@@ -96,13 +96,13 @@ export interface StateModule {
     options?: SearchDocumentsOptions,
   ) => Promise<SearchDocumentsResult>;
 
-  /** Rejects for a published version doc ref, which is read-only. Use the draft ref. */
+  /** Rejects for a published version doc ref, which is read-only. Use the live draft ref. */
   readonly updateDocument: (
     docRef: DocumentRef,
     metadata: UpdateDocumentMetadata,
   ) => Promise<DocumentMetadata>;
 
-  /** Rejects for a published version doc ref, which is read-only. Use the draft ref. */
+  /** Rejects for a published version doc ref, which is read-only. Use the live draft ref. */
   readonly deleteDocument: (
     docRef: DocumentRef,
   ) => Promise<void>;
@@ -125,7 +125,7 @@ export interface StateModule {
     docRef: DocumentRef,
   ) => Promise<string | undefined>;
 
-  /** Rejects for a published version doc ref, which is read-only. Use the draft ref. */
+  /** Rejects for a published version doc ref, which is read-only. Use the live draft ref. */
   readonly createPublishedVersion: (
     docRef: DocumentRef,
     options?: CreatePublishedVersionOptions,
@@ -147,7 +147,7 @@ export interface StateModule {
     docRef: DocumentRef,
   ) => Promise<PublishedVersion>;
 
-  /** Rejects for a published version doc ref, which is read-only. Use the draft ref. */
+  /** Rejects for a published version doc ref, which is read-only. Use the live draft ref. */
   readonly deletePublishedVersion: (
     docRef: DocumentRef,
     ref: PublishedVersionRef,

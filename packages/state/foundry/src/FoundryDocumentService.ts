@@ -519,28 +519,37 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
     docRef: DocumentRef<T>,
     ref: PublishedVersionRef,
   ): Promise<PublishedVersionDocumentRef<T>> => {
-    const draftRef = this.getDraftDocRef(docRef);
+    const liveDraftRef = this.getLiveDraftDocRef(docRef);
     const [publishedVersion, contents] = await Promise.all([
-      this.getPublishedVersion(draftRef, ref),
-      this.getPublishedVersionContents(draftRef, ref),
+      this.getPublishedVersion(liveDraftRef, ref),
+      this.getPublishedVersionContents(liveDraftRef, ref),
     ]);
-    return openPublishedVersionDocRef(this.app, this, draftRef, contents, publishedVersion);
+    return openPublishedVersionDocRef(this.app, this, liveDraftRef, contents, publishedVersion);
   };
 
   readonly loadLatestPublishedVersionDocRef = async <T extends DocumentSchema>(
     docRef: DocumentRef<T>,
   ): Promise<PublishedVersionDocumentRef<T>> => {
-    const draftRef = this.getDraftDocRef(docRef);
+    const liveDraftRef = this.getLiveDraftDocRef(docRef);
     // Load contents by the resolved ref, so a publish in between can't mix up two versions.
-    const latestPublishedVersion = await this.getLatestPublishedVersion(draftRef);
-    const contents = await this.getPublishedVersionContents(draftRef, latestPublishedVersion.ref);
-    return openPublishedVersionDocRef(this.app, this, draftRef, contents, latestPublishedVersion);
+    const latestPublishedVersion = await this.getLatestPublishedVersion(liveDraftRef);
+    const contents = await this.getPublishedVersionContents(
+      liveDraftRef,
+      latestPublishedVersion.ref,
+    );
+    return openPublishedVersionDocRef(
+      this.app,
+      this,
+      liveDraftRef,
+      contents,
+      latestPublishedVersion,
+    );
   };
 
-  /** Resolves the draft ref by id, so a published version doc ref passed in never lands here. */
-  private getDraftDocRef<T extends DocumentSchema>(docRef: DocumentRef<T>): DocumentRef<T> {
+  /** Returns the live draft ref for the same id, even when given a published version doc ref. */
+  private getLiveDraftDocRef<T extends DocumentSchema>(docRef: DocumentRef<T>): DocumentRef<T> {
     if (!isValidDocRef(docRef)) {
-      throw new Error("Cannot load a published version for an invalid document reference");
+      throw new Error("Invalid document reference");
     }
     return this.createDocRef(docRef.id, docRef.schema);
   }

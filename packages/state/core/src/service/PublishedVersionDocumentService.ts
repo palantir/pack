@@ -44,16 +44,16 @@ import { BaseYjsDocumentService } from "./BaseYjsDocumentService.js";
  */
 export function openPublishedVersionDocRef<T extends DocumentSchema>(
   app: PackAppInternal,
-  draftService: DocumentService,
-  draftRef: DocumentRef<T>,
+  liveDraftService: DocumentService,
+  liveDraftRef: DocumentRef<T>,
   contents: Uint8Array,
   publishedVersion: PublishedVersion,
 ): PublishedVersionDocumentRef<T> {
-  const service = new PublishedVersionDocumentService(app, draftService, draftRef);
+  const service = new PublishedVersionDocumentService(app, liveDraftService, liveDraftRef);
   const publishedRef = createPublishedVersionDocRef(
     app,
-    draftRef.id,
-    draftRef.schema,
+    liveDraftRef.id,
+    liveDraftRef.schema,
     publishedVersion,
     service,
   );
@@ -72,8 +72,8 @@ class PublishedVersionDocumentService extends BaseYjsDocumentService {
 
   constructor(
     app: PackAppInternal,
-    private readonly draftService: DocumentService,
-    private readonly draftRef: DocumentRef,
+    private readonly liveDraftService: DocumentService,
+    private readonly liveDraftRef: DocumentRef,
   ) {
     super(
       app,
@@ -93,7 +93,7 @@ class PublishedVersionDocumentService extends BaseYjsDocumentService {
   }
 
   get hasMetadataSubscriptions(): boolean {
-    // Metadata subscriptions are forwarded to the draft document.
+    // Metadata subscriptions are forwarded to the live draft document.
     return false;
   }
 
@@ -141,14 +141,14 @@ class PublishedVersionDocumentService extends BaseYjsDocumentService {
     docRef: DocumentRef<T>,
     callback: DocumentMetadataChangeCallback<T>,
   ): Unsubscribe {
-    // Report the draft's metadata, passing back the ref the caller subscribed with.
-    return this.draftService.onMetadataChange(this.draftRef, (_draftRef, metadata) => {
+    // Report the live draft's metadata, passing back the ref the caller subscribed with.
+    return this.liveDraftService.onMetadataChange(this.liveDraftRef, (_liveDraftRef, metadata) => {
       callback(docRef, metadata);
     });
   }
 
   override readonly getDocumentSchemaOperationalVersion = (): number => {
-    return this.draftService.getDocumentSchemaOperationalVersion(this.draftRef);
+    return this.liveDraftService.getDocumentSchemaOperationalVersion(this.liveDraftRef);
   };
 
   onActivity(): Unsubscribe {
