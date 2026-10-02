@@ -15,6 +15,8 @@
  */
 
 import type { Flavored } from "@palantir/pack.core";
+import type { DocumentRef } from "./DocumentRef.js";
+import type { DocumentSchema } from "./DocumentSchema.js";
 
 /**
  * Server-generated identifier for a published Document version. Treat it as opaque and return it
@@ -32,4 +34,18 @@ export interface PublishedVersion {
   readonly description?: string;
   readonly createdAt: string;
   readonly createdBy?: string;
+}
+
+/**
+ * A read-only {@link DocumentRef} pinned to one published version. Records, collections, and hooks
+ * read the frozen snapshot just like the live draft. Writes reject, presence and activity are no-ops,
+ * and it never syncs, so its data status is always loaded and disconnected. Metadata and `version`
+ * come from the live draft. It has the same `id` as the live draft, so use `publishedVersion.ref` to
+ * tell them apart, for example in React keys or caches. For the same reason, it can't be rebuilt from
+ * its `id`: `createDocRef(id)` returns the live draft. Keep this ref, or load the version again.
+ */
+export interface PublishedVersionDocumentRef<D extends DocumentSchema = DocumentSchema>
+  extends DocumentRef<D>
+{
+  readonly publishedVersion: PublishedVersion;
 }

@@ -40,6 +40,7 @@ export {
   getPartialModelDataSchemaVersion,
 } from "./service/DocumentUpdateSchemaVersion.js";
 export { createInMemoryDocumentServiceConfig } from "./service/InMemoryDocumentService.js";
+export { openPublishedVersionDocRef } from "./service/PublishedVersionDocumentService.js";
 export { FileSystemType } from "./types/CreateDocumentMetadata.js";
 export type {
   CreateDocumentMetadata,
@@ -66,6 +67,7 @@ export type {
   UpdateDocumentMetadata,
 } from "./types/DocumentService.js";
 export type { WithDocumentServiceInit } from "./types/DocumentServiceConfig.js";
+export { isPublishedVersionDocRef } from "./types/PublishedVersionDocRefRegistry.js";
 export {
   createRecordCollectionRef,
   invalidRecordCollectionRef,

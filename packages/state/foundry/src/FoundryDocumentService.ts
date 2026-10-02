@@ -48,6 +48,7 @@ import type {
   PresencePublishOptions,
   PresenceSubscriptionOptions,
   PublishedVersion,
+  PublishedVersionDocumentRef,
   PublishedVersionRef,
 } from "@palantir/pack.document-schema.model-types";
 import { getMetadata, toUnknownChannelError } from "@palantir/pack.document-schema.model-types";
@@ -68,6 +69,8 @@ import {
   createDocumentServiceConfig,
   DocumentLiveStatus,
   DocumentLoadStatus,
+  isValidDocRef,
+  openPublishedVersionDocRef,
 } from "@palantir/pack.state.core";
 import type {
   FoundryEventService,
@@ -511,6 +514,45 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
       },
     );
   };
+
+  readonly loadPublishedVersionDocRef = async <T extends DocumentSchema>(
+    docRef: DocumentRef<T>,
+    ref: PublishedVersionRef,
+  ): Promise<PublishedVersionDocumentRef<T>> => {
+    const liveDraftRef = this.getLiveDraftDocRef(docRef);
+    const [publishedVersion, contents] = await Promise.all([
+      this.getPublishedVersion(liveDraftRef, ref),
+      this.getPublishedVersionContents(liveDraftRef, ref),
+    ]);
+    return openPublishedVersionDocRef(this.app, this, liveDraftRef, contents, publishedVersion);
+  };
+
+  readonly loadLatestPublishedVersionDocRef = async <T extends DocumentSchema>(
+    docRef: DocumentRef<T>,
+  ): Promise<PublishedVersionDocumentRef<T>> => {
+    const liveDraftRef = this.getLiveDraftDocRef(docRef);
+    // Load contents by the resolved ref, so a publish in between can't mix up two versions.
+    const latestPublishedVersion = await this.getLatestPublishedVersion(liveDraftRef);
+    const contents = await this.getPublishedVersionContents(
+      liveDraftRef,
+      latestPublishedVersion.ref,
+    );
+    return openPublishedVersionDocRef(
+      this.app,
+      this,
+      liveDraftRef,
+      contents,
+      latestPublishedVersion,
+    );
+  };
+
+  /** Returns the live draft ref for the same id, even when given a published version doc ref. */
+  private getLiveDraftDocRef<T extends DocumentSchema>(docRef: DocumentRef<T>): DocumentRef<T> {
+    if (!isValidDocRef(docRef)) {
+      throw new Error("Invalid document reference");
+    }
+    return this.createDocRef(docRef.id, docRef.schema);
+  }
 
   protected onMetadataSubscriptionOpened(
     internalDoc: FoundryInternalDoc,
