@@ -28,6 +28,7 @@ import type {
   PresencePublishOptions,
   PresenceSubscriptionOptions,
   PublishedVersion,
+  PublishedVersionDocumentRef,
   PublishedVersionRef,
 } from "@palantir/pack.document-schema.model-types";
 import { toUnknownChannelError } from "@palantir/pack.document-schema.model-types";
@@ -270,6 +271,25 @@ class InMemoryDocumentService extends BaseYjsDocumentService {
   ): Promise<void> => {
     return Promise.reject(
       new Error("deletePublishedVersion is not supported by the in-memory document service"),
+    );
+  };
+
+  readonly loadPublishedVersionDocRef = <T extends DocumentSchema>(
+    _docRef: DocumentRef<T>,
+    _ref: PublishedVersionRef,
+  ): Promise<PublishedVersionDocumentRef<T>> => {
+    return Promise.reject(
+      new Error("loadPublishedVersionDocRef is not supported by the in-memory document service"),
+    );
+  };
+
+  readonly loadLatestPublishedVersionDocRef = <T extends DocumentSchema>(
+    _docRef: DocumentRef<T>,
+  ): Promise<PublishedVersionDocumentRef<T>> => {
+    return Promise.reject(
+      new Error(
+        "loadLatestPublishedVersionDocRef is not supported by the in-memory document service",
+      ),
     );
   };
 

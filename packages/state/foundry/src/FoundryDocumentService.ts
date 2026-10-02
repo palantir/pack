@@ -48,6 +48,7 @@ import type {
   PresencePublishOptions,
   PresenceSubscriptionOptions,
   PublishedVersion,
+  PublishedVersionDocumentRef,
   PublishedVersionRef,
 } from "@palantir/pack.document-schema.model-types";
 import { getMetadata, toUnknownChannelError } from "@palantir/pack.document-schema.model-types";
@@ -68,6 +69,8 @@ import {
   createDocumentServiceConfig,
   DocumentLiveStatus,
   DocumentLoadStatus,
+  isValidDocRef,
+  openPublishedVersionDocRef,
 } from "@palantir/pack.state.core";
 import type {
   FoundryEventService,
@@ -511,6 +514,36 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
       },
     );
   };
+
+  readonly loadPublishedVersionDocRef = async <T extends DocumentSchema>(
+    docRef: DocumentRef<T>,
+    ref: PublishedVersionRef,
+  ): Promise<PublishedVersionDocumentRef<T>> => {
+    const draftRef = this.getDraftDocRef(docRef);
+    const [publishedVersion, contents] = await Promise.all([
+      this.getPublishedVersion(draftRef, ref),
+      this.getPublishedVersionContents(draftRef, ref),
+    ]);
+    return openPublishedVersionDocRef(this.app, this, draftRef, contents, publishedVersion);
+  };
+
+  readonly loadLatestPublishedVersionDocRef = async <T extends DocumentSchema>(
+    docRef: DocumentRef<T>,
+  ): Promise<PublishedVersionDocumentRef<T>> => {
+    const draftRef = this.getDraftDocRef(docRef);
+    // Load contents by the resolved ref, so a publish in between can't mix up two versions.
+    const latestPublishedVersion = await this.getLatestPublishedVersion(draftRef);
+    const contents = await this.getPublishedVersionContents(draftRef, latestPublishedVersion.ref);
+    return openPublishedVersionDocRef(this.app, this, draftRef, contents, latestPublishedVersion);
+  };
+
+  /** Resolves the draft ref by id, so a published version doc ref passed in never lands here. */
+  private getDraftDocRef<T extends DocumentSchema>(docRef: DocumentRef<T>): DocumentRef<T> {
+    if (!isValidDocRef(docRef)) {
+      throw new Error("Cannot load a published version for an invalid document reference");
+    }
+    return this.createDocRef(docRef.id, docRef.schema);
+  }
 
   protected onMetadataSubscriptionOpened(
     internalDoc: FoundryInternalDoc,
