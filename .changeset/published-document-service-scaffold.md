@@ -1,5 +1,8 @@
 ---
-"@palantir/pack.state.core": patch
+"@palantir/pack.document-schema.model-types": minor
+"@palantir/pack.state.core": minor
+"@palantir/pack.state.demo": patch
+"@palantir/pack.state.foundry": minor
 ---
 
-Add groundwork for reading published document versions: an internal read-only document service that loads a document snapshot, and routing in `app.state` that sends calls made with a ref to the service that owns it. No public API changes.
+Load published document versions as read-only document refs. `app.state.loadPublishedVersionDocRef(docRef, ref)` and `app.state.loadLatestPublishedVersionDocRef(docRef)` return a `PublishedVersionDocumentRef` that reads the frozen version through the same records, collections, and hooks as the draft. Writes reject, presence and activity are no-ops, and metadata comes from the draft. It has the same `id` as the draft, so use `isPublishedVersionDocRef` or `publishedVersion.ref` to tell them apart. Custom document services can build one from downloaded contents with `openPublishedVersionDocRef`.
