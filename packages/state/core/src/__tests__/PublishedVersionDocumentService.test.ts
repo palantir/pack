@@ -16,6 +16,7 @@
 
 import type { PackAppInternal } from "@palantir/pack.core";
 import type {
+  DocumentId,
   DocumentMetadata,
   DocumentRef,
   DocumentSchema,
@@ -188,6 +189,29 @@ describe("PublishedVersionDocumentService", () => {
     const unsubscribeAgain = published.onStateChange(() => {});
     expect(state.getDocumentStatus(published).data).toMatchObject(loaded);
     unsubscribeAgain();
+  });
+
+  it("takes its metadata status from the live draft, not its own copy", async () => {
+    const unloadedLiveDraft = state.createDocRef("unloaded-doc" as DocumentId, schema);
+    const published = openPublishedVersionDocRef(app, service, unloadedLiveDraft, contents, V7);
+
+    expect(state.getDocumentStatus(published).metadata.load).toBe(DocumentLoadStatus.UNLOADED);
+    expect(state.getDocumentStatus(published).data.load).toBe(DocumentLoadStatus.LOADED);
+    // Like the live draft, waiting needs a metadata subscription first.
+    await expect(state.waitForMetadataLoad(published)).rejects.toThrow("no metadata subscription");
+
+    const onStatusChange = vi.fn();
+    const unsubscribeStatus = state.onStatusChange(published, onStatusChange);
+    const unsubscribeMetadata = published.onMetadataChange(() => {});
+    await expect(state.waitForMetadataLoad(published)).resolves.toBeUndefined();
+    expect(onStatusChange).toHaveBeenLastCalledWith(
+      published,
+      expect.objectContaining({
+        metadata: expect.objectContaining({ load: DocumentLoadStatus.LOADED }),
+      }),
+    );
+    unsubscribeMetadata();
+    unsubscribeStatus();
   });
 
   it("keeps the live draft ref stable and borrows the live draft's metadata and version", () => {
