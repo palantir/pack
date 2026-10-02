@@ -53,6 +53,7 @@ import type {
   SearchDocumentsResult,
   UpdateDocumentMetadata,
 } from "./DocumentService.js";
+import { getPublishedVersionDocumentService } from "./PublishedVersionDocRefRegistry.js";
 
 // Ensure state module is accessible on PackApp instances.
 export const STATE_MODULE_ACCESSOR = "state";
@@ -285,28 +286,6 @@ export interface StateModule {
   ) => Promise<void>;
 }
 
-// Links each published version doc ref to the read-only service that holds its snapshot. It lives
-// here, next to its reader, so this file never imports DocumentRefImpl, which imports this file.
-const publishedVersionDocumentServices = new WeakMap<DocumentRef, DocumentService>();
-
-/** Links a new published version doc ref to its read-only service, so app.state routes to it. */
-export function linkPublishedVersionDocRef(
-  docRef: PublishedVersionDocumentRef,
-  documentService: DocumentService,
-): void {
-  publishedVersionDocumentServices.set(docRef, documentService);
-}
-
-/**
- * Check if a document reference is pinned to a published version. Published version doc refs are
- * read-only, so apps can use this to hide editing UI.
- */
-export function isPublishedVersionDocRef<D extends DocumentSchema = DocumentSchema>(
-  docRef: DocumentRef<D>,
-): docRef is PublishedVersionDocumentRef<D> {
-  return publishedVersionDocumentServices.has(docRef);
-}
-
 export class StateModuleImpl implements StateModule {
   constructor(
     private readonly documentService: DocumentService,
@@ -315,7 +294,7 @@ export class StateModuleImpl implements StateModule {
   // Published version doc refs keep their snapshot in their own read-only service, so calls for
   // them (and for their records and collections) go there instead of the app's document service.
   private serviceFor(docRef: DocumentRef): DocumentService {
-    const publishedVersionService = publishedVersionDocumentServices.get(docRef);
+    const publishedVersionService = getPublishedVersionDocumentService(docRef);
     if (publishedVersionService != null) {
       return publishedVersionService;
     }

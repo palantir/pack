@@ -67,15 +67,12 @@ export type {
   UpdateDocumentMetadata,
 } from "./types/DocumentService.js";
 export type { WithDocumentServiceInit } from "./types/DocumentServiceConfig.js";
+export { isPublishedVersionDocRef } from "./types/PublishedVersionDocRefRegistry.js";
 export {
   createRecordCollectionRef,
   invalidRecordCollectionRef,
   isValidRecordCollectionRef,
 } from "./types/RecordCollectionRefImpl.js";
 export { createRecordRef, invalidRecordRef, isValidRecordRef } from "./types/RecordRefImpl.js";
-export {
-  getStateModule,
-  isPublishedVersionDocRef,
-  STATE_MODULE_ACCESSOR,
-} from "./types/StateModule.js";
+export { getStateModule, STATE_MODULE_ACCESSOR } from "./types/StateModule.js";
 export type { StateModule, WithStateModule } from "./types/StateModule.js";
