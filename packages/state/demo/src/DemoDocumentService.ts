@@ -29,6 +29,7 @@ import type {
   PresenceEvent,
   PresencePublishOptions,
   PublishedVersion,
+  PublishedVersionDocumentRef,
   PublishedVersionRef,
   UserId,
 } from "@palantir/pack.document-schema.model-types";
@@ -418,6 +419,23 @@ export class DemoDocumentService extends BaseYjsDocumentService<DemoInternalDoc>
   ): Promise<void> => {
     return Promise.reject(
       new Error("deletePublishedVersion is not supported by the demo document service"),
+    );
+  };
+
+  readonly loadPublishedVersionDocRef = <T extends DocumentSchema>(
+    _docRef: DocumentRef<T>,
+    _ref: PublishedVersionRef,
+  ): Promise<PublishedVersionDocumentRef<T>> => {
+    return Promise.reject(
+      new Error("loadPublishedVersionDocRef is not supported by the demo document service"),
+    );
+  };
+
+  readonly loadLatestPublishedVersionDocRef = <T extends DocumentSchema>(
+    _docRef: DocumentRef<T>,
+  ): Promise<PublishedVersionDocumentRef<T>> => {
+    return Promise.reject(
+      new Error("loadLatestPublishedVersionDocRef is not supported by the demo document service"),
     );
   };
 

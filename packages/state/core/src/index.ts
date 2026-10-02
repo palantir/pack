@@ -40,6 +40,7 @@ export {
   getPartialModelDataSchemaVersion,
 } from "./service/DocumentUpdateSchemaVersion.js";
 export { createInMemoryDocumentServiceConfig } from "./service/InMemoryDocumentService.js";
+export { openPublishedVersionDocRef } from "./service/PublishedVersionDocumentService.js";
 export { FileSystemType } from "./types/CreateDocumentMetadata.js";
 export type {
   CreateDocumentMetadata,
@@ -72,5 +73,9 @@ export {
   isValidRecordCollectionRef,
 } from "./types/RecordCollectionRefImpl.js";
 export { createRecordRef, invalidRecordRef, isValidRecordRef } from "./types/RecordRefImpl.js";
-export { getStateModule, STATE_MODULE_ACCESSOR } from "./types/StateModule.js";
+export {
+  getStateModule,
+  isPublishedVersionDocRef,
+  STATE_MODULE_ACCESSOR,
+} from "./types/StateModule.js";
 export type { StateModule, WithStateModule } from "./types/StateModule.js";

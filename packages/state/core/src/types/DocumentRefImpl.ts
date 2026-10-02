@@ -28,14 +28,17 @@ import type {
   PresenceEvent,
   PresencePublishOptions,
   PresenceSubscriptionOptions,
+  PublishedVersion,
+  PublishedVersionDocumentRef,
   RecordCollectionRef,
   RecordId,
   RecordRef,
   Unsubscribe,
 } from "@palantir/pack.document-schema.model-types";
 import { DocumentRefBrand } from "@palantir/pack.document-schema.model-types";
+import type { DocumentService } from "./DocumentService.js";
 import type { StateModuleImpl } from "./StateModule.js";
-import { getStateModule } from "./StateModule.js";
+import { getStateModule, linkPublishedVersionDocRef } from "./StateModule.js";
 
 const INVALID_DOC_REF_ID: DocumentId = "INVALID_DOC_REF";
 const INVALID_DOC_REF: DocumentRef = Object.freeze(
@@ -198,4 +201,40 @@ class DocumentRefImpl<T extends DocumentSchema> implements DocumentRef<T> {
   deleteRecord(ref: RecordRef): Promise<void> {
     return this.#stateModule.deleteRecord(ref);
   }
+}
+
+export const PUBLISHED_VERSION_READ_ONLY_MESSAGE = "Published document versions are read-only";
+
+class PublishedVersionDocumentRefImpl<T extends DocumentSchema> extends DocumentRefImpl<T>
+  implements PublishedVersionDocumentRef<T>
+{
+  readonly publishedVersion: PublishedVersion;
+
+  constructor(app: PackAppInternal, id: DocumentId, schema: T, publishedVersion: PublishedVersion) {
+    super(app, id, schema);
+    this.publishedVersion = publishedVersion;
+  }
+
+  // Both of these route by the record's own document, so a draft record passed here would edit the
+  // draft. The other writes route through this ref and are rejected by its read-only service.
+  override updateRecord(_ref: RecordRef, _data: unknown): Promise<void> {
+    return Promise.reject(new Error(PUBLISHED_VERSION_READ_ONLY_MESSAGE));
+  }
+
+  override deleteRecord(_ref: RecordRef): Promise<void> {
+    return Promise.reject(new Error(PUBLISHED_VERSION_READ_ONLY_MESSAGE));
+  }
+}
+
+/** Creates a published version doc ref backed by the given read-only document service. */
+export function createPublishedVersionDocRef<const D extends DocumentSchema>(
+  app: PackAppInternal,
+  id: DocumentId,
+  schema: D,
+  publishedVersion: PublishedVersion,
+  documentService: DocumentService,
+): PublishedVersionDocumentRef<D> {
+  const docRef = new PublishedVersionDocumentRefImpl(app, id, schema, publishedVersion);
+  linkPublishedVersionDocRef(docRef, documentService);
+  return docRef;
 }

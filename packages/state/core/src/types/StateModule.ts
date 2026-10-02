@@ -30,6 +30,7 @@ import type {
   PresencePublishOptions,
   PresenceSubscriptionOptions,
   PublishedVersion,
+  PublishedVersionDocumentRef,
   PublishedVersionRef,
   RecordCollectionRef,
   RecordId,
@@ -95,11 +96,13 @@ export interface StateModule {
     options?: SearchDocumentsOptions,
   ) => Promise<SearchDocumentsResult>;
 
+  /** Rejects for a published version doc ref, which is read-only. Use the draft ref. */
   readonly updateDocument: (
     docRef: DocumentRef,
     metadata: UpdateDocumentMetadata,
   ) => Promise<DocumentMetadata>;
 
+  /** Rejects for a published version doc ref, which is read-only. Use the draft ref. */
   readonly deleteDocument: (
     docRef: DocumentRef,
   ) => Promise<void>;
@@ -122,6 +125,7 @@ export interface StateModule {
     docRef: DocumentRef,
   ) => Promise<string | undefined>;
 
+  /** Rejects for a published version doc ref, which is read-only. Use the draft ref. */
   readonly createPublishedVersion: (
     docRef: DocumentRef,
     options?: CreatePublishedVersionOptions,
@@ -143,21 +147,28 @@ export interface StateModule {
     docRef: DocumentRef,
   ) => Promise<PublishedVersion>;
 
-  /** Rejects with `InvalidPublishedVersionRef` or `PublishedVersionNotFound` for a bad or missing ref. */
-  readonly getPublishedVersionContents: (
-    docRef: DocumentRef,
-    ref: PublishedVersionRef,
-  ) => Promise<Uint8Array>;
-
-  /** Rejects with `NoActivePublishedVersion` when no active published version exists. */
-  readonly getLatestPublishedVersionContents: (
-    docRef: DocumentRef,
-  ) => Promise<Uint8Array>;
-
+  /** Rejects for a published version doc ref, which is read-only. Use the draft ref. */
   readonly deletePublishedVersion: (
     docRef: DocumentRef,
     ref: PublishedVersionRef,
   ) => Promise<void>;
+
+  /**
+   * Loads a published version as a read-only {@link PublishedVersionDocumentRef}. Rejects with
+   * `InvalidPublishedVersionRef` or `PublishedVersionNotFound` for a bad or missing ref.
+   */
+  readonly loadPublishedVersionDocRef: <T extends DocumentSchema>(
+    docRef: DocumentRef<T>,
+    ref: PublishedVersionRef,
+  ) => Promise<PublishedVersionDocumentRef<T>>;
+
+  /**
+   * Loads the latest published version as a read-only {@link PublishedVersionDocumentRef}. Rejects
+   * with `NoActivePublishedVersion` when none exist.
+   */
+  readonly loadLatestPublishedVersionDocRef: <T extends DocumentSchema>(
+    docRef: DocumentRef<T>,
+  ) => Promise<PublishedVersionDocumentRef<T>>;
 
   readonly getDocumentSnapshot: <T extends DocumentSchema>(
     docRef: DocumentRef<T>,
@@ -274,13 +285,52 @@ export interface StateModule {
   ) => Promise<void>;
 }
 
+// Links each published version doc ref to the read-only service that holds its snapshot. It lives
+// here, next to its reader, so this file never imports DocumentRefImpl, which imports this file.
+const publishedVersionDocumentServices = new WeakMap<DocumentRef, DocumentService>();
+
+/** Links a new published version doc ref to its read-only service, so app.state routes to it. */
+export function linkPublishedVersionDocRef(
+  docRef: PublishedVersionDocumentRef,
+  documentService: DocumentService,
+): void {
+  publishedVersionDocumentServices.set(docRef, documentService);
+}
+
+/**
+ * Check if a document reference is pinned to a published version. Published version doc refs are
+ * read-only, so apps can use this to hide editing UI.
+ */
+export function isPublishedVersionDocRef<D extends DocumentSchema = DocumentSchema>(
+  docRef: DocumentRef<D>,
+): docRef is PublishedVersionDocumentRef<D> {
+  return publishedVersionDocumentServices.has(docRef);
+}
+
 export class StateModuleImpl implements StateModule {
   constructor(
     private readonly documentService: DocumentService,
   ) {}
 
+  // Published version doc refs keep their snapshot in their own read-only service, so calls for
+  // them (and for their records and collections) go there instead of the app's document service.
+  private serviceFor(docRef: DocumentRef): DocumentService {
+    const publishedVersionService = publishedVersionDocumentServices.get(docRef);
+    if (publishedVersionService != null) {
+      return publishedVersionService;
+    }
+    // A published version doc ref that isn't linked is a copy of the real one. Fail instead of
+    // quietly reading the live draft.
+    if ("publishedVersion" in docRef) {
+      throw new Error(
+        "Published version doc ref is a copy. Use the ref returned by loadPublishedVersionDocRef.",
+      );
+    }
+    return this.documentService;
+  }
+
   getDocumentSchemaOperationalVersion(docRef: DocumentRef): number {
-    return this.documentService.getDocumentSchemaOperationalVersion(docRef);
+    return this.serviceFor(docRef).getDocumentSchemaOperationalVersion(docRef);
   }
 
   createDocRef<const T extends DocumentSchema>(
@@ -295,7 +345,7 @@ export class StateModuleImpl implements StateModule {
     id: RecordId,
     model: M,
   ): RecordRef<M> {
-    return this.documentService.getCreateRecordRef(docRef, id, model);
+    return this.serviceFor(docRef).getCreateRecordRef(docRef, id, model);
   }
 
   async createDocument<T extends DocumentSchema>(
@@ -324,13 +374,13 @@ export class StateModuleImpl implements StateModule {
     docRef: DocumentRef,
     metadata: UpdateDocumentMetadata,
   ): Promise<DocumentMetadata> {
-    return this.documentService.updateDocument(docRef, metadata);
+    return this.serviceFor(docRef).updateDocument(docRef, metadata);
   }
 
   async deleteDocument(
     docRef: DocumentRef,
   ): Promise<void> {
-    return this.documentService.deleteDocument(docRef);
+    return this.serviceFor(docRef).deleteDocument(docRef);
   }
 
   async loadDocumentTypeByName(
@@ -363,7 +413,7 @@ export class StateModuleImpl implements StateModule {
     docRef: DocumentRef,
     options?: CreatePublishedVersionOptions,
   ): Promise<CreatePublishedVersionResult> {
-    return this.documentService.createPublishedVersion(docRef, options);
+    return this.serviceFor(docRef).createPublishedVersion(docRef, options);
   }
 
   async listPublishedVersions(
@@ -385,44 +435,44 @@ export class StateModuleImpl implements StateModule {
     return this.documentService.getLatestPublishedVersion(docRef);
   }
 
-  async getPublishedVersionContents(
-    docRef: DocumentRef,
-    ref: PublishedVersionRef,
-  ): Promise<Uint8Array> {
-    return this.documentService.getPublishedVersionContents(docRef, ref);
-  }
-
-  async getLatestPublishedVersionContents(
-    docRef: DocumentRef,
-  ): Promise<Uint8Array> {
-    return this.documentService.getLatestPublishedVersionContents(docRef);
-  }
-
   async deletePublishedVersion(
     docRef: DocumentRef,
     ref: PublishedVersionRef,
   ): Promise<void> {
-    return this.documentService.deletePublishedVersion(docRef, ref);
+    return this.serviceFor(docRef).deletePublishedVersion(docRef, ref);
+  }
+
+  async loadPublishedVersionDocRef<T extends DocumentSchema>(
+    docRef: DocumentRef<T>,
+    ref: PublishedVersionRef,
+  ): Promise<PublishedVersionDocumentRef<T>> {
+    return this.documentService.loadPublishedVersionDocRef(docRef, ref);
+  }
+
+  async loadLatestPublishedVersionDocRef<T extends DocumentSchema>(
+    docRef: DocumentRef<T>,
+  ): Promise<PublishedVersionDocumentRef<T>> {
+    return this.documentService.loadLatestPublishedVersionDocRef(docRef);
   }
 
   async getDocumentSnapshot<T extends DocumentSchema>(
     docRef: DocumentRef<T>,
   ): Promise<DocumentState<T>> {
-    return this.documentService.getDocumentSnapshot(docRef);
+    return this.serviceFor(docRef).getDocumentSnapshot(docRef);
   }
 
   onActivity<T extends DocumentSchema>(
     docRef: DocumentRef<T>,
     callback: (docRef: DocumentRef<T>, event: ActivityEvent) => void,
   ): Unsubscribe {
-    return this.documentService.onActivity(docRef, callback);
+    return this.serviceFor(docRef).onActivity(docRef, callback);
   }
 
   onMetadataChange<T extends DocumentSchema>(
     docRef: DocumentRef<T>,
     cb: (doc: DocumentRef<T>, metadata: DocumentMetadata) => void,
   ): Unsubscribe {
-    return this.documentService.onMetadataChange(docRef, cb);
+    return this.serviceFor(docRef).onMetadataChange(docRef, cb);
   }
 
   onPresence<T extends DocumentSchema>(
@@ -430,14 +480,14 @@ export class StateModuleImpl implements StateModule {
     callback: (docRef: DocumentRef<T>, event: PresenceEvent) => void,
     options?: PresenceSubscriptionOptions,
   ): Unsubscribe {
-    return this.documentService.onPresence(docRef, callback, options);
+    return this.serviceFor(docRef).onPresence(docRef, callback, options);
   }
 
   onStateChange<T extends DocumentSchema>(
     docRef: DocumentRef<T>,
     cb: (docRef: DocumentRef<T>) => void,
   ): Unsubscribe {
-    return this.documentService.onStateChange(docRef, cb);
+    return this.serviceFor(docRef).onStateChange(docRef, cb);
   }
 
   updateCustomPresence<M extends Model>(
@@ -446,27 +496,27 @@ export class StateModuleImpl implements StateModule {
     eventData: ModelData<M>,
     options?: PresencePublishOptions,
   ): void {
-    this.documentService.updateCustomPresence(docRef, model, eventData, options);
+    this.serviceFor(docRef).updateCustomPresence(docRef, model, eventData, options);
   }
 
   async getRecordSnapshot<R extends Model>(
     recordRef: RecordRef<R>,
   ): Promise<ModelData<R>> {
-    return this.documentService.getRecordSnapshot(recordRef);
+    return this.serviceFor(recordRef.docRef).getRecordSnapshot(recordRef);
   }
 
   async setRecord<R extends Model>(
     recordRef: RecordRef<R>,
     state: ModelData<R>,
   ): Promise<void> {
-    return this.documentService.setRecord(recordRef, state);
+    return this.serviceFor(recordRef.docRef).setRecord(recordRef, state);
   }
 
   async updateRecord<R extends Model>(
     recordRef: RecordRef<R>,
     partialState: Partial<ModelData<R>>,
   ): Promise<void> {
-    return this.documentService.updateRecord(recordRef, partialState);
+    return this.serviceFor(recordRef.docRef).updateRecord(recordRef, partialState);
   }
 
   withTransaction(
@@ -474,7 +524,7 @@ export class StateModuleImpl implements StateModule {
     fn: () => void,
     description?: EditDescription,
   ): void {
-    this.documentService.withTransaction(docRef, fn, description);
+    this.serviceFor(docRef).withTransaction(docRef, fn, description);
   }
 
   // Collection methods
@@ -482,7 +532,7 @@ export class StateModuleImpl implements StateModule {
     docRef: DocumentRef,
     model: M,
   ): RecordCollectionRef<M> {
-    return this.documentService.getCreateRecordCollectionRef(docRef, model);
+    return this.serviceFor(docRef).getCreateRecordCollectionRef(docRef, model);
   }
 
   // FIXME: confusing vs createRecordRef
@@ -490,14 +540,14 @@ export class StateModuleImpl implements StateModule {
     collection: RecordCollectionRef<M>,
     id: RecordId,
   ): RecordRef<M> | undefined {
-    return this.documentService.getRecord(collection, id);
+    return this.serviceFor(collection.docRef).getRecord(collection, id);
   }
 
   hasRecord<M extends Model>(
     collection: RecordCollectionRef<M>,
     id: RecordId,
   ): boolean {
-    return this.documentService.hasRecord(collection, id);
+    return this.serviceFor(collection.docRef).hasRecord(collection, id);
   }
 
   async setCollectionRecord<M extends Model>(
@@ -505,99 +555,99 @@ export class StateModuleImpl implements StateModule {
     id: RecordId,
     state: ModelData<M>,
   ): Promise<void> {
-    return this.documentService.setCollectionRecord(collection, id, state);
+    return this.serviceFor(collection.docRef).setCollectionRecord(collection, id, state);
   }
 
   getCollectionSize<M extends Model>(
     collection: RecordCollectionRef<M>,
   ): number {
-    return this.documentService.getCollectionSize(collection);
+    return this.serviceFor(collection.docRef).getCollectionSize(collection);
   }
 
   getCollectionRecords<M extends Model>(
     collection: RecordCollectionRef<M>,
   ): RecordRef<M>[] {
-    return this.documentService.getCollectionRecords(collection);
+    return this.serviceFor(collection.docRef).getCollectionRecords(collection);
   }
 
   onRecordChanged<M extends Model>(
     record: RecordRef<M>,
     callback: RecordChangeCallback<M>,
   ): Unsubscribe {
-    return this.documentService.onRecordChanged(record, callback);
+    return this.serviceFor(record.docRef).onRecordChanged(record, callback);
   }
 
   onRecordDeleted<M extends Model>(
     record: RecordRef<M>,
     callback: RecordDeleteCallback<M>,
   ): Unsubscribe {
-    return this.documentService.onRecordDeleted(record, callback);
+    return this.serviceFor(record.docRef).onRecordDeleted(record, callback);
   }
 
   onRecordInvalid<M extends Model>(
     record: RecordRef<M>,
     callback: RecordInvalidCallback<M>,
   ): Unsubscribe {
-    return this.documentService.onRecordInvalid(record, callback);
+    return this.serviceFor(record.docRef).onRecordInvalid(record, callback);
   }
 
   getInvalidRecords(
     docRef: DocumentRef,
   ): ReadonlyArray<RecordValidationError> {
-    return this.documentService.getInvalidRecords(docRef);
+    return this.serviceFor(docRef).getInvalidRecords(docRef);
   }
 
   onCollectionItemsAdded<M extends Model>(
     collection: RecordCollectionRef<M>,
     callback: RecordCollectionChangeCallback<M>,
   ): Unsubscribe {
-    return this.documentService.onCollectionItemsAdded(collection, callback);
+    return this.serviceFor(collection.docRef).onCollectionItemsAdded(collection, callback);
   }
 
   onCollectionItemsChanged<M extends Model>(
     collection: RecordCollectionRef<M>,
     callback: RecordCollectionChangeCallback<M>,
   ): Unsubscribe {
-    return this.documentService.onCollectionItemsChanged(collection, callback);
+    return this.serviceFor(collection.docRef).onCollectionItemsChanged(collection, callback);
   }
 
   onCollectionItemsDeleted<M extends Model>(
     collection: RecordCollectionRef<M>,
     callback: RecordCollectionChangeCallback<M>,
   ): Unsubscribe {
-    return this.documentService.onCollectionItemsDeleted(collection, callback);
+    return this.serviceFor(collection.docRef).onCollectionItemsDeleted(collection, callback);
   }
 
   // Status methods implementation
   getDocumentStatus<T extends DocumentSchema>(
     docRef: DocumentRef<T>,
   ): ReturnType<DocumentService["getDocumentStatus"]> {
-    return this.documentService.getDocumentStatus(docRef);
+    return this.serviceFor(docRef).getDocumentStatus(docRef);
   }
 
   onStatusChange<T extends DocumentSchema>(
     docRef: DocumentRef<T>,
     callback: Parameters<DocumentService["onStatusChange"]>[1],
   ): Unsubscribe {
-    return this.documentService.onStatusChange(docRef, callback);
+    return this.serviceFor(docRef).onStatusChange(docRef, callback);
   }
 
   async waitForMetadataLoad<T extends DocumentSchema>(
     docRef: DocumentRef<T>,
   ): Promise<void> {
-    return this.documentService.waitForMetadataLoad(docRef);
+    return this.serviceFor(docRef).waitForMetadataLoad(docRef);
   }
 
   async waitForDataLoad<T extends DocumentSchema>(
     docRef: DocumentRef<T>,
   ): Promise<void> {
-    return this.documentService.waitForDataLoad(docRef);
+    return this.serviceFor(docRef).waitForDataLoad(docRef);
   }
 
   async deleteRecord<M extends Model>(
     record: RecordRef<M>,
   ): Promise<void> {
-    return this.documentService.deleteRecord(record);
+    return this.serviceFor(record.docRef).deleteRecord(record);
   }
 }
 

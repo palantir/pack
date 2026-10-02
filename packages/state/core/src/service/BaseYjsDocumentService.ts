@@ -33,6 +33,7 @@ import {
   type PresenceEvent,
   type PresencePublishOptions,
   type PublishedVersion,
+  type PublishedVersionDocumentRef,
   type PublishedVersionRef,
   type RecordCollectionRef,
   type RecordId,
@@ -255,6 +256,15 @@ export abstract class BaseYjsDocumentService<TDoc extends InternalYjsDoc = Inter
     docRef: DocumentRef,
     ref: PublishedVersionRef,
   ) => Promise<void>;
+
+  abstract readonly loadPublishedVersionDocRef: <T extends DocumentSchema>(
+    docRef: DocumentRef<T>,
+    ref: PublishedVersionRef,
+  ) => Promise<PublishedVersionDocumentRef<T>>;
+
+  abstract readonly loadLatestPublishedVersionDocRef: <T extends DocumentSchema>(
+    docRef: DocumentRef<T>,
+  ) => Promise<PublishedVersionDocumentRef<T>>;
 
   readonly getDocumentSchemaOperationalVersion = (
     docRef: DocumentRef,
