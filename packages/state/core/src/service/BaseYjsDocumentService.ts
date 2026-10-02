@@ -1016,20 +1016,20 @@ export abstract class BaseYjsDocumentService<TDoc extends InternalYjsDoc = Inter
         currentDoc.yDocUpdateHandler = undefined;
       }
 
-      // Check if this removes all data subscriptions (state + record + collection)
-      const hasDataSubs = currentDoc.docStateSubscribers.size > 0
-        || currentDoc.recordSubscriptions.size > 0
-        || Array.from(currentDoc.collectionSubscriptions.values()).some(subs =>
-          subs.added?.size || subs.changed?.size || subs.deleted?.size
-        );
-
-      if (!hasDataSubs) {
-        this.closeDataSubscription(currentDoc, internalDocRef);
-      }
+      this.closeDataSubscription(currentDoc, internalDocRef);
     };
   };
 
   private closeDataSubscription(currentDoc: TDoc, docRef: DocumentRef): void {
+    const hasDataSubs = currentDoc.docStateSubscribers.size > 0
+      || currentDoc.recordSubscriptions.size > 0
+      || Array.from(currentDoc.collectionSubscriptions.values()).some(subs =>
+        subs.added?.size || subs.changed?.size || subs.deleted?.size
+      );
+    if (hasDataSubs) {
+      return;
+    }
+
     currentDoc.hasDataSubscriptions = false;
     this.onDataSubscriptionClosed(currentDoc, docRef);
     if (
@@ -1360,15 +1360,7 @@ export abstract class BaseYjsDocumentService<TDoc extends InternalYjsDoc = Inter
 
       this.cleanupCollectionListenerIfUnused(currentDoc, record.docRef.id, storageName);
 
-      const hasDataSubs = currentDoc.docStateSubscribers.size > 0
-        || currentDoc.recordSubscriptions.size > 0
-        || Array.from(currentDoc.collectionSubscriptions.values()).some(subs =>
-          subs.added?.size || subs.changed?.size || subs.deleted?.size
-        );
-
-      if (!hasDataSubs) {
-        this.closeDataSubscription(currentDoc, internalDocRef);
-      }
+      this.closeDataSubscription(currentDoc, internalDocRef);
     };
   };
 
@@ -1406,15 +1398,7 @@ export abstract class BaseYjsDocumentService<TDoc extends InternalYjsDoc = Inter
 
       this.cleanupCollectionListenerIfUnused(currentDoc, record.docRef.id, storageName);
 
-      const hasDataSubs = currentDoc.docStateSubscribers.size > 0
-        || currentDoc.recordSubscriptions.size > 0
-        || Array.from(currentDoc.collectionSubscriptions.values()).some(subs =>
-          subs.added?.size || subs.changed?.size || subs.deleted?.size
-        );
-
-      if (!hasDataSubs) {
-        this.closeDataSubscription(currentDoc, internalDocRef);
-      }
+      this.closeDataSubscription(currentDoc, internalDocRef);
     };
   };
 
@@ -1462,15 +1446,7 @@ export abstract class BaseYjsDocumentService<TDoc extends InternalYjsDoc = Inter
 
       this.cleanupCollectionListenerIfUnused(currentDoc, record.docRef.id, storageName);
 
-      const hasDataSubs = currentDoc.docStateSubscribers.size > 0
-        || currentDoc.recordSubscriptions.size > 0
-        || Array.from(currentDoc.collectionSubscriptions.values()).some(subs =>
-          subs.added?.size || subs.changed?.size || subs.deleted?.size
-        );
-
-      if (!hasDataSubs) {
-        this.closeDataSubscription(currentDoc, internalDocRef);
-      }
+      this.closeDataSubscription(currentDoc, internalDocRef);
     };
   };
 
@@ -1577,15 +1553,7 @@ export abstract class BaseYjsDocumentService<TDoc extends InternalYjsDoc = Inter
       const storageName = getMetadata(collection.model).name;
       this.cleanupCollectionListenerIfUnused(currentDoc, collection.docRef.id, storageName);
 
-      const hasDataSubs = currentDoc.docStateSubscribers.size > 0
-        || currentDoc.recordSubscriptions.size > 0
-        || Array.from(currentDoc.collectionSubscriptions.values()).some(subs =>
-          subs.added?.size || subs.changed?.size || subs.deleted?.size
-        );
-
-      if (!hasDataSubs) {
-        this.closeDataSubscription(currentDoc, internalDocRef);
-      }
+      this.closeDataSubscription(currentDoc, internalDocRef);
     };
   }
 
