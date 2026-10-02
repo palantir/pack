@@ -30,6 +30,8 @@ import {
 import type {
   DocumentMetadataChangeCallback,
   DocumentService,
+  DocumentStatus,
+  DocumentStatusChangeCallback,
   DocumentSyncStatus,
 } from "../types/DocumentService.js";
 import { DocumentLiveStatus, DocumentLoadStatus } from "../types/DocumentService.js";
@@ -64,8 +66,8 @@ export function openPublishedVersionDocRef<T extends DocumentSchema>(
 /**
  * The read-only document service behind a published version doc ref, one per opened version. It
  * holds that version's frozen Y.Doc and reuses the base class read path. Writes reject, presence
- * and activity are no-ops, and nothing connects to the server. Metadata and the schema version
- * come from the live draft document.
+ * and activity are no-ops, and nothing connects to the server. Metadata, its load status, and the
+ * schema version come from the live draft document.
  */
 class PublishedVersionDocumentService extends BaseYjsDocumentService {
   #contents: Uint8Array | undefined;
@@ -111,9 +113,38 @@ class PublishedVersionDocumentService extends BaseYjsDocumentService {
       load: DocumentLoadStatus.LOADED,
     };
     internalDoc.dataStatus = loaded;
-    internalDoc.metadataStatus = loaded;
     return internalDoc;
   }
+
+  // Metadata comes from the live draft, so its load status and errors do too. Data status stays
+  // this copy's own.
+  protected override buildStatus(internalDoc: InternalYjsDoc): DocumentStatus {
+    return {
+      ...super.buildStatus(internalDoc),
+      metadata: this.liveDraftService.getDocumentStatus(this.liveDraftRef).metadata,
+    };
+  }
+
+  override readonly onStatusChange = <T extends DocumentSchema>(
+    docRef: DocumentRef<T>,
+    callback: DocumentStatusChangeCallback,
+  ): Unsubscribe => {
+    const { internalDoc } = this.getCreateInternalDoc(docRef);
+    // Changes to this copy's own status reach the callback through the base class.
+    internalDoc.statusSubscribers.add(callback);
+    // Changes to the live draft's status re-send this copy's status. This also sends it right away.
+    const unsubscribeLiveDraft = this.liveDraftService.onStatusChange(this.liveDraftRef, () => {
+      callback(docRef, this.buildStatus(internalDoc));
+    });
+    return () => {
+      internalDoc.statusSubscribers.delete(callback);
+      unsubscribeLiveDraft();
+    };
+  };
+
+  override readonly waitForMetadataLoad = (): Promise<void> => {
+    return this.liveDraftService.waitForMetadataLoad(this.liveDraftRef);
+  };
 
   // The snapshot is already in memory. The base class marks data unloaded when the last subscriber
   // leaves, so mark it loaded again when a new one arrives.

@@ -443,7 +443,8 @@ export abstract class BaseYjsDocumentService<TDoc extends InternalYjsDoc = Inter
   }
 
   // Status helper methods
-  private buildStatus(internalDoc: TDoc): DocumentStatus {
+  /** Builds the status callers see. Subclasses can override it to report a channel from elsewhere. */
+  protected buildStatus(internalDoc: TDoc): DocumentStatus {
     const invalidRecordCount = internalDoc.invalidRecords.size;
     return {
       metadata: internalDoc.metadataStatus,
