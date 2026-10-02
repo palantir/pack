@@ -31,8 +31,9 @@ import { DOCUMENT_SERVICE_MODULE_KEY } from "../DocumentServiceModule.js";
 import type { BaseYjsDocumentService } from "../service/BaseYjsDocumentService.js";
 import { openPublishedVersionDocRef } from "../service/PublishedVersionDocumentService.js";
 import { DocumentLiveStatus, DocumentLoadStatus } from "../types/DocumentService.js";
+import { isPublishedVersionDocRef } from "../types/PublishedVersionDocRefRegistry.js";
 import type { StateModule } from "../types/StateModule.js";
-import { getStateModule, isPublishedVersionDocRef } from "../types/StateModule.js";
+import { getStateModule } from "../types/StateModule.js";
 import { createTestApp } from "./testUtils.js";
 
 interface User {

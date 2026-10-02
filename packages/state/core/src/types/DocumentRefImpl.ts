@@ -37,8 +37,9 @@ import type {
 } from "@palantir/pack.document-schema.model-types";
 import { DocumentRefBrand } from "@palantir/pack.document-schema.model-types";
 import type { DocumentService } from "./DocumentService.js";
+import { registerPublishedVersionDocRef } from "./PublishedVersionDocRefRegistry.js";
 import type { StateModuleImpl } from "./StateModule.js";
-import { getStateModule, linkPublishedVersionDocRef } from "./StateModule.js";
+import { getStateModule } from "./StateModule.js";
 
 const INVALID_DOC_REF_ID: DocumentId = "INVALID_DOC_REF";
 const INVALID_DOC_REF: DocumentRef = Object.freeze(
@@ -236,6 +237,6 @@ export function createPublishedVersionDocRef<const D extends DocumentSchema>(
   documentService: DocumentService,
 ): PublishedVersionDocumentRef<D> {
   const docRef = new PublishedVersionDocumentRefImpl(app, id, schema, publishedVersion);
-  linkPublishedVersionDocRef(docRef, documentService);
+  registerPublishedVersionDocRef(docRef, documentService);
   return docRef;
 }
