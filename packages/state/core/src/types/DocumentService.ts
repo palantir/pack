@@ -320,9 +320,9 @@ export interface DocumentService {
   ) => Promise<void>;
 
   /**
-   * Loads a published version as a read-only {@link PublishedVersionDocumentRef} with its own frozen
-   * copy of the document. Rejects with `InvalidPublishedVersionRef` or `PublishedVersionNotFound`
-   * for a bad or missing ref.
+   * Loads a published version as a read-only {@link PublishedVersionDocumentRef} that reads the
+   * version's frozen snapshot. Rejects with `InvalidPublishedVersionRef` or
+   * `PublishedVersionNotFound` for a bad or missing ref.
    */
   readonly loadPublishedVersionDocRef: <T extends DocumentSchema>(
     docRef: DocumentRef<T>,

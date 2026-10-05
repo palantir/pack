@@ -60,22 +60,22 @@ export function openPublishedVersionDocRef<T extends DocumentSchema>(
   // service could make it store that read-only ref as the document's ref.
   const liveDraftRef = liveDraftService.createDocRef(docRef.id, docRef.schema);
   const service = new PublishedVersionDocumentService(app, liveDraftService, liveDraftRef);
-  const publishedRef = createPublishedVersionDocRef(
+  const publishedVersionDocRef = createPublishedVersionDocRef(
     app,
     liveDraftRef.id,
     liveDraftRef.schema,
     publishedVersion,
     service,
   );
-  service.load(publishedRef, contents);
-  return publishedRef;
+  service.load(publishedVersionDocRef, contents);
+  return publishedVersionDocRef;
 }
 
 /**
  * The read-only document service behind a published version doc ref, one per opened version. It
- * holds that version's frozen Y.Doc and reuses the base class read path. Writes reject, presence
- * and activity are no-ops, and nothing connects to the server. Metadata, its load status, and the
- * schema version come from the live draft document.
+ * holds that version's frozen Y.Doc and reuses the base class read path. Writes are rejected,
+ * presence and activity are no-ops, and nothing connects to the server. Metadata, its load status,
+ * and the schema version come from the live draft document.
  */
 class PublishedVersionDocumentService extends BaseYjsDocumentService {
   constructor(
@@ -91,10 +91,10 @@ class PublishedVersionDocumentService extends BaseYjsDocumentService {
   }
 
   /** Loads the snapshot into this service's Y.Doc. Throws if the contents can't be applied. */
-  load(publishedRef: DocumentRef, contents: Uint8Array): void {
-    const yDoc = this.initializeYDoc(publishedRef.schema);
+  load(publishedVersionDocRef: DocumentRef, contents: Uint8Array): void {
+    const yDoc = this.initializeYDoc(publishedVersionDocRef.schema);
     Y.applyUpdate(yDoc, contents);
-    this.getCreateInternalDoc(publishedRef, undefined, yDoc);
+    this.getCreateInternalDoc(publishedVersionDocRef, undefined, yDoc);
   }
 
   get hasMetadataSubscriptions(): boolean {
@@ -122,7 +122,7 @@ class PublishedVersionDocumentService extends BaseYjsDocumentService {
   }
 
   // Metadata comes from the live draft, so its load status and errors do too. Data status stays
-  // this copy's own.
+  // this version's own.
   protected override buildStatus(internalDoc: InternalYjsDoc): DocumentStatus {
     return {
       ...super.buildStatus(internalDoc),
@@ -135,9 +135,9 @@ class PublishedVersionDocumentService extends BaseYjsDocumentService {
     callback: DocumentStatusChangeCallback,
   ): Unsubscribe => {
     const { internalDoc } = this.getCreateInternalDoc(docRef);
-    // Changes to this copy's own status reach the callback through the base class.
+    // Changes to this version's own status reach the callback through the base class.
     internalDoc.statusSubscribers.add(callback);
-    // Changes to the live draft's status re-send this copy's status. This also sends it right away.
+    // Changes to the live draft's status re-send this version's status. It's also sent right away.
     const unsubscribeLiveDraft = this.liveDraftService.onStatusChange(this.liveDraftRef, () => {
       callback(docRef, this.buildStatus(internalDoc));
     });
