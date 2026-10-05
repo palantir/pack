@@ -23,6 +23,7 @@ import type {
 } from "@palantir/pack.document-schema.model-types";
 import invariant from "tiny-invariant";
 import * as Y from "yjs";
+import type { CreateDocumentMetadata } from "../types/CreateDocumentMetadata.js";
 import {
   createPublishedVersionDocRef,
   isValidDocRef,
@@ -77,8 +78,6 @@ export function openPublishedVersionDocRef<T extends DocumentSchema>(
  * schema version come from the live draft document.
  */
 class PublishedVersionDocumentService extends BaseYjsDocumentService {
-  #contents: Uint8Array | undefined;
-
   constructor(
     app: PackAppInternal,
     private readonly liveDraftService: DocumentService,
@@ -93,12 +92,9 @@ class PublishedVersionDocumentService extends BaseYjsDocumentService {
 
   /** Loads the snapshot into this service's Y.Doc. Throws if the contents can't be applied. */
   load(publishedRef: DocumentRef, contents: Uint8Array): void {
-    this.#contents = contents;
-    try {
-      this.getCreateInternalDoc(publishedRef);
-    } finally {
-      this.#contents = undefined;
-    }
+    const yDoc = this.initializeYDoc(publishedRef.schema);
+    Y.applyUpdate(yDoc, contents);
+    this.getCreateInternalDoc(publishedRef, undefined, yDoc);
   }
 
   get hasMetadataSubscriptions(): boolean {
@@ -110,17 +106,19 @@ class PublishedVersionDocumentService extends BaseYjsDocumentService {
     return Array.from(this.documents.values()).some(doc => doc.docStateSubscribers.size > 0);
   }
 
-  protected createInternalDoc(ref: DocumentRef): InternalYjsDoc {
-    invariant(this.#contents != null, "Published version contents are required to load it");
-    const internalDoc = this.createBaseInternalDoc(ref, undefined);
-    Y.applyUpdate(internalDoc.yDoc, this.#contents);
+  // `yDoc` is the snapshot that `load` filled in.
+  protected createInternalDoc(
+    ref: DocumentRef,
+    _metadata: CreateDocumentMetadata | undefined,
+    yDoc: Y.Doc | undefined,
+  ): InternalYjsDoc {
+    invariant(yDoc != null, "Published version contents are required to load it");
     const loaded: DocumentSyncStatus = {
       isDemo: this.isDemo,
       live: DocumentLiveStatus.DISCONNECTED,
       load: DocumentLoadStatus.LOADED,
     };
-    internalDoc.dataStatus = loaded;
-    return internalDoc;
+    return { ...this.createBaseInternalDoc(ref, undefined), dataStatus: loaded, yDoc };
   }
 
   // Metadata comes from the live draft, so its load status and errors do too. Data status stays
