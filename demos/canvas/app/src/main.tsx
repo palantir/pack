@@ -17,11 +17,13 @@
 import { createRoot } from "react-dom/client";
 import { RouterProvider } from "react-router";
 import { PackAppProvider } from "./app.js";
+import { OutboxDebugOverlay } from "./components/debug/OutboxDebugOverlay.js";
 import "./index.css";
 import { router } from "./router.js";
 
 createRoot(document.getElementById("root")!).render(
   <PackAppProvider>
     <RouterProvider router={router} />
+    {import.meta.env.DEV && <OutboxDebugOverlay />}
   </PackAppProvider>,
 );

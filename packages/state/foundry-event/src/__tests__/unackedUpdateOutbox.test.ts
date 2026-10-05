@@ -223,4 +223,32 @@ describe("createUnackedUpdateOutbox", () => {
     vi.advanceTimersByTime(2_000);
     expect(editIds(onRequiresRefresh.mock.calls[0]![0])).toEqual(["e1"]);
   });
+
+  it("reports stats on queue size, wait time, resends, and ack latency", () => {
+    const outbox = createUnackedUpdateOutbox(vi.fn(), { onRequiresRefresh: vi.fn() });
+    outbox.add("e1" as EditId, makePublishMessage("e1"));
+    vi.advanceTimersByTime(1_000);
+    outbox.add("e2" as EditId, makePublishMessage("e2"));
+
+    // e1 is stale at the 2s tick; e2 is not yet.
+    vi.advanceTimersByTime(1_000);
+    expect(outbox.stats()).toEqual({
+      highestSendCount: 2,
+      lastAckLatencyMs: undefined,
+      oldestAgeMs: 2_000,
+      peakSize: 2,
+      sendLimit: 5,
+      size: 2,
+      totalResends: 1,
+    });
+
+    vi.advanceTimersByTime(500);
+    outbox.ack(["e1" as EditId]);
+    expect(outbox.stats()).toMatchObject({
+      lastAckLatencyMs: 2_500,
+      oldestAgeMs: 1_500,
+      peakSize: 2,
+      size: 1,
+    });
+  });
 });

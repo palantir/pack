@@ -55,7 +55,11 @@ import type {
   TypedPublishChannelId,
   TypedReceiveChannelId,
 } from "./types/EventService.js";
-import { createUnackedUpdateOutbox, type UnackedUpdateOutbox } from "./unackedUpdateOutbox.js";
+import {
+  createUnackedUpdateOutbox,
+  type UnackedUpdateOutbox,
+  type UnackedUpdateOutboxStats,
+} from "./unackedUpdateOutbox.js";
 
 // TODO: replace with @osdk/foundry.pack types when they land.
 export interface PresenceSubscriptionOptions {
@@ -75,6 +79,15 @@ export interface PresencePublishOptions {
 const UPDATE_ORIGIN_REMOTE = "remote" as const;
 
 const PENDING_PUBLISH_WARN_THRESHOLD = 100;
+
+const OUTBOX_SIZE_WARN_THRESHOLD = 100;
+
+/** Dev debugging hook on `globalThis`, readable from the browser console or a dev overlay. */
+interface PackDebugGlobal {
+  __PACK_DEBUG__?: {
+    getOutboxStats: () => Record<string, UnackedUpdateOutboxStats>;
+  };
+}
 
 const getDocumentUpdatesChannelId = (
   documentId: DocumentId,
@@ -199,6 +212,20 @@ class FoundryEventServiceImpl implements FoundryEventService {
       level: "debug",
       msgPrefix: "FoundryEventService",
     });
+    (globalThis as PackDebugGlobal).__PACK_DEBUG__ = {
+      getOutboxStats: () => this.getOutboxStats(),
+    };
+  }
+
+  /** Live outbox stats per document with an active sync session. */
+  private getOutboxStats(): Record<string, UnackedUpdateOutboxStats> {
+    const stats: Record<string, UnackedUpdateOutboxStats> = {};
+    for (const session of this.sessions.values()) {
+      if (session.outbox != null) {
+        stats[session.documentId] = session.outbox.stats();
+      }
+    }
+    return stats;
   }
 
   private getOrCreateSession(documentId: DocumentId): SyncSessionInternal {
@@ -241,6 +268,11 @@ class FoundryEventServiceImpl implements FoundryEventService {
     session.yDoc = yDoc;
 
     const outbox = createUnackedUpdateOutbox(unackedUpdates => {
+      this.logger.warn("Resending unacked document updates", {
+        docId: documentId,
+        resendCount: unackedUpdates.length,
+        ...outbox.stats(),
+      });
       for (const { publishMessage, sendCount } of unackedUpdates) {
         this.logger.debug("Resending unacked document update", {
           docId: documentId,
@@ -266,6 +298,7 @@ class FoundryEventServiceImpl implements FoundryEventService {
         this.logger.error("Document sync failed after repeated unacknowledged updates", {
           docId: documentId,
           editIds: unackedUpdates.map(update => update.publishMessage.editId),
+          ...outbox.stats(),
         });
         onStatusChange({ error: session.error });
       },
@@ -623,6 +656,12 @@ class FoundryEventServiceImpl implements FoundryEventService {
       return;
     }
     session.outbox?.add(publishMessage.editId, publishMessage);
+    if (session.outbox?.size() === OUTBOX_SIZE_WARN_THRESHOLD) {
+      this.logger.warn("Unacked document updates are piling up", {
+        docId: session.documentId,
+        ...session.outbox.stats(),
+      });
+    }
     this.publishDocumentUpdate(session, publishMessage);
   }
 

@@ -48,6 +48,23 @@ export interface UnackedUpdateOutboxOptions {
   readonly now?: () => number;
 }
 
+/** Live outbox numbers, for debugging slow acks. */
+export interface UnackedUpdateOutboxStats {
+  /** Highest send count among unacked updates. A refresh is forced once it passes `sendLimit`. */
+  readonly highestSendCount: number;
+  /** First send to ack time of the most recently acked update, in ms. */
+  readonly lastAckLatencyMs: number | undefined;
+  /** How long the oldest unacked update has waited, in ms. 0 when empty. */
+  readonly oldestAgeMs: number;
+  /** Largest number of unacked updates seen at once. */
+  readonly peakSize: number;
+  readonly sendLimit: number;
+  /** Unacked updates right now. */
+  readonly size: number;
+  /** Resends since the outbox was created. */
+  readonly totalResends: number;
+}
+
 /** Tracks published updates until acknowledged or the document fails. */
 export interface UnackedUpdateOutbox {
   /** Track a published update so it is resent until acked. */
@@ -56,6 +73,7 @@ export interface UnackedUpdateOutbox {
   ack(editIds: readonly EditId[]): void;
   hasUnackedUpdates(): boolean;
   size(): number;
+  stats(): UnackedUpdateOutboxStats;
   /** Drop all tracked updates and stop the resend loop. */
   clear(): void;
 }
@@ -79,6 +97,9 @@ export function createUnackedUpdateOutbox(
 
   const unackedUpdates = new Map<EditId, UnackedUpdate>();
   let failed = false;
+  let lastAckLatencyMs: number | undefined;
+  let peakSize = 0;
+  let totalResends = 0;
   // Runs only while updates are unacked: started on the first add, stopped once drained.
   let resendTimer: ReturnType<typeof setInterval> | undefined;
 
@@ -126,6 +147,7 @@ export function createUnackedUpdateOutbox(
       for (const update of stale) {
         update.sendCount += 1;
       }
+      totalResends += stale.length;
       resend(stale);
     }
   }
@@ -140,11 +162,16 @@ export function createUnackedUpdateOutbox(
         timeAdded: now(),
         sendCount: 1,
       });
+      peakSize = Math.max(peakSize, unackedUpdates.size);
       startResendLoop();
     },
     ack(editIds) {
       for (const editId of editIds) {
-        unackedUpdates.delete(editId);
+        const update = unackedUpdates.get(editId);
+        if (update != null) {
+          lastAckLatencyMs = now() - update.timeAdded;
+          unackedUpdates.delete(editId);
+        }
       }
       if (unackedUpdates.size === 0) {
         stopResendLoop();
@@ -155,6 +182,23 @@ export function createUnackedUpdateOutbox(
     },
     size() {
       return unackedUpdates.size;
+    },
+    stats() {
+      let highestSendCount = 0;
+      for (const update of unackedUpdates.values()) {
+        highestSendCount = Math.max(highestSendCount, update.sendCount);
+      }
+      // Map keeps insertion order, so the first entry is the oldest.
+      const oldest = unackedUpdates.values().next().value;
+      return {
+        highestSendCount,
+        lastAckLatencyMs,
+        oldestAgeMs: oldest != null ? now() - oldest.timeAdded : 0,
+        peakSize,
+        sendLimit: maxSendCount,
+        size: unackedUpdates.size,
+        totalResends,
+      };
     },
     clear() {
       unackedUpdates.clear();

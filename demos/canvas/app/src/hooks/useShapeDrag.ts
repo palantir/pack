@@ -46,7 +46,8 @@ interface UseShapeDragResult {
 
 const HANDLE_INTERACTION_RADIUS_PX = 10;
 
-const DRAG_UPDATE_INTERVAL_MS = 1000 / 60;
+// TEMP: lowered from 60/s to 20/s while debugging slow acks.
+const DRAG_UPDATE_INTERVAL_MS = 1000 / 20;
 
 export function useShapeDrag(
   doc: VersionedDocRef,

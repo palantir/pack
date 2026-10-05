@@ -1,0 +1,34 @@
+.overlay {
+  position: fixed;
+  bottom: 8px;
+  left: 8px;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.75);
+  color: #fff;
+  font-family: monospace;
+  font-size: 11px;
+  pointer-events: none;
+}
+
+.stats {
+  display: grid;
+  grid-template-columns: auto auto;
+  gap: 2px 12px;
+  margin: 0;
+}
+
+.stats dd {
+  margin: 0;
+}
+
+.docId {
+  max-width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
