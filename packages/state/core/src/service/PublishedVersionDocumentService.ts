@@ -25,6 +25,7 @@ import invariant from "tiny-invariant";
 import * as Y from "yjs";
 import {
   createPublishedVersionDocRef,
+  isValidDocRef,
   PUBLISHED_VERSION_READ_ONLY_MESSAGE,
 } from "../types/DocumentRefImpl.js";
 import type {
@@ -41,16 +42,22 @@ import { BaseYjsDocumentService } from "./BaseYjsDocumentService.js";
 /**
  * Opens a downloaded published version as a read-only doc ref. It loads the contents (a Yjs
  * update) into a new {@link PublishedVersionDocumentService} and returns a ref that reads from it.
- * Metadata and the schema version come from the live draft. Throws if the contents can't be
- * applied.
+ * Metadata and the schema version come from the live draft. `docRef` can be the live draft ref or
+ * a published version doc ref for the same document. Throws if the contents can't be applied.
  */
 export function openPublishedVersionDocRef<T extends DocumentSchema>(
   app: PackAppInternal,
   liveDraftService: DocumentService,
-  liveDraftRef: DocumentRef<T>,
+  docRef: DocumentRef<T>,
   contents: Uint8Array,
   publishedVersion: PublishedVersion,
 ): PublishedVersionDocumentRef<T> {
+  if (!isValidDocRef(docRef)) {
+    throw new Error("Invalid document reference");
+  }
+  // Always use the live draft's own ref. Passing a published version doc ref to the live draft
+  // service could make it store that read-only ref as the document's ref.
+  const liveDraftRef = liveDraftService.createDocRef(docRef.id, docRef.schema);
   const service = new PublishedVersionDocumentService(app, liveDraftService, liveDraftRef);
   const publishedRef = createPublishedVersionDocRef(
     app,
