@@ -77,8 +77,8 @@ describe("PublishedVersionDocumentService", () => {
   let state: StateModule;
   let contents: Uint8Array;
 
-  // Opens a read-only copy of the live draft as it was when the test started.
-  const openCopy = () => openPublishedVersionDocRef(app, service, liveDraft, contents, V7);
+  // Opens v7: a read-only snapshot of the live draft as it was when the test started.
+  const openV7 = () => openPublishedVersionDocRef(app, service, liveDraft, contents, V7);
 
   beforeEach(async () => {
     app = createTestApp();
@@ -91,7 +91,7 @@ describe("PublishedVersionDocumentService", () => {
   });
 
   it("reads the snapshot through records and collections", async () => {
-    const published = openCopy();
+    const published = openV7();
 
     expect(isPublishedVersionDocRef(published)).toBe(true);
     expect(isPublishedVersionDocRef(liveDraft)).toBe(false);
@@ -110,7 +110,7 @@ describe("PublishedVersionDocumentService", () => {
   });
 
   it("does not see live draft edits made after it was loaded", async () => {
-    const published = openCopy();
+    const published = openV7();
 
     const liveDraftUsers = liveDraft.getRecords(UserModel);
     await state.setCollectionRecord(liveDraftUsers, "bob" as RecordId, { id: "bob", name: "Bob" });
@@ -124,7 +124,7 @@ describe("PublishedVersionDocumentService", () => {
   });
 
   it("rejects every write and leaves the live draft untouched", async () => {
-    const published = openCopy();
+    const published = openV7();
     const publishedUsers = published.getRecords(UserModel);
     const publishedAlice = publishedUsers.get(ALICE_ID)!;
     const liveDraftAlice = liveDraft.getRecords(UserModel).get(ALICE_ID)!;
@@ -157,7 +157,7 @@ describe("PublishedVersionDocumentService", () => {
   });
 
   it("rejects document-level writes without reaching the live draft service", async () => {
-    const published = openCopy();
+    const published = openV7();
     const liveDraftWrites = [
       vi.spyOn(service, "updateDocument"),
       vi.spyOn(service, "deleteDocument"),
@@ -174,11 +174,11 @@ describe("PublishedVersionDocumentService", () => {
   });
 
   it("is loaded and disconnected, and loaded again after resubscribing", async () => {
-    const published = openCopy();
+    const published = openV7();
     const loaded = { live: DocumentLiveStatus.DISCONNECTED, load: DocumentLoadStatus.LOADED };
 
     expect(state.getDocumentStatus(published).data).toMatchObject(loaded);
-    // Status for the published version doc ref comes from its own copy, not the live draft.
+    // Status for the published version doc ref comes from the version itself, not the live draft.
     expect(state.getDocumentStatus(liveDraft).data.load).toBe(DocumentLoadStatus.UNLOADED);
 
     const unsubscribe = published.onStateChange(() => {});
@@ -191,7 +191,7 @@ describe("PublishedVersionDocumentService", () => {
     unsubscribeAgain();
   });
 
-  it("takes its metadata status from the live draft, not its own copy", async () => {
+  it("takes its metadata status from the live draft, not from the version", async () => {
     const unloadedLiveDraft = state.createDocRef("unloaded-doc" as DocumentId, schema);
     const published = openPublishedVersionDocRef(app, service, unloadedLiveDraft, contents, V7);
 
@@ -215,7 +215,7 @@ describe("PublishedVersionDocumentService", () => {
   });
 
   it("keeps the live draft ref stable and borrows the live draft's metadata and version", () => {
-    const published = openCopy();
+    const published = openV7();
 
     expect(state.createDocRef(liveDraft.id, schema)).toBe(liveDraft);
     expect(state.createRecordRef(published, ALICE_ID, UserModel).docRef).toBe(published);
@@ -232,9 +232,9 @@ describe("PublishedVersionDocumentService", () => {
   });
 
   it("fails instead of reading the live draft for a copy of a published version doc ref", () => {
-    const copy = { ...openCopy() } as unknown as DocumentRef<typeof schema>;
+    const copy = { ...openV7() } as unknown as DocumentRef<typeof schema>;
 
-    expect(() => state.getDocumentStatus(copy)).toThrow("is a copy");
+    expect(() => state.getDocumentStatus(copy)).toThrow("was copied");
   });
 
   it("throws when the contents can't be applied", () => {
