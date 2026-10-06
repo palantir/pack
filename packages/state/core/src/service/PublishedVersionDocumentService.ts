@@ -43,8 +43,9 @@ import { BaseYjsDocumentService } from "./BaseYjsDocumentService.js";
 /**
  * Opens a downloaded published version as a read-only doc ref. It loads the contents (a Yjs
  * update) into a new {@link PublishedVersionDocumentService} and returns a ref that reads from it.
- * Metadata and the schema version come from the live draft. `docRef` can be the live draft ref or
- * a published version doc ref for the same document. Throws if the contents can't be applied.
+ * Metadata and the operational schema version (the version edits are written at) come from the live
+ * draft. `docRef` can be the live draft ref or a published version doc ref for the same document.
+ * Throws if the contents can't be applied.
  */
 export function openPublishedVersionDocRef<T extends DocumentSchema>(
   app: PackAppInternal,
