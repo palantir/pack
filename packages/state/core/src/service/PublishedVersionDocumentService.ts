@@ -74,8 +74,9 @@ export function openPublishedVersionDocRef<T extends DocumentSchema>(
 /**
  * The read-only document service behind a published version doc ref, one per opened version. It
  * holds that version's frozen Y.Doc and reuses the base class read path. Writes are rejected,
- * presence and activity are no-ops, and nothing connects to the server. Metadata, its load status,
- * and the schema version come from the live draft document.
+ * presence and activity are no-ops, and nothing connects to the server. The metadata, the
+ * metadata's load status, and the operational schema version (the version edits are written at)
+ * come from the live draft document.
  */
 class PublishedVersionDocumentService extends BaseYjsDocumentService {
   constructor(
