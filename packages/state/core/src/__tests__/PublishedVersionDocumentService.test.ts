@@ -178,7 +178,7 @@ describe("PublishedVersionDocumentService", () => {
     const loaded = { live: DocumentLiveStatus.DISCONNECTED, load: DocumentLoadStatus.LOADED };
 
     expect(state.getDocumentStatus(published).data).toMatchObject(loaded);
-    // Status for the published version doc ref comes from the version itself, not the live draft.
+    // Data status for the published version doc ref is its own, not the live draft's.
     expect(state.getDocumentStatus(liveDraft).data.load).toBe(DocumentLoadStatus.UNLOADED);
 
     const unsubscribe = published.onStateChange(() => {});
@@ -191,7 +191,7 @@ describe("PublishedVersionDocumentService", () => {
     unsubscribeAgain();
   });
 
-  it("takes its metadata status from the live draft, not from the version", async () => {
+  it("takes its metadata status from the live draft, not from the published version", async () => {
     const unloadedLiveDraft = state.createDocRef("unloaded-doc" as DocumentId, schema);
     const published = openPublishedVersionDocRef(app, service, unloadedLiveDraft, contents, V7);
 
@@ -214,7 +214,7 @@ describe("PublishedVersionDocumentService", () => {
     unsubscribeStatus();
   });
 
-  it("keeps the live draft ref stable and borrows the live draft's metadata and version", () => {
+  it("keeps refs stable and borrows the live draft's metadata and operational version", () => {
     const published = openV7();
 
     expect(state.createDocRef(liveDraft.id, schema)).toBe(liveDraft);

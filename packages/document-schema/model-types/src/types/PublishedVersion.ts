@@ -41,11 +41,11 @@ export interface PublishedVersion {
  * read the frozen snapshot just like the live draft. Writes are rejected, presence and activity
  * are no-ops, and it never syncs, so its data status is always disconnected. Like the live draft,
  * its data is loaded while subscribed and unloaded after the last subscriber leaves. Metadata and
- * `version` come from the live draft. `version` is the schema version the live draft writes edits
- * at, not the schema version the snapshot was saved with. It has the same `id` as the live draft,
- * so use `publishedVersion.ref` to tell them apart, for example in a Map or a React key. For the
- * same reason, it can't be rebuilt from its `id`: `createDocRef(id)` returns the live draft. Keep
- * this ref, or load the version again.
+ * `version` come from the live draft. `version` is the live draft's operational schema version (the
+ * version edits are written at), not the schema version the snapshot was saved with. It has the
+ * same `id` as the live draft, so use `publishedVersion.ref` to tell them apart, for example in a
+ * Map or a React key. For the same reason, it can't be rebuilt from its `id`: `createDocRef(id)`
+ * returns the live draft. Keep this ref, or load the published version again.
  */
 export interface PublishedVersionDocumentRef<D extends DocumentSchema = DocumentSchema>
   extends DocumentRef<D>
