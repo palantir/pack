@@ -44,7 +44,7 @@ export interface PublishedCanvasViewProps {
   readonly liveDraftDoc: VersionedDocRef;
   readonly published: UsePublishedVersionDocRefResult<DocumentModel>;
   readonly publishedVersionRef: PublishedVersionRef;
-  onOpenVersion: (ref: PublishedVersionRef | undefined) => void;
+  onOpenVersion: (versionRef: PublishedVersionRef | undefined) => void;
 }
 
 export const PublishedCanvasView = memo(function PublishedCanvasView({
@@ -53,7 +53,7 @@ export const PublishedCanvasView = memo(function PublishedCanvasView({
   publishedVersionRef,
   onOpenVersion,
 }: PublishedCanvasViewProps) {
-  // The published ref borrows the live draft's metadata, so either one gives the canvas name.
+  // The published version doc ref borrows the live draft's metadata, so either gives the name.
   const { metadata } = useDocMetadata(published.docRef ?? liveDraftDoc);
   const publishedVersion = published.status === "loaded"
     ? published.docRef.publishedVersion
@@ -101,7 +101,7 @@ const PublishedCanvas = memo(function PublishedCanvas({
 }: {
   readonly doc: PublishedVersionDocumentRef<DocumentModel>;
 }) {
-  // Same hooks as the editor; the published ref reads its frozen snapshot.
+  // Same hooks as the editor; the published version doc ref reads its frozen snapshot.
   const shapeRefs = useRecords(doc, NodeShapeModel);
   const strokeRefs = useRecords(doc, FreehandStrokeModel);
 

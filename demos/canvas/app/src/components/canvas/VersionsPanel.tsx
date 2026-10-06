@@ -27,7 +27,7 @@ export interface VersionsPanelProps {
   readonly docRef: DocumentRef;
   /** The published version being viewed, or undefined when viewing the live draft. */
   readonly openVersionRef?: PublishedVersionRef;
-  onOpenVersion: (ref: PublishedVersionRef | undefined) => void;
+  onOpenVersion: (versionRef: PublishedVersionRef | undefined) => void;
 }
 
 export const VersionsPanel = memo(function VersionsPanel(props: VersionsPanelProps) {
@@ -42,23 +42,23 @@ export const VersionsPanel = memo(function VersionsPanel(props: VersionsPanelPro
 function VersionsList({ docRef, onOpenVersion, openVersionRef }: VersionsPanelProps) {
   const { error, isLoading, refresh, versions } = usePublishedVersions(app, docRef);
   const [deleteError, setDeleteError] = useState<string>();
-  const [deletingRef, setDeletingRef] = useState<PublishedVersionRef>();
+  const [deletingVersionRef, setDeletingVersionRef] = useState<PublishedVersionRef>();
 
-  const deleteVersion = async (ref: PublishedVersionRef) => {
+  const deleteVersion = async (versionRef: PublishedVersionRef) => {
     setDeleteError(undefined);
-    setDeletingRef(ref);
+    setDeletingVersionRef(versionRef);
 
     try {
-      await app.state.deletePublishedVersion(docRef, ref);
+      await app.state.deletePublishedVersion(docRef, versionRef);
       refresh();
-      if (ref === openVersionRef) {
+      if (versionRef === openVersionRef) {
         // The version being viewed is gone, so go back to the live draft.
         onOpenVersion(undefined);
       }
     } catch (e) {
       setDeleteError(e instanceof Error ? e.message : "Failed to delete version");
     } finally {
-      setDeletingRef(undefined);
+      setDeletingVersionRef(undefined);
     }
   };
 
@@ -96,7 +96,7 @@ function VersionsList({ docRef, onOpenVersion, openVersionRef }: VersionsPanelPr
             </button>
             <Button
               icon="trash"
-              loading={deletingRef === version.ref}
+              loading={deletingVersionRef === version.ref}
               onClick={() =>
                 void deleteVersion(version.ref)}
               size="small"

@@ -89,16 +89,16 @@ export const CanvasPage = () => {
 
   // Pass undefined to go back to the live draft.
   const openVersion = useCallback(
-    (ref: PublishedVersionRef | undefined) => {
-      if (ref === publishedVersionRef) {
+    (versionRef: PublishedVersionRef | undefined) => {
+      if (versionRef === publishedVersionRef) {
         return;
       }
       setSearchParams(params => {
         const nextParams = new URLSearchParams(params);
-        if (ref == null) {
+        if (versionRef == null) {
           nextParams.delete("version");
         } else {
-          nextParams.set("version", ref);
+          nextParams.set("version", versionRef);
         }
         return nextParams;
       });
@@ -150,7 +150,7 @@ interface CanvasEditorProps {
   readonly doc: VersionedDocRef;
   readonly statusToaster: Toaster | null;
   readonly toaster: Toaster | null;
-  onOpenVersion: (ref: PublishedVersionRef | undefined) => void;
+  onOpenVersion: (versionRef: PublishedVersionRef | undefined) => void;
 }
 
 function CanvasEditor({ doc, statusToaster, toaster, onOpenVersion }: CanvasEditorProps) {

@@ -36,7 +36,7 @@ export interface CanvasToolbarProps {
   onColorChange: (color: string) => void;
   onDelete: () => void;
   onOpacityChange: (opacity: number) => void;
-  onOpenVersion: (ref: PublishedVersionRef | undefined) => void;
+  onOpenVersion: (versionRef: PublishedVersionRef | undefined) => void;
   onToolChange: (tool: ToolMode) => void;
 }
 
