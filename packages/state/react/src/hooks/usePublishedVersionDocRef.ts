@@ -1,0 +1,119 @@
+/*
+ * Copyright 2026 Palantir Technologies, Inc. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+import type { PackApp } from "@palantir/pack.core";
+import type {
+  DocumentRef,
+  DocumentSchema,
+  PublishedVersionDocumentRef,
+  PublishedVersionRef,
+} from "@palantir/pack.document-schema.model-types";
+import type { WithStateModule } from "@palantir/pack.state.core";
+import { isValidDocRef } from "@palantir/pack.state.core";
+import { useEffect, useMemo, useState } from "react";
+
+export type UsePublishedVersionDocRefResult<D extends DocumentSchema = DocumentSchema> =
+  | { readonly status: "liveDraft"; readonly docRef: DocumentRef<D>; readonly error?: undefined }
+  | { readonly status: "loading"; readonly docRef?: undefined; readonly error?: undefined }
+  | {
+    readonly status: "loaded";
+    readonly docRef: PublishedVersionDocumentRef<D>;
+    readonly error?: undefined;
+  }
+  | { readonly status: "error"; readonly docRef?: undefined; readonly error: Error };
+
+const LOADING = { status: "loading" } as const;
+
+interface LoadedVersion<D extends DocumentSchema> {
+  readonly liveDraftRef: DocumentRef<D>;
+  readonly publishedVersionRef: PublishedVersionRef;
+  readonly result: UsePublishedVersionDocRefResult<D>;
+}
+
+/**
+ * Returns the doc ref to render: the live draft when no version is requested, or the requested
+ * published version, as a read-only {@link PublishedVersionDocumentRef}, once it loads.
+ *
+ * `docRef` is undefined while a version loads (status `"loading"`) or if it fails to load (status
+ * `"error"`), so the live draft is never shown in place of a version. Switching versions shows
+ * `"loading"` until the new one arrives.
+ *
+ * @param app The app instance initialized by your application.
+ * @param liveDraftRef The live draft's doc ref.
+ * @param publishedVersionRef The published version to show, or undefined for the live draft.
+ *
+ * @example
+ * ```tsx
+ * const liveDraftRef = useDocRef(app, DocumentModel, documentId);
+ * const [versionRef, setVersionRef] = useState<PublishedVersionRef>();
+ * const result = usePublishedVersionDocRef(app, liveDraftRef, versionRef);
+ * if (result.docRef == null) {
+ *   return result.error != null ? <ErrorMessage error={result.error} /> : <Spinner />;
+ * }
+ * // Render the same components either way. Published versions are read-only.
+ * return <Editor doc={result.docRef} readOnly={isPublishedVersionDocRef(result.docRef)} />;
+ * ```
+ */
+export function usePublishedVersionDocRef<D extends DocumentSchema>(
+  app: WithStateModule<PackApp>,
+  liveDraftRef: DocumentRef<D>,
+  publishedVersionRef: PublishedVersionRef | undefined,
+): UsePublishedVersionDocRefResult<D> {
+  const [loaded, setLoaded] = useState<LoadedVersion<D>>();
+  const liveDraft = useMemo(() => ({ status: "liveDraft", docRef: liveDraftRef }) as const, [
+    liveDraftRef,
+  ]);
+
+  useEffect(() => {
+    if (publishedVersionRef == null || !isValidDocRef(liveDraftRef)) {
+      return;
+    }
+
+    let cancelled = false;
+    const finish = (result: UsePublishedVersionDocRefResult<D>) => {
+      if (!cancelled) {
+        setLoaded({ liveDraftRef, publishedVersionRef, result });
+      }
+    };
+
+    app.state.loadPublishedVersionDocRef(liveDraftRef, publishedVersionRef).then(
+      publishedVersionDocRef => finish({ status: "loaded", docRef: publishedVersionDocRef }),
+      (e: unknown) =>
+        finish({
+          status: "error",
+          error: e instanceof Error ? e : new Error("Failed to load published version"),
+        }),
+    );
+
+    return () => {
+      cancelled = true;
+    };
+  }, [app.state, liveDraftRef, publishedVersionRef]);
+
+  if (publishedVersionRef == null) {
+    return liveDraft;
+  }
+  // Never return a version loaded for a different document or version than the one requested.
+  if (
+    !isValidDocRef(liveDraftRef)
+    || loaded == null
+    || loaded.liveDraftRef !== liveDraftRef
+    || loaded.publishedVersionRef !== publishedVersionRef
+  ) {
+    return LOADING;
+  }
+  return loaded.result;
+}
