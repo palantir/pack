@@ -114,7 +114,7 @@ class PublishedVersionDocumentService extends BaseYjsDocumentService {
     _metadata: CreateDocumentMetadata | undefined,
     yDoc: Y.Doc | undefined,
   ): InternalYjsDoc {
-    invariant(yDoc != null, "Published version contents are required to load it");
+    invariant(yDoc != null, "A published version needs its contents to open");
     const loaded: DocumentSyncStatus = {
       isDemo: this.isDemo,
       live: DocumentLiveStatus.DISCONNECTED,
@@ -233,7 +233,7 @@ function rejectReadOnly(): Promise<never> {
 }
 
 // TODO: Share this with the in-memory and demo services, which still write out each "not supported"
-// rejection. Wait until the published versions branch merges, since it adds stubs next to theirs.
+// rejection. Do it after #339 merges, since that PR adds more of those rejections.
 function rejectNotSupported(operation: string): () => Promise<never> {
   return () =>
     Promise.reject(new Error(`${operation} is not supported on a published document version`));
