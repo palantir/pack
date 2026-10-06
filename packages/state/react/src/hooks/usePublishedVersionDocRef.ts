@@ -78,6 +78,7 @@ export function usePublishedVersionDocRef<D extends DocumentSchema>(
   ]);
 
   useEffect(() => {
+    setLoaded(undefined);
     if (publishedVersionRef == null || !isValidDocRef(liveDraftRef)) {
       return;
     }
