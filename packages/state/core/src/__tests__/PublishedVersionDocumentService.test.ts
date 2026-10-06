@@ -234,7 +234,7 @@ describe("PublishedVersionDocumentService", () => {
   it("fails instead of reading the live draft for a copy of a published version doc ref", () => {
     const copy = { ...openV7() } as unknown as DocumentRef<typeof schema>;
 
-    expect(() => state.getDocumentStatus(copy)).toThrow("was copied");
+    expect(() => state.getDocumentStatus(copy)).toThrow("is a copy");
   });
 
   it("throws when the contents can't be applied", () => {

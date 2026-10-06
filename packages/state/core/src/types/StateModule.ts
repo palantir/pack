@@ -298,11 +298,13 @@ export class StateModuleImpl implements StateModule {
     if (publishedVersionService != null) {
       return publishedVersionService;
     }
-    // A published version doc ref that isn't registered was copied from the original. Fail
-    // instead of quietly reading the live draft.
+    // Every published version doc ref the SDK creates is added to the lookup table. One that has
+    // `publishedVersion` but isn't in the table must be a copy, so fail instead of quietly reading
+    // the live draft.
     if ("publishedVersion" in docRef) {
       throw new Error(
-        "Published version doc ref was copied. Use the original from loadPublishedVersionDocRef.",
+        "This published version doc ref is a copy (for example from spread or structuredClone), "
+          + "so it can't be used. Use the ref returned by loadPublishedVersionDocRef.",
       );
     }
     return this.documentService;
