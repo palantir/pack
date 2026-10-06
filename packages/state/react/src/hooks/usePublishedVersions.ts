@@ -27,9 +27,8 @@ import { useCallback, useEffect, useState } from "react";
 export interface UsePublishedVersionsResult {
   readonly error: Error | undefined;
   readonly isLoading: boolean;
-  /** Reloads the list, for example after publishing, or to pick up versions published elsewhere. */
   readonly refresh: () => void;
-  /** The document's published versions, newest first. */
+  /** The document's published versions, latest first. */
   readonly versions: readonly PublishedVersion[] | undefined;
 }
 
@@ -40,7 +39,7 @@ interface LoadedVersions {
 }
 
 /**
- * Loads a document's published versions, newest first. Call `refresh` after publishing or deleting
+ * Loads a document's published versions, latest first. Call `refresh` after publishing or deleting
  * a version, or to pick up versions published elsewhere.
  *
  * @param app The app instance initialized by your application.

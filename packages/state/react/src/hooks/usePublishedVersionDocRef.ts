@@ -106,7 +106,7 @@ export function usePublishedVersionDocRef<D extends DocumentSchema>(
   if (publishedVersionRef == null) {
     return liveDraft;
   }
-  // Never return a version loaded for a different document or version than the one requested.
+  // Ignore a result loaded for another document or version.
   if (
     !isValidDocRef(liveDraftRef)
     || loaded == null

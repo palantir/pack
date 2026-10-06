@@ -74,8 +74,7 @@ export function useShapeIndex(doc: VersionedDocRef): ShapeIndex {
       )).then(entries => rbush.current?.load(entries));
 
     const unsubscribeAdded = shapeCollection.onItemsAdded(indexShapes);
-    // Index shapes that already exist. When a document that's still loaded is opened again (like
-    // coming back from a published version), no "added" events fire for them.
+    // Also index existing shapes: reopening a loaded document fires no "added" events.
     void indexShapes([...shapeCollection]);
 
     const unsubscribeRemoved = shapeCollection.onItemsDeleted(items =>

@@ -25,7 +25,7 @@ import styles from "./VersionsPanel.module.css";
 export interface VersionsPanelProps {
   /** The live draft document. */
   readonly docRef: DocumentRef;
-  /** The published version being viewed, or undefined when viewing the live draft. */
+  /** Version being viewed; undefined for the live draft. */
   readonly openVersionRef?: PublishedVersionRef;
   onOpenVersion: (versionRef: PublishedVersionRef | undefined) => void;
 }
@@ -38,7 +38,6 @@ export const VersionsPanel = memo(function VersionsPanel(props: VersionsPanelPro
   );
 });
 
-// The popover mounts this each time it opens, so the list is reloaded on every open.
 function VersionsList({ docRef, onOpenVersion, openVersionRef }: VersionsPanelProps) {
   const { error, isLoading, refresh, versions } = usePublishedVersions(app, docRef);
   const [deleteError, setDeleteError] = useState<string>();
@@ -52,7 +51,6 @@ function VersionsList({ docRef, onOpenVersion, openVersionRef }: VersionsPanelPr
       await app.state.deletePublishedVersion(docRef, versionRef);
       refresh();
       if (versionRef === openVersionRef) {
-        // The version being viewed is gone, so go back to the live draft.
         onOpenVersion(undefined);
       }
     } catch (e) {

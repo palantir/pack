@@ -31,7 +31,6 @@ import toolbarStyles from "./CanvasToolbar.module.css";
 import styles from "./PublishedCanvasView.module.css";
 import { VersionsPanel } from "./VersionsPanel.js";
 
-// A published version is read-only, so the canvas gets no pointer handlers, cursors, or selections.
 const NO_CANVAS_EVENTS: CanvasContentProps["canvasProps"] = {
   onMouseDown: () => {},
   onMouseMove: () => {},
@@ -53,8 +52,7 @@ export const PublishedCanvasView = memo(function PublishedCanvasView({
   publishedVersionRef,
   onOpenVersion,
 }: PublishedCanvasViewProps) {
-  // The published version doc ref borrows the live draft's metadata, so either gives the name.
-  const { metadata } = useDocMetadata(published.docRef ?? liveDraftDoc);
+  const { metadata } = useDocMetadata(liveDraftDoc);
   const publishedVersion = published.status === "loaded"
     ? published.docRef.publishedVersion
     : undefined;
@@ -101,7 +99,6 @@ const PublishedCanvas = memo(function PublishedCanvas({
 }: {
   readonly doc: PublishedVersionDocumentRef<DocumentModel>;
 }) {
-  // Same hooks as the editor; the published version doc ref reads its frozen snapshot.
   const shapeRefs = useRecords(doc, NodeShapeModel);
   const strokeRefs = useRecords(doc, FreehandStrokeModel);
 

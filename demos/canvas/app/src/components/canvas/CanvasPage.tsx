@@ -42,9 +42,9 @@ export const CanvasPage = () => {
   const versionOverride = schemaOverride != null
     ? parseInt(schemaOverride, 10) as SupportedVersions
     : undefined;
-  // The open published version lives in the URL, so it clears when you switch canvases.
+  // In the URL, so switching canvases clears it.
   const publishedVersionRef: PublishedVersionRef | undefined = searchParams.get("version")
-    ?? undefined;
+    || undefined;
 
   const { doc, persistedVersion } = useCanvasDocRef(
     app,
@@ -122,7 +122,7 @@ export const CanvasPage = () => {
     );
   }
 
-  // Keyed views reset all editing and presence state when switching between versions.
+  // Keys reset editing and presence state when switching versions.
   if (publishedVersionRef != null) {
     return (
       <PublishedCanvasView
@@ -162,8 +162,7 @@ function CanvasEditor({ doc, statusToaster, toaster, onOpenVersion }: CanvasEdit
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
-      // Only handle keys pressed on the canvas itself. Keys typed in dialogs (which render in
-      // portals) still bubble up here.
+      // Ignore keys from dialogs: they render in portals but still bubble here.
       if (e.target !== e.currentTarget) {
         return;
       }
