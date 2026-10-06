@@ -15,6 +15,7 @@
  */
 
 import type { VersionedDocRef } from "@demo/canvas.sdk";
+import type { PublishedVersionRef } from "@palantir/pack.document-schema.model-types";
 import { useDocMetadata } from "@palantir/pack.state.react";
 import type { ChangeEvent } from "react";
 import { memo, useState } from "react";
@@ -23,6 +24,8 @@ import { AVAILABLE_COLORS } from "../../utils/getDefaultColor.js";
 import { ActivityPanel } from "./ActivityPanel.js";
 import styles from "./CanvasToolbar.module.css";
 import { EditCanvasDialog } from "./EditCanvasDialog.js";
+import { PublishVersionButton } from "./PublishVersionButton.js";
+import { VersionsPanel } from "./VersionsPanel.js";
 
 export interface CanvasToolbarProps {
   readonly canDelete: boolean;
@@ -33,6 +36,7 @@ export interface CanvasToolbarProps {
   onColorChange: (color: string) => void;
   onDelete: () => void;
   onOpacityChange: (opacity: number) => void;
+  onOpenVersion: (ref: PublishedVersionRef | undefined) => void;
   onToolChange: (tool: ToolMode) => void;
 }
 
@@ -45,6 +49,7 @@ export const CanvasToolbar = memo(function CanvasToolbar({
   onColorChange,
   onDelete,
   onOpacityChange,
+  onOpenVersion,
   onToolChange,
 }: CanvasToolbarProps) {
   const { metadata } = useDocMetadata(doc);
@@ -151,6 +156,8 @@ export const CanvasToolbar = memo(function CanvasToolbar({
       </div>
 
       <div className={styles.toolGroupRight}>
+        <PublishVersionButton docRef={doc} />
+        <VersionsPanel docRef={doc} onOpenVersion={onOpenVersion} />
         <ActivityPanel docRef={doc} />
       </div>
     </div>

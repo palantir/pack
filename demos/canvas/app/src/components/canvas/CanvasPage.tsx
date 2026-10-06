@@ -16,9 +16,10 @@
 
 import type { Toaster } from "@blueprintjs/core";
 import { Callout, OverlayToaster, Position } from "@blueprintjs/core";
-import type { SupportedVersions } from "@demo/canvas.sdk";
-import type { DocumentId } from "@palantir/pack.document-schema.model-types";
+import type { SupportedVersions, VersionedDocRef } from "@demo/canvas.sdk";
+import type { DocumentId, PublishedVersionRef } from "@palantir/pack.document-schema.model-types";
 import { isValidDocRef } from "@palantir/pack.state.core";
+import { usePublishedVersionDocRef } from "@palantir/pack.state.react";
 import type { KeyboardEvent, MouseEvent } from "react";
 import { useCallback, useEffect, useState } from "react";
 import { useParams, useSearchParams } from "react-router";
@@ -32,20 +33,25 @@ import { useCanvasDocRef } from "../../pack.js";
 import { CanvasContent } from "./CanvasContent.js";
 import styles from "./CanvasPage.module.css";
 import { CanvasToolbar } from "./CanvasToolbar.js";
+import { PublishedCanvasView } from "./PublishedCanvasView.js";
 
 export const CanvasPage = () => {
   const { canvasId } = useParams<{ canvasId: string }>();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const schemaOverride = searchParams.get("schema");
   const versionOverride = schemaOverride != null
     ? parseInt(schemaOverride, 10) as SupportedVersions
     : undefined;
+  // The open published version lives in the URL, so it clears when you switch canvases.
+  const publishedVersionRef: PublishedVersionRef | undefined = searchParams.get("version")
+    ?? undefined;
 
   const { doc, persistedVersion } = useCanvasDocRef(
     app,
     canvasId as DocumentId | undefined,
     versionOverride,
   );
+  const published = usePublishedVersionDocRef(app, doc, publishedVersionRef);
   const [toaster, setToaster] = useState<Toaster | null>(null);
   const [statusToaster, setStatusToaster] = useState<Toaster | null>(null);
 
@@ -81,6 +87,25 @@ export const CanvasPage = () => {
     };
   }, []);
 
+  // Pass undefined to go back to the live draft.
+  const openVersion = useCallback(
+    (ref: PublishedVersionRef | undefined) => {
+      if (ref === publishedVersionRef) {
+        return;
+      }
+      setSearchParams(params => {
+        const nextParams = new URLSearchParams(params);
+        if (ref == null) {
+          nextParams.delete("version");
+        } else {
+          nextParams.set("version", ref);
+        }
+        return nextParams;
+      });
+    },
+    [publishedVersionRef, setSearchParams],
+  );
+
   if (!isValidDocRef(doc)) {
     return <div>Canvas ID is required</div>;
   }
@@ -97,6 +122,38 @@ export const CanvasPage = () => {
     );
   }
 
+  // Keyed views reset all editing and presence state when switching between versions.
+  if (publishedVersionRef != null) {
+    return (
+      <PublishedCanvasView
+        liveDraftDoc={doc}
+        key={publishedVersionRef}
+        onOpenVersion={openVersion}
+        published={published}
+        publishedVersionRef={publishedVersionRef}
+      />
+    );
+  }
+
+  return (
+    <CanvasEditor
+      doc={doc}
+      key={doc.id}
+      onOpenVersion={openVersion}
+      statusToaster={statusToaster}
+      toaster={toaster}
+    />
+  );
+};
+
+interface CanvasEditorProps {
+  readonly doc: VersionedDocRef;
+  readonly statusToaster: Toaster | null;
+  readonly toaster: Toaster | null;
+  onOpenVersion: (ref: PublishedVersionRef | undefined) => void;
+}
+
+function CanvasEditor({ doc, statusToaster, toaster, onOpenVersion }: CanvasEditorProps) {
   const { broadcastCursor, broadcastSelection } = useBroadcastPresence(doc);
   const { remoteUsersByUserId, userIdsBySelectedNodeId } = useRemotePresence(doc);
   const interaction = useCanvasInteraction(doc, broadcastSelection);
@@ -105,6 +162,11 @@ export const CanvasPage = () => {
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
+      // Only handle keys pressed on the canvas itself. Keys typed in dialogs (which render in
+      // portals) still bubble up here.
+      if (e.target !== e.currentTarget) {
+        return;
+      }
       if (e.key === "Delete" || e.key === "Backspace") {
         interaction.deleteSelected();
       }
@@ -135,6 +197,7 @@ export const CanvasPage = () => {
         onColorChange={interaction.setColor}
         onDelete={interaction.deleteSelected}
         onOpacityChange={interaction.setOpacity}
+        onOpenVersion={onOpenVersion}
         onToolChange={interaction.setTool}
       />
       <CanvasContent
@@ -152,4 +215,4 @@ export const CanvasPage = () => {
       />
     </div>
   );
-};
+}
