@@ -51,7 +51,11 @@ export const CanvasPage = () => {
     canvasId as DocumentId | undefined,
     versionOverride,
   );
-  const published = usePublishedVersionDocRef(app, doc, publishedVersionRef);
+  const published = usePublishedVersionDocRef(
+    app,
+    doc,
+    publishedVersionRef != null ? { type: "specific", publishedVersionRef } : undefined,
+  );
   const [toaster, setToaster] = useState<Toaster | null>(null);
   const [statusToaster, setStatusToaster] = useState<Toaster | null>(null);
 

@@ -21,14 +21,13 @@ export { useDocRef } from "./hooks/useDocRef.js";
 export { useDocumentSchemaVersion } from "./hooks/useDocumentSchemaVersion.js";
 export { useDocumentStatus } from "./hooks/useDocumentStatus.js";
 export { useDocumentTypeMetadata } from "./hooks/useDocumentTypeMetadata.js";
-export { useLatestPublishedVersionDocRef } from "./hooks/useLatestPublishedVersionDocRef.js";
-export type {
-  UseLatestPublishedVersionDocRefResult,
-} from "./hooks/useLatestPublishedVersionDocRef.js";
 export { useOnDocActivityEvents } from "./hooks/useOnDocActivityEvents.js";
 export { useOnDocPresenceEvents } from "./hooks/useOnDocPresenceEvents.js";
 export { usePublishedVersionDocRef } from "./hooks/usePublishedVersionDocRef.js";
-export type { UsePublishedVersionDocRefResult } from "./hooks/usePublishedVersionDocRef.js";
+export type {
+  PublishedVersionSelection,
+  UsePublishedVersionDocRefResult,
+} from "./hooks/usePublishedVersionDocRef.js";
 export { usePublishedVersions } from "./hooks/usePublishedVersions.js";
 export type { UsePublishedVersionsResult } from "./hooks/usePublishedVersions.js";
 export { useRecord } from "./hooks/useRecord.js";
