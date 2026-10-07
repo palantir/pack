@@ -91,7 +91,6 @@ export const CanvasPage = () => {
     };
   }, []);
 
-  // Pass undefined to go back to the live draft.
   const openVersion = useCallback(
     (versionRef: PublishedVersionRef | undefined) => {
       if (versionRef === publishedVersionRef) {
@@ -126,7 +125,6 @@ export const CanvasPage = () => {
     );
   }
 
-  // Keys reset editing and presence state when switching versions.
   if (publishedVersionRef != null) {
     return (
       <PublishedCanvasView

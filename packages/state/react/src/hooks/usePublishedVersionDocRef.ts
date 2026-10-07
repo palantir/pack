@@ -25,7 +25,6 @@ import type { WithStateModule } from "@palantir/pack.state.core";
 import { isValidDocRef } from "@palantir/pack.state.core";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
-/** Which published version to load. */
 export type PublishedVersionSelection =
   | { readonly type: "latest" }
   | { readonly type: "specific"; readonly publishedVersionRef: PublishedVersionRef };
@@ -43,7 +42,6 @@ type PublishedVersionStatus<D extends DocumentSchema> =
 export type UsePublishedVersionDocRefResult<D extends DocumentSchema = DocumentSchema> =
   & PublishedVersionStatus<D>
   & {
-    /** Loads again. The current result stays until the new one arrives. */
     readonly refresh: () => void;
   };
 
@@ -82,7 +80,6 @@ export function usePublishedVersionDocRef<D extends DocumentSchema>(
   liveDraftRef: DocumentRef<D>,
   selection: PublishedVersionSelection | undefined,
 ): UsePublishedVersionDocRefResult<D> {
-  // A plain value, so an inline `selection` object doesn't reload on every render.
   const version = selection?.type === "latest" ? LATEST : selection?.publishedVersionRef;
   const [loaded, setLoaded] = useState<Loaded<D>>();
   const [refreshCount, setRefreshCount] = useState(0);
