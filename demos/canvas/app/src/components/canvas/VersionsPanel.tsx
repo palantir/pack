@@ -23,9 +23,7 @@ import { formatTimeAgo } from "../../utils/formatTimeAgo.js";
 import styles from "./VersionsPanel.module.css";
 
 export interface VersionsPanelProps {
-  /** The live draft document. */
   readonly docRef: DocumentRef;
-  /** Version being viewed; undefined for the live draft. */
   readonly openVersionRef?: PublishedVersionRef;
   onOpenVersion: (versionRef: PublishedVersionRef | undefined) => void;
 }
