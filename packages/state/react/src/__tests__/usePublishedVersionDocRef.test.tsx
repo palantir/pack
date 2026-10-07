@@ -21,22 +21,21 @@ import type {
   PublishedVersionRef,
 } from "@palantir/pack.document-schema.model-types";
 import type { WithStateModule } from "@palantir/pack.state.core";
-import { act, renderHook, waitFor } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { act, cleanup, renderHook, waitFor } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { mock, mockDeep, mockReset } from "vitest-mock-extended";
+import { useLatestPublishedVersionDocRef } from "../hooks/useLatestPublishedVersionDocRef.js";
 import { usePublishedVersionDocRef } from "../hooks/usePublishedVersionDocRef.js";
 
-const liveDraft = { id: "doc-1" } as DocumentRef;
-const versionOne = { id: "doc-1", publishedVersion: { ref: "v1" } } as PublishedVersionDocumentRef;
-const versionTwo = { id: "doc-1", publishedVersion: { ref: "v2" } } as PublishedVersionDocumentRef;
+const app = mockDeep<WithStateModule<PackApp>>();
+const liveDraft = mock<DocumentRef>({ id: "doc-1" });
+const versionOne = mock<PublishedVersionDocumentRef>();
+const versionTwo = mock<PublishedVersionDocumentRef>();
 
-function createApp(loadPublishedVersionDocRef: unknown): WithStateModule<PackApp> {
-  return { state: { loadPublishedVersionDocRef } } as unknown as WithStateModule<PackApp>;
-}
+beforeEach(() => mockReset(app));
+afterEach(cleanup);
 
-function renderPublishedVersionDocRef(
-  app: WithStateModule<PackApp>,
-  initialRef: PublishedVersionRef | undefined,
-) {
+function renderPublishedVersionDocRef(initialRef: PublishedVersionRef | undefined) {
   return renderHook(({ versionRef }) => usePublishedVersionDocRef(app, liveDraft, versionRef), {
     initialProps: { versionRef: initialRef },
   });
@@ -52,8 +51,8 @@ function deferred<T>() {
 
 describe("usePublishedVersionDocRef", () => {
   it("returns the live draft without a version, then loads the requested version", async () => {
-    const load = vi.fn().mockResolvedValue(versionOne);
-    const { rerender, result } = renderPublishedVersionDocRef(createApp(load), undefined);
+    const load = app.state.loadPublishedVersionDocRef.mockResolvedValue(versionOne);
+    const { rerender, result } = renderPublishedVersionDocRef(undefined);
 
     expect(result.current.status).toBe("liveDraft");
     expect(result.current.docRef).toBe(liveDraft);
@@ -61,28 +60,21 @@ describe("usePublishedVersionDocRef", () => {
 
     rerender({ versionRef: "v1" });
     expect(result.current.status).toBe("loading");
+    expect(result.current.docRef).toBeUndefined();
     await waitFor(() => {
       expect(result.current.status).toBe("loaded");
     });
     expect(result.current.docRef).toBe(versionOne);
-    expect(load).toHaveBeenCalledWith(liveDraft, "v1");
+    expect(load.mock.calls).toEqual([[liveDraft, "v1"]]);
 
     rerender({ versionRef: undefined });
     expect(result.current.status).toBe("liveDraft");
     expect(result.current.docRef).toBe(liveDraft);
   });
 
-  it("returns no ref while a version loads, so the live draft isn't shown in its place", () => {
-    const load = vi.fn().mockReturnValue(new Promise(() => {}));
-    const { result } = renderPublishedVersionDocRef(createApp(load), "v1");
-
-    expect(result.current.status).toBe("loading");
-    expect(result.current.docRef).toBeUndefined();
-  });
-
   it("reports load errors", async () => {
-    const load = vi.fn().mockRejectedValue(new Error("PublishedVersionNotFound"));
-    const { result } = renderPublishedVersionDocRef(createApp(load), "missing");
+    app.state.loadPublishedVersionDocRef.mockRejectedValue(new Error("PublishedVersionNotFound"));
+    const { result } = renderPublishedVersionDocRef("missing");
 
     await waitFor(() => {
       expect(result.current.status).toBe("error");
@@ -91,10 +83,10 @@ describe("usePublishedVersionDocRef", () => {
   });
 
   it("loads the version again on refresh, for example after an error", async () => {
-    const load = vi.fn()
+    const load = app.state.loadPublishedVersionDocRef
       .mockRejectedValueOnce(new Error("Network error"))
       .mockResolvedValueOnce(versionOne);
-    const { result } = renderPublishedVersionDocRef(createApp(load), "v1");
+    const { result } = renderPublishedVersionDocRef("v1");
     await waitFor(() => {
       expect(result.current.status).toBe("error");
     });
@@ -109,10 +101,10 @@ describe("usePublishedVersionDocRef", () => {
   it("never returns an older version while a newer one is requested", async () => {
     const first = deferred<PublishedVersionDocumentRef>();
     const second = deferred<PublishedVersionDocumentRef>();
-    const load = vi.fn()
+    app.state.loadPublishedVersionDocRef
       .mockReturnValueOnce(first.promise)
       .mockReturnValueOnce(second.promise);
-    const { rerender, result } = renderPublishedVersionDocRef(createApp(load), "v1");
+    const { rerender, result } = renderPublishedVersionDocRef("v1");
 
     rerender({ versionRef: "v2" });
     await act(async () => {
@@ -127,5 +119,70 @@ describe("usePublishedVersionDocRef", () => {
     });
     expect(result.current.status).toBe("loaded");
     expect(result.current.docRef).toBe(versionTwo);
+  });
+});
+
+describe("useLatestPublishedVersionDocRef", () => {
+  it("loads the latest version", async () => {
+    const load = app.state.loadLatestPublishedVersionDocRef.mockResolvedValue(versionOne);
+    const { result } = renderHook(() => useLatestPublishedVersionDocRef(app, liveDraft));
+
+    expect(result.current.status).toBe("loading");
+    expect(result.current.docRef).toBeUndefined();
+    await waitFor(() => {
+      expect(result.current.status).toBe("loaded");
+    });
+    expect(result.current.docRef).toBe(versionOne);
+    expect(load.mock.calls).toEqual([[liveDraft]]);
+  });
+
+  it("reports an error when the document has no published versions", async () => {
+    const load = app.state.loadLatestPublishedVersionDocRef.mockRejectedValue(
+      new Error("NoActivePublishedVersion"),
+    );
+    const { result } = renderHook(() => useLatestPublishedVersionDocRef(app, liveDraft));
+
+    await waitFor(() => {
+      expect(result.current.status).toBe("error");
+    });
+    expect(result.current.error?.message).toBe("NoActivePublishedVersion");
+    expect(load).toHaveBeenCalledOnce();
+  });
+
+  it("checks again which version is latest on refresh", async () => {
+    const load = app.state.loadLatestPublishedVersionDocRef
+      .mockResolvedValueOnce(versionOne)
+      .mockResolvedValueOnce(versionTwo);
+    const { result } = renderHook(() => useLatestPublishedVersionDocRef(app, liveDraft));
+    await waitFor(() => {
+      expect(result.current.docRef).toBe(versionOne);
+    });
+
+    act(() => result.current.refresh());
+    // The current version stays on screen until the newer one arrives.
+    expect(result.current.docRef).toBe(versionOne);
+    await waitFor(() => {
+      expect(result.current.docRef).toBe(versionTwo);
+    });
+    expect(load).toHaveBeenCalledTimes(2);
+  });
+
+  it("loads the new document's latest version when the document changes", async () => {
+    const docTwo = mock<DocumentRef>({ id: "doc-2" });
+    const load = app.state.loadLatestPublishedVersionDocRef.mockResolvedValue(versionOne);
+    const { rerender, result } = renderHook(
+      ({ doc }) => useLatestPublishedVersionDocRef(app, doc),
+      { initialProps: { doc: liveDraft } },
+    );
+    await waitFor(() => {
+      expect(result.current.status).toBe("loaded");
+    });
+
+    rerender({ doc: docTwo });
+    expect(result.current.status).toBe("loading");
+    await waitFor(() => {
+      expect(result.current.status).toBe("loaded");
+    });
+    expect(load).toHaveBeenLastCalledWith(docTwo);
   });
 });
