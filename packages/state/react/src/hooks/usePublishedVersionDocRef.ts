@@ -29,7 +29,7 @@ export type PublishedVersionSelection =
   | { readonly type: "latest" }
   | { readonly type: "specific"; readonly publishedVersionRef: PublishedVersionRef };
 
-type PublishedVersionStatus<D extends DocumentSchema> =
+type PublishedVersionLoadState<D extends DocumentSchema> =
   | { readonly status: "idle"; readonly docRef?: undefined; readonly error?: undefined }
   | { readonly status: "loading"; readonly docRef?: undefined; readonly error?: undefined }
   | {
@@ -40,7 +40,7 @@ type PublishedVersionStatus<D extends DocumentSchema> =
   | { readonly status: "error"; readonly docRef?: undefined; readonly error: Error };
 
 export type UsePublishedVersionDocRefResult<D extends DocumentSchema = DocumentSchema> =
-  & PublishedVersionStatus<D>
+  & PublishedVersionLoadState<D>
   & {
     readonly refresh: () => void;
   };
@@ -49,9 +49,9 @@ const LATEST = Symbol("latest");
 const IDLE = { status: "idle" } as const;
 const LOADING = { status: "loading" } as const;
 
-interface Loaded<D extends DocumentSchema> {
+interface LoadResult<D extends DocumentSchema> {
   readonly liveDraftRef: DocumentRef<D>;
-  readonly status: PublishedVersionStatus<D>;
+  readonly state: PublishedVersionLoadState<D>;
   readonly version: PublishedVersionRef | typeof LATEST;
 }
 
@@ -81,7 +81,7 @@ export function usePublishedVersionDocRef<D extends DocumentSchema>(
   selection: PublishedVersionSelection | undefined,
 ): UsePublishedVersionDocRefResult<D> {
   const version = selection?.type === "latest" ? LATEST : selection?.publishedVersionRef;
-  const [loaded, setLoaded] = useState<Loaded<D>>();
+  const [loadResult, setLoadResult] = useState<LoadResult<D>>();
   const [refreshCount, setRefreshCount] = useState(0);
   const refresh = useCallback(() => {
     setRefreshCount(count => count + 1);
@@ -89,7 +89,7 @@ export function usePublishedVersionDocRef<D extends DocumentSchema>(
 
   // A new document or version starts empty, so coming back to one never shows its old result.
   useEffect(() => {
-    setLoaded(undefined);
+    setLoadResult(undefined);
   }, [liveDraftRef, version]);
 
   useEffect(() => {
@@ -98,9 +98,9 @@ export function usePublishedVersionDocRef<D extends DocumentSchema>(
     }
 
     let cancelled = false;
-    const finish = (status: PublishedVersionStatus<D>) => {
+    const finish = (nextState: PublishedVersionLoadState<D>) => {
       if (!cancelled) {
-        setLoaded({ liveDraftRef, status, version });
+        setLoadResult({ liveDraftRef, state: nextState, version });
       }
     };
 
@@ -122,11 +122,11 @@ export function usePublishedVersionDocRef<D extends DocumentSchema>(
   }, [app.state, liveDraftRef, refreshCount, version]);
 
   // Ignore a result loaded for another document or version.
-  const isCurrent = loaded?.liveDraftRef === liveDraftRef && loaded.version === version;
-  const status = version == null || !isValidDocRef(liveDraftRef)
+  const isCurrent = loadResult?.liveDraftRef === liveDraftRef && loadResult.version === version;
+  const state = version == null || !isValidDocRef(liveDraftRef)
     ? IDLE
     : isCurrent
-    ? loaded.status
+    ? loadResult.state
     : LOADING;
-  return useMemo(() => ({ ...status, refresh }), [refresh, status]);
+  return useMemo(() => ({ ...state, refresh }), [refresh, state]);
 }

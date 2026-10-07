@@ -120,6 +120,6 @@ function VersionsList({ docRef, onOpenVersion, openVersionRef }: VersionsPanelPr
   );
 }
 
-function getItemClassName(isOpen: boolean): string | undefined {
-  return isOpen ? `${styles.item} ${styles.selected}` : styles.item;
+function getItemClassName(isSelected: boolean): string | undefined {
+  return isSelected ? `${styles.item} ${styles.selected}` : styles.item;
 }

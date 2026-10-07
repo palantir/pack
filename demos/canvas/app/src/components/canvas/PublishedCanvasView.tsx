@@ -40,21 +40,21 @@ const NO_REMOTE_USERS: CanvasContentProps["remoteUsersByUserId"] = new Map();
 const NO_SELECTIONS: CanvasContentProps["userIdsBySelectedNodeId"] = new Map();
 
 export interface PublishedCanvasViewProps {
-  readonly liveDraftDoc: VersionedDocRef;
-  readonly published: UsePublishedVersionDocRefResult<DocumentModel>;
+  readonly liveDraftRef: VersionedDocRef;
   readonly publishedVersionRef: PublishedVersionRef;
+  readonly publishedVersionResult: UsePublishedVersionDocRefResult<DocumentModel>;
   onOpenVersion: (versionRef: PublishedVersionRef | undefined) => void;
 }
 
 export const PublishedCanvasView = memo(function PublishedCanvasView({
-  liveDraftDoc,
-  published,
+  liveDraftRef,
   publishedVersionRef,
+  publishedVersionResult,
   onOpenVersion,
 }: PublishedCanvasViewProps) {
-  const { metadata } = useDocMetadata(liveDraftDoc);
-  const publishedVersion = published.status === "loaded"
-    ? published.docRef.publishedVersion
+  const { metadata } = useDocMetadata(liveDraftRef);
+  const publishedVersion = publishedVersionResult.status === "loaded"
+    ? publishedVersionResult.docRef.publishedVersion
     : undefined;
 
   return (
@@ -69,24 +69,26 @@ export const PublishedCanvasView = memo(function PublishedCanvasView({
         <div className={toolbarStyles.toolGroupRight}>
           <Button icon="edit" onClick={() => onOpenVersion(undefined)} text="Back to live draft" />
           <VersionsPanel
-            docRef={liveDraftDoc}
+            docRef={liveDraftRef}
             onOpenVersion={onOpenVersion}
             openVersionRef={publishedVersionRef}
           />
         </div>
       </div>
 
-      {published.status === "loaded" && <PublishedCanvas doc={published.docRef} />}
-      {published.status === "loading" && (
+      {publishedVersionResult.status === "loaded" && (
+        <PublishedCanvas doc={publishedVersionResult.docRef} />
+      )}
+      {publishedVersionResult.status === "loading" && (
         <div className={styles.status}>
           <Spinner size={20} />
           Loading version…
         </div>
       )}
-      {published.status === "error" && (
+      {publishedVersionResult.status === "error" && (
         <div className={styles.status}>
           <Callout intent="danger" title="Couldn't open this version">
-            {published.error.message}
+            {publishedVersionResult.error.message}
           </Callout>
         </div>
       )}

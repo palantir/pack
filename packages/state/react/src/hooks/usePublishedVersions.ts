@@ -31,7 +31,7 @@ export interface UsePublishedVersionsResult {
   readonly versions: readonly PublishedVersion[] | undefined;
 }
 
-interface LoadedVersions {
+interface VersionsLoadResult {
   readonly documentId: DocumentId;
   readonly error?: Error;
   readonly versions?: readonly PublishedVersion[];
@@ -50,7 +50,7 @@ export function usePublishedVersions(
 ): UsePublishedVersionsResult {
   const documentId = isValidDocRef(docRef) ? docRef.id : undefined;
   const [isLoading, setIsLoading] = useState(false);
-  const [loaded, setLoaded] = useState<LoadedVersions>();
+  const [loadResult, setLoadResult] = useState<VersionsLoadResult>();
   const [refreshCount, setRefreshCount] = useState(0);
 
   const refresh = useCallback(() => {
@@ -69,12 +69,12 @@ export function usePublishedVersions(
       .then(
         versions => {
           if (!cancelled) {
-            setLoaded({ documentId, versions });
+            setLoadResult({ documentId, versions });
           }
         },
         (e: unknown) => {
           if (!cancelled) {
-            setLoaded({
+            setLoadResult({
               documentId,
               error: e instanceof Error ? e : new Error("Failed to load published versions"),
             });
@@ -93,7 +93,7 @@ export function usePublishedVersions(
   }, [app.state, docRef, documentId, refreshCount]);
 
   // Never return another document's versions.
-  const current = loaded?.documentId === documentId ? loaded : undefined;
+  const current = loadResult?.documentId === documentId ? loadResult : undefined;
   return {
     error: current?.error,
     isLoading: documentId != null && isLoading,

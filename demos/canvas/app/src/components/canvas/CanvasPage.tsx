@@ -51,7 +51,7 @@ export const CanvasPage = () => {
     canvasId as DocumentId | undefined,
     versionOverride,
   );
-  const published = usePublishedVersionDocRef(
+  const publishedVersionResult = usePublishedVersionDocRef(
     app,
     doc,
     publishedVersionRef != null ? { type: "specific", publishedVersionRef } : undefined,
@@ -128,11 +128,11 @@ export const CanvasPage = () => {
   if (publishedVersionRef != null) {
     return (
       <PublishedCanvasView
-        liveDraftDoc={doc}
         key={publishedVersionRef}
+        liveDraftRef={doc}
         onOpenVersion={openVersion}
-        published={published}
         publishedVersionRef={publishedVersionRef}
+        publishedVersionResult={publishedVersionResult}
       />
     );
   }
