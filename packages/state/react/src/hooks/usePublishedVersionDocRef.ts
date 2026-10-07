@@ -127,13 +127,14 @@ export function usePublishedVersionDocRef<D extends DocumentSchema>(
     };
   }, [app.state, liveDraftRef, refreshCount, selectionKey]);
 
+  const isIdle = selectionKey == null || !isValidDocRef(liveDraftRef);
   // Ignore a result loaded for another document or selection.
   const isCurrent = loadResult?.liveDraftRef === liveDraftRef
     && loadResult.selectionKey === selectionKey;
-  const state = selectionKey == null || !isValidDocRef(liveDraftRef)
-    ? IDLE
-    : isCurrent
-    ? loadResult.state
-    : LOADING;
-  return useMemo(() => ({ ...state, refresh }), [refresh, state]);
+  return useMemo(() => {
+    if (isIdle) {
+      return { ...IDLE, refresh };
+    }
+    return { ...(isCurrent ? loadResult.state : LOADING), refresh };
+  }, [isCurrent, isIdle, loadResult, refresh]);
 }
