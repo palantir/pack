@@ -67,7 +67,8 @@ describe("useLatestPublishedVersionDocRef", () => {
     });
 
     act(() => result.current.refresh());
-    expect(result.current.status).toBe("loading");
+    // The current version stays on screen until the newer one arrives.
+    expect(result.current.docRef).toBe(versionOne);
     await waitFor(() => {
       expect(result.current.docRef).toBe(versionTwo);
     });

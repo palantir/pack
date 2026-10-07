@@ -26,8 +26,13 @@ import type { PublishedVersionLoadResult } from "./usePublishedVersionLoad.js";
 import { usePublishedVersionLoad } from "./usePublishedVersionLoad.js";
 
 export type UsePublishedVersionDocRefResult<D extends DocumentSchema = DocumentSchema> =
-  | { readonly status: "liveDraft"; readonly docRef: DocumentRef<D>; readonly error?: undefined }
-  | PublishedVersionLoadResult<D>;
+  & (
+    | { readonly status: "liveDraft"; readonly docRef: DocumentRef<D>; readonly error?: undefined }
+    | PublishedVersionLoadResult<D>
+  )
+  & {
+    readonly refresh: () => void;
+  };
 
 /**
  * Returns the doc ref to render: the live draft when no version is requested, or the requested
@@ -58,9 +63,12 @@ export function usePublishedVersionDocRef<D extends DocumentSchema>(
   liveDraftRef: DocumentRef<D>,
   publishedVersionRef: PublishedVersionRef | undefined,
 ): UsePublishedVersionDocRefResult<D> {
-  const result = usePublishedVersionLoad(app, liveDraftRef, publishedVersionRef);
-  const liveDraft = useMemo(() => ({ status: "liveDraft", docRef: liveDraftRef }) as const, [
-    liveDraftRef,
-  ]);
-  return publishedVersionRef == null ? liveDraft : result;
+  const { refresh, result } = usePublishedVersionLoad(app, liveDraftRef, publishedVersionRef);
+  return useMemo<UsePublishedVersionDocRefResult<D>>(
+    () =>
+      publishedVersionRef == null
+        ? { status: "liveDraft", docRef: liveDraftRef, refresh }
+        : { ...result, refresh },
+    [liveDraftRef, publishedVersionRef, refresh, result],
+  );
 }

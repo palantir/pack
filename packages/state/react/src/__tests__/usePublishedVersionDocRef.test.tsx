@@ -90,6 +90,22 @@ describe("usePublishedVersionDocRef", () => {
     expect(result.current.error?.message).toBe("PublishedVersionNotFound");
   });
 
+  it("loads the version again on refresh, for example after an error", async () => {
+    const load = vi.fn()
+      .mockRejectedValueOnce(new Error("Network error"))
+      .mockResolvedValueOnce(versionOne);
+    const { result } = renderPublishedVersionDocRef(createApp(load), "v1");
+    await waitFor(() => {
+      expect(result.current.status).toBe("error");
+    });
+
+    act(() => result.current.refresh());
+    await waitFor(() => {
+      expect(result.current.docRef).toBe(versionOne);
+    });
+    expect(load).toHaveBeenCalledTimes(2);
+  });
+
   it("never returns an older version while a newer one is requested", async () => {
     const first = deferred<PublishedVersionDocumentRef>();
     const second = deferred<PublishedVersionDocumentRef>();

@@ -23,7 +23,7 @@ import type {
 } from "@palantir/pack.document-schema.model-types";
 import type { WithStateModule } from "@palantir/pack.state.core";
 import { isValidDocRef } from "@palantir/pack.state.core";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 export type PublishedVersionLoadResult<D extends DocumentSchema = DocumentSchema> =
   | { readonly status: "loading"; readonly docRef?: undefined; readonly error?: undefined }
@@ -40,27 +40,38 @@ export const LATEST_PUBLISHED_VERSION: unique symbol = Symbol("latest published 
 const LOADING = { status: "loading" } as const;
 
 interface Loaded<D extends DocumentSchema> {
-  readonly attempt: number;
   readonly liveDraftRef: DocumentRef<D>;
   readonly result: PublishedVersionLoadResult<D>;
   readonly version: PublishedVersionRef | typeof LATEST_PUBLISHED_VERSION;
 }
 
+export interface PublishedVersionLoad<D extends DocumentSchema> {
+  /** Loads again. The current result stays until the new one arrives. */
+  readonly refresh: () => void;
+  readonly result: PublishedVersionLoadResult<D>;
+}
+
 /**
  * Loads a published version as a read-only doc ref. Shared by the published version doc ref hooks.
- * Shows loading whenever the request changes, and ignores results for an older request. Changing
- * `attempt` loads again with the same inputs.
+ * Shows loading when the document or version changes, and ignores results for an older request.
  */
 export function usePublishedVersionLoad<D extends DocumentSchema>(
   app: WithStateModule<PackApp>,
   liveDraftRef: DocumentRef<D>,
   version: PublishedVersionRef | typeof LATEST_PUBLISHED_VERSION | undefined,
-  attempt = 0,
-): PublishedVersionLoadResult<D> {
+): PublishedVersionLoad<D> {
   const [loaded, setLoaded] = useState<Loaded<D>>();
+  const [refreshCount, setRefreshCount] = useState(0);
+  const refresh = useCallback(() => {
+    setRefreshCount(count => count + 1);
+  }, []);
 
+  // A new document or version starts empty, so coming back to one never shows its old result.
   useEffect(() => {
     setLoaded(undefined);
+  }, [liveDraftRef, version]);
+
+  useEffect(() => {
     if (version == null || !isValidDocRef(liveDraftRef)) {
       return;
     }
@@ -68,7 +79,7 @@ export function usePublishedVersionLoad<D extends DocumentSchema>(
     let cancelled = false;
     const finish = (result: PublishedVersionLoadResult<D>) => {
       if (!cancelled) {
-        setLoaded({ attempt, liveDraftRef, result, version });
+        setLoaded({ liveDraftRef, result, version });
       }
     };
 
@@ -87,16 +98,9 @@ export function usePublishedVersionLoad<D extends DocumentSchema>(
     return () => {
       cancelled = true;
     };
-  }, [app.state, attempt, liveDraftRef, version]);
+  }, [app.state, liveDraftRef, refreshCount, version]);
 
-  // Ignore a result loaded for another request.
-  if (
-    loaded == null
-    || loaded.attempt !== attempt
-    || loaded.liveDraftRef !== liveDraftRef
-    || loaded.version !== version
-  ) {
-    return LOADING;
-  }
-  return loaded.result;
+  // Ignore a result loaded for another document or version.
+  const isCurrent = loaded?.liveDraftRef === liveDraftRef && loaded.version === version;
+  return { refresh, result: isCurrent ? loaded.result : LOADING };
 }

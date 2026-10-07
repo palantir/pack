@@ -17,14 +17,14 @@
 import type { PackApp } from "@palantir/pack.core";
 import type { DocumentRef, DocumentSchema } from "@palantir/pack.document-schema.model-types";
 import type { WithStateModule } from "@palantir/pack.state.core";
-import { useCallback, useMemo, useState } from "react";
+import { useMemo } from "react";
 import type { PublishedVersionLoadResult } from "./usePublishedVersionLoad.js";
 import { LATEST_PUBLISHED_VERSION, usePublishedVersionLoad } from "./usePublishedVersionLoad.js";
 
 export type UseLatestPublishedVersionDocRefResult<D extends DocumentSchema = DocumentSchema> =
   & PublishedVersionLoadResult<D>
   & {
-    /** Checks again which version is latest and loads it. */
+    /** Checks again which version is latest and loads it. The current version stays until then. */
     readonly refresh: () => void;
   };
 
@@ -51,10 +51,6 @@ export function useLatestPublishedVersionDocRef<D extends DocumentSchema>(
   app: WithStateModule<PackApp>,
   liveDraftRef: DocumentRef<D>,
 ): UseLatestPublishedVersionDocRefResult<D> {
-  const [refreshCount, setRefreshCount] = useState(0);
-  const refresh = useCallback(() => {
-    setRefreshCount(count => count + 1);
-  }, []);
-  const result = usePublishedVersionLoad(app, liveDraftRef, LATEST_PUBLISHED_VERSION, refreshCount);
+  const { refresh, result } = usePublishedVersionLoad(app, liveDraftRef, LATEST_PUBLISHED_VERSION);
   return useMemo(() => ({ ...result, refresh }), [refresh, result]);
 }
