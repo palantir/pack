@@ -178,6 +178,24 @@ describe("usePublishedVersionDocRef with latest", () => {
     expect(load).toHaveBeenCalledTimes(2);
   });
 
+  it("keeps the current version when a refresh fails", async () => {
+    app.state.loadLatestPublishedVersionDocRef
+      .mockResolvedValueOnce(versionOne)
+      .mockRejectedValueOnce(new Error("Network error"));
+    const { result } = renderHook(() =>
+      usePublishedVersionDocRef(app, liveDraft, { type: "latest" })
+    );
+    await waitFor(() => {
+      expect(result.current.status).toBe("loaded");
+    });
+
+    act(() => result.current.refresh());
+    await waitFor(() => {
+      expect(result.current.status).toBe("error");
+    });
+    expect(result.current.publishedVersionDocRef).toBe(versionOne);
+  });
+
   it("loads the new document's latest version when the document changes", async () => {
     const docTwo = mock<DocumentRef>({ id: "doc-2" });
     const load = app.state.loadLatestPublishedVersionDocRef

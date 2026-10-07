@@ -30,10 +30,11 @@ function createApp(listPublishedVersions: unknown): WithStateModule<PackApp> {
 }
 
 describe("usePublishedVersions", () => {
-  it("loads the versions, and loads them again when refresh is called", async () => {
+  it("loads the versions again on refresh, and keeps them if a refresh fails", async () => {
     const listPublishedVersions = vi.fn()
       .mockResolvedValueOnce([first])
-      .mockResolvedValueOnce([second, first]);
+      .mockResolvedValueOnce([second, first])
+      .mockRejectedValueOnce(new Error("Network error"));
     const app = createApp(listPublishedVersions);
     const { result } = renderHook(() => usePublishedVersions(app, docRef));
 
@@ -45,7 +46,12 @@ describe("usePublishedVersions", () => {
     await waitFor(() => {
       expect(result.current.versions).toEqual([second, first]);
     });
-    expect(listPublishedVersions).toHaveBeenCalledTimes(2);
+
+    act(() => result.current.refresh());
+    await waitFor(() => {
+      expect(result.current.error?.message).toBe("Network error");
+    });
+    expect(result.current.versions).toEqual([second, first]);
   });
 
   it("reports load errors", async () => {

@@ -74,10 +74,11 @@ export function usePublishedVersions(
         },
         (e: unknown) => {
           if (!cancelled) {
-            setLoadResult({
+            setLoadResult(previous => ({
               documentId,
               error: e instanceof Error ? e : new Error("Failed to load published versions"),
-            });
+              versions: previous?.documentId === documentId ? previous.versions : undefined,
+            }));
           }
         },
       )

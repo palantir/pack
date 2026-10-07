@@ -42,7 +42,7 @@ type PublishedVersionLoadState<D extends DocumentSchema> =
   }
   | {
     readonly status: "error";
-    readonly publishedVersionDocRef?: undefined;
+    readonly publishedVersionDocRef?: PublishedVersionDocumentRef<D>;
     readonly error: Error;
   };
 
@@ -105,21 +105,24 @@ export function usePublishedVersionDocRef<D extends DocumentSchema>(
     }
 
     let cancelled = false;
-    const finish = (nextState: PublishedVersionLoadState<D>) => {
+    const finish = (
+      getNextState: (previous: LoadResult<D> | undefined) => PublishedVersionLoadState<D>,
+    ) => {
       if (!cancelled) {
-        setLoadResult({ liveDraftRef, selectionKey, state: nextState });
+        setLoadResult(previous => ({ liveDraftRef, selectionKey, state: getNextState(previous) }));
       }
     };
 
     (selectionKey === LATEST
       ? app.state.loadLatestPublishedVersionDocRef(liveDraftRef)
       : app.state.loadPublishedVersionDocRef(liveDraftRef, selectionKey)).then(
-        publishedVersionDocRef => finish({ status: "loaded", publishedVersionDocRef }),
+        publishedVersionDocRef => finish(() => ({ status: "loaded", publishedVersionDocRef })),
         (e: unknown) =>
-          finish({
+          finish(previous => ({
             status: "error",
+            publishedVersionDocRef: previous?.state.publishedVersionDocRef,
             error: e instanceof Error ? e : new Error("Failed to load published version"),
-          }),
+          })),
       );
 
     return () => {
