@@ -69,7 +69,7 @@ export const PublishedCanvasView = memo(function PublishedCanvasView({
         <div className={toolbarStyles.toolGroupRight}>
           <Button icon="edit" onClick={() => onOpenVersion(undefined)} text="Back to live draft" />
           <VersionsPanel
-            docRef={liveDraftRef}
+            liveDraftRef={liveDraftRef}
             onOpenVersion={onOpenVersion}
             openVersionRef={publishedVersionRef}
           />

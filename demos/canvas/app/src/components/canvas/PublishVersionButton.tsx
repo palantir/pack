@@ -29,11 +29,11 @@ import { memo, useCallback, useState } from "react";
 import { app } from "../../app.js";
 
 export interface PublishVersionButtonProps {
-  readonly docRef: DocumentRef;
+  readonly liveDraftRef: DocumentRef;
 }
 
 export const PublishVersionButton = memo(function PublishVersionButton({
-  docRef,
+  liveDraftRef,
 }: PublishVersionButtonProps) {
   const [description, setDescription] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -59,7 +59,7 @@ export const PublishVersionButton = memo(function PublishVersionButton({
     try {
       const trimmedDescription = description.trim();
       const trimmedName = name.trim();
-      await app.state.createPublishedVersion(docRef, {
+      await app.state.createPublishedVersion(liveDraftRef, {
         ...(trimmedDescription.length > 0 ? { description: trimmedDescription } : {}),
         ...(trimmedName.length > 0 ? { name: trimmedName } : {}),
       });
@@ -69,7 +69,7 @@ export const PublishVersionButton = memo(function PublishVersionButton({
     } finally {
       setIsPublishing(false);
     }
-  }, [description, docRef, name]);
+  }, [description, liveDraftRef, name]);
 
   return (
     <>

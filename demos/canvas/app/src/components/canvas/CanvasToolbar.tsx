@@ -156,8 +156,8 @@ export const CanvasToolbar = memo(function CanvasToolbar({
       </div>
 
       <div className={styles.toolGroupRight}>
-        <PublishVersionButton docRef={doc} />
-        <VersionsPanel docRef={doc} onOpenVersion={onOpenVersion} />
+        <PublishVersionButton liveDraftRef={doc} />
+        <VersionsPanel liveDraftRef={doc} onOpenVersion={onOpenVersion} />
         <ActivityPanel docRef={doc} />
       </div>
     </div>

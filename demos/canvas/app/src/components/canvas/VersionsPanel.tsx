@@ -23,7 +23,7 @@ import { formatTimeAgo } from "../../utils/formatTimeAgo.js";
 import styles from "./VersionsPanel.module.css";
 
 export interface VersionsPanelProps {
-  readonly docRef: DocumentRef;
+  readonly liveDraftRef: DocumentRef;
   readonly openVersionRef?: PublishedVersionRef;
   onOpenVersion: (versionRef: PublishedVersionRef | undefined) => void;
 }
@@ -36,8 +36,8 @@ export const VersionsPanel = memo(function VersionsPanel(props: VersionsPanelPro
   );
 });
 
-function VersionsList({ docRef, onOpenVersion, openVersionRef }: VersionsPanelProps) {
-  const { error, isLoading, refresh, versions } = usePublishedVersions(app, docRef);
+function VersionsList({ liveDraftRef, onOpenVersion, openVersionRef }: VersionsPanelProps) {
+  const { error, isLoading, refresh, versions } = usePublishedVersions(app, liveDraftRef);
   const [deleteError, setDeleteError] = useState<string>();
   const [deletingVersionRef, setDeletingVersionRef] = useState<PublishedVersionRef>();
 
@@ -46,7 +46,7 @@ function VersionsList({ docRef, onOpenVersion, openVersionRef }: VersionsPanelPr
     setDeletingVersionRef(versionRef);
 
     try {
-      await app.state.deletePublishedVersion(docRef, versionRef);
+      await app.state.deletePublishedVersion(liveDraftRef, versionRef);
       refresh();
       if (versionRef === openVersionRef) {
         onOpenVersion(undefined);

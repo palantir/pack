@@ -59,7 +59,7 @@ const LOADING = { status: "loading" } as const;
 interface LoadResult<D extends DocumentSchema> {
   readonly liveDraftRef: DocumentRef<D>;
   readonly state: PublishedVersionLoadState<D>;
-  readonly version: PublishedVersionRef | typeof LATEST;
+  readonly selectionKey: PublishedVersionRef | typeof LATEST;
 }
 
 /**
@@ -87,50 +87,50 @@ export function usePublishedVersionDocRef<D extends DocumentSchema>(
   liveDraftRef: DocumentRef<D>,
   selection: PublishedVersionSelection | undefined,
 ): UsePublishedVersionDocRefResult<D> {
-  const version = selection?.type === "latest" ? LATEST : selection?.publishedVersionRef;
+  const selectionKey = selection?.type === "latest" ? LATEST : selection?.publishedVersionRef;
   const [loadResult, setLoadResult] = useState<LoadResult<D>>();
   const [refreshCount, setRefreshCount] = useState(0);
   const refresh = useCallback(() => {
     setRefreshCount(count => count + 1);
   }, []);
 
-  // A new document or version starts empty, so coming back to one never shows its old result.
+  // A new document or selection starts empty, so coming back to one never shows its old result.
   useEffect(() => {
     setLoadResult(undefined);
-  }, [liveDraftRef, version]);
+  }, [liveDraftRef, selectionKey]);
 
   useEffect(() => {
-    if (version == null || !isValidDocRef(liveDraftRef)) {
+    if (selectionKey == null || !isValidDocRef(liveDraftRef)) {
       return;
     }
 
     let cancelled = false;
     const finish = (nextState: PublishedVersionLoadState<D>) => {
       if (!cancelled) {
-        setLoadResult({ liveDraftRef, state: nextState, version });
+        setLoadResult({ liveDraftRef, selectionKey, state: nextState });
       }
     };
 
-    const load = version === LATEST
+    (selectionKey === LATEST
       ? app.state.loadLatestPublishedVersionDocRef(liveDraftRef)
-      : app.state.loadPublishedVersionDocRef(liveDraftRef, version);
-    load.then(
-      publishedVersionDocRef => finish({ status: "loaded", publishedVersionDocRef }),
-      (e: unknown) =>
-        finish({
-          status: "error",
-          error: e instanceof Error ? e : new Error("Failed to load published version"),
-        }),
-    );
+      : app.state.loadPublishedVersionDocRef(liveDraftRef, selectionKey)).then(
+        publishedVersionDocRef => finish({ status: "loaded", publishedVersionDocRef }),
+        (e: unknown) =>
+          finish({
+            status: "error",
+            error: e instanceof Error ? e : new Error("Failed to load published version"),
+          }),
+      );
 
     return () => {
       cancelled = true;
     };
-  }, [app.state, liveDraftRef, refreshCount, version]);
+  }, [app.state, liveDraftRef, refreshCount, selectionKey]);
 
-  // Ignore a result loaded for another document or version.
-  const isCurrent = loadResult?.liveDraftRef === liveDraftRef && loadResult.version === version;
-  const state = version == null || !isValidDocRef(liveDraftRef)
+  // Ignore a result loaded for another document or selection.
+  const isCurrent = loadResult?.liveDraftRef === liveDraftRef
+    && loadResult.selectionKey === selectionKey;
+  const state = selectionKey == null || !isValidDocRef(liveDraftRef)
     ? IDLE
     : isCurrent
     ? loadResult.state
