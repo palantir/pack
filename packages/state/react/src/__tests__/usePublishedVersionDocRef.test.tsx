@@ -34,15 +34,15 @@ const versionTwo = mock<PublishedVersionDocumentRef>();
 beforeEach(() => mockReset(app));
 afterEach(cleanup);
 
-function renderPublishedVersionDocRef(initialRef: PublishedVersionRef | undefined) {
+function renderPublishedVersionDocRef(initialPublishedVersionRef: PublishedVersionRef | undefined) {
   return renderHook(
-    ({ versionRef }) =>
+    ({ publishedVersionRef }) =>
       usePublishedVersionDocRef(
         app,
         liveDraft,
-        versionRef != null ? { type: "specific", publishedVersionRef: versionRef } : undefined,
+        publishedVersionRef != null ? { type: "specific", publishedVersionRef } : undefined,
       ),
-    { initialProps: { versionRef: initialRef } },
+    { initialProps: { publishedVersionRef: initialPublishedVersionRef } },
   );
 }
 
@@ -63,7 +63,7 @@ describe("usePublishedVersionDocRef", () => {
     expect(result.current.publishedVersionDocRef).toBeUndefined();
     expect(load).not.toHaveBeenCalled();
 
-    rerender({ versionRef: "v1" });
+    rerender({ publishedVersionRef: "v1" });
     expect(result.current.status).toBe("loading");
     expect(result.current.publishedVersionDocRef).toBeUndefined();
     await waitFor(() => {
@@ -72,7 +72,7 @@ describe("usePublishedVersionDocRef", () => {
     expect(result.current.publishedVersionDocRef).toBe(versionOne);
     expect(load.mock.calls).toEqual([[liveDraft, "v1"]]);
 
-    rerender({ versionRef: undefined });
+    rerender({ publishedVersionRef: undefined });
     expect(result.current.status).toBe("idle");
     expect(result.current.publishedVersionDocRef).toBeUndefined();
   });
@@ -111,7 +111,7 @@ describe("usePublishedVersionDocRef", () => {
       .mockReturnValueOnce(second.promise);
     const { rerender, result } = renderPublishedVersionDocRef("v1");
 
-    rerender({ versionRef: "v2" });
+    rerender({ publishedVersionRef: "v2" });
     await act(async () => {
       first.resolve(versionOne);
       await first.promise;
@@ -180,7 +180,9 @@ describe("usePublishedVersionDocRef with latest", () => {
 
   it("loads the new document's latest version when the document changes", async () => {
     const docTwo = mock<DocumentRef>({ id: "doc-2" });
-    const load = app.state.loadLatestPublishedVersionDocRef.mockResolvedValue(versionOne);
+    const load = app.state.loadLatestPublishedVersionDocRef
+      .mockResolvedValueOnce(versionOne)
+      .mockResolvedValueOnce(versionTwo);
     const { rerender, result } = renderHook(
       ({ doc }) => usePublishedVersionDocRef(app, doc, { type: "latest" }),
       { initialProps: { doc: liveDraft } },
@@ -192,7 +194,7 @@ describe("usePublishedVersionDocRef with latest", () => {
     rerender({ doc: docTwo });
     expect(result.current.status).toBe("loading");
     await waitFor(() => {
-      expect(result.current.status).toBe("loaded");
+      expect(result.current.publishedVersionDocRef).toBe(versionTwo);
     });
     expect(load).toHaveBeenLastCalledWith(docTwo);
   });
