@@ -38,10 +38,6 @@ export type UsePublishedVersionDocRefResult<D extends DocumentSchema = DocumentS
  * Returns the doc ref to render: the live draft when no version is requested, or the requested
  * published version, as a read-only `PublishedVersionDocumentRef`, once it loads.
  *
- * `docRef` is undefined while a version loads (status `"loading"`) or if it fails to load (status
- * `"error"`), so the live draft is never shown in place of a version. Switching versions shows
- * `"loading"` until the new one arrives.
- *
  * @param app The app instance initialized by your application.
  * @param liveDraftRef The live draft's doc ref.
  * @param publishedVersionRef The published version to show, or undefined for the live draft.
@@ -54,7 +50,6 @@ export type UsePublishedVersionDocRefResult<D extends DocumentSchema = DocumentS
  * if (result.docRef == null) {
  *   return result.error != null ? <ErrorMessage error={result.error} /> : <Spinner />;
  * }
- * // Render the same components either way. Published versions are read-only.
  * return <Editor doc={result.docRef} readOnly={isPublishedVersionDocRef(result.docRef)} />;
  * ```
  */

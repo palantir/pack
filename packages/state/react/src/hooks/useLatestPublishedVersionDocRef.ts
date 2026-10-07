@@ -24,15 +24,13 @@ import { LATEST_PUBLISHED_VERSION, usePublishedVersionLoad } from "./usePublishe
 export type UseLatestPublishedVersionDocRefResult<D extends DocumentSchema = DocumentSchema> =
   & PublishedVersionLoadResult<D>
   & {
-    /** Checks again which version is latest and loads it. The current version stays until then. */
     readonly refresh: () => void;
   };
 
 /**
  * Loads a document's latest published version as a read-only `PublishedVersionDocumentRef`. It
  * checks which version is latest when it mounts, and again only when `refresh` is called or the
- * document changes, so it won't switch on its own when someone publishes. Status is `"error"` with
- * `NoActivePublishedVersion` when the document has none.
+ * document changes, so it won't switch on its own when someone publishes.
  *
  * @param app The app instance initialized by your application.
  * @param liveDraftRef The live draft's doc ref.
