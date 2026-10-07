@@ -18,34 +18,20 @@ import type { PackApp } from "@palantir/pack.core";
 import type {
   DocumentRef,
   DocumentSchema,
-  PublishedVersionDocumentRef,
   PublishedVersionRef,
 } from "@palantir/pack.document-schema.model-types";
 import type { WithStateModule } from "@palantir/pack.state.core";
-import { isValidDocRef } from "@palantir/pack.state.core";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
+import type { PublishedVersionLoadResult } from "./usePublishedVersionLoad.js";
+import { usePublishedVersionLoad } from "./usePublishedVersionLoad.js";
 
 export type UsePublishedVersionDocRefResult<D extends DocumentSchema = DocumentSchema> =
   | { readonly status: "liveDraft"; readonly docRef: DocumentRef<D>; readonly error?: undefined }
-  | { readonly status: "loading"; readonly docRef?: undefined; readonly error?: undefined }
-  | {
-    readonly status: "loaded";
-    readonly docRef: PublishedVersionDocumentRef<D>;
-    readonly error?: undefined;
-  }
-  | { readonly status: "error"; readonly docRef?: undefined; readonly error: Error };
-
-const LOADING = { status: "loading" } as const;
-
-interface LoadedVersion<D extends DocumentSchema> {
-  readonly liveDraftRef: DocumentRef<D>;
-  readonly publishedVersionRef: PublishedVersionRef;
-  readonly result: UsePublishedVersionDocRefResult<D>;
-}
+  | PublishedVersionLoadResult<D>;
 
 /**
  * Returns the doc ref to render: the live draft when no version is requested, or the requested
- * published version, as a read-only {@link PublishedVersionDocumentRef}, once it loads.
+ * published version, as a read-only `PublishedVersionDocumentRef`, once it loads.
  *
  * `docRef` is undefined while a version loads (status `"loading"`) or if it fails to load (status
  * `"error"`), so the live draft is never shown in place of a version. Switching versions shows
@@ -72,49 +58,9 @@ export function usePublishedVersionDocRef<D extends DocumentSchema>(
   liveDraftRef: DocumentRef<D>,
   publishedVersionRef: PublishedVersionRef | undefined,
 ): UsePublishedVersionDocRefResult<D> {
-  const [loaded, setLoaded] = useState<LoadedVersion<D>>();
+  const result = usePublishedVersionLoad(app, liveDraftRef, publishedVersionRef);
   const liveDraft = useMemo(() => ({ status: "liveDraft", docRef: liveDraftRef }) as const, [
     liveDraftRef,
   ]);
-
-  useEffect(() => {
-    setLoaded(undefined);
-    if (publishedVersionRef == null || !isValidDocRef(liveDraftRef)) {
-      return;
-    }
-
-    let cancelled = false;
-    const finish = (result: UsePublishedVersionDocRefResult<D>) => {
-      if (!cancelled) {
-        setLoaded({ liveDraftRef, publishedVersionRef, result });
-      }
-    };
-
-    app.state.loadPublishedVersionDocRef(liveDraftRef, publishedVersionRef).then(
-      publishedVersionDocRef => finish({ status: "loaded", docRef: publishedVersionDocRef }),
-      (e: unknown) =>
-        finish({
-          status: "error",
-          error: e instanceof Error ? e : new Error("Failed to load published version"),
-        }),
-    );
-
-    return () => {
-      cancelled = true;
-    };
-  }, [app.state, liveDraftRef, publishedVersionRef]);
-
-  if (publishedVersionRef == null) {
-    return liveDraft;
-  }
-  // Ignore a result loaded for another document or version.
-  if (
-    !isValidDocRef(liveDraftRef)
-    || loaded == null
-    || loaded.liveDraftRef !== liveDraftRef
-    || loaded.publishedVersionRef !== publishedVersionRef
-  ) {
-    return LOADING;
-  }
-  return loaded.result;
+  return publishedVersionRef == null ? liveDraft : result;
 }
