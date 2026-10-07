@@ -60,21 +60,21 @@ describe("usePublishedVersionDocRef", () => {
     const { rerender, result } = renderPublishedVersionDocRef(undefined);
 
     expect(result.current.status).toBe("idle");
-    expect(result.current.docRef).toBeUndefined();
+    expect(result.current.publishedVersionDocRef).toBeUndefined();
     expect(load).not.toHaveBeenCalled();
 
     rerender({ versionRef: "v1" });
     expect(result.current.status).toBe("loading");
-    expect(result.current.docRef).toBeUndefined();
+    expect(result.current.publishedVersionDocRef).toBeUndefined();
     await waitFor(() => {
       expect(result.current.status).toBe("loaded");
     });
-    expect(result.current.docRef).toBe(versionOne);
+    expect(result.current.publishedVersionDocRef).toBe(versionOne);
     expect(load.mock.calls).toEqual([[liveDraft, "v1"]]);
 
     rerender({ versionRef: undefined });
     expect(result.current.status).toBe("idle");
-    expect(result.current.docRef).toBeUndefined();
+    expect(result.current.publishedVersionDocRef).toBeUndefined();
   });
 
   it("reports load errors", async () => {
@@ -98,7 +98,7 @@ describe("usePublishedVersionDocRef", () => {
 
     act(() => result.current.refresh());
     await waitFor(() => {
-      expect(result.current.docRef).toBe(versionOne);
+      expect(result.current.publishedVersionDocRef).toBe(versionOne);
     });
     expect(load).toHaveBeenCalledTimes(2);
   });
@@ -123,7 +123,7 @@ describe("usePublishedVersionDocRef", () => {
       await second.promise;
     });
     expect(result.current.status).toBe("loaded");
-    expect(result.current.docRef).toBe(versionTwo);
+    expect(result.current.publishedVersionDocRef).toBe(versionTwo);
   });
 });
 
@@ -135,11 +135,11 @@ describe("usePublishedVersionDocRef with latest", () => {
     );
 
     expect(result.current.status).toBe("loading");
-    expect(result.current.docRef).toBeUndefined();
+    expect(result.current.publishedVersionDocRef).toBeUndefined();
     await waitFor(() => {
       expect(result.current.status).toBe("loaded");
     });
-    expect(result.current.docRef).toBe(versionOne);
+    expect(result.current.publishedVersionDocRef).toBe(versionOne);
     expect(load.mock.calls).toEqual([[liveDraft]]);
   });
 
@@ -166,14 +166,14 @@ describe("usePublishedVersionDocRef with latest", () => {
       usePublishedVersionDocRef(app, liveDraft, { type: "latest" })
     );
     await waitFor(() => {
-      expect(result.current.docRef).toBe(versionOne);
+      expect(result.current.publishedVersionDocRef).toBe(versionOne);
     });
 
     act(() => result.current.refresh());
     // The current version stays on screen until the newer one arrives.
-    expect(result.current.docRef).toBe(versionOne);
+    expect(result.current.publishedVersionDocRef).toBe(versionOne);
     await waitFor(() => {
-      expect(result.current.docRef).toBe(versionTwo);
+      expect(result.current.publishedVersionDocRef).toBe(versionTwo);
     });
     expect(load).toHaveBeenCalledTimes(2);
   });

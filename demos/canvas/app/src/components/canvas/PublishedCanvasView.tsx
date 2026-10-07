@@ -54,7 +54,7 @@ export const PublishedCanvasView = memo(function PublishedCanvasView({
 }: PublishedCanvasViewProps) {
   const { metadata } = useDocMetadata(liveDraftRef);
   const publishedVersion = publishedVersionResult.status === "loaded"
-    ? publishedVersionResult.docRef.publishedVersion
+    ? publishedVersionResult.publishedVersionDocRef.publishedVersion
     : undefined;
 
   return (
@@ -77,7 +77,7 @@ export const PublishedCanvasView = memo(function PublishedCanvasView({
       </div>
 
       {publishedVersionResult.status === "loaded" && (
-        <PublishedCanvas doc={publishedVersionResult.docRef} />
+        <PublishedCanvas doc={publishedVersionResult.publishedVersionDocRef} />
       )}
       {publishedVersionResult.status === "loading" && (
         <div className={styles.status}>

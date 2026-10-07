@@ -30,14 +30,21 @@ export type PublishedVersionSelection =
   | { readonly type: "specific"; readonly publishedVersionRef: PublishedVersionRef };
 
 type PublishedVersionLoadState<D extends DocumentSchema> =
-  | { readonly status: "idle"; readonly docRef?: undefined; readonly error?: undefined }
-  | { readonly status: "loading"; readonly docRef?: undefined; readonly error?: undefined }
   | {
-    readonly status: "loaded";
-    readonly docRef: PublishedVersionDocumentRef<D>;
+    readonly status: "idle" | "loading";
+    readonly publishedVersionDocRef?: undefined;
     readonly error?: undefined;
   }
-  | { readonly status: "error"; readonly docRef?: undefined; readonly error: Error };
+  | {
+    readonly status: "loaded";
+    readonly publishedVersionDocRef: PublishedVersionDocumentRef<D>;
+    readonly error?: undefined;
+  }
+  | {
+    readonly status: "error";
+    readonly publishedVersionDocRef?: undefined;
+    readonly error: Error;
+  };
 
 export type UsePublishedVersionDocRefResult<D extends DocumentSchema = DocumentSchema> =
   & PublishedVersionLoadState<D>
@@ -69,10 +76,10 @@ interface LoadResult<D extends DocumentSchema> {
  * ```tsx
  * const liveDraftRef = useDocRef(app, DocumentModel, documentId);
  * const result = usePublishedVersionDocRef(app, liveDraftRef, { type: "latest" });
- * if (result.docRef == null) {
+ * if (result.publishedVersionDocRef == null) {
  *   return result.error != null ? <ErrorMessage error={result.error} /> : <Spinner />;
  * }
- * return <Viewer doc={result.docRef} />;
+ * return <Viewer doc={result.publishedVersionDocRef} />;
  * ```
  */
 export function usePublishedVersionDocRef<D extends DocumentSchema>(
@@ -108,7 +115,7 @@ export function usePublishedVersionDocRef<D extends DocumentSchema>(
       ? app.state.loadLatestPublishedVersionDocRef(liveDraftRef)
       : app.state.loadPublishedVersionDocRef(liveDraftRef, version);
     load.then(
-      publishedVersionDocRef => finish({ status: "loaded", docRef: publishedVersionDocRef }),
+      publishedVersionDocRef => finish({ status: "loaded", publishedVersionDocRef }),
       (e: unknown) =>
         finish({
           status: "error",
