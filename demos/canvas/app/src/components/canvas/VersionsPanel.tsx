@@ -41,7 +41,7 @@ function VersionsList({ liveDraftRef, onOpenVersion, openVersionRef }: VersionsP
   const [deleteError, setDeleteError] = useState<string>();
   const [deletingVersionRef, setDeletingVersionRef] = useState<PublishedVersionRef>();
 
-  const deleteVersion = async (versionRef: PublishedVersionRef) => {
+  const handleDeleteVersion = async (versionRef: PublishedVersionRef) => {
     setDeleteError(undefined);
     setDeletingVersionRef(versionRef);
 
@@ -94,7 +94,7 @@ function VersionsList({ liveDraftRef, onOpenVersion, openVersionRef }: VersionsP
               icon="trash"
               loading={deletingVersionRef === version.ref}
               onClick={() =>
-                void deleteVersion(version.ref)}
+                void handleDeleteVersion(version.ref)}
               size="small"
               title="Delete version"
               variant="minimal"

@@ -91,7 +91,7 @@ export const CanvasPage = () => {
     };
   }, []);
 
-  const openVersion = useCallback(
+  const handleOpenVersion = useCallback(
     (versionRef: PublishedVersionRef | undefined) => {
       if (versionRef === publishedVersionRef) {
         return;
@@ -130,7 +130,7 @@ export const CanvasPage = () => {
       <PublishedCanvasView
         key={publishedVersionRef}
         liveDraftRef={doc}
-        onOpenVersion={openVersion}
+        onOpenVersion={handleOpenVersion}
         publishedVersionRef={publishedVersionRef}
         publishedVersionResult={publishedVersionResult}
       />
@@ -141,7 +141,7 @@ export const CanvasPage = () => {
     <CanvasEditor
       doc={doc}
       key={doc.id}
-      onOpenVersion={openVersion}
+      onOpenVersion={handleOpenVersion}
       statusToaster={statusToaster}
       toaster={toaster}
     />

@@ -41,18 +41,18 @@ export const PublishVersionButton = memo(function PublishVersionButton({
   const [isPublishing, setIsPublishing] = useState(false);
   const [name, setName] = useState("");
 
-  const open = useCallback(() => {
+  const handleOpen = useCallback(() => {
     setDescription("");
     setError(null);
     setName("");
     setIsOpen(true);
   }, []);
 
-  const close = useCallback(() => {
+  const handleClose = useCallback(() => {
     setIsOpen(false);
   }, []);
 
-  const publish = useCallback(async () => {
+  const handlePublish = useCallback(async () => {
     setError(null);
     setIsPublishing(true);
 
@@ -73,8 +73,8 @@ export const PublishVersionButton = memo(function PublishVersionButton({
 
   return (
     <>
-      <Button intent="primary" onClick={open} text="Publish" />
-      <Dialog isOpen={isOpen} onClose={close} title="Publish version">
+      <Button intent="primary" onClick={handleOpen} text="Publish" />
+      <Dialog isOpen={isOpen} onClose={handleClose} title="Publish version">
         <DialogBody>
           <p>
             Saves the canvas as it is now as a read-only version. You can keep editing the live
@@ -108,8 +108,13 @@ export const PublishVersionButton = memo(function PublishVersionButton({
         <DialogFooter
           actions={
             <>
-              <Button disabled={isPublishing} onClick={close} text="Cancel" />
-              <Button intent="primary" loading={isPublishing} onClick={publish} text="Publish" />
+              <Button disabled={isPublishing} onClick={handleClose} text="Cancel" />
+              <Button
+                intent="primary"
+                loading={isPublishing}
+                onClick={handlePublish}
+                text="Publish"
+              />
             </>
           }
         />
