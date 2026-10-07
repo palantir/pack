@@ -28,7 +28,6 @@ export interface UsePublishedVersionsResult {
   readonly error: Error | undefined;
   readonly isLoading: boolean;
   readonly refresh: () => void;
-  /** The document's published versions, latest first. */
   readonly versions: readonly PublishedVersion[] | undefined;
 }
 
@@ -40,7 +39,7 @@ interface LoadedVersions {
 
 /**
  * Loads a document's published versions, latest first. Call `refresh` after publishing or deleting
- * a version, or to pick up versions published elsewhere.
+ * a version.
  *
  * @param app The app instance initialized by your application.
  * @param docRef The document, as its live draft or one of its published versions.
