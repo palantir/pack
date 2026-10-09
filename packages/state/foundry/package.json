@@ -42,6 +42,9 @@
   "dependencies": {
     "@osdk/api": "catalog:",
     "@osdk/foundry.pack": "catalog:",
+    "@osdk/shared.client": "^1.0.1",
+    "@osdk/shared.client2": "catalog:",
+    "@osdk/shared.net.platformapi": "^1.8.0",
     "@palantir/pack.auth": "workspace:*",
     "@palantir/pack.core": "workspace:*",
     "@palantir/pack.document-schema.model-types": "workspace:*",

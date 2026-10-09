@@ -84,6 +84,9 @@ const cspell = {
     "examples-extra/*/{build,dist}/**/*",
     "packages/*/build/**",
     "CHANGELOG.md",
+
+    // Generated SDK code (e.g. PSDK) is machine output, not prose.
+    "**/src/generated/**",
   ],
   dictionaryDefinitions: [
     ...getDictionaryDefinitions(),

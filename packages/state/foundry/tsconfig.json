@@ -15,7 +15,9 @@
     "node_modules",
     "test-output",
     "**/__tests__/**/__snapshots__",
-    "**/__tests__/**/fixtures"
+    "**/__tests__/**/fixtures",
+    "src/generated/**",
+    "src/__psdk_poc__.ts"
   ],
   "references": []
 }

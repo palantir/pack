@@ -47,6 +47,7 @@
     "@osdk/api": "catalog:"
   },
   "devDependencies": {
+    "@osdk/platform-sdk-generator": "file:/tmp/osdk-platform-sdk-generator-0.81.0.tgz",
     "@palantir/pack.monorepo.tsconfig": "workspace:~",
     "rimraf": "catalog:",
     "tiny-invariant": "catalog:",

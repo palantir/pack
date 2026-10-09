@@ -1,0 +1,10 @@
+{
+  "name": "@osdk/foundry.core",
+  "version": "0.0.0",
+  "type": "module",
+  "dependencies": {
+    "@osdk/shared.client": "^1.0.1",
+    "@osdk/shared.client2": "^1.0.0",
+    "@osdk/shared.net.platformapi": "^1.8.0"
+  }
+}
