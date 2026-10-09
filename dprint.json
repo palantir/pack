@@ -18,6 +18,7 @@
     "**/__snapshots__/**",
     "**/__tests__/**/fixtures/**",
     "**/test-output",
+    "**/src/generated/**",
     "pnpm-lock.yaml"
   ],
   "plugins": [

@@ -1,0 +1,18 @@
+{
+  "extends": "@palantir/pack.monorepo.tsconfig/base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "emitDeclarationOnly": false,
+    "composite": false,
+    "baseUrl": ".",
+    "paths": {
+      "@osdk/foundry.pack": ["./src/generated/foundry.pack/src/index.ts"],
+      "@osdk/foundry.pack/*": ["./src/generated/foundry.pack/src/public/*.ts"],
+      "@osdk/foundry.core": ["./src/generated/foundry.core/src/index.ts"],
+      "@osdk/foundry.core/*": ["./src/generated/foundry.core/src/public/*.ts"],
+      "@osdk/foundry.filesystem": ["./src/generated/foundry.filesystem/src/index.ts"],
+      "@osdk/foundry.filesystem/*": ["./src/generated/foundry.filesystem/src/public/*.ts"]
+    }
+  },
+  "include": ["src/__psdk_poc__.ts", "src/generated/**/*"]
+}
