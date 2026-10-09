@@ -1,26 +1,26 @@
-prefer-workspace-packages: true
 packages:
   - demos/*/*
   - docs
   - packages/*
   - packages/*/*
+
 catalog:
-  "@babel/preset-typescript": ^7.29.7
-  "@changesets/changelog-git": ^0.2.1
-  "@osdk/api": ^2.5.2
-  "@osdk/client": ^2.5.2
-  "@osdk/foundry.admin": ^2.56.0
-  "@osdk/foundry.pack": ^2.79.0
-  "@osdk/oauth": ^1.4.0
-  "@osdk/react": ^0.6.0
-  "@osdk/shared.client2": ^1.0.0
-  "@types/fs-extra": ^11.0.4
-  "@types/node": ^20.19.17
-  "@types/react": ^18.3.18
-  "@types/react-dom": ^18.3.5
-  "@types/yargs": ^17.0.35
-  commander: ^14.0.0
+  '@babel/preset-typescript': ^7.29.7
+  '@changesets/changelog-git': ^0.2.1
+  '@osdk/api': ^2.5.2
+  '@osdk/client': ^2.5.2
+  '@osdk/foundry.admin': ^2.56.0
+  '@osdk/foundry.pack': ^2.79.0
+  '@osdk/oauth': ^1.4.0
+  '@osdk/react': ^0.6.0
+  '@osdk/shared.client2': ^1.0.0
+  '@types/fs-extra': ^11.0.4
+  '@types/node': ^20.19.17
+  '@types/react': ^18.3.18
+  '@types/react-dom': ^18.3.5
+  '@types/yargs': ^17.0.35
   cometd: ^7.0.18
+  commander: ^14.0.0
   conjure-client: ^2.15.0
   consola: ^3.4.2
   execa: ^9.6.1
@@ -38,6 +38,9 @@ catalog:
   vitest-mock-extended: ^3.1.0
   yjs: ^13.6.27
   zod: ^4.1.13
+
 onlyBuiltDependencies:
   - dprint
   - esbuild
+
+prefer-workspace-packages: true
