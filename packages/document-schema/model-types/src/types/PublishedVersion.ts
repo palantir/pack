@@ -20,8 +20,7 @@ import type { DocumentSchema } from "./DocumentSchema.js";
 
 /**
  * Server-generated identifier for a published Document version. Treat it as opaque and return it
- * unchanged; never parse or synthesize one. The same document state always gets the same id, so
- * republishing unchanged content returns the existing version. The server API calls it `ref`.
+ * unchanged; never parse or synthesize one. The server API calls it `ref`.
  */
 export type PublishedVersionId = Flavored<"PublishedVersionId">;
 
