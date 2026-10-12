@@ -16,9 +16,10 @@
 
 import type { Toaster } from "@blueprintjs/core";
 import { Callout, OverlayToaster, Position } from "@blueprintjs/core";
-import type { SupportedVersions } from "@demo/canvas.sdk";
-import type { DocumentId } from "@palantir/pack.document-schema.model-types";
+import type { SupportedVersions, VersionedDocRef } from "@demo/canvas.sdk";
+import type { DocumentId, PublishedVersionRef } from "@palantir/pack.document-schema.model-types";
 import { isValidDocRef } from "@palantir/pack.state.core";
+import { usePublishedVersionDocRef } from "@palantir/pack.state.react";
 import type { KeyboardEvent, MouseEvent } from "react";
 import { useCallback, useEffect, useState } from "react";
 import { useParams, useSearchParams } from "react-router";
@@ -32,19 +33,28 @@ import { useCanvasDocRef } from "../../pack.js";
 import { CanvasContent } from "./CanvasContent.js";
 import styles from "./CanvasPage.module.css";
 import { CanvasToolbar } from "./CanvasToolbar.js";
+import { PublishedCanvasView } from "./PublishedCanvasView.js";
 
 export const CanvasPage = () => {
   const { canvasId } = useParams<{ canvasId: string }>();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const schemaOverride = searchParams.get("schema");
   const versionOverride = schemaOverride != null
     ? parseInt(schemaOverride, 10) as SupportedVersions
     : undefined;
+  // In the URL, so switching canvases clears it.
+  const publishedVersionRef: PublishedVersionRef | undefined = searchParams.get("version")
+    || undefined;
 
   const { doc, persistedVersion } = useCanvasDocRef(
     app,
     canvasId as DocumentId | undefined,
     versionOverride,
+  );
+  const publishedVersionResult = usePublishedVersionDocRef(
+    app,
+    doc,
+    publishedVersionRef != null ? { type: "specific", publishedVersionRef } : undefined,
   );
   const [toaster, setToaster] = useState<Toaster | null>(null);
   const [statusToaster, setStatusToaster] = useState<Toaster | null>(null);
@@ -81,6 +91,24 @@ export const CanvasPage = () => {
     };
   }, []);
 
+  const handleOpenVersion = useCallback(
+    (versionRef: PublishedVersionRef | undefined) => {
+      if (versionRef === publishedVersionRef) {
+        return;
+      }
+      setSearchParams(params => {
+        const nextParams = new URLSearchParams(params);
+        if (versionRef == null) {
+          nextParams.delete("version");
+        } else {
+          nextParams.set("version", versionRef);
+        }
+        return nextParams;
+      });
+    },
+    [publishedVersionRef, setSearchParams],
+  );
+
   if (!isValidDocRef(doc)) {
     return <div>Canvas ID is required</div>;
   }
@@ -97,6 +125,37 @@ export const CanvasPage = () => {
     );
   }
 
+  if (publishedVersionRef != null) {
+    return (
+      <PublishedCanvasView
+        key={publishedVersionRef}
+        liveDraftRef={doc}
+        onOpenVersion={handleOpenVersion}
+        publishedVersionRef={publishedVersionRef}
+        publishedVersionResult={publishedVersionResult}
+      />
+    );
+  }
+
+  return (
+    <CanvasEditor
+      doc={doc}
+      key={doc.id}
+      onOpenVersion={handleOpenVersion}
+      statusToaster={statusToaster}
+      toaster={toaster}
+    />
+  );
+};
+
+interface CanvasEditorProps {
+  readonly doc: VersionedDocRef;
+  readonly statusToaster: Toaster | null;
+  readonly toaster: Toaster | null;
+  onOpenVersion: (versionRef: PublishedVersionRef | undefined) => void;
+}
+
+function CanvasEditor({ doc, statusToaster, toaster, onOpenVersion }: CanvasEditorProps) {
   const { broadcastCursor, broadcastSelection } = useBroadcastPresence(doc);
   const { remoteUsersByUserId, userIdsBySelectedNodeId } = useRemotePresence(doc);
   const interaction = useCanvasInteraction(doc, broadcastSelection);
@@ -105,6 +164,10 @@ export const CanvasPage = () => {
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
+      // Ignore keys from dialogs: they render in portals but still bubble here.
+      if (e.target !== e.currentTarget) {
+        return;
+      }
       if (e.key === "Delete" || e.key === "Backspace") {
         interaction.deleteSelected();
       }
@@ -135,6 +198,7 @@ export const CanvasPage = () => {
         onColorChange={interaction.setColor}
         onDelete={interaction.deleteSelected}
         onOpacityChange={interaction.setOpacity}
+        onOpenVersion={onOpenVersion}
         onToolChange={interaction.setTool}
       />
       <CanvasContent
@@ -152,4 +216,4 @@ export const CanvasPage = () => {
       />
     </div>
   );
-};
+}

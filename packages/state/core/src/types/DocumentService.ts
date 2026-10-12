@@ -31,6 +31,7 @@ import type {
   PresencePublishOptions,
   PresenceSubscriptionOptions,
   PublishedVersion,
+  PublishedVersionDocumentRef,
   PublishedVersionRef,
   RecordCollectionRef,
   RecordId,
@@ -317,6 +318,25 @@ export interface DocumentService {
     docRef: DocumentRef,
     ref: PublishedVersionRef,
   ) => Promise<void>;
+
+  /**
+   * Loads a published version as a read-only {@link PublishedVersionDocumentRef} that reads the
+   * version's frozen snapshot. Rejects with `InvalidPublishedVersionRef` or
+   * `PublishedVersionNotFound` for a bad or missing ref.
+   */
+  readonly loadPublishedVersionDocRef: <T extends DocumentSchema>(
+    docRef: DocumentRef<T>,
+    ref: PublishedVersionRef,
+  ) => Promise<PublishedVersionDocumentRef<T>>;
+
+  /**
+   * Loads the latest published version as a read-only {@link PublishedVersionDocumentRef}. The
+   * contents are loaded by the resolved version's ref, so a publish in between can't mix up two
+   * versions. Rejects with `NoActivePublishedVersion` when none exist.
+   */
+  readonly loadLatestPublishedVersionDocRef: <T extends DocumentSchema>(
+    docRef: DocumentRef<T>,
+  ) => Promise<PublishedVersionDocumentRef<T>>;
 
   readonly createDocRef: <const T extends DocumentSchema>(
     id: DocumentId,

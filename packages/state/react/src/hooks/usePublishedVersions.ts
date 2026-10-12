@@ -1,0 +1,104 @@
+/*
+ * Copyright 2026 Palantir Technologies, Inc. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+import type { PackApp } from "@palantir/pack.core";
+import type {
+  DocumentId,
+  DocumentRef,
+  PublishedVersion,
+} from "@palantir/pack.document-schema.model-types";
+import type { WithStateModule } from "@palantir/pack.state.core";
+import { isValidDocRef } from "@palantir/pack.state.core";
+import { useCallback, useEffect, useState } from "react";
+
+export interface UsePublishedVersionsResult {
+  readonly error: Error | undefined;
+  readonly isLoading: boolean;
+  readonly refresh: () => void;
+  readonly versions: readonly PublishedVersion[] | undefined;
+}
+
+interface VersionsLoadResult {
+  readonly documentId: DocumentId;
+  readonly error?: Error;
+  readonly versions?: readonly PublishedVersion[];
+}
+
+/**
+ * Loads a document's published versions, latest first. Call `refresh` after publishing or deleting
+ * a version.
+ *
+ * @param app The app instance initialized by your application.
+ * @param docRef The document, as its live draft or one of its published versions.
+ */
+export function usePublishedVersions(
+  app: WithStateModule<PackApp>,
+  docRef: DocumentRef,
+): UsePublishedVersionsResult {
+  const documentId = isValidDocRef(docRef) ? docRef.id : undefined;
+  const [isLoading, setIsLoading] = useState(false);
+  const [loadResult, setLoadResult] = useState<VersionsLoadResult>();
+  const [refreshCount, setRefreshCount] = useState(0);
+
+  const refresh = useCallback(() => {
+    setRefreshCount(count => count + 1);
+  }, []);
+
+  useEffect(() => {
+    if (documentId == null) {
+      return;
+    }
+
+    let cancelled = false;
+    setIsLoading(true);
+
+    void app.state.listPublishedVersions(docRef)
+      .then(
+        versions => {
+          if (!cancelled) {
+            setLoadResult({ documentId, versions });
+          }
+        },
+        (e: unknown) => {
+          if (!cancelled) {
+            setLoadResult(previous => ({
+              documentId,
+              error: e instanceof Error ? e : new Error("Failed to load published versions"),
+              versions: previous?.documentId === documentId ? previous.versions : undefined,
+            }));
+          }
+        },
+      )
+      .finally(() => {
+        if (!cancelled) {
+          setIsLoading(false);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [app.state, docRef, documentId, refreshCount]);
+
+  // Never return another document's versions.
+  const current = loadResult?.documentId === documentId ? loadResult : undefined;
+  return {
+    error: current?.error,
+    isLoading: documentId != null && isLoading,
+    refresh,
+    versions: current?.versions,
+  };
+}

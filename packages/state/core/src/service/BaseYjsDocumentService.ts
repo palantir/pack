@@ -33,6 +33,7 @@ import {
   type PresenceEvent,
   type PresencePublishOptions,
   type PublishedVersion,
+  type PublishedVersionDocumentRef,
   type PublishedVersionRef,
   type RecordCollectionRef,
   type RecordId,
@@ -256,6 +257,15 @@ export abstract class BaseYjsDocumentService<TDoc extends InternalYjsDoc = Inter
     ref: PublishedVersionRef,
   ) => Promise<void>;
 
+  abstract readonly loadPublishedVersionDocRef: <T extends DocumentSchema>(
+    docRef: DocumentRef<T>,
+    ref: PublishedVersionRef,
+  ) => Promise<PublishedVersionDocumentRef<T>>;
+
+  abstract readonly loadLatestPublishedVersionDocRef: <T extends DocumentSchema>(
+    docRef: DocumentRef<T>,
+  ) => Promise<PublishedVersionDocumentRef<T>>;
+
   readonly getDocumentSchemaOperationalVersion = (
     docRef: DocumentRef,
   ): number => {
@@ -433,7 +443,12 @@ export abstract class BaseYjsDocumentService<TDoc extends InternalYjsDoc = Inter
   }
 
   // Status helper methods
-  private buildStatus(internalDoc: TDoc): DocumentStatus {
+  /**
+   * Combines a document's four statuses (metadata, data, presence, activity) into what callers see.
+   * Subclasses can override it to take one of them from another document, as the published version
+   * service does for metadata.
+   */
+  protected buildStatus(internalDoc: TDoc): DocumentStatus {
     const invalidRecordCount = internalDoc.invalidRecords.size;
     return {
       metadata: internalDoc.metadataStatus,
@@ -1005,20 +1020,20 @@ export abstract class BaseYjsDocumentService<TDoc extends InternalYjsDoc = Inter
         currentDoc.yDocUpdateHandler = undefined;
       }
 
-      // Check if this removes all data subscriptions (state + record + collection)
-      const hasDataSubs = currentDoc.docStateSubscribers.size > 0
-        || currentDoc.recordSubscriptions.size > 0
-        || Array.from(currentDoc.collectionSubscriptions.values()).some(subs =>
-          subs.added?.size || subs.changed?.size || subs.deleted?.size
-        );
-
-      if (!hasDataSubs) {
-        this.closeDataSubscription(currentDoc, internalDocRef);
-      }
+      this.closeDataSubscriptionIfUnused(currentDoc, internalDocRef);
     };
   };
 
-  private closeDataSubscription(currentDoc: TDoc, docRef: DocumentRef): void {
+  private closeDataSubscriptionIfUnused(currentDoc: TDoc, docRef: DocumentRef): void {
+    const hasDataSubs = currentDoc.docStateSubscribers.size > 0
+      || currentDoc.recordSubscriptions.size > 0
+      || Array.from(currentDoc.collectionSubscriptions.values()).some(subs =>
+        subs.added?.size || subs.changed?.size || subs.deleted?.size
+      );
+    if (hasDataSubs) {
+      return;
+    }
+
     currentDoc.hasDataSubscriptions = false;
     this.onDataSubscriptionClosed(currentDoc, docRef);
     if (
@@ -1349,15 +1364,7 @@ export abstract class BaseYjsDocumentService<TDoc extends InternalYjsDoc = Inter
 
       this.cleanupCollectionListenerIfUnused(currentDoc, record.docRef.id, storageName);
 
-      const hasDataSubs = currentDoc.docStateSubscribers.size > 0
-        || currentDoc.recordSubscriptions.size > 0
-        || Array.from(currentDoc.collectionSubscriptions.values()).some(subs =>
-          subs.added?.size || subs.changed?.size || subs.deleted?.size
-        );
-
-      if (!hasDataSubs) {
-        this.closeDataSubscription(currentDoc, internalDocRef);
-      }
+      this.closeDataSubscriptionIfUnused(currentDoc, internalDocRef);
     };
   };
 
@@ -1395,15 +1402,7 @@ export abstract class BaseYjsDocumentService<TDoc extends InternalYjsDoc = Inter
 
       this.cleanupCollectionListenerIfUnused(currentDoc, record.docRef.id, storageName);
 
-      const hasDataSubs = currentDoc.docStateSubscribers.size > 0
-        || currentDoc.recordSubscriptions.size > 0
-        || Array.from(currentDoc.collectionSubscriptions.values()).some(subs =>
-          subs.added?.size || subs.changed?.size || subs.deleted?.size
-        );
-
-      if (!hasDataSubs) {
-        this.closeDataSubscription(currentDoc, internalDocRef);
-      }
+      this.closeDataSubscriptionIfUnused(currentDoc, internalDocRef);
     };
   };
 
@@ -1451,16 +1450,7 @@ export abstract class BaseYjsDocumentService<TDoc extends InternalYjsDoc = Inter
 
       this.cleanupCollectionListenerIfUnused(currentDoc, record.docRef.id, storageName);
 
-      const hasDataSubs = currentDoc.docStateSubscribers.size > 0
-        || currentDoc.recordSubscriptions.size > 0
-        || Array.from(currentDoc.collectionSubscriptions.values()).some(subs =>
-          subs.added?.size || subs.changed?.size || subs.deleted?.size
-        );
-
-      if (!hasDataSubs) {
-        currentDoc.hasDataSubscriptions = false;
-        this.onDataSubscriptionClosed(currentDoc, internalDocRef);
-      }
+      this.closeDataSubscriptionIfUnused(currentDoc, internalDocRef);
     };
   };
 
@@ -1567,15 +1557,7 @@ export abstract class BaseYjsDocumentService<TDoc extends InternalYjsDoc = Inter
       const storageName = getMetadata(collection.model).name;
       this.cleanupCollectionListenerIfUnused(currentDoc, collection.docRef.id, storageName);
 
-      const hasDataSubs = currentDoc.docStateSubscribers.size > 0
-        || currentDoc.recordSubscriptions.size > 0
-        || Array.from(currentDoc.collectionSubscriptions.values()).some(subs =>
-          subs.added?.size || subs.changed?.size || subs.deleted?.size
-        );
-
-      if (!hasDataSubs) {
-        this.closeDataSubscription(currentDoc, internalDocRef);
-      }
+      this.closeDataSubscriptionIfUnused(currentDoc, internalDocRef);
     };
   }
 

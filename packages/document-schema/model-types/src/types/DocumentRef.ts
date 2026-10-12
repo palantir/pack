@@ -62,7 +62,11 @@ export const DocumentRefBrand: unique symbol = Symbol("pack:DocumentRef");
  * changes to the document state and also related activity or presence events.
  *
  * A stable documentRef object is guaranteed for the same document id within the
- * same app instance.
+ * same app instance. The one exception is a `PublishedVersionDocumentRef`: it has
+ * the same id as its live draft but different data, so the id alone can't tell
+ * them apart. Use the ref you're given, since a ref made from its id is the live
+ * draft. If you store data per document (for example in a Map or as a React key),
+ * include `publishedVersion.ref` in the key.
  */
 export interface DocumentRef<D extends DocumentSchema = DocumentSchema> {
   readonly id: DocumentId;

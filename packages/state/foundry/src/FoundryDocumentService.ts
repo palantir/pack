@@ -48,6 +48,7 @@ import type {
   PresencePublishOptions,
   PresenceSubscriptionOptions,
   PublishedVersion,
+  PublishedVersionDocumentRef,
   PublishedVersionRef,
 } from "@palantir/pack.document-schema.model-types";
 import { getMetadata, toUnknownChannelError } from "@palantir/pack.document-schema.model-types";
@@ -68,6 +69,7 @@ import {
   createDocumentServiceConfig,
   DocumentLiveStatus,
   DocumentLoadStatus,
+  openPublishedVersionDocRef,
 } from "@palantir/pack.state.core";
 import type {
   FoundryEventService,
@@ -510,6 +512,26 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
         preview: this.config.usePreviewApi ?? DEFAULT_USE_PREVIEW_API,
       },
     );
+  };
+
+  readonly loadPublishedVersionDocRef = async <T extends DocumentSchema>(
+    docRef: DocumentRef<T>,
+    ref: PublishedVersionRef,
+  ): Promise<PublishedVersionDocumentRef<T>> => {
+    const [publishedVersion, contents] = await Promise.all([
+      this.getPublishedVersion(docRef, ref),
+      this.getPublishedVersionContents(docRef, ref),
+    ]);
+    return openPublishedVersionDocRef(this.app, this, docRef, contents, publishedVersion);
+  };
+
+  readonly loadLatestPublishedVersionDocRef = async <T extends DocumentSchema>(
+    docRef: DocumentRef<T>,
+  ): Promise<PublishedVersionDocumentRef<T>> => {
+    // Load contents by the resolved ref, so a publish in between can't mix up two versions.
+    const latestPublishedVersion = await this.getLatestPublishedVersion(docRef);
+    const contents = await this.getPublishedVersionContents(docRef, latestPublishedVersion.ref);
+    return openPublishedVersionDocRef(this.app, this, docRef, contents, latestPublishedVersion);
   };
 
   protected onMetadataSubscriptionOpened(
