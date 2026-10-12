@@ -63,7 +63,7 @@ export function useShapeIndex(doc: VersionedDocRef): ShapeIndex {
   useEffect(() => {
     const shapeCollection = doc.getRecords(NodeShapeModel);
 
-    const unsubscribeAdded = shapeCollection.onItemsAdded(items =>
+    const indexShapes = (items: readonly RecordRef<typeof NodeShapeModel>[]) =>
       Promise.all(items.map(recordRef =>
         recordRef.getSnapshot()
           .then(shape => {
@@ -71,8 +71,11 @@ export function useShapeIndex(doc: VersionedDocRef): ShapeIndex {
             entryCache.current?.set(recordRef, entry);
             return entry;
           })
-      )).then(entries => rbush.current?.load(entries))
-    );
+      )).then(entries => rbush.current?.load(entries));
+
+    const unsubscribeAdded = shapeCollection.onItemsAdded(indexShapes);
+    // Also index existing shapes: reopening a loaded document fires no "added" events.
+    void indexShapes([...shapeCollection]);
 
     const unsubscribeRemoved = shapeCollection.onItemsDeleted(items =>
       items.forEach(item => {
