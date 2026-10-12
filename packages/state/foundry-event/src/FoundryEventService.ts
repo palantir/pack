@@ -145,10 +145,6 @@ interface SyncSessionInternal extends SyncSession {
 export interface FoundryEventService {
   disposeDocument(documentId: DocumentId): void;
 
-  /**
-   * Whether the server has yet to ack some of this client's local updates, including ones held
-   * until the initial load finishes.
-   */
   hasUnackedUpdates(session: SyncSession): boolean;
 
   publishCustomPresence(
