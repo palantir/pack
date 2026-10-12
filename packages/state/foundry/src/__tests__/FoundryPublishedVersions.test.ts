@@ -44,13 +44,15 @@ const app = {
   config: { logger, osdkClient },
 } as unknown as PackAppInternal;
 const docRef = { id: "ri.pack.document.test" } as DocumentRef;
-const version = {
-  ref: "opaque-ref",
+const versionFields = {
   name: "First release",
   description: "Approved content",
   createdAt: "2026-09-29T12:00:00Z",
   createdBy: "user-1",
 };
+// The server calls the id `ref`; the SDK maps it to `id`.
+const wireVersion = { ...versionFields, ref: "opaque-id" };
+const version = { ...versionFields, id: "opaque-id" };
 
 function createService(usePreviewApi?: boolean) {
   return internalCreateFoundryDocumentService(app, { usePreviewApi }, mock<FoundryEventService>());
@@ -65,10 +67,11 @@ describe("FoundryDocumentService published versions", () => {
 
   // Verify create forwards optional metadata and preserves the published and evicted versions.
   it("sends publication options and maps the published and evicted versions", async () => {
-    const evictedVersion = { ...version, ref: "evicted-ref" };
+    const evictedWireVersion = { ...wireVersion, ref: "evicted-id" };
+    const evictedVersion = { ...version, id: "evicted-id" };
     publishedVersions.create.mockResolvedValue({
-      publishedVersion: version,
-      autoEvictedPublishedVersions: [evictedVersion],
+      publishedVersion: wireVersion,
+      autoEvictedPublishedVersions: [evictedWireVersion],
     });
 
     const result = await createService().createPublishedVersion(docRef, {
@@ -91,7 +94,7 @@ describe("FoundryDocumentService published versions", () => {
   // Verify create uses an empty body when options are omitted and honors preview configuration.
   it("sends an empty body without options and respects the preview setting", async () => {
     publishedVersions.create.mockResolvedValue({
-      publishedVersion: version,
+      publishedVersion: wireVersion,
       autoEvictedPublishedVersions: [],
     });
 
@@ -105,15 +108,15 @@ describe("FoundryDocumentService published versions", () => {
     );
   });
 
-  // Verify metadata reads route to list, get by ref, and get latest with the expected arguments.
-  it("lists and loads version metadata by ref or latest", async () => {
-    publishedVersions.list.mockResolvedValue({ data: [version] });
-    publishedVersions.get.mockResolvedValue(version);
-    publishedVersions.getLatest.mockResolvedValue(version);
+  // Verify metadata reads route to list, get by id, and get latest with the expected arguments.
+  it("lists and loads version metadata by id or latest", async () => {
+    publishedVersions.list.mockResolvedValue({ data: [wireVersion] });
+    publishedVersions.get.mockResolvedValue(wireVersion);
+    publishedVersions.getLatest.mockResolvedValue(wireVersion);
     const service = createService();
 
     expect(await service.listPublishedVersions(docRef)).toEqual([version]);
-    expect(await service.getPublishedVersion(docRef, version.ref)).toEqual(version);
+    expect(await service.getPublishedVersion(docRef, version.id)).toEqual(version);
     expect(await service.getLatestPublishedVersion(docRef)).toEqual(version);
     expect(publishedVersions.list).toHaveBeenCalledWith(osdkClient, docRef.id, {
       preview: true,
@@ -121,7 +124,7 @@ describe("FoundryDocumentService published versions", () => {
     expect(publishedVersions.get).toHaveBeenCalledWith(
       osdkClient,
       docRef.id,
-      version.ref,
+      version.id,
       { preview: true },
     );
     expect(publishedVersions.getLatest).toHaveBeenCalledWith(osdkClient, docRef.id, {
@@ -130,7 +133,7 @@ describe("FoundryDocumentService published versions", () => {
   });
 
   // Verify both content reads convert binary responses to Uint8Array without changing the bytes.
-  it("returns binary contents by ref or latest", async () => {
+  it("returns binary contents by id or latest", async () => {
     const bytes = new Uint8Array([1, 2, 3]);
     publishedVersions.getContents.mockResolvedValue({ arrayBuffer: async () => bytes.buffer });
     publishedVersions.getLatestContents.mockResolvedValue({
@@ -138,12 +141,12 @@ describe("FoundryDocumentService published versions", () => {
     });
     const service = createService();
 
-    expect(await service.getPublishedVersionContents(docRef, version.ref)).toEqual(bytes);
+    expect(await service.getPublishedVersionContents(docRef, version.id)).toEqual(bytes);
     expect(await service.getLatestPublishedVersionContents(docRef)).toEqual(bytes);
     expect(publishedVersions.getContents).toHaveBeenCalledWith(
       osdkClient,
       docRef.id,
-      version.ref,
+      version.id,
       { preview: true },
     );
     expect(publishedVersions.getLatestContents).toHaveBeenCalledWith(osdkClient, docRef.id, {
@@ -151,14 +154,14 @@ describe("FoundryDocumentService published versions", () => {
     });
   });
 
-  // Verify delete forwards the server-generated ref unchanged.
-  it("deletes a version by its opaque ref", async () => {
-    await createService().deletePublishedVersion(docRef, version.ref);
+  // Verify delete forwards the server-generated id unchanged.
+  it("deletes a version by its opaque id", async () => {
+    await createService().deletePublishedVersion(docRef, version.id);
 
     expect(publishedVersions.deletePublishedVersion).toHaveBeenCalledWith(
       osdkClient,
       docRef.id,
-      version.ref,
+      version.id,
       { preview: true },
     );
   });

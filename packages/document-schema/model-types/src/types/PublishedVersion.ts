@@ -20,16 +20,17 @@ import type { DocumentSchema } from "./DocumentSchema.js";
 
 /**
  * Server-generated identifier for a published Document version. Treat it as opaque and return it
- * unchanged; never parse or synthesize one.
+ * unchanged; never parse or synthesize one. The same document state always gets the same id, so
+ * republishing unchanged content returns the existing version. The server API calls it `ref`.
  */
-export type PublishedVersionRef = Flavored<"PublishedVersionRef">;
+export type PublishedVersionId = Flavored<"PublishedVersionId">;
 
 /**
  * An immutable published version of a PACK Document: a named, frozen snapshot of the document's
  * persisted state.
  */
 export interface PublishedVersion {
-  readonly ref: PublishedVersionRef;
+  readonly id: PublishedVersionId;
   readonly name?: string;
   readonly description?: string;
   readonly createdAt: string;
@@ -43,7 +44,7 @@ export interface PublishedVersion {
  * starts loaded, is marked unloaded when the last subscriber leaves, and is marked loaded again on
  * the next subscribe. Metadata and `version` come from the live draft, so `version` is the live
  * draft's operational schema version, not the schema version the snapshot was saved with. It has
- * the same `id` as the live draft, so use `publishedVersion.ref` to tell them apart, and keep this
+ * the same `id` as the live draft, so use `publishedVersion.id` to tell them apart, and keep this
  * ref: `app.state.createDocRef(id, schema)` returns the live draft.
  */
 export interface PublishedVersionDocumentRef<D extends DocumentSchema = DocumentSchema>

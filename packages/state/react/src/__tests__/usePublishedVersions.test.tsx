@@ -22,8 +22,8 @@ import { describe, expect, it, vi } from "vitest";
 import { usePublishedVersions } from "../hooks/usePublishedVersions.js";
 
 const docRef = { id: "doc-1" } as DocumentRef;
-const first: PublishedVersion = { ref: "v1", createdAt: "2026-09-30T12:00:00Z" };
-const second: PublishedVersion = { ref: "v2", createdAt: "2026-09-30T13:00:00Z" };
+const first: PublishedVersion = { id: "v1", createdAt: "2026-09-30T12:00:00Z" };
+const second: PublishedVersion = { id: "v2", createdAt: "2026-09-30T13:00:00Z" };
 
 function createApp(listPublishedVersions: unknown): WithStateModule<PackApp> {
   return { state: { listPublishedVersions } } as unknown as WithStateModule<PackApp>;

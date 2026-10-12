@@ -66,7 +66,7 @@ export const DocumentRefBrand: unique symbol = Symbol("pack:DocumentRef");
  * the same id as its live draft but different data, so the id alone can't tell
  * them apart. Use the ref you're given, since a ref made from its id is the live
  * draft. If you store data per document (for example in a Map or as a React key),
- * include `publishedVersion.ref` in the key.
+ * include `publishedVersion.id` in the key.
  */
 export interface DocumentRef<D extends DocumentSchema = DocumentSchema> {
   readonly id: DocumentId;

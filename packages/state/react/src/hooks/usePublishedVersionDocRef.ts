@@ -19,7 +19,7 @@ import type {
   DocumentRef,
   DocumentSchema,
   PublishedVersionDocumentRef,
-  PublishedVersionRef,
+  PublishedVersionId,
 } from "@palantir/pack.document-schema.model-types";
 import type { WithStateModule } from "@palantir/pack.state.core";
 import { isValidDocRef } from "@palantir/pack.state.core";
@@ -27,7 +27,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 
 export type PublishedVersionSelection =
   | { readonly type: "latest" }
-  | { readonly type: "specific"; readonly publishedVersionRef: PublishedVersionRef };
+  | { readonly type: "specific"; readonly publishedVersionId: PublishedVersionId };
 
 type PublishedVersionLoadState<D extends DocumentSchema> =
   | {
@@ -59,7 +59,7 @@ const LOADING = { status: "loading" } as const;
 interface LoadResult<D extends DocumentSchema> {
   readonly liveDraftRef: DocumentRef<D>;
   readonly state: PublishedVersionLoadState<D>;
-  readonly selectionKey: PublishedVersionRef | typeof LATEST;
+  readonly selectionKey: PublishedVersionId | typeof LATEST;
 }
 
 /**
@@ -87,7 +87,7 @@ export function usePublishedVersionDocRef<D extends DocumentSchema>(
   liveDraftRef: DocumentRef<D>,
   selection: PublishedVersionSelection | undefined,
 ): UsePublishedVersionDocRefResult<D> {
-  const selectionKey = selection?.type === "latest" ? LATEST : selection?.publishedVersionRef;
+  const selectionKey = selection?.type === "latest" ? LATEST : selection?.publishedVersionId;
   const [loadResult, setLoadResult] = useState<LoadResult<D>>();
   const [refreshCount, setRefreshCount] = useState(0);
   const refresh = useCallback(() => {

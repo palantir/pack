@@ -34,7 +34,7 @@ import {
   type PresencePublishOptions,
   type PublishedVersion,
   type PublishedVersionDocumentRef,
-  type PublishedVersionRef,
+  type PublishedVersionId,
   type RecordCollectionRef,
   type RecordId,
   RecordInvalidError,
@@ -236,7 +236,7 @@ export abstract class BaseYjsDocumentService<TDoc extends InternalYjsDoc = Inter
 
   abstract readonly getPublishedVersion: (
     docRef: DocumentRef,
-    ref: PublishedVersionRef,
+    publishedVersionId: PublishedVersionId,
   ) => Promise<PublishedVersion>;
 
   abstract readonly getLatestPublishedVersion: (
@@ -245,7 +245,7 @@ export abstract class BaseYjsDocumentService<TDoc extends InternalYjsDoc = Inter
 
   abstract readonly getPublishedVersionContents: (
     docRef: DocumentRef,
-    ref: PublishedVersionRef,
+    publishedVersionId: PublishedVersionId,
   ) => Promise<Uint8Array>;
 
   abstract readonly getLatestPublishedVersionContents: (
@@ -254,12 +254,12 @@ export abstract class BaseYjsDocumentService<TDoc extends InternalYjsDoc = Inter
 
   abstract readonly deletePublishedVersion: (
     docRef: DocumentRef,
-    ref: PublishedVersionRef,
+    publishedVersionId: PublishedVersionId,
   ) => Promise<void>;
 
   abstract readonly loadPublishedVersionDocRef: <T extends DocumentSchema>(
     docRef: DocumentRef<T>,
-    ref: PublishedVersionRef,
+    publishedVersionId: PublishedVersionId,
   ) => Promise<PublishedVersionDocumentRef<T>>;
 
   abstract readonly loadLatestPublishedVersionDocRef: <T extends DocumentSchema>(

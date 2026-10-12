@@ -15,7 +15,7 @@
  */
 
 import { Button, Callout, Classes, Popover, Spinner } from "@blueprintjs/core";
-import type { DocumentRef, PublishedVersionRef } from "@palantir/pack.document-schema.model-types";
+import type { DocumentRef, PublishedVersionId } from "@palantir/pack.document-schema.model-types";
 import { usePublishedVersions } from "@palantir/pack.state.react";
 import { memo, useState } from "react";
 import { app } from "../../app.js";
@@ -24,8 +24,8 @@ import styles from "./VersionsPanel.module.css";
 
 export interface VersionsPanelProps {
   readonly liveDraftRef: DocumentRef;
-  readonly openVersionRef?: PublishedVersionRef;
-  onOpenVersion: (versionRef: PublishedVersionRef | undefined) => void;
+  readonly openVersionId?: PublishedVersionId;
+  onOpenVersion: (versionId: PublishedVersionId | undefined) => void;
 }
 
 export const VersionsPanel = memo(function VersionsPanel(props: VersionsPanelProps) {
@@ -36,25 +36,25 @@ export const VersionsPanel = memo(function VersionsPanel(props: VersionsPanelPro
   );
 });
 
-function VersionsList({ liveDraftRef, onOpenVersion, openVersionRef }: VersionsPanelProps) {
+function VersionsList({ liveDraftRef, onOpenVersion, openVersionId }: VersionsPanelProps) {
   const { error, isLoading, refresh, versions } = usePublishedVersions(app, liveDraftRef);
   const [deleteError, setDeleteError] = useState<string>();
-  const [deletingVersionRef, setDeletingVersionRef] = useState<PublishedVersionRef>();
+  const [deletingVersionId, setDeletingVersionId] = useState<PublishedVersionId>();
 
-  const handleDeleteVersion = async (versionRef: PublishedVersionRef) => {
+  const handleDeleteVersion = async (versionId: PublishedVersionId) => {
     setDeleteError(undefined);
-    setDeletingVersionRef(versionRef);
+    setDeletingVersionId(versionId);
 
     try {
-      await app.state.deletePublishedVersion(liveDraftRef, versionRef);
+      await app.state.deletePublishedVersion(liveDraftRef, versionId);
       refresh();
-      if (versionRef === openVersionRef) {
+      if (versionId === openVersionId) {
         onOpenVersion(undefined);
       }
     } catch (e) {
       setDeleteError(e instanceof Error ? e.message : "Failed to delete version");
     } finally {
-      setDeletingVersionRef(undefined);
+      setDeletingVersionId(undefined);
     }
   };
 
@@ -64,7 +64,7 @@ function VersionsList({ liveDraftRef, onOpenVersion, openVersionRef }: VersionsP
     <aside className={styles.panel}>
       <h2 className={styles.header}>Versions</h2>
       <ul className={styles.list}>
-        <li className={getItemClassName(openVersionRef == null)}>
+        <li className={getItemClassName(openVersionId == null)}>
           <button
             className={openButtonClassName}
             onClick={() => onOpenVersion(undefined)}
@@ -75,11 +75,11 @@ function VersionsList({ liveDraftRef, onOpenVersion, openVersionRef }: VersionsP
           </button>
         </li>
         {versions?.map(version => (
-          <li className={getItemClassName(version.ref === openVersionRef)} key={version.ref}>
+          <li className={getItemClassName(version.id === openVersionId)} key={version.id}>
             <button
               className={openButtonClassName}
               onClick={() =>
-                onOpenVersion(version.ref)}
+                onOpenVersion(version.id)}
               type="button"
             >
               <span className={styles.name}>{version.name ?? "Untitled version"}</span>
@@ -92,9 +92,9 @@ function VersionsList({ liveDraftRef, onOpenVersion, openVersionRef }: VersionsP
             </button>
             <Button
               icon="trash"
-              loading={deletingVersionRef === version.ref}
+              loading={deletingVersionId === version.id}
               onClick={() =>
-                void handleDeleteVersion(version.ref)}
+                void handleDeleteVersion(version.id)}
               size="small"
               title="Delete version"
               variant="minimal"

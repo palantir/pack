@@ -17,7 +17,7 @@
 import type { Toaster } from "@blueprintjs/core";
 import { Callout, OverlayToaster, Position } from "@blueprintjs/core";
 import type { SupportedVersions, VersionedDocRef } from "@demo/canvas.sdk";
-import type { DocumentId, PublishedVersionRef } from "@palantir/pack.document-schema.model-types";
+import type { DocumentId, PublishedVersionId } from "@palantir/pack.document-schema.model-types";
 import { isValidDocRef } from "@palantir/pack.state.core";
 import { usePublishedVersionDocRef } from "@palantir/pack.state.react";
 import type { KeyboardEvent, MouseEvent } from "react";
@@ -43,7 +43,7 @@ export const CanvasPage = () => {
     ? parseInt(schemaOverride, 10) as SupportedVersions
     : undefined;
   // In the URL, so switching canvases clears it.
-  const publishedVersionRef: PublishedVersionRef | undefined = searchParams.get("version")
+  const publishedVersionId: PublishedVersionId | undefined = searchParams.get("version")
     || undefined;
 
   const { doc, persistedVersion } = useCanvasDocRef(
@@ -54,7 +54,7 @@ export const CanvasPage = () => {
   const publishedVersionResult = usePublishedVersionDocRef(
     app,
     doc,
-    publishedVersionRef != null ? { type: "specific", publishedVersionRef } : undefined,
+    publishedVersionId != null ? { type: "specific", publishedVersionId } : undefined,
   );
   const [toaster, setToaster] = useState<Toaster | null>(null);
   const [statusToaster, setStatusToaster] = useState<Toaster | null>(null);
@@ -92,21 +92,21 @@ export const CanvasPage = () => {
   }, []);
 
   const handleOpenVersion = useCallback(
-    (versionRef: PublishedVersionRef | undefined) => {
-      if (versionRef === publishedVersionRef) {
+    (versionId: PublishedVersionId | undefined) => {
+      if (versionId === publishedVersionId) {
         return;
       }
       setSearchParams(params => {
         const nextParams = new URLSearchParams(params);
-        if (versionRef == null) {
+        if (versionId == null) {
           nextParams.delete("version");
         } else {
-          nextParams.set("version", versionRef);
+          nextParams.set("version", versionId);
         }
         return nextParams;
       });
     },
-    [publishedVersionRef, setSearchParams],
+    [publishedVersionId, setSearchParams],
   );
 
   if (!isValidDocRef(doc)) {
@@ -125,13 +125,13 @@ export const CanvasPage = () => {
     );
   }
 
-  if (publishedVersionRef != null) {
+  if (publishedVersionId != null) {
     return (
       <PublishedCanvasView
-        key={publishedVersionRef}
+        key={publishedVersionId}
         liveDraftRef={doc}
         onOpenVersion={handleOpenVersion}
-        publishedVersionRef={publishedVersionRef}
+        publishedVersionId={publishedVersionId}
         publishedVersionResult={publishedVersionResult}
       />
     );
@@ -152,7 +152,7 @@ interface CanvasEditorProps {
   readonly doc: VersionedDocRef;
   readonly statusToaster: Toaster | null;
   readonly toaster: Toaster | null;
-  onOpenVersion: (versionRef: PublishedVersionRef | undefined) => void;
+  onOpenVersion: (versionId: PublishedVersionId | undefined) => void;
 }
 
 function CanvasEditor({ doc, statusToaster, toaster, onOpenVersion }: CanvasEditorProps) {
