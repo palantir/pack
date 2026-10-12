@@ -404,6 +404,18 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
     docRef: DocumentRef,
     options?: CreatePublishedVersionOptions,
   ): Promise<CreatePublishedVersionResult> => {
+    const internalDoc = this.documents.get(docRef.id);
+    const error = internalDoc?.dataStatus.error;
+    if (error?.requiresRefresh === true) {
+      throw new Error(error.message);
+    }
+
+    // The server publishes what it has saved, so edits it hasn't acked yet would be left out.
+    const syncSession = internalDoc?.syncSession;
+    if (syncSession != null && this.eventService.hasUnackedUpdates(syncSession)) {
+      throw new Error("Recent edits are still being saved. Try publishing again in a moment.");
+    }
+
     const response = await PublishedVersions.create(
       this.app.config.osdkClient,
       docRef.id,

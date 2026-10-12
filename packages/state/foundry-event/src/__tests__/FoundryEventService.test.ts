@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import type { DocumentPublishMessage, DocumentUpdateMessage } from "@osdk/foundry.pack";
+import type { DocumentPublishMessage, DocumentUpdateMessage, EditId } from "@osdk/foundry.pack";
 import type { PackAppInternal } from "@palantir/pack.core";
 import {
   ChannelErrorCode,
@@ -30,11 +30,12 @@ import {
 import { Base64 } from "js-base64";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import * as Y from "yjs";
-import { createFoundryEventService } from "../FoundryEventService.js";
+import { createFoundryEventService, type SyncSession } from "../FoundryEventService.js";
 import type { SubscriptionId } from "../types/EventService.js";
 
 interface PublishedDocumentUpdate {
   readonly documentUpdateSchemaVersion?: number;
+  readonly editId?: string;
   readonly yjsUpdate?: {
     readonly data?: unknown;
   };
@@ -732,7 +733,9 @@ describe("FoundryEventService", () => {
 
     function startSyncCapturingServer(yDoc: Y.Doc, maxVersion = 1): {
       service: ReturnType<typeof createFoundryEventService>;
+      session: SyncSession;
       deliverInitialRevision: () => void;
+      sendServerMessage: (message: DocumentUpdateMessage) => void;
     } {
       let updateCallback: ((message: DocumentUpdateMessage) => void) | undefined;
       mocks.eventService.subscribe.mockImplementation((_channel, callback) => {
@@ -741,14 +744,19 @@ describe("FoundryEventService", () => {
       });
 
       const service = createFoundryEventService(app);
-      service.startDocumentSync(
+      const session = service.startDocumentSync(
         "doc-1" as DocumentId,
         yDoc,
         { maxVersion, minVersion: 1 },
         () => {},
       );
 
-      return { service, deliverInitialRevision: () => updateCallback?.(initialRevision()) };
+      return {
+        service,
+        session,
+        deliverInitialRevision: () => updateCallback?.(initialRevision()),
+        sendServerMessage: message => updateCallback?.(message),
+      };
     }
 
     it("holds a write made during the load instead of dropping it", async () => {
@@ -765,6 +773,33 @@ describe("FoundryEventService", () => {
 
       expect(mocks.eventService.publish).toHaveBeenCalledTimes(1);
       expect(applyPublishedUpdates().getMap("Shape").get("shape-1")).toBe("during-load");
+    });
+
+    it("reports held and sent writes as unacked until the server acks them", async () => {
+      const yDoc = new Y.Doc();
+      const { deliverInitialRevision, sendServerMessage, service, session } =
+        startSyncCapturingServer(yDoc);
+      await Promise.resolve();
+      expect(service.hasUnackedUpdates(session)).toBe(false);
+
+      yDoc.getMap("Shape").set("held", "during-load");
+      expect(service.hasUnackedUpdates(session)).toBe(true);
+
+      // The held write is now sent, but still waiting for its ack.
+      deliverInitialRevision();
+      expect(service.hasUnackedUpdates(session)).toBe(true);
+
+      const editId = (mocks.eventService.publish.mock.calls[0]![1] as PublishedDocumentUpdate)
+        .editId!;
+      sendServerMessage({
+        baseRevisionId: "1",
+        clientId: session.clientId,
+        clientSupportedVersionRange: { maxVersion: 1, minVersion: 1 },
+        editIds: [editId as EditId],
+        revisionId: "2",
+        type: "update",
+      });
+      expect(service.hasUnackedUpdates(session)).toBe(false);
     });
 
     it("preserves the order of writes held across the load", async () => {

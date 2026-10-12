@@ -255,9 +255,11 @@ export interface DocumentService {
   ) => Promise<string | undefined>;
 
   /**
-   * Publishes the document's current persisted state as an immutable published version. Republishing
-   * an unchanged head returns the existing version. When the document is at its published-version
-   * limit, the oldest versions are auto-evicted to make room and reported in the result.
+   * Publishes the document's current persisted state as an immutable published version. Rejects if
+   * this client still has edits the server hasn't saved, since they would be left out; try again
+   * once they're saved. Republishing an unchanged head returns the existing version. When the
+   * document is at its published-version limit, the oldest versions are auto-evicted to make room
+   * and reported in the result.
    */
   readonly createPublishedVersion: (
     docRef: DocumentRef,

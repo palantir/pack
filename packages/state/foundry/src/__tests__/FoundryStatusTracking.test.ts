@@ -20,7 +20,7 @@ import type {
   DocumentMetadataUpdate,
   PresenceCollaborativeUpdate,
 } from "@osdk/foundry.pack";
-import { Documents } from "@osdk/foundry.pack";
+import { Documents, PublishedVersions } from "@osdk/foundry.pack";
 import type { PackAppInternal } from "@palantir/pack.core";
 import type { DocumentId, DocumentSchema, Model } from "@palantir/pack.document-schema.model-types";
 import { ChannelErrorCode, Metadata } from "@palantir/pack.document-schema.model-types";
@@ -48,6 +48,9 @@ vi.mock("@osdk/foundry.pack", () => ({
   Documents: {
     deleteDocument: vi.fn(),
     get: vi.fn(),
+  },
+  PublishedVersions: {
+    create: vi.fn(),
   },
 }));
 
@@ -158,6 +161,7 @@ describe("Foundry Document Status Tracking", () => {
     vi.useRealTimers();
     vi.mocked(Documents.deleteDocument).mockClear();
     vi.mocked(Documents.get).mockClear();
+    vi.mocked(PublishedVersions.create).mockReset();
   });
 
   describe("metadata loading", () => {
@@ -376,6 +380,24 @@ describe("Foundry Document Status Tracking", () => {
       expect(finalStatus).toBeDefined();
       expect(finalStatus?.data.load).toBe(DocumentLoadStatus.LOADED);
       expect(finalStatus?.data.error).toBeUndefined();
+    });
+
+    it("rejects publishing while edits are still waiting for an ack", async () => {
+      vi.mocked(PublishedVersions.create).mockResolvedValue({
+        publishedVersion: { createdAt: "2026-10-12T00:00:00Z", ref: "v1" },
+        autoEvictedPublishedVersions: [],
+      });
+      const docRef = createDocRef(mockApp, "test-doc-publish" as DocumentId, testSchema);
+      unsubscribes.push(service.onStateChange(docRef, () => {}));
+      await vi.runAllTimersAsync();
+
+      mockEventService.hasUnackedUpdates.mockReturnValue(true);
+      await expect(service.createPublishedVersion(docRef)).rejects.toThrow("still being saved");
+      expect(PublishedVersions.create).not.toHaveBeenCalled();
+
+      mockEventService.hasUnackedUpdates.mockReturnValue(false);
+      await service.createPublishedVersion(docRef);
+      expect(PublishedVersions.create).toHaveBeenCalledOnce();
     });
 
     it("should wait for metadata before starting websocket data sync", async () => {
@@ -1228,6 +1250,21 @@ describe("Foundry Document Status Tracking", () => {
       message: "Refresh to continue.",
       requiresRefresh: true,
     };
+
+    it("rejects publishing after saving fails, even when the outbox is empty", async () => {
+      const doc = createDocRef(mockApp, "refresh-publish-doc", schema);
+      const unsubscribe = service.onStateChange(doc, () => {});
+      await vi.runAllTimersAsync();
+      mockEventService.hasUnackedUpdates.mockReturnValue(false);
+      mockEventService.startDocumentSync.mock.calls.at(-1)![3]({ error: refreshError });
+
+      await expect(service.createPublishedVersion(doc)).rejects.toThrow(refreshError.message);
+      expect(PublishedVersions.create).not.toHaveBeenCalled();
+
+      unsubscribe();
+      await expect(service.createPublishedVersion(doc)).rejects.toThrow(refreshError.message);
+      expect(PublishedVersions.create).not.toHaveBeenCalled();
+    });
 
     it("should keep the first refresh error, ignoring later errors and remounts", async () => {
       const doc = createDocRef(mockApp, "refresh-doc", schema);

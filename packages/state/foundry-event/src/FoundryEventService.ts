@@ -145,6 +145,12 @@ interface SyncSessionInternal extends SyncSession {
 export interface FoundryEventService {
   disposeDocument(documentId: DocumentId): void;
 
+  /**
+   * Whether the server has yet to ack some of this client's local updates, including ones held
+   * until the initial load finishes.
+   */
+  hasUnackedUpdates(session: SyncSession): boolean;
+
   publishCustomPresence(
     documentId: DocumentId,
     eventType: string,
@@ -545,6 +551,13 @@ class FoundryEventServiceImpl implements FoundryEventService {
       internalSession.pendingPublishes = [];
     }
     internalSession.yDoc = undefined;
+  }
+
+  hasUnackedUpdates(session: SyncSession): boolean {
+    const internalSession = this.sessions.get(this.getSessionId(session.documentId));
+    return internalSession != null
+      && (internalSession.outbox?.hasUnackedUpdates() === true
+        || internalSession.pendingPublishes.length > 0);
   }
 
   unsubscribe(subscriptionId: SubscriptionId): void {
