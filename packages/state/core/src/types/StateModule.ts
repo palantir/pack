@@ -31,7 +31,7 @@ import type {
   PresenceSubscriptionOptions,
   PublishedVersion,
   PublishedVersionDocumentRef,
-  PublishedVersionRef,
+  PublishedVersionId,
   RecordCollectionRef,
   RecordId,
   RecordRef,
@@ -137,10 +137,10 @@ export interface StateModule {
     docRef: DocumentRef,
   ) => Promise<readonly PublishedVersion[]>;
 
-  /** Rejects with `InvalidPublishedVersionRef` or `PublishedVersionNotFound` for a bad or missing ref. */
+  /** Rejects with `InvalidPublishedVersionRef` or `PublishedVersionNotFound` for a bad or missing id. */
   readonly getPublishedVersion: (
     docRef: DocumentRef,
-    ref: PublishedVersionRef,
+    publishedVersionId: PublishedVersionId,
   ) => Promise<PublishedVersion>;
 
   /** Rejects with `NoActivePublishedVersion` when none exist; use `listPublishedVersions` to check. */
@@ -151,16 +151,16 @@ export interface StateModule {
   /** Rejects for a published version doc ref, which is read-only. Use the live draft ref. */
   readonly deletePublishedVersion: (
     docRef: DocumentRef,
-    ref: PublishedVersionRef,
+    publishedVersionId: PublishedVersionId,
   ) => Promise<void>;
 
   /**
    * Loads a published version as a read-only {@link PublishedVersionDocumentRef}. Rejects with
-   * `InvalidPublishedVersionRef` or `PublishedVersionNotFound` for a bad or missing ref.
+   * `InvalidPublishedVersionRef` or `PublishedVersionNotFound` for a bad or missing id.
    */
   readonly loadPublishedVersionDocRef: <T extends DocumentSchema>(
     docRef: DocumentRef<T>,
-    ref: PublishedVersionRef,
+    publishedVersionId: PublishedVersionId,
   ) => Promise<PublishedVersionDocumentRef<T>>;
 
   /**
@@ -406,9 +406,9 @@ export class StateModuleImpl implements StateModule {
 
   async getPublishedVersion(
     docRef: DocumentRef,
-    ref: PublishedVersionRef,
+    publishedVersionId: PublishedVersionId,
   ): Promise<PublishedVersion> {
-    return this.documentService.getPublishedVersion(docRef, ref);
+    return this.documentService.getPublishedVersion(docRef, publishedVersionId);
   }
 
   async getLatestPublishedVersion(
@@ -419,16 +419,16 @@ export class StateModuleImpl implements StateModule {
 
   async deletePublishedVersion(
     docRef: DocumentRef,
-    ref: PublishedVersionRef,
+    publishedVersionId: PublishedVersionId,
   ): Promise<void> {
-    return this.serviceFor(docRef).deletePublishedVersion(docRef, ref);
+    return this.serviceFor(docRef).deletePublishedVersion(docRef, publishedVersionId);
   }
 
   async loadPublishedVersionDocRef<T extends DocumentSchema>(
     docRef: DocumentRef<T>,
-    ref: PublishedVersionRef,
+    publishedVersionId: PublishedVersionId,
   ): Promise<PublishedVersionDocumentRef<T>> {
-    return this.documentService.loadPublishedVersionDocRef(docRef, ref);
+    return this.documentService.loadPublishedVersionDocRef(docRef, publishedVersionId);
   }
 
   async loadLatestPublishedVersionDocRef<T extends DocumentSchema>(

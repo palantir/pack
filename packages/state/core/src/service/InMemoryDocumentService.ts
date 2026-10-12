@@ -29,7 +29,7 @@ import type {
   PresenceSubscriptionOptions,
   PublishedVersion,
   PublishedVersionDocumentRef,
-  PublishedVersionRef,
+  PublishedVersionId,
 } from "@palantir/pack.document-schema.model-types";
 import { toUnknownChannelError } from "@palantir/pack.document-schema.model-types";
 import { createDocumentServiceConfig } from "../DocumentServiceModule.js";
@@ -231,7 +231,7 @@ class InMemoryDocumentService extends BaseYjsDocumentService {
 
   readonly getPublishedVersion = (
     _docRef: DocumentRef,
-    _ref: PublishedVersionRef,
+    _publishedVersionId: PublishedVersionId,
   ): Promise<PublishedVersion> => {
     return Promise.reject(
       new Error("getPublishedVersion is not supported by the in-memory document service"),
@@ -248,7 +248,7 @@ class InMemoryDocumentService extends BaseYjsDocumentService {
 
   readonly getPublishedVersionContents = (
     _docRef: DocumentRef,
-    _ref: PublishedVersionRef,
+    _publishedVersionId: PublishedVersionId,
   ): Promise<Uint8Array> => {
     return Promise.reject(
       new Error("getPublishedVersionContents is not supported by the in-memory document service"),
@@ -267,7 +267,7 @@ class InMemoryDocumentService extends BaseYjsDocumentService {
 
   readonly deletePublishedVersion = (
     _docRef: DocumentRef,
-    _ref: PublishedVersionRef,
+    _publishedVersionId: PublishedVersionId,
   ): Promise<void> => {
     return Promise.reject(
       new Error("deletePublishedVersion is not supported by the in-memory document service"),
@@ -276,7 +276,7 @@ class InMemoryDocumentService extends BaseYjsDocumentService {
 
   readonly loadPublishedVersionDocRef = <T extends DocumentSchema>(
     _docRef: DocumentRef<T>,
-    _ref: PublishedVersionRef,
+    _publishedVersionId: PublishedVersionId,
   ): Promise<PublishedVersionDocumentRef<T>> => {
     return Promise.reject(
       new Error("loadPublishedVersionDocRef is not supported by the in-memory document service"),

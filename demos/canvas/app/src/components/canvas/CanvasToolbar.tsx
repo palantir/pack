@@ -15,7 +15,7 @@
  */
 
 import type { VersionedDocRef } from "@demo/canvas.sdk";
-import type { PublishedVersionRef } from "@palantir/pack.document-schema.model-types";
+import type { PublishedVersionId } from "@palantir/pack.document-schema.model-types";
 import { useDocMetadata } from "@palantir/pack.state.react";
 import type { ChangeEvent } from "react";
 import { memo, useState } from "react";
@@ -36,7 +36,7 @@ export interface CanvasToolbarProps {
   onColorChange: (color: string) => void;
   onDelete: () => void;
   onOpacityChange: (opacity: number) => void;
-  onOpenVersion: (versionRef: PublishedVersionRef | undefined) => void;
+  onOpenVersion: (versionId: PublishedVersionId | undefined) => void;
   onToolChange: (tool: ToolMode) => void;
 }
 

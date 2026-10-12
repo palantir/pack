@@ -19,7 +19,7 @@ import type { DocumentModel, VersionedDocRef } from "@demo/canvas.sdk";
 import { FreehandStrokeModel, NodeShapeModel } from "@demo/canvas.sdk";
 import type {
   PublishedVersionDocumentRef,
-  PublishedVersionRef,
+  PublishedVersionId,
 } from "@palantir/pack.document-schema.model-types";
 import type { UsePublishedVersionDocRefResult } from "@palantir/pack.state.react";
 import { useDocMetadata, useRecords } from "@palantir/pack.state.react";
@@ -41,14 +41,14 @@ const NO_SELECTIONS: CanvasContentProps["userIdsBySelectedNodeId"] = new Map();
 
 export interface PublishedCanvasViewProps {
   readonly liveDraftRef: VersionedDocRef;
-  readonly publishedVersionRef: PublishedVersionRef;
+  readonly publishedVersionId: PublishedVersionId;
   readonly publishedVersionResult: UsePublishedVersionDocRefResult<DocumentModel>;
-  onOpenVersion: (versionRef: PublishedVersionRef | undefined) => void;
+  onOpenVersion: (versionId: PublishedVersionId | undefined) => void;
 }
 
 export const PublishedCanvasView = memo(function PublishedCanvasView({
   liveDraftRef,
-  publishedVersionRef,
+  publishedVersionId,
   publishedVersionResult,
   onOpenVersion,
 }: PublishedCanvasViewProps) {
@@ -71,7 +71,7 @@ export const PublishedCanvasView = memo(function PublishedCanvasView({
           <VersionsPanel
             liveDraftRef={liveDraftRef}
             onOpenVersion={onOpenVersion}
-            openVersionRef={publishedVersionRef}
+            openVersionId={publishedVersionId}
           />
         </div>
       </div>

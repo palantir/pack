@@ -49,7 +49,7 @@ import type {
   PresenceSubscriptionOptions,
   PublishedVersion,
   PublishedVersionDocumentRef,
-  PublishedVersionRef,
+  PublishedVersionId,
 } from "@palantir/pack.document-schema.model-types";
 import { getMetadata, toUnknownChannelError } from "@palantir/pack.document-schema.model-types";
 import type {
@@ -454,12 +454,12 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
 
   readonly getPublishedVersion = async (
     docRef: DocumentRef,
-    ref: PublishedVersionRef,
+    publishedVersionId: PublishedVersionId,
   ): Promise<PublishedVersion> => {
     const version = await PublishedVersions.get(
       this.app.config.osdkClient,
       docRef.id,
-      ref,
+      publishedVersionId,
       {
         preview: this.config.usePreviewApi ?? DEFAULT_USE_PREVIEW_API,
       },
@@ -484,12 +484,12 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
 
   readonly getPublishedVersionContents = async (
     docRef: DocumentRef,
-    ref: PublishedVersionRef,
+    publishedVersionId: PublishedVersionId,
   ): Promise<Uint8Array> => {
     const response = await PublishedVersions.getContents(
       this.app.config.osdkClient,
       docRef.id,
-      ref,
+      publishedVersionId,
       {
         preview: this.config.usePreviewApi ?? DEFAULT_USE_PREVIEW_API,
       },
@@ -514,12 +514,12 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
 
   readonly deletePublishedVersion = async (
     docRef: DocumentRef,
-    ref: PublishedVersionRef,
+    publishedVersionId: PublishedVersionId,
   ): Promise<void> => {
     await PublishedVersions.deletePublishedVersion(
       this.app.config.osdkClient,
       docRef.id,
-      ref,
+      publishedVersionId,
       {
         preview: this.config.usePreviewApi ?? DEFAULT_USE_PREVIEW_API,
       },
@@ -528,11 +528,11 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
 
   readonly loadPublishedVersionDocRef = async <T extends DocumentSchema>(
     docRef: DocumentRef<T>,
-    ref: PublishedVersionRef,
+    publishedVersionId: PublishedVersionId,
   ): Promise<PublishedVersionDocumentRef<T>> => {
     const [publishedVersion, contents] = await Promise.all([
-      this.getPublishedVersion(docRef, ref),
-      this.getPublishedVersionContents(docRef, ref),
+      this.getPublishedVersion(docRef, publishedVersionId),
+      this.getPublishedVersionContents(docRef, publishedVersionId),
     ]);
     return openPublishedVersionDocRef(this.app, this, docRef, contents, publishedVersion);
   };
@@ -540,9 +540,9 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
   readonly loadLatestPublishedVersionDocRef = async <T extends DocumentSchema>(
     docRef: DocumentRef<T>,
   ): Promise<PublishedVersionDocumentRef<T>> => {
-    // Load contents by the resolved ref, so a publish in between can't mix up two versions.
+    // Load contents by the resolved id, so a publish in between can't mix up two versions.
     const latestPublishedVersion = await this.getLatestPublishedVersion(docRef);
-    const contents = await this.getPublishedVersionContents(docRef, latestPublishedVersion.ref);
+    const contents = await this.getPublishedVersionContents(docRef, latestPublishedVersion.id);
     return openPublishedVersionDocRef(this.app, this, docRef, contents, latestPublishedVersion);
   };
 
@@ -1183,7 +1183,7 @@ function getLocalPublishedVersion(
   wirePublishedVersion: WirePublishedVersion,
 ): PublishedVersion {
   return {
-    ref: wirePublishedVersion.ref,
+    id: wirePublishedVersion.ref,
     name: wirePublishedVersion.name,
     description: wirePublishedVersion.description,
     createdAt: wirePublishedVersion.createdAt,

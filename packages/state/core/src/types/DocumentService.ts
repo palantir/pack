@@ -32,7 +32,7 @@ import type {
   PresenceSubscriptionOptions,
   PublishedVersion,
   PublishedVersionDocumentRef,
-  PublishedVersionRef,
+  PublishedVersionId,
   RecordCollectionRef,
   RecordId,
   RecordRef,
@@ -275,13 +275,13 @@ export interface DocumentService {
   ) => Promise<readonly PublishedVersion[]>;
 
   /**
-   * Returns a published version's metadata (name, description, creator, timestamp) by ref, without
-   * its content. Rejects with `InvalidPublishedVersionRef` for a malformed ref or
+   * Returns a published version's metadata (name, description, creator, timestamp) by id, without
+   * its content. Rejects with `InvalidPublishedVersionRef` for a malformed id or
    * `PublishedVersionNotFound` if the version is missing or deleted.
    */
   readonly getPublishedVersion: (
     docRef: DocumentRef,
-    ref: PublishedVersionRef,
+    publishedVersionId: PublishedVersionId,
   ) => Promise<PublishedVersion>;
 
   /**
@@ -294,14 +294,14 @@ export interface DocumentService {
   ) => Promise<PublishedVersion>;
 
   /**
-   * Returns a published version's frozen content by ref as a merged binary Yjs update. Apply it to a
+   * Returns a published version's frozen content by id as a merged binary Yjs update. Apply it to a
    * fresh `Y.Doc` via `Y.applyUpdate` to reconstruct the document at that version. Rejects with
-   * `InvalidPublishedVersionRef` for a malformed ref or `PublishedVersionNotFound` if the version
+   * `InvalidPublishedVersionRef` for a malformed id or `PublishedVersionNotFound` if the version
    * is missing or deleted.
    */
   readonly getPublishedVersionContents: (
     docRef: DocumentRef,
-    ref: PublishedVersionRef,
+    publishedVersionId: PublishedVersionId,
   ) => Promise<Uint8Array>;
 
   /**
@@ -318,22 +318,22 @@ export interface DocumentService {
    */
   readonly deletePublishedVersion: (
     docRef: DocumentRef,
-    ref: PublishedVersionRef,
+    publishedVersionId: PublishedVersionId,
   ) => Promise<void>;
 
   /**
    * Loads a published version as a read-only {@link PublishedVersionDocumentRef} that reads the
    * version's frozen snapshot. Rejects with `InvalidPublishedVersionRef` or
-   * `PublishedVersionNotFound` for a bad or missing ref.
+   * `PublishedVersionNotFound` for a bad or missing id.
    */
   readonly loadPublishedVersionDocRef: <T extends DocumentSchema>(
     docRef: DocumentRef<T>,
-    ref: PublishedVersionRef,
+    publishedVersionId: PublishedVersionId,
   ) => Promise<PublishedVersionDocumentRef<T>>;
 
   /**
    * Loads the latest published version as a read-only {@link PublishedVersionDocumentRef}. The
-   * contents are loaded by the resolved version's ref, so a publish in between can't mix up two
+   * contents are loaded by the resolved version's id, so a publish in between can't mix up two
    * versions. Rejects with `NoActivePublishedVersion` when none exist.
    */
   readonly loadLatestPublishedVersionDocRef: <T extends DocumentSchema>(
