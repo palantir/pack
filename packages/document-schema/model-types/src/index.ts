@@ -79,7 +79,7 @@ export type {
 export type {
   PublishedVersion,
   PublishedVersionDocumentRef,
-  PublishedVersionRef,
+  PublishedVersionId,
 } from "./types/PublishedVersion.js";
 export { RecordCollectionRefBrand } from "./types/RecordCollectionRef.js";
 export type { RecordCollectionRef } from "./types/RecordCollectionRef.js";

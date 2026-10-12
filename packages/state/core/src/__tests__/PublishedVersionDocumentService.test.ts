@@ -68,7 +68,7 @@ const METADATA: DocumentMetadata = {
 const ALICE = { id: "alice", name: "Alice" };
 const ALICE_ID = "alice" as RecordId;
 
-const V7: PublishedVersion = { createdAt: "2026-01-01T00:00:00Z", name: "v7", ref: "v7" };
+const V7: PublishedVersion = { createdAt: "2026-01-01T00:00:00Z", id: "v7", name: "v7" };
 
 describe("PublishedVersionDocumentService", () => {
   let app: PackAppInternal;

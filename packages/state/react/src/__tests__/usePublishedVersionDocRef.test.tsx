@@ -18,7 +18,7 @@ import type { PackApp } from "@palantir/pack.core";
 import type {
   DocumentRef,
   PublishedVersionDocumentRef,
-  PublishedVersionRef,
+  PublishedVersionId,
 } from "@palantir/pack.document-schema.model-types";
 import type { WithStateModule } from "@palantir/pack.state.core";
 import { act, cleanup, renderHook, waitFor } from "@testing-library/react";
@@ -34,15 +34,15 @@ const versionTwo = mock<PublishedVersionDocumentRef>();
 beforeEach(() => mockReset(app));
 afterEach(cleanup);
 
-function renderPublishedVersionDocRef(initialPublishedVersionRef: PublishedVersionRef | undefined) {
+function renderPublishedVersionDocRef(initialPublishedVersionId: PublishedVersionId | undefined) {
   return renderHook(
-    ({ publishedVersionRef }) =>
+    ({ publishedVersionId }) =>
       usePublishedVersionDocRef(
         app,
         liveDraft,
-        publishedVersionRef != null ? { type: "specific", publishedVersionRef } : undefined,
+        publishedVersionId != null ? { type: "specific", publishedVersionId } : undefined,
       ),
-    { initialProps: { publishedVersionRef: initialPublishedVersionRef } },
+    { initialProps: { publishedVersionId: initialPublishedVersionId } },
   );
 }
 
@@ -63,7 +63,7 @@ describe("usePublishedVersionDocRef", () => {
     expect(result.current.publishedVersionDocRef).toBeUndefined();
     expect(load).not.toHaveBeenCalled();
 
-    rerender({ publishedVersionRef: "v1" });
+    rerender({ publishedVersionId: "v1" });
     expect(result.current.status).toBe("loading");
     expect(result.current.publishedVersionDocRef).toBeUndefined();
     await waitFor(() => {
@@ -72,7 +72,7 @@ describe("usePublishedVersionDocRef", () => {
     expect(result.current.publishedVersionDocRef).toBe(versionOne);
     expect(load.mock.calls).toEqual([[liveDraft, "v1"]]);
 
-    rerender({ publishedVersionRef: undefined });
+    rerender({ publishedVersionId: undefined });
     expect(result.current.status).toBe("idle");
     expect(result.current.publishedVersionDocRef).toBeUndefined();
   });
@@ -111,7 +111,7 @@ describe("usePublishedVersionDocRef", () => {
       .mockReturnValueOnce(second.promise);
     const { rerender, result } = renderPublishedVersionDocRef("v1");
 
-    rerender({ publishedVersionRef: "v2" });
+    rerender({ publishedVersionId: "v2" });
     await act(async () => {
       first.resolve(versionOne);
       await first.promise;
