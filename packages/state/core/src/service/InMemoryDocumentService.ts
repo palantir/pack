@@ -27,12 +27,16 @@ import type {
   PresenceEvent,
   PresencePublishOptions,
   PresenceSubscriptionOptions,
+  PublishedVersion,
+  PublishedVersionRef,
 } from "@palantir/pack.document-schema.model-types";
 import { toUnknownChannelError } from "@palantir/pack.document-schema.model-types";
 import { createDocumentServiceConfig } from "../DocumentServiceModule.js";
 import type { CreateDocumentMetadata } from "../types/CreateDocumentMetadata.js";
 import { createDocRef } from "../types/DocumentRefImpl.js";
 import type {
+  CreatePublishedVersionOptions,
+  CreatePublishedVersionResult,
   DocumentService,
   DocumentType,
   SearchDocumentsOptions,
@@ -204,6 +208,68 @@ class InMemoryDocumentService extends BaseYjsDocumentService {
       new Error(
         "resolveDocumentApplication is not supported by the in-memory document service",
       ),
+    );
+  };
+
+  readonly createPublishedVersion = (
+    _docRef: DocumentRef,
+    _options?: CreatePublishedVersionOptions,
+  ): Promise<CreatePublishedVersionResult> => {
+    return Promise.reject(
+      new Error("createPublishedVersion is not supported by the in-memory document service"),
+    );
+  };
+
+  readonly listPublishedVersions = (
+    _docRef: DocumentRef,
+  ): Promise<readonly PublishedVersion[]> => {
+    return Promise.reject(
+      new Error("listPublishedVersions is not supported by the in-memory document service"),
+    );
+  };
+
+  readonly getPublishedVersion = (
+    _docRef: DocumentRef,
+    _ref: PublishedVersionRef,
+  ): Promise<PublishedVersion> => {
+    return Promise.reject(
+      new Error("getPublishedVersion is not supported by the in-memory document service"),
+    );
+  };
+
+  readonly getLatestPublishedVersion = (
+    _docRef: DocumentRef,
+  ): Promise<PublishedVersion> => {
+    return Promise.reject(
+      new Error("getLatestPublishedVersion is not supported by the in-memory document service"),
+    );
+  };
+
+  readonly getPublishedVersionContents = (
+    _docRef: DocumentRef,
+    _ref: PublishedVersionRef,
+  ): Promise<Uint8Array> => {
+    return Promise.reject(
+      new Error("getPublishedVersionContents is not supported by the in-memory document service"),
+    );
+  };
+
+  readonly getLatestPublishedVersionContents = (
+    _docRef: DocumentRef,
+  ): Promise<Uint8Array> => {
+    return Promise.reject(
+      new Error(
+        "getLatestPublishedVersionContents is not supported by the in-memory document service",
+      ),
+    );
+  };
+
+  readonly deletePublishedVersion = (
+    _docRef: DocumentRef,
+    _ref: PublishedVersionRef,
+  ): Promise<void> => {
+    return Promise.reject(
+      new Error("deletePublishedVersion is not supported by the in-memory document service"),
     );
   };
 

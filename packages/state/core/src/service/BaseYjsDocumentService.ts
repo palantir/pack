@@ -32,6 +32,8 @@ import {
   type ModelData,
   type PresenceEvent,
   type PresencePublishOptions,
+  type PublishedVersion,
+  type PublishedVersionRef,
   type RecordCollectionRef,
   type RecordId,
   RecordInvalidError,
@@ -46,6 +48,8 @@ import * as Y from "yjs";
 import type { CreateDocumentMetadata } from "../types/CreateDocumentMetadata.js";
 import { createDocRef } from "../types/DocumentRefImpl.js";
 import type {
+  CreatePublishedVersionOptions,
+  CreatePublishedVersionResult,
   DocumentMetadataChangeCallback,
   DocumentService,
   DocumentStateChangeCallback,
@@ -219,6 +223,38 @@ export abstract class BaseYjsDocumentService<TDoc extends InternalYjsDoc = Inter
   abstract readonly resolveDocumentApplication: (
     docRef: DocumentRef,
   ) => Promise<string | undefined>;
+
+  abstract readonly createPublishedVersion: (
+    docRef: DocumentRef,
+    options?: CreatePublishedVersionOptions,
+  ) => Promise<CreatePublishedVersionResult>;
+
+  abstract readonly listPublishedVersions: (
+    docRef: DocumentRef,
+  ) => Promise<readonly PublishedVersion[]>;
+
+  abstract readonly getPublishedVersion: (
+    docRef: DocumentRef,
+    ref: PublishedVersionRef,
+  ) => Promise<PublishedVersion>;
+
+  abstract readonly getLatestPublishedVersion: (
+    docRef: DocumentRef,
+  ) => Promise<PublishedVersion>;
+
+  abstract readonly getPublishedVersionContents: (
+    docRef: DocumentRef,
+    ref: PublishedVersionRef,
+  ) => Promise<Uint8Array>;
+
+  abstract readonly getLatestPublishedVersionContents: (
+    docRef: DocumentRef,
+  ) => Promise<Uint8Array>;
+
+  abstract readonly deletePublishedVersion: (
+    docRef: DocumentRef,
+    ref: PublishedVersionRef,
+  ) => Promise<void>;
 
   readonly getDocumentSchemaOperationalVersion = (
     docRef: DocumentRef,

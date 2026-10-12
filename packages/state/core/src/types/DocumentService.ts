@@ -30,6 +30,8 @@ import type {
   PresenceEvent,
   PresencePublishOptions,
   PresenceSubscriptionOptions,
+  PublishedVersion,
+  PublishedVersionRef,
   RecordCollectionRef,
   RecordId,
   RecordRef,
@@ -154,6 +156,23 @@ export interface UpdateDocumentMetadata {
 }
 
 /**
+ * Optional name and description to attach when publishing a document version.
+ */
+export interface CreatePublishedVersionOptions {
+  readonly name?: string;
+  readonly description?: string;
+}
+
+/**
+ * Result of publishing a document version: the newly published version plus any versions that were
+ * auto-evicted to keep the document within its published-version limit.
+ */
+export interface CreatePublishedVersionResult {
+  readonly publishedVersion: PublishedVersion;
+  readonly autoEvictedPublishedVersions: readonly PublishedVersion[];
+}
+
+/**
  * Base interface for specific document service implementations.
  * The DocumentService is responsible for persisting document state,
  * metadata, and providing methods to subscribe and interact with documents.
@@ -233,6 +252,71 @@ export interface DocumentService {
   readonly resolveDocumentApplication: (
     docRef: DocumentRef,
   ) => Promise<string | undefined>;
+
+  /**
+   * Publishes the document's current persisted state as an immutable published version. Republishing
+   * an unchanged head returns the existing version. When the document is at its published-version
+   * limit, the oldest versions are auto-evicted to make room and reported in the result.
+   */
+  readonly createPublishedVersion: (
+    docRef: DocumentRef,
+    options?: CreatePublishedVersionOptions,
+  ) => Promise<CreatePublishedVersionResult>;
+
+  /**
+   * Lists the document's active published versions, latest-first. Returns an empty array if none
+   * exist.
+   */
+  readonly listPublishedVersions: (
+    docRef: DocumentRef,
+  ) => Promise<readonly PublishedVersion[]>;
+
+  /**
+   * Returns a published version's metadata (name, description, creator, timestamp) by ref, without
+   * its content. Rejects with `InvalidPublishedVersionRef` for a malformed ref or
+   * `PublishedVersionNotFound` if the version is missing or deleted.
+   */
+  readonly getPublishedVersion: (
+    docRef: DocumentRef,
+    ref: PublishedVersionRef,
+  ) => Promise<PublishedVersion>;
+
+  /**
+   * Returns the metadata of the resolved latest active published version, without its content.
+   * Rejects with `NoActivePublishedVersion` if the document has no active published version. Use
+   * `listPublishedVersions` to check for an empty list without an error.
+   */
+  readonly getLatestPublishedVersion: (
+    docRef: DocumentRef,
+  ) => Promise<PublishedVersion>;
+
+  /**
+   * Returns a published version's frozen content by ref as a merged binary Yjs update. Apply it to a
+   * fresh `Y.Doc` via `Y.applyUpdate` to reconstruct the document at that version. Rejects with
+   * `InvalidPublishedVersionRef` for a malformed ref or `PublishedVersionNotFound` if the version
+   * is missing or deleted.
+   */
+  readonly getPublishedVersionContents: (
+    docRef: DocumentRef,
+    ref: PublishedVersionRef,
+  ) => Promise<Uint8Array>;
+
+  /**
+   * Returns the resolved latest active published version's frozen content as a merged binary Yjs
+   * update. Apply it to a fresh `Y.Doc` via `Y.applyUpdate` to reconstruct the document.
+   * Rejects with `NoActivePublishedVersion` if the document has no active published version.
+   */
+  readonly getLatestPublishedVersionContents: (
+    docRef: DocumentRef,
+  ) => Promise<Uint8Array>;
+
+  /**
+   * Deletes a published version so it can no longer be listed or loaded. Safe to repeat.
+   */
+  readonly deletePublishedVersion: (
+    docRef: DocumentRef,
+    ref: PublishedVersionRef,
+  ) => Promise<void>;
 
   readonly createDocRef: <const T extends DocumentSchema>(
     id: DocumentId,

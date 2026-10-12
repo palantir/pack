@@ -23,9 +23,10 @@ import type {
   Document as WireDocument,
   DocumentSecurity as WireDocumentSecurity,
   DocumentTypeV2 as WireDocumentTypeV2,
+  PublishedVersion as WirePublishedVersion,
   SearchDocumentsRequest,
 } from "@osdk/foundry.pack";
-import { Documents, DocumentTypes } from "@osdk/foundry.pack";
+import { Documents, DocumentTypes, PublishedVersions } from "@osdk/foundry.pack";
 import { getAuthModule } from "@palantir/pack.auth";
 import {
   assertNever,
@@ -46,10 +47,14 @@ import type {
   PresenceEvent,
   PresencePublishOptions,
   PresenceSubscriptionOptions,
+  PublishedVersion,
+  PublishedVersionRef,
 } from "@palantir/pack.document-schema.model-types";
 import { getMetadata, toUnknownChannelError } from "@palantir/pack.document-schema.model-types";
 import type {
   CreateDocumentMetadata,
+  CreatePublishedVersionOptions,
+  CreatePublishedVersionResult,
   DocumentService,
   DocumentType,
   FileSystemType,
@@ -391,6 +396,120 @@ export class FoundryDocumentService extends BaseYjsDocumentService<FoundryIntern
     );
 
     return response.owningApplicationId;
+  };
+
+  readonly createPublishedVersion = async (
+    docRef: DocumentRef,
+    options?: CreatePublishedVersionOptions,
+  ): Promise<CreatePublishedVersionResult> => {
+    const response = await PublishedVersions.create(
+      this.app.config.osdkClient,
+      docRef.id,
+      {
+        requestBody: {
+          ...(options?.name != null ? { name: options.name } : {}),
+          ...(options?.description != null ? { description: options.description } : {}),
+        },
+      },
+      {
+        preview: this.config.usePreviewApi ?? DEFAULT_USE_PREVIEW_API,
+      },
+    );
+
+    return {
+      publishedVersion: getLocalPublishedVersion(response.publishedVersion),
+      autoEvictedPublishedVersions: response.autoEvictedPublishedVersions.map(
+        getLocalPublishedVersion,
+      ),
+    };
+  };
+
+  readonly listPublishedVersions = async (
+    docRef: DocumentRef,
+  ): Promise<readonly PublishedVersion[]> => {
+    const response = await PublishedVersions.list(
+      this.app.config.osdkClient,
+      docRef.id,
+      {
+        preview: this.config.usePreviewApi ?? DEFAULT_USE_PREVIEW_API,
+      },
+    );
+
+    return response.data.map(getLocalPublishedVersion);
+  };
+
+  readonly getPublishedVersion = async (
+    docRef: DocumentRef,
+    ref: PublishedVersionRef,
+  ): Promise<PublishedVersion> => {
+    const version = await PublishedVersions.get(
+      this.app.config.osdkClient,
+      docRef.id,
+      ref,
+      {
+        preview: this.config.usePreviewApi ?? DEFAULT_USE_PREVIEW_API,
+      },
+    );
+
+    return getLocalPublishedVersion(version);
+  };
+
+  readonly getLatestPublishedVersion = async (
+    docRef: DocumentRef,
+  ): Promise<PublishedVersion> => {
+    const version = await PublishedVersions.getLatest(
+      this.app.config.osdkClient,
+      docRef.id,
+      {
+        preview: this.config.usePreviewApi ?? DEFAULT_USE_PREVIEW_API,
+      },
+    );
+
+    return getLocalPublishedVersion(version);
+  };
+
+  readonly getPublishedVersionContents = async (
+    docRef: DocumentRef,
+    ref: PublishedVersionRef,
+  ): Promise<Uint8Array> => {
+    const response = await PublishedVersions.getContents(
+      this.app.config.osdkClient,
+      docRef.id,
+      ref,
+      {
+        preview: this.config.usePreviewApi ?? DEFAULT_USE_PREVIEW_API,
+      },
+    );
+
+    return new Uint8Array(await response.arrayBuffer());
+  };
+
+  readonly getLatestPublishedVersionContents = async (
+    docRef: DocumentRef,
+  ): Promise<Uint8Array> => {
+    const response = await PublishedVersions.getLatestContents(
+      this.app.config.osdkClient,
+      docRef.id,
+      {
+        preview: this.config.usePreviewApi ?? DEFAULT_USE_PREVIEW_API,
+      },
+    );
+
+    return new Uint8Array(await response.arrayBuffer());
+  };
+
+  readonly deletePublishedVersion = async (
+    docRef: DocumentRef,
+    ref: PublishedVersionRef,
+  ): Promise<void> => {
+    await PublishedVersions.deletePublishedVersion(
+      this.app.config.osdkClient,
+      docRef.id,
+      ref,
+      {
+        preview: this.config.usePreviewApi ?? DEFAULT_USE_PREVIEW_API,
+      },
+    );
   };
 
   protected onMetadataSubscriptionOpened(
@@ -1023,6 +1142,18 @@ function getLocalDocumentMetadata(
     security: getLocalSecurity(wireDocument.security),
     updatedBy: wireDocument.updatedBy,
     updatedTime: wireDocument.updatedTime,
+  };
+}
+
+function getLocalPublishedVersion(
+  wirePublishedVersion: WirePublishedVersion,
+): PublishedVersion {
+  return {
+    ref: wirePublishedVersion.ref,
+    name: wirePublishedVersion.name,
+    description: wirePublishedVersion.description,
+    createdAt: wirePublishedVersion.createdAt,
+    createdBy: wirePublishedVersion.createdBy,
   };
 }
 

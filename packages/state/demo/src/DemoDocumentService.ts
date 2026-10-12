@@ -28,6 +28,8 @@ import type {
   ModelData,
   PresenceEvent,
   PresencePublishOptions,
+  PublishedVersion,
+  PublishedVersionRef,
   UserId,
 } from "@palantir/pack.document-schema.model-types";
 import {
@@ -38,6 +40,8 @@ import {
 } from "@palantir/pack.document-schema.model-types";
 import type {
   CreateDocumentMetadata,
+  CreatePublishedVersionOptions,
+  CreatePublishedVersionResult,
   DocumentType,
   InternalYjsDoc,
   SearchDocumentsOptions,
@@ -354,6 +358,66 @@ export class DemoDocumentService extends BaseYjsDocumentService<DemoInternalDoc>
       new Error(
         "resolveDocumentApplication is not supported by the demo document service",
       ),
+    );
+  };
+
+  readonly createPublishedVersion = (
+    _docRef: DocumentRef,
+    _options?: CreatePublishedVersionOptions,
+  ): Promise<CreatePublishedVersionResult> => {
+    return Promise.reject(
+      new Error("createPublishedVersion is not supported by the demo document service"),
+    );
+  };
+
+  readonly listPublishedVersions = (
+    _docRef: DocumentRef,
+  ): Promise<readonly PublishedVersion[]> => {
+    return Promise.reject(
+      new Error("listPublishedVersions is not supported by the demo document service"),
+    );
+  };
+
+  readonly getPublishedVersion = (
+    _docRef: DocumentRef,
+    _ref: PublishedVersionRef,
+  ): Promise<PublishedVersion> => {
+    return Promise.reject(
+      new Error("getPublishedVersion is not supported by the demo document service"),
+    );
+  };
+
+  readonly getLatestPublishedVersion = (
+    _docRef: DocumentRef,
+  ): Promise<PublishedVersion> => {
+    return Promise.reject(
+      new Error("getLatestPublishedVersion is not supported by the demo document service"),
+    );
+  };
+
+  readonly getPublishedVersionContents = (
+    _docRef: DocumentRef,
+    _ref: PublishedVersionRef,
+  ): Promise<Uint8Array> => {
+    return Promise.reject(
+      new Error("getPublishedVersionContents is not supported by the demo document service"),
+    );
+  };
+
+  readonly getLatestPublishedVersionContents = (
+    _docRef: DocumentRef,
+  ): Promise<Uint8Array> => {
+    return Promise.reject(
+      new Error("getLatestPublishedVersionContents is not supported by the demo document service"),
+    );
+  };
+
+  readonly deletePublishedVersion = (
+    _docRef: DocumentRef,
+    _ref: PublishedVersionRef,
+  ): Promise<void> => {
+    return Promise.reject(
+      new Error("deletePublishedVersion is not supported by the demo document service"),
     );
   };
 
