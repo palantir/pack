@@ -456,6 +456,7 @@ export interface DocumentContentState {
   records: Array<DocumentContentNode>;
   violations: Array<DocumentContentViolation>;
   schemaVersion: SchemaVersion;
+  schemaMinorVersion: SchemaMinorVersion;
 }
 
 /**
@@ -810,6 +811,7 @@ export interface DocumentTypeAsset {
   documentStorageType: DocumentStorageType;
   fileSystemType: FileSystemType;
   schemaVersion: SchemaVersion;
+  schemaMinorVersion?: SchemaMinorVersion;
   owningApplicationId?: string;
   forceOverwrite?: boolean;
 }
@@ -961,6 +963,8 @@ data, while custom application-defined events use a versioned generic payload.
    */
 export type EventDataUnion =
   | ({ type: "documentCustomEvent" } & DocumentCustomEventData)
+  | ({ type: "publishedVersionCreate" } & PublishedVersionCreateEventData)
+  | ({ type: "publishedVersionDelete" } & PublishedVersionDeleteEventData)
   | ({ type: "documentCreate" } & DocumentCreateEventData)
   | ({
       type: "documentMandatorySecurityUpdate";
@@ -1232,6 +1236,7 @@ export interface GetDocumentContentsRequestBody {
   revisionId?: RevisionId;
   revisionRange?: number;
   schemaVersion?: SchemaVersion;
+  schemaMinorVersion?: SchemaMinorVersion;
   modelKey?: ModelTypeKey;
 }
 
@@ -1409,6 +1414,8 @@ export interface PublishedVersion {
   description?: string;
   createdAt: PublishedVersionCreatedAt;
   createdBy?: _Core.UserId;
+  documentSchemaVersion: SchemaVersion;
+  documentSchemaMinorVersion: SchemaMinorVersion;
 }
 
 /**
@@ -1417,6 +1424,32 @@ export interface PublishedVersion {
  * Log Safety: SAFE
  */
 export type PublishedVersionCreatedAt = string;
+
+/**  
+   * Activity event data emitted when a published version of a document is created. Not emitted for repeat
+publishes, concurrent winners, or auto-eviction.
+   * 
+   * Log Safety: UNSAFE
+   */
+export interface PublishedVersionCreateEventData {
+  ref: PublishedVersionRef;
+  name?: string;
+  description?: string;
+  documentSchemaVersion: SchemaVersion;
+  documentSchemaMinorVersion: SchemaMinorVersion;
+}
+
+/**  
+   * Activity event data emitted when a published version of a document is deleted. Not emitted for
+auto-eviction. Schema versions are omitted because deletion removes the frozen snapshot.
+   * 
+   * Log Safety: UNSAFE
+   */
+export interface PublishedVersionDeleteEventData {
+  ref: PublishedVersionRef;
+  name?: string;
+  description?: string;
+}
 
 /**
  * Server-generated identifier for a published Document version. Treat it as opaque and return it unchanged.
@@ -1460,9 +1493,19 @@ export type RevisionId = string;
  */
 export interface SchemaMetadata {
   addedInVersion: SchemaVersion;
+  addedInMinorVersion?: SchemaMinorVersion;
   deprecatedFromVersion?: SchemaVersion;
+  deprecatedFromMinorVersion?: SchemaMinorVersion;
   deprecatedMessage?: string;
 }
+
+/**  
+   * The minor version of a document type schema, incremented for additive, backwards-compatible changes
+within a given SchemaVersion.
+   * 
+   * Log Safety: SAFE
+   */
+export type SchemaMinorVersion = number;
 
 /**
  * A failed schema validation result containing the list of violations.
@@ -1474,8 +1517,9 @@ export interface SchemaValidationFailure {
 }
 
 /**  
-   * An incrementing version number for a document type schema. Each schema update
-increments this value by one, representing a linear history of versions.
+   * The major version of a document type schema. Bump this for changes that require all clients to upgrade
+before writing the new fields. For additive, backwards-compatible changes within a major version, bump
+SchemaMinorVersion instead. The operational version tracks major versions only.
    * 
    * Log Safety: SAFE
    */
@@ -1585,6 +1629,7 @@ export interface UpdateSchemaRequestBody {
   ontologyRid: string;
   schema: DocumentTypeSchema;
   version: SchemaVersion;
+  schemaMinorVersion?: SchemaMinorVersion;
   forceOverwrite?: boolean;
 }
 
@@ -1604,6 +1649,7 @@ export type UpdateSchemaResponse =
  */
 export interface UpdateSchemaSuccess {
   version: SchemaVersion;
+  schemaMinorVersion: SchemaMinorVersion;
 }
 
 /**

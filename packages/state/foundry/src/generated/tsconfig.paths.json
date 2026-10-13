@@ -1,0 +1,25 @@
+{
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@osdk/foundry.core": [
+        "./foundry.core/src/index.ts"
+      ],
+      "@osdk/foundry.core/*": [
+        "./foundry.core/src/public/*.ts"
+      ],
+      "@osdk/foundry.filesystem": [
+        "./foundry.filesystem/src/index.ts"
+      ],
+      "@osdk/foundry.filesystem/*": [
+        "./foundry.filesystem/src/public/*.ts"
+      ],
+      "@osdk/foundry.pack": [
+        "./foundry.pack/src/index.ts"
+      ],
+      "@osdk/foundry.pack/*": [
+        "./foundry.pack/src/public/*.ts"
+      ]
+    }
+  }
+}

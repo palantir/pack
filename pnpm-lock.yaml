@@ -633,8 +633,8 @@ importers:
         version: 2.32.0
     devDependencies:
       '@osdk/platform-sdk-generator':
-        specifier: file:/tmp/osdk-platform-sdk-generator-0.81.0.tgz
-        version: file:../../../tmp/osdk-platform-sdk-generator-0.81.0.tgz
+        specifier: file:/tmp/osdk-platform-sdk-generator-0.81.0-refactor3.tgz
+        version: file:../../../tmp/osdk-platform-sdk-generator-0.81.0-refactor3.tgz
       '@palantir/pack.monorepo.tsconfig':
         specifier: workspace:~
         version: link:../monorepo/tsconfig
@@ -4055,8 +4055,8 @@ packages:
   '@osdk/oauth@1.4.0':
     resolution: {integrity: sha512-3ZpF2zFkmNMkrADrNe5P1TJs6JnEthi2oy97eRBtQ+6i/RbRHbG87QPXvTrB3y+YA0beiI+BpzMcpSntYimGUA==}
 
-  '@osdk/platform-sdk-generator@file:../../../tmp/osdk-platform-sdk-generator-0.81.0.tgz':
-    resolution: {integrity: sha512-KI0HtOC7pk0tLaBSc3zg8nZADtqZm8l/xzqgS0hylQ48GgZRsO4xIDSAG6Cc4y4yrxWW6eFz4oKqlZpqw+qWJQ==, tarball: file:../../../tmp/osdk-platform-sdk-generator-0.81.0.tgz}
+  '@osdk/platform-sdk-generator@file:../../../tmp/osdk-platform-sdk-generator-0.81.0-refactor3.tgz':
+    resolution: {integrity: sha512-LemkNw/bayY5/hB9N2e07Mm3j0QTnemsLaRn2VsVTgDxhu7FYV5naPUtPFSILDX2bJIikUhhldhblVVKBGcOcg==, tarball: file:../../../tmp/osdk-platform-sdk-generator-0.81.0-refactor3.tgz}
     version: 0.81.0
     hasBin: true
 
@@ -15064,7 +15064,7 @@ snapshots:
       tiny-invariant: 1.3.3
       typescript-event-target: 1.1.1
 
-  '@osdk/platform-sdk-generator@file:../../../tmp/osdk-platform-sdk-generator-0.81.0.tgz':
+  '@osdk/platform-sdk-generator@file:../../../tmp/osdk-platform-sdk-generator-0.81.0-refactor3.tgz':
     dependencies:
       '@osdk/docs-spec-core': 0.7.0
       '@osdk/docs-spec-platform': 0.68.0
