@@ -1,5 +1,31 @@
 # @palantir/pack.state.foundry
 
+## 0.31.0
+
+### Minor Changes
+
+- 8a8aff7: Support documents without an ontology and read document types through the V2 APIs. `ontologyRid` is now optional on document metadata (never fabricated), `presenceSupported` is read from the document and gates presence, and document types load via `loadV2`/`loadByNameV2` with the RID exposed only when the type is RID-backed. `loadDocumentTypeByName` resolves ontology-scoped types and falls back to a name reference for types with a globally unique name.
+- 5e7c9b9: `createPublishedVersion` now rejects while this client still has edits the server hasn't saved. Before, those edits were left out of the version without warning. Try again once they're saved.
+- 33a4189: Load published document versions as read-only document refs. `app.state.loadPublishedVersionDocRef(docRef, ref)` and `app.state.loadLatestPublishedVersionDocRef(docRef)` return a `PublishedVersionDocumentRef` that reads the frozen version through the same records, collections, and hooks as the live draft. Writes are rejected, presence and activity are no-ops, and metadata comes from the live draft. It has the same `id` as the live draft, so use `isPublishedVersionDocRef` or `publishedVersion.ref` to tell them apart.
+
+  Fix live sync not restarting when a document is opened again after its last `useRecord` (or `onInvalid`) subscriber closed. Its data status stayed loaded, so sync never reconnected.
+
+- 0c64d5e: Expose PACK published document versions through `DocumentService`/`app.state`. Documents can now be published as immutable, named snapshots and their versions listed, loaded by ref, resolved to the latest, and deleted, with frozen content read back as a merged binary Yjs update (`Uint8Array`). Published versions are not supported by the demo or in-memory document services.
+- 34439f4: Rename `PublishedVersionRef` to `PublishedVersionId` and `PublishedVersion.ref` to `PublishedVersion.id`, so a published version's id isn't mistaken for a ref object like `DocumentRef`. Methods that took a `ref` now take a `publishedVersionId`, and the `usePublishedVersionDocRef` selection is now `{ type: "specific", publishedVersionId }`. The server API still calls it `ref`; the value is unchanged.
+
+### Patch Changes
+
+- Updated dependencies [8a8aff7]
+- Updated dependencies [5e7c9b9]
+- Updated dependencies [33a4189]
+- Updated dependencies [0c64d5e]
+- Updated dependencies [34439f4]
+  - @palantir/pack.document-schema.model-types@0.31.0
+  - @palantir/pack.state.core@0.31.0
+  - @palantir/pack.state.foundry-event@0.31.0
+  - @palantir/pack.auth@0.31.0
+  - @palantir/pack.core@0.31.0
+
 ## 0.30.0
 
 ### Patch Changes
