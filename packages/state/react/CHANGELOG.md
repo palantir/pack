@@ -1,5 +1,23 @@
 # @palantir/pack.state.react
 
+## 0.31.0
+
+### Minor Changes
+
+- 34439f4: Rename `PublishedVersionRef` to `PublishedVersionId` and `PublishedVersion.ref` to `PublishedVersion.id`, so a published version's id isn't mistaken for a ref object like `DocumentRef`. Methods that took a `ref` now take a `publishedVersionId`, and the `usePublishedVersionDocRef` selection is now `{ type: "specific", publishedVersionId }`. The server API still calls it `ref`; the value is unchanged.
+- 33a4189: Add `usePublishedVersions` to list a document's published versions (latest first, with `refresh`), and `usePublishedVersionDocRef` to load a specific or the latest version as a read-only `PublishedVersionDocumentRef`. Both have `refresh`, which keeps the current result until the new one arrives, and keeps it if loading again fails.
+
+### Patch Changes
+
+- Updated dependencies [8a8aff7]
+- Updated dependencies [33a4189]
+- Updated dependencies [0c64d5e]
+- Updated dependencies [34439f4]
+  - @palantir/pack.document-schema.model-types@0.31.0
+  - @palantir/pack.state.core@0.31.0
+  - @palantir/pack.auth@0.31.0
+  - @palantir/pack.core@0.31.0
+
 ## 0.30.0
 
 ### Patch Changes

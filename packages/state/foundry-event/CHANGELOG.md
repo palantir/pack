@@ -1,5 +1,22 @@
 # @palantir/pack.state.foundry-event
 
+## 0.31.0
+
+### Minor Changes
+
+- 5e7c9b9: `createPublishedVersion` now rejects while this client still has edits the server hasn't saved. Before, those edits were left out of the version without warning. Try again once they're saved.
+
+### Patch Changes
+
+- Updated dependencies [8a8aff7]
+- Updated dependencies [33a4189]
+- Updated dependencies [0c64d5e]
+- Updated dependencies [34439f4]
+  - @palantir/pack.document-schema.model-types@0.31.0
+  - @palantir/pack.state.core@0.31.0
+  - @palantir/pack.auth@0.31.0
+  - @palantir/pack.core@0.31.0
+
 ## 0.30.0
 
 ### Minor Changes
