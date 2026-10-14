@@ -71,5 +71,14 @@
   "main": "./build/cjs/index.js",
   "module": "./build/esm/index.js",
   "types": "./build/cjs/index.d.ts",
+  "sls": {
+    "dependencies": {
+      "com.palantir.foundry.api:api-gateway": {
+        "minVersion": "1.1856.0",
+        "maxVersion": "1.x.x",
+        "optional": false
+      }
+    }
+  },
   "type": "module"
 }
