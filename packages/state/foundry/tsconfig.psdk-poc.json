@@ -1,12 +1,12 @@
 {
   "extends": [
     "@palantir/pack.monorepo.tsconfig/base.json",
-    "./src/generated/tsconfig.paths.json"
+    "./psdk-poc/generated/tsconfig.paths.json"
   ],
   "compilerOptions": {
     "noEmit": true,
     "emitDeclarationOnly": false,
     "composite": false
   },
-  "include": ["src/__psdk_poc__.ts", "src/generated/**/*"]
+  "include": ["psdk-poc/__psdk_poc__.ts", "psdk-poc/generated/**/*"]
 }
