@@ -85,8 +85,8 @@ const cspell = {
     "packages/*/build/**",
     "CHANGELOG.md",
 
-    // Generated SDK code (e.g. PSDK) is machine output, not prose.
-    "**/src/generated/**",
+    // PSDK proof-of-concept (generated SDK code) is machine output, not prose.
+    "**/psdk-poc/**",
   ],
   dictionaryDefinitions: [
     ...getDictionaryDefinitions(),
