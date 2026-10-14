@@ -83,9 +83,9 @@ export interface RecordBuilder<T extends Record<string, Type>> {
 /** Evolves a union within a {@link SchemaUpdate}. Obtain one from the {@link SchemaBuilder} and finish with `build()`. */
 export interface UnionBuilder<S extends UnionVariants> {
   // TODO: builders should support arg types and resolveModels to refs
-  /** Add a variant, referencing a record (or a `Ref` to one). */
+  /** Add a new variant, referencing a record (or a `Ref` to one). */
   addVariant<const K extends string>(
-    name: K,
+    name: string extends keyof S ? K : Exclude<K, keyof S>,
     modelDefOrRef: UnionVariantArg,
   ): UnionBuilder<S & { [k in K]: Ref }>;
   /** Produce the updated {@link UnionDef}. */
@@ -104,7 +104,7 @@ class UnionBuilderImpl<S extends UnionVariants> implements UnionBuilder<S> {
     this.variants = { ...variants };
   }
   addVariant<const K extends string>(
-    variantName: K,
+    variantName: string extends keyof S ? K : Exclude<K, keyof S>,
     modelDefOrRef: UnionVariantArg,
   ): UnionBuilder<S & Record<K, Ref>> {
     if (Object.hasOwn(this.variants, variantName)) {
