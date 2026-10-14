@@ -429,7 +429,7 @@ describe("defineSchemaUpdate", () => {
     expect(schemaV2.models.Shape).toEqual(schemaV1.models.Shape);
   });
 
-  it.each(["circle", "rectangle"])("should reject duplicate variant %s", variantName => {
+  it.each(["circle", "rectangle"] as const)("should reject duplicate variant %s", variantName => {
     const Circle = defineRecord("Circle", {
       docs: "A circle",
       fields: { radius: P.Double },
@@ -451,6 +451,7 @@ describe("defineSchemaUpdate", () => {
       nextSchema(schemaV1)
         .addSchemaUpdate(defineSchemaUpdate("addShapes", schema => ({
           Shape: schema.Shape.addVariant("rectangle", Rectangle)
+            // @ts-expect-error Existing variant names cannot be added again.
             .addVariant(variantName, Rectangle)
             .build(),
         })))
