@@ -430,7 +430,7 @@
             "record": {
               "key": "ShapeBox",
               "name": "ShapeBox",
-              "description": "",
+              "description": "A box.",
               "fields": [
                 {
                   "key": "bottom",
@@ -557,7 +557,7 @@
             "record": {
               "key": "ShapeCircle",
               "name": "ShapeCircle",
-              "description": "",
+              "description": "A circle.",
               "fields": [
                 {
                   "key": "bottom",
@@ -938,7 +938,7 @@
             "record": {
               "key": "ShapeBox",
               "name": "ShapeBox",
-              "description": "",
+              "description": "A box.",
               "fields": [
                 {
                   "key": "bottom",
@@ -1065,7 +1065,7 @@
             "record": {
               "key": "ShapeCircle",
               "name": "ShapeCircle",
-              "description": "",
+              "description": "A circle.",
               "fields": [
                 {
                   "key": "bottom",
@@ -1257,7 +1257,7 @@
             "record": {
               "key": "ShapeUpdatedActivity",
               "name": "ShapeUpdatedActivity",
-              "description": "",
+              "description": "Activity payload for a shape update.",
               "fields": [
                 {
                   "key": "nodeId",
