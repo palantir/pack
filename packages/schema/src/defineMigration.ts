@@ -83,9 +83,9 @@ export interface RecordBuilder<T extends Record<string, Type>> {
 /** Evolves a union within a {@link SchemaUpdate}. Obtain one from the {@link SchemaBuilder} and finish with `build()`. */
 export interface UnionBuilder<S extends UnionVariants> {
   // TODO: builders should support arg types and resolveModels to refs
-  /** Add a variant, referencing a record (or a `Ref` to one). */
+  /** Add a new variant, referencing a record (or a `Ref` to one). */
   addVariant<const K extends string>(
-    name: K,
+    name: string extends keyof S ? K : Exclude<K, keyof S>,
     modelDefOrRef: UnionVariantArg,
   ): UnionBuilder<S & { [k in K]: Ref }>;
   /** Produce the updated {@link UnionDef}. */
@@ -95,32 +95,39 @@ export interface UnionBuilder<S extends UnionVariants> {
 class UnionBuilderImpl<S extends UnionVariants> implements UnionBuilder<S> {
   private readonly name: string;
   private readonly docs: string | undefined;
+  private readonly discriminant: string;
   private readonly variants: S;
-  constructor({ name, docs, variants }: UnionDef<S>) {
+  constructor({ name, docs, discriminant, variants }: UnionDef<S>) {
     this.name = name;
     this.docs = docs;
+    this.discriminant = discriminant;
     this.variants = { ...variants };
   }
   addVariant<const K extends string>(
-    variantName: K,
+    variantName: string extends keyof S ? K : Exclude<K, keyof S>,
     modelDefOrRef: UnionVariantArg,
   ): UnionBuilder<S & Record<K, Ref>> {
+    if (Object.hasOwn(this.variants, variantName)) {
+      throw new Error(`Variant "${variantName}" already exists in union "${this.name}".`);
+    }
     const ref: Ref = resolveUnionVariantArg(modelDefOrRef);
     const newVariants = { ...this.variants, [variantName]: ref };
 
     return new UnionBuilderImpl({
       type: ModelDefType.UNION,
       name: this.name,
+      docs: this.docs,
       variants: newVariants,
-      discriminant: "type",
+      discriminant: this.discriminant,
     });
   }
   build(): UnionDef<S> {
     return {
       type: ModelDefType.UNION,
       variants: this.variants,
-      discriminant: "type",
+      discriminant: this.discriminant,
       name: this.name,
+      docs: this.docs,
     };
   }
 }
@@ -149,6 +156,7 @@ export interface FieldDeprecation {
 
 class RecordBuilderImpl<T extends RecordFields> implements RecordBuilder<T> {
   private readonly name: string;
+  private readonly docs: string | undefined;
   private readonly fields: T;
   private readonly upgradeOptions: ReadonlyMap<string, FieldOptions>;
   private readonly deprecatedFields: ReadonlyMap<string, FieldDeprecation>;
@@ -159,6 +167,7 @@ class RecordBuilderImpl<T extends RecordFields> implements RecordBuilder<T> {
     deprecatedFields?: ReadonlyMap<string, FieldDeprecation>,
   ) {
     this.name = initialRecordDef.name;
+    this.docs = initialRecordDef.docs;
     this.fields = { ...initialRecordDef.fields };
     // Upgrade options only flow forward within a single migration callback —
     // they are NOT inherited from the prior version's RecordDef, because each
@@ -182,7 +191,7 @@ class RecordBuilderImpl<T extends RecordFields> implements RecordBuilder<T> {
         type: ModelDefType.RECORD,
         name: this.name,
         fields: { ...this.fields, [name]: value },
-        docs: "",
+        docs: this.docs,
       },
       next,
       this.deprecatedFields,
@@ -200,7 +209,7 @@ class RecordBuilderImpl<T extends RecordFields> implements RecordBuilder<T> {
         type: ModelDefType.RECORD,
         name: this.name,
         fields: { ...this.fields },
-        docs: "",
+        docs: this.docs,
       },
       this.upgradeOptions,
       next,
@@ -212,7 +221,7 @@ class RecordBuilderImpl<T extends RecordFields> implements RecordBuilder<T> {
       type: ModelDefType.RECORD,
       name: this.name,
       fields: this.fields,
-      docs: "",
+      docs: this.docs,
     };
     if (this.upgradeOptions.size > 0) {
       Object.defineProperty(result, UPGRADE_OPTIONS_CARRIER, {

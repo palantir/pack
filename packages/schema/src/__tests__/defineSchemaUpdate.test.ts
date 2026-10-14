@@ -43,6 +43,7 @@ describe("defineSchemaUpdate", () => {
     const schemaV2 = nextSchema(schemaV1).addSchemaUpdate(addAge).build();
 
     expect(schemaV2.models.Person).toBe(schemaV1.models.Person);
+    expect(schemaV2.models.PersonV2.docs).toBe("A person");
     expect(schemaV2.models.PersonV2.fields.name).toEqual({ type: "string" });
     expect(schemaV2.models.PersonV2.fields.age).toEqual({ type: "double" });
     expect(schemaV2.version).toBe(2);
@@ -51,6 +52,50 @@ describe("defineSchemaUpdate", () => {
     assertExactKeys<typeof schemaV2.models.PersonV2.fields, "name" | "age">();
     assertTypeEquals<typeof schemaV2.models.PersonV2.fields.name, P.String>();
     assertTypeEquals<typeof schemaV2.models.PersonV2.fields.age, P.Double>();
+  });
+
+  it("should preserve record documentation through field additions and deprecations", () => {
+    const schemaV1 = defineSchema({
+      Person: defineRecord("Person", {
+        docs: "A person",
+        fields: { name: P.String },
+      }),
+    });
+
+    const schemaV2 = nextSchema(schemaV1)
+      .addSchemaUpdate(defineSchemaUpdate("addDisplayName", schema => ({
+        Person: schema.Person
+          .addField("displayName", P.String, { derivedFrom: ["name"] })
+          .deprecateField("name", "Use displayName instead.")
+          .build(),
+      })))
+      .build();
+
+    expect(schemaV2.models.Person.docs).toBe("A person");
+    expect(schemaV2.models.Person.fields).toEqual({ name: P.String, displayName: P.String });
+    expect(schemaV2.migrations?.Person?.displayName).toEqual({ derivedFrom: ["name"] });
+    expect(schemaV2.deprecations?.Person?.name).toEqual({
+      fromVersion: 2,
+      message: "Use displayName instead.",
+    });
+    expect(schemaV1.models.Person.fields).toEqual({ name: P.String });
+  });
+
+  it("should preserve a record when building without changing fields", () => {
+    const schemaV1 = defineSchema({
+      Person: defineRecord("Person", {
+        docs: "A person",
+        fields: { name: P.String },
+      }),
+    });
+
+    const schemaV2 = nextSchema(schemaV1)
+      .addSchemaUpdate(defineSchemaUpdate("rebuildPerson", schema => ({
+        Person: schema.Person.build(),
+      })))
+      .build();
+
+    expect(schemaV2.models.Person).toEqual(schemaV1.models.Person);
   });
 
   it("should compose multiple schema updates in one version", () => {
@@ -153,6 +198,7 @@ describe("defineSchemaUpdate", () => {
     const schemaV3 = nextSchema(schemaV2).addSchemaUpdate(addTags).build();
 
     expect(schemaV3.version).toBe(3);
+    expect(schemaV3.models.Item.docs).toBe("An item");
     expect(schemaV3.models.Item.fields.name).toEqual({ type: "string" });
     expect(schemaV3.models.Item.fields.description).toEqual({
       type: "optional",
@@ -287,6 +333,8 @@ describe("defineSchemaUpdate", () => {
 
     const schemaV2 = nextSchema(schemaV1).addSchemaUpdate(addTriangle).build();
 
+    expect(schemaV2.models.Shape.discriminant).toBe("type");
+    expect(schemaV2.models.Shape.docs).toBe("A shape");
     expect(schemaV2.models.Shape.variants.circle).toEqual({
       type: "ref",
       name: "Circle",
@@ -303,6 +351,115 @@ describe("defineSchemaUpdate", () => {
       typeof schemaV2.models.Shape.variants,
       "circle" | "rectangle" | "triangle"
     >();
+  });
+
+  it("should preserve union metadata through chained variant additions", () => {
+    const Circle = defineRecord("Circle", {
+      docs: "A circle",
+      fields: { radius: P.Double },
+    });
+    const Rectangle = defineRecord("Rectangle", {
+      docs: "A rectangle",
+      fields: { width: P.Double, height: P.Double },
+    });
+    const Triangle = defineRecord("Triangle", {
+      docs: "A triangle",
+      fields: { base: P.Double, height: P.Double },
+    });
+    const schemaV1 = defineSchema({
+      Circle,
+      Rectangle,
+      Triangle,
+      Shape: defineUnion("Shape", {
+        discriminant: "kind",
+        docs: "A shape",
+        variants: { circle: Circle },
+      }),
+    });
+
+    const schemaV2 = nextSchema(schemaV1)
+      .addSchemaUpdate(defineSchemaUpdate("addShapes", schema => ({
+        Shape: schema.Shape.addVariant("rectangle", Rectangle)
+          .addVariant("triangle", Triangle)
+          .build(),
+      })))
+      .build();
+
+    expect(schemaV2.models.Shape).toEqual({
+      ...schemaV1.models.Shape,
+      variants: {
+        circle: { type: "ref", name: "Circle", refType: "record" },
+        rectangle: { type: "ref", name: "Rectangle", refType: "record" },
+        triangle: { type: "ref", name: "Triangle", refType: "record" },
+      },
+    });
+    expect(schemaV1.models.Shape.variants).toEqual({
+      circle: { type: "ref", name: "Circle", refType: "record" },
+    });
+
+    const schemaV3 = nextSchema(schemaV2)
+      .addSchemaUpdate(defineSchemaUpdate("rebuildShape", schema => ({
+        Shape: schema.Shape.build(),
+      })))
+      .build();
+
+    expect(schemaV3.models.Shape).toEqual(schemaV2.models.Shape);
+  });
+
+  it("should preserve a union when building without adding variants", () => {
+    const Circle = defineRecord("Circle", {
+      docs: "A circle",
+      fields: { radius: P.Double },
+    });
+    const schemaV1 = defineSchema({
+      Circle,
+      Shape: defineUnion("Shape", {
+        discriminant: "kind",
+        docs: "A shape",
+        variants: { circle: Circle },
+      }),
+    });
+
+    const schemaV2 = nextSchema(schemaV1)
+      .addSchemaUpdate(defineSchemaUpdate("rebuildShape", schema => ({
+        Shape: schema.Shape.build(),
+      })))
+      .build();
+
+    expect(schemaV2.models.Shape).toEqual(schemaV1.models.Shape);
+  });
+
+  it.each(["circle", "rectangle"] as const)("should reject duplicate variant %s", variantName => {
+    const Circle = defineRecord("Circle", {
+      docs: "A circle",
+      fields: { radius: P.Double },
+    });
+    const Rectangle = defineRecord("Rectangle", {
+      docs: "A rectangle",
+      fields: { width: P.Double, height: P.Double },
+    });
+    const schemaV1 = defineSchema({
+      Circle,
+      Rectangle,
+      Shape: defineUnion("Shape", {
+        docs: "A shape",
+        variants: { circle: Circle },
+      }),
+    });
+
+    expect(() =>
+      nextSchema(schemaV1)
+        .addSchemaUpdate(defineSchemaUpdate("addShapes", schema => ({
+          Shape: schema.Shape.addVariant("rectangle", Rectangle)
+            // @ts-expect-error Existing variant names cannot be added again.
+            .addVariant(variantName, Rectangle)
+            .build(),
+        })))
+        .build()
+    ).toThrow(`Variant "${variantName}" already exists in union "Shape".`);
+    expect(schemaV1.models.Shape.variants).toEqual({
+      circle: { type: "ref", name: "Circle", refType: "record" },
+    });
   });
 
   it("should handle mixed record and union updates in one version", () => {
