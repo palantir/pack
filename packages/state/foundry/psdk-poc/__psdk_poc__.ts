@@ -25,6 +25,11 @@ import type {
   SchemaMinorVersion,
 } from "@osdk/foundry.pack";
 import { Documents, PublishedVersions } from "@osdk/foundry.pack";
+// v2 flat-API modules, resolved via the "@osdk/<pkg>/v2/*" -> "<pkg>/src/v2/public/*.ts"
+// path mappings recently added to tsconfig.paths.json.
+import * as DocumentsV2 from "@osdk/foundry.pack/v2/Document";
+import * as ProjectsV2 from "@osdk/foundry.filesystem/v2/Project";
+import * as PublishedVersionsV2 from "@osdk/foundry.pack/v2/PublishedVersion";
 import type { SharedClient } from "@osdk/shared.client2";
 
 declare const osdkClient: SharedClient;
@@ -69,4 +74,32 @@ export async function latestSchemaMinorVersion(
     preview: true,
   });
   return version.documentSchemaMinorVersion;
+}
+
+// --- Exercising the v2 subpaths -----------------------------------------------
+// The v2 public modules export the flat per-resource functions; their request /
+// response types ride on those signatures (there are no standalone type exports
+// on these subpaths), so pulling types off them proves the "@osdk/<pkg>/v2/*"
+// mappings resolve and type-check.
+type DocumentV2 = Awaited<ReturnType<typeof DocumentsV2.get>>;
+type PublishedVersionV2 = Awaited<ReturnType<typeof PublishedVersionsV2.getLatest>>;
+type ProjectV2 = Awaited<ReturnType<typeof ProjectsV2.get>>;
+
+// GET a document via the v2 flat API (cf. the v1 `Documents.get` above).
+export function getDocumentV2(id: string): Promise<DocumentV2> {
+  return DocumentsV2.get(osdkClient, id, { preview: true });
+}
+
+// GET the latest published version via the v2 flat API.
+export function latestPublishedVersionV2(
+  documentId: string,
+): Promise<PublishedVersionV2> {
+  return PublishedVersionsV2.getLatest(osdkClient, documentId, {
+    preview: true,
+  });
+}
+
+// Cross-package v2 path: resolve a Project from the filesystem v2 subpath.
+export function getProjectV2(projectRid: string): Promise<ProjectV2> {
+  return ProjectsV2.get(osdkClient, projectRid);
 }
