@@ -22,7 +22,7 @@ import type {
   UpgradeRegistryEntry,
   UpgradeRegistryMap,
 } from "@palantir/pack.document-schema.model-types";
-import { createUnknownVariant } from "./UnknownVariant.js";
+import { wrapUnknownVariant } from "./UnknownVariant.js";
 
 function isUnionRegistry(entry: UpgradeRegistryEntry): entry is UnionUpgradeRegistry {
   return "discriminant" in entry;
@@ -53,7 +53,7 @@ export function resolveAndApplyLens(
     const discriminantValue = rawData[entry.discriminant];
     if (typeof discriminantValue === "string") {
       if (!Object.hasOwn(entry.variants, discriminantValue)) {
-        return createUnknownVariant(entry.discriminant, rawData);
+        return wrapUnknownVariant(entry.discriminant, rawData);
       }
       const variantModelName = entry.variants[discriminantValue];
       if (variantModelName != null) {

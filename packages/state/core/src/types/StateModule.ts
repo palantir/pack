@@ -39,7 +39,7 @@ import type {
 } from "@palantir/pack.document-schema.model-types";
 import { getMetadata } from "@palantir/pack.document-schema.model-types";
 import { DOCUMENT_SERVICE_MODULE_KEY } from "../DocumentServiceModule.js";
-import { restoreUnknownVariants } from "../upgrade/UnknownVariant.js";
+import { toStoredValue } from "../upgrade/UnknownVariant.js";
 import type { CreateDocumentMetadata } from "./CreateDocumentMetadata.js";
 import type {
   CreatePublishedVersionOptions,
@@ -480,7 +480,7 @@ export class StateModuleImpl implements StateModule {
     options?: PresencePublishOptions,
   ): void {
     // Send unknown union variants as their original stored values.
-    const sentData = restoreUnknownVariants(docRef.schema, getMetadata(model).name, eventData);
+    const sentData = toStoredValue(docRef.schema, getMetadata(model).name, eventData);
     this.serviceFor(docRef).updateCustomPresence(docRef, model, sentData, options);
   }
 
@@ -512,7 +512,7 @@ export class StateModuleImpl implements StateModule {
     // Send unknown union variants in the edit description as their original stored values.
     const sentDescription = description == null ? undefined : {
       ...description,
-      data: restoreUnknownVariants(
+      data: toStoredValue(
         docRef.schema,
         getMetadata(description.model).name,
         description.data,

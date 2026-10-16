@@ -38,19 +38,19 @@ import { getMetadata, UNKNOWN_UNION_VARIANT } from "@palantir/pack.document-sche
 type PlainObject = Record<string, unknown>;
 
 /** Wrap a stored union value whose variant this app doesn't know. */
-export function createUnknownVariant(discriminant: string, rawValue: PlainObject): PlainObject {
+export function wrapUnknownVariant(discriminant: string, rawValue: PlainObject): PlainObject {
   return { [discriminant]: UNKNOWN_UNION_VARIANT, rawValue };
 }
 
 /**
- * Unwrap every unknown variant in a value before it is saved or sent, e.g.
+ * Return a value as it should be saved or sent. Unwraps unknown union variants, e.g.
  * `[box, { shapeType: "unknown", rawValue: triangle }]` becomes `[box, triangle]`.
  *
  * @param newValue The value the app is saving or sending.
  * @param savedValue For a partial update, the record as already saved. A partial update can leave
  *   out a union's discriminant (e.g. `shapeType`), so this tells which variant the update is for.
  */
-export function restoreUnknownVariants<T>(
+export function toStoredValue<T>(
   schema: DocumentSchema,
   modelName: string,
   newValue: T,
@@ -59,18 +59,18 @@ export function restoreUnknownVariants<T>(
   // Each model's fields (records) or variants (unions), by model name.
   const allModels = getMetadata(schema).upgrades ?? {};
 
-  function restoreModel(value: unknown, saved: unknown, name: string): unknown {
+  function unwrapModel(value: unknown, saved: unknown, name: string): unknown {
     const model = allModels[name];
     if (model == null || !isPlainObject(value)) {
       return value;
     }
     const savedObject = isPlainObject(saved) ? saved : undefined;
     return isUnion(model)
-      ? restoreUnion(value, savedObject, model)
-      : restoreRecord(value, savedObject, model);
+      ? unwrapUnion(value, savedObject, model)
+      : unwrapRecord(value, savedObject, model);
   }
 
-  function restoreUnion(
+  function unwrapUnion(
     value: PlainObject,
     saved: PlainObject | undefined,
     union: UnionUpgradeRegistry,
@@ -99,28 +99,28 @@ export function restoreUnknownVariants<T>(
     if (isUnion(variantModel)) {
       // A variant that is itself a union keeps its data under `value`.
       return "value" in value
-        ? { ...value, value: restoreModel(value.value, saved?.value, variantModelName) }
+        ? { ...value, value: unwrapModel(value.value, saved?.value, variantModelName) }
         : value;
     }
-    return restoreRecord(value, saved, variantModel);
+    return unwrapRecord(value, saved, variantModel);
   }
 
-  function restoreRecord(
+  function unwrapRecord(
     value: PlainObject,
     saved: PlainObject | undefined,
     record: UpgradeRegistry,
   ): PlainObject {
-    const restored: PlainObject = {};
+    const unwrapped: PlainObject = {};
     for (const [fieldName, fieldValue] of Object.entries(value)) {
       const field = record.allFields[fieldName];
-      restored[fieldName] = field == null
+      unwrapped[fieldName] = field == null
         ? fieldValue
-        : restoreField(fieldValue, saved?.[fieldName], field.type);
+        : unwrapField(fieldValue, saved?.[fieldName], field.type);
     }
-    return restored;
+    return unwrapped;
   }
 
-  function restoreField(value: unknown, saved: unknown, type: FieldTypeDescriptor): unknown {
+  function unwrapField(value: unknown, saved: unknown, type: FieldTypeDescriptor): unknown {
     if (value == null) {
       return value;
     }
@@ -128,29 +128,29 @@ export function restoreUnknownVariants<T>(
       case "primitive":
         return value;
       case "optional":
-        return restoreField(value, saved, type.inner);
+        return unwrapField(value, saved, type.inner);
       case "modelRef":
-        return restoreModel(value, saved, type.model);
+        return unwrapModel(value, saved, type.model);
       case "array":
         // Each list item has its own discriminant, so no saved value is needed.
         return Array.isArray(value)
-          ? value.map(item => restoreField(item, undefined, type.element))
+          ? value.map(item => unwrapField(item, undefined, type.element))
           : value;
       case "map": {
         if (!isPlainObject(value)) {
           return value;
         }
         const savedMap = isPlainObject(saved) ? saved : undefined;
-        const restored: PlainObject = {};
+        const unwrapped: PlainObject = {};
         for (const [key, item] of Object.entries(value)) {
-          restored[key] = restoreField(item, savedMap?.[key], type.value);
+          unwrapped[key] = unwrapField(item, savedMap?.[key], type.value);
         }
-        return restored;
+        return unwrapped;
       }
     }
   }
 
-  return restoreModel(newValue, savedValue, modelName) as T;
+  return unwrapModel(newValue, savedValue, modelName) as T;
 }
 
 function isUnion(model: UpgradeRegistryEntry): model is UnionUpgradeRegistry {

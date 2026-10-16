@@ -32,7 +32,7 @@ import type { BaseYjsDocumentService } from "../service/BaseYjsDocumentService.j
 import { getRecordSnapshot, setRecord } from "../service/YjsSchemaMapper.js";
 import { createDocRef } from "../types/DocumentRefImpl.js";
 import { getStateModule } from "../types/StateModule.js";
-import { restoreUnknownVariants } from "../upgrade/UnknownVariant.js";
+import { toStoredValue } from "../upgrade/UnknownVariant.js";
 import { createTestApp } from "./testUtils.js";
 
 const primitive: FieldDef = { type: { kind: "primitive" } };
@@ -78,7 +78,7 @@ describe("unknown union variants", () => {
   it("puts the triangle back when the app saves what it read", () => {
     const read = readGroup();
 
-    expect(restoreUnknownVariants(schema, "Group", { ...read, name: "Renamed" })).toEqual({
+    expect(toStoredValue(schema, "Group", { ...read, name: "Renamed" })).toEqual({
       name: "Renamed",
       shapes: [aBox, triangle],
     });
@@ -87,20 +87,20 @@ describe("unknown union variants", () => {
   it("puts the triangle back after the app deep-copies it", () => {
     const shapes = structuredClone(readGroup().shapes);
 
-    expect(restoreUnknownVariants(schema, "Group", { shapes })).toEqual({
+    expect(toStoredValue(schema, "Group", { shapes })).toEqual({
       shapes: [aBox, triangle],
     });
   });
 
   it("throws when an unknown variant has no rawValue", () => {
-    expect(() => restoreUnknownVariants(schema, "Group", { shapes: [{ shapeType: "unknown" }] }))
+    expect(() => toStoredValue(schema, "Group", { shapes: [{ shapeType: "unknown" }] }))
       .toThrow("Cannot save \"unknown\" as a Shape variant without a rawValue.");
   });
 
   it("leaves a record alone even when it looks like the wrapper", () => {
     const note = { shapeType: "unknown", rawValue: "just text" };
 
-    expect(restoreUnknownVariants(schema, "Note", note)).toEqual(note);
+    expect(toStoredValue(schema, "Note", note)).toEqual(note);
   });
 
   it("uses the saved layerType when a partial update leaves it out", () => {
@@ -108,7 +108,7 @@ describe("unknown union variants", () => {
     const update = { shapes: [aBox, wrappedTriangle] };
     const saved = { layerType: "group", shapes: [] };
 
-    expect(restoreUnknownVariants(schema, "Layer", update, saved)).toEqual({
+    expect(toStoredValue(schema, "Layer", update, saved)).toEqual({
       shapes: [aBox, triangle],
     });
   });
@@ -134,6 +134,6 @@ describe("unknown union variants", () => {
   it("leaves a group with no unknown shapes unchanged", () => {
     const value = { name: "Group 1", shapes: [aBox] };
 
-    expect(restoreUnknownVariants(schema, "Group", value)).toEqual(value);
+    expect(toStoredValue(schema, "Group", value)).toEqual(value);
   });
 });

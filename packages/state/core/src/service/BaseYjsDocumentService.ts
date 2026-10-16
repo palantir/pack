@@ -69,7 +69,7 @@ import type {
 import { DocumentLiveStatus, DocumentLoadStatus } from "../types/DocumentService.js";
 import { createRecordCollectionRef } from "../types/RecordCollectionRefImpl.js";
 import { createRecordRef } from "../types/RecordRefImpl.js";
-import { restoreUnknownVariants } from "../upgrade/UnknownVariant.js";
+import { toStoredValue } from "../upgrade/UnknownVariant.js";
 import {
   addDocumentUpdateSchemaVersionToTransaction,
   getModelDataSchemaVersion,
@@ -829,7 +829,7 @@ export abstract class BaseYjsDocumentService<TDoc extends InternalYjsDoc = Inter
 
     const storageName = getMetadata(recordRef.model).name;
     // Save unknown union variants as their original stored values.
-    const storedState = restoreUnknownVariants(internalDoc.schema, storageName, state);
+    const storedState = toStoredValue(internalDoc.schema, storageName, state);
     const documentUpdateSchemaVersion = getModelDataSchemaVersion(
       internalDoc.schema,
       storageName,
@@ -880,7 +880,7 @@ export abstract class BaseYjsDocumentService<TDoc extends InternalYjsDoc = Inter
       return Promise.reject(new RecordInvalidError(thrown));
     }
     // Save unknown union variants as their original stored values.
-    const storedPartialState = restoreUnknownVariants(
+    const storedPartialState = toStoredValue(
       internalDoc.schema,
       storageName,
       partialState,
