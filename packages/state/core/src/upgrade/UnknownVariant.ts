@@ -81,6 +81,12 @@ export function restoreUnknownVariants<T>(
     if (variantName === UNKNOWN_UNION_VARIANT && "rawValue" in value) {
       return value.rawValue;
     }
+    // Saving "unknown" with no stored value would mark a real variant.
+    if (value[union.discriminant] === UNKNOWN_UNION_VARIANT) {
+      throw new Error(
+        `Cannot save "${UNKNOWN_UNION_VARIANT}" as a ${union.modelName} variant without a rawValue.`,
+      );
+    }
 
     // A known variant, e.g. a box: check its own fields.
     const variantModelName = typeof variantName === "string"

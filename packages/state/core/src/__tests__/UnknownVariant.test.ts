@@ -120,6 +120,11 @@ describe("unknown union variants", () => {
     });
   });
 
+  it("throws when an unknown variant has no stored value", () => {
+    expect(() => restoreUnknownVariants(schema, "Page", { blocks: [{ type: "unknown" }] }))
+      .toThrow("Cannot save \"unknown\" as a Block variant without a rawValue.");
+  });
+
   it("leaves non-union fields unchanged even when they look like an unknown variant", () => {
     const value = { status: "unknown", rawValue: { status: "ready" } };
 
