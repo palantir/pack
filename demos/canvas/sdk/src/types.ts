@@ -3,12 +3,14 @@
 export type { NodeShape_v3 as NodeShape } from "./types_v3.js";
 export type { NodeShape_v3Box as NodeShapeBox } from "./types_v3.js";
 export type { NodeShape_v3Circle as NodeShapeCircle } from "./types_v3.js";
+export type { NodeShape_v3Unknown as NodeShapeUnknown } from "./types_v3.js";
 export type { ShapeBox_v3 as ShapeBox } from "./types_v3.js";
 export type { ShapeCircle_v3 as ShapeCircle } from "./types_v3.js";
 export type { CanvasActivity_v3 as CanvasActivity } from "./types_v3.js";
 export type { CanvasActivity_v3ShapeAdded as CanvasActivityShapeAdded } from "./types_v3.js";
 export type { CanvasActivity_v3ShapeDeleted as CanvasActivityShapeDeleted } from "./types_v3.js";
 export type { CanvasActivity_v3ShapeUpdated as CanvasActivityShapeUpdated } from "./types_v3.js";
+export type { CanvasActivity_v3Unknown as CanvasActivityUnknown } from "./types_v3.js";
 export type { ShapeAddedActivity_v3 as ShapeAddedActivity } from "./types_v3.js";
 export type { ShapeDeletedActivity_v3 as ShapeDeletedActivity } from "./types_v3.js";
 export type { ShapeUpdatedActivity_v3 as ShapeUpdatedActivity } from "./types_v3.js";

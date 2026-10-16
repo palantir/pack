@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import type { NodeShape, NodeShapeModel, VersionedDocRef } from "@demo/canvas.sdk";
+import type { NodeShapeModel, VersionedDocRef } from "@demo/canvas.sdk";
 import { CanvasActivityModel, matchVersion } from "@demo/canvas.sdk";
 import type { RecordRef } from "@palantir/pack.document-schema.model-types";
 import type { MouseEvent } from "react";
@@ -24,6 +24,8 @@ import { boundsToCenter } from "../utils/boundsToCenter.js";
 import { centerToBounds } from "../utils/centerToBounds.js";
 import type { ResizeHandle } from "../utils/getResizeHandles.js";
 import { getResizeHandles } from "../utils/getResizeHandles.js";
+import type { KnownNodeShape } from "../utils/knownShape.js";
+import { isKnownShape } from "../utils/knownShape.js";
 import { toNodeShapeV1, toNodeShapeV2, toNodeShapeV3 } from "../utils/versionedShapes.js";
 import type { ShapeIndex } from "./useShapeIndex.js";
 
@@ -32,7 +34,7 @@ type DragMode = "move" | "resize";
 interface DragState {
   readonly dragMode: DragMode;
   readonly handle?: ResizeHandle;
-  readonly initialShape: NodeShape;
+  readonly initialShape: KnownNodeShape;
   readonly shapeRef: RecordRef<typeof NodeShapeModel>;
   readonly startX: number;
   readonly startY: number;
@@ -136,17 +138,20 @@ export function useShapeDrag(
           return;
         }
 
-        const handle = findHandleAtPoint(x, y, selectedShape);
-        if (handle != null && handle !== "center") {
-          setDragState({
-            dragMode: "resize",
-            handle,
-            initialShape: selectedShape,
-            shapeRef: selectedShapeRef,
-            startX: x,
-            startY: y,
-          });
-          return;
+        // An unknown shape has no resize handles, so the click falls through to selecting a shape.
+        if (isKnownShape(selectedShape)) {
+          const handle = findHandleAtPoint(x, y, selectedShape);
+          if (handle != null && handle !== "center") {
+            setDragState({
+              dragMode: "resize",
+              handle,
+              initialShape: selectedShape,
+              shapeRef: selectedShapeRef,
+              startX: x,
+              startY: y,
+            });
+            return;
+          }
         }
       }
 
@@ -157,7 +162,7 @@ export function useShapeDrag(
       }
 
       const shape = await shapeRef.getSnapshot();
-      if (shape == null) return;
+      if (shape == null || !isKnownShape(shape)) return;
 
       onShapeSelect(shapeRef);
       setDragState({
@@ -263,7 +268,7 @@ export function useShapeDrag(
     lastUpdateTime.current = 0;
 
     const finalShape = await dragState.shapeRef.getSnapshot();
-    if (finalShape != null) {
+    if (finalShape != null && isKnownShape(finalShape)) {
       const initial = dragState.initialShape;
 
       const wasModified = finalShape.left !== initial.left
@@ -339,7 +344,7 @@ export function useShapeDrag(
   };
 }
 
-function findHandleAtPoint(x: number, y: number, shape: NodeShape): ResizeHandle | undefined {
+function findHandleAtPoint(x: number, y: number, shape: KnownNodeShape): ResizeHandle | undefined {
   const handles = getResizeHandles(shape);
   for (const { handle, x: hx, y: hy } of handles) {
     const distance = Math.sqrt((x - hx) ** 2 + (y - hy) ** 2);

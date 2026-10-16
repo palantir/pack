@@ -14,9 +14,10 @@
  * limitations under the License.
  */
 
-import type { NodeShape, NodeShape_v1, NodeShape_v2, NodeShape_v3 } from "@demo/canvas.sdk";
+import type { NodeShape_v1, NodeShape_v2, NodeShape_v3 } from "@demo/canvas.sdk";
+import type { KnownNodeShape } from "./knownShape.js";
 
-export function toNodeShapeV1(shape: NodeShape): NodeShape_v1 {
+export function toNodeShapeV1(shape: KnownNodeShape): NodeShape_v1 {
   const color = getShapeColor(shape);
   const base = {
     bottom: shape.bottom,
@@ -31,7 +32,7 @@ export function toNodeShapeV1(shape: NodeShape): NodeShape_v1 {
     : { ...base, shapeType: "circle" };
 }
 
-export function toNodeShapeV2(shape: NodeShape): NodeShape_v2 {
+export function toNodeShapeV2(shape: KnownNodeShape): NodeShape_v2 {
   const fillColor = shape.fillColor ?? getLegacyColor(shape);
   const strokeColor = shape.strokeColor ?? fillColor;
   const base = {
@@ -49,14 +50,14 @@ export function toNodeShapeV2(shape: NodeShape): NodeShape_v2 {
     : { ...base, shapeType: "circle" };
 }
 
-export function toNodeShapeV3(shape: NodeShape): NodeShape_v3 {
+export function toNodeShapeV3(shape: KnownNodeShape): NodeShape_v3 {
   return toNodeShapeV2(shape);
 }
 
-function getShapeColor(shape: NodeShape): string | undefined {
+function getShapeColor(shape: KnownNodeShape): string | undefined {
   return getLegacyColor(shape) ?? shape.fillColor ?? shape.strokeColor;
 }
 
-function getLegacyColor(shape: NodeShape): string | undefined {
-  return (shape as NodeShape & { readonly color?: string }).color;
+function getLegacyColor(shape: KnownNodeShape): string | undefined {
+  return (shape as KnownNodeShape & { readonly color?: string }).color;
 }

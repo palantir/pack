@@ -23,6 +23,7 @@ import { getShapeUpdatedActivitySummary } from "../utils/activityMessages.js";
 import { centerToBounds } from "../utils/centerToBounds.js";
 import { getDefaultColor } from "../utils/getDefaultColor.js";
 import { getDefaultShapeSize } from "../utils/getDefaultShapeSize.js";
+import { isKnownShape } from "../utils/knownShape.js";
 import { toNodeShapeV1, toNodeShapeV2, toNodeShapeV3 } from "../utils/versionedShapes.js";
 import { useCanvasShapes } from "./useCanvasShapes.js";
 import { useFreehandStrokes } from "./useFreehandStrokes.js";
@@ -77,7 +78,7 @@ export function useCanvasInteraction(
       }
       setCurrentOpacity(undefined);
       void ref.getSnapshot().then(shape => {
-        setCurrentOpacity(shape?.opacity);
+        setCurrentOpacity(shape != null && isKnownShape(shape) ? shape.opacity : undefined);
       });
     },
     [broadcastSelection, selectShape],
@@ -136,7 +137,7 @@ export function useCanvasInteraction(
       setCurrentColor(color);
       if (selectedShapeRef != null) {
         const oldShape = await selectedShapeRef.getSnapshot();
-        if (oldShape == null) return;
+        if (oldShape == null || !isKnownShape(oldShape)) return;
 
         matchVersion(doc, {
           1: doc => {
@@ -215,7 +216,7 @@ export function useCanvasInteraction(
       setCurrentOpacity(normalizedOpacity);
 
       const oldShape = await selectedShapeRef.getSnapshot();
-      if (oldShape == null) return;
+      if (oldShape == null || !isKnownShape(oldShape)) return;
 
       matchVersion(doc, {
         1: () => {},
