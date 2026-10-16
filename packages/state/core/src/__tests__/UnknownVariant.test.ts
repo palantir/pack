@@ -36,110 +36,102 @@ import { getStateModule } from "../types/StateModule.js";
 import { restoreUnknownVariants } from "../upgrade/UnknownVariant.js";
 import { createTestApp } from "./testUtils.js";
 
-// A 1.0 SDK knows `paragraph` blocks; a newer app added `checklist`.
-const blockUnion: UnionUpgradeRegistry = {
-  modelName: "Block",
-  discriminant: "type",
-  variants: { paragraph: "Paragraph" },
+// This app knows one shape type, `box`. A newer app added `triangle`.
+const shapeUnion: UnionUpgradeRegistry = {
+  modelName: "Shape",
+  discriminant: "shapeType",
+  variants: { box: "Box" },
 };
-const paragraph: UpgradeRegistry = {
-  modelName: "Paragraph",
-  allFields: { text: { type: { kind: "primitive" } } },
+const box: UpgradeRegistry = {
+  modelName: "Box",
+  allFields: { left: { type: { kind: "primitive" } }, top: { type: { kind: "primitive" } } },
   steps: [],
 };
-const page: UpgradeRegistry = {
-  modelName: "Page",
+// A group of shapes on the canvas.
+const group: UpgradeRegistry = {
+  modelName: "Group",
   allFields: {
-    title: { type: { kind: "primitive" } },
-    blocks: { type: { kind: "array", element: { kind: "modelRef", model: "Block" } } },
+    name: { type: { kind: "primitive" } },
+    shapes: { type: { kind: "array", element: { kind: "modelRef", model: "Shape" } } },
     status: { type: { kind: "primitive" } },
     rawValue: { type: { kind: "primitive" } },
   },
   steps: [],
 };
-// A union model whose `frame` variant holds a list of blocks.
-const layoutUnion: UnionUpgradeRegistry = {
-  modelName: "Layout",
-  discriminant: "kind",
-  variants: { frame: "Frame" },
-};
-const frame: UpgradeRegistry = {
-  modelName: "Frame",
-  allFields: {
-    blocks: { type: { kind: "array", element: { kind: "modelRef", model: "Block" } } },
-  },
-  steps: [],
+// A canvas layer, whose `group` variant holds a list of shapes.
+const layerUnion: UnionUpgradeRegistry = {
+  modelName: "Layer",
+  discriminant: "layerType",
+  variants: { group: "Group" },
 };
 const upgrades: UpgradeRegistryMap = {
-  Block: blockUnion,
-  Paragraph: paragraph,
-  Page: page,
-  Layout: layoutUnion,
-  Frame: frame,
+  Shape: shapeUnion,
+  Box: box,
+  Group: group,
+  Layer: layerUnion,
 };
-const PageModel: Model = { __type: {}, zodSchema: z.object({}), [Metadata]: { name: "Page" } };
+const GroupModel: Model = { __type: {}, zodSchema: z.object({}), [Metadata]: { name: "Group" } };
 const schema = {
-  Page: PageModel,
+  Group: GroupModel,
   [Metadata]: { version: 1, upgrades },
 } as unknown as DocumentSchema;
 
-const checklist = { type: "checklist", items: ["a", "b"] };
-const pageId = "page-1" as RecordId;
+const aBox = { shapeType: "box", left: 0, top: 0 };
+const triangle = { shapeType: "triangle", left: 5, top: 5 };
+const groupId = "group-1" as RecordId;
 
-function readPage(): { title: string; blocks: unknown[] } {
+/** Store a group with a box and a triangle, then read it back as this app. */
+function readGroup(): { name: string; shapes: unknown[] } {
   const yDoc = new Y.Doc();
-  const storedPage = { title: "Notes", blocks: [{ type: "paragraph", text: "Hi" }, checklist] };
-  setRecord(yDoc, "Page", pageId, storedPage as unknown as ModelData<Model>);
-  return getRecordSnapshot(yDoc, "Page", pageId, upgrades) as { title: string; blocks: unknown[] };
+  const storedGroup = { name: "Group 1", shapes: [aBox, triangle] };
+  setRecord(yDoc, "Group", groupId, storedGroup as unknown as ModelData<Model>);
+  return getRecordSnapshot(yDoc, "Group", groupId, upgrades) as { name: string; shapes: unknown[] };
 }
 
 describe("unknown union variants", () => {
-  it("reads a variant this SDK doesn't know as an unknown variant", () => {
-    const { blocks } = readPage();
+  it("reads a shape type this app doesn't know as an unknown variant", () => {
+    const { shapes } = readGroup();
 
-    expect(blocks).toEqual([
-      { type: "paragraph", text: "Hi" },
-      { type: "unknown", rawValue: checklist },
-    ]);
+    expect(shapes).toEqual([aBox, { shapeType: "unknown", rawValue: triangle }]);
   });
 
-  it("restores the stored value when the app saves what it read", () => {
-    const read = readPage();
+  it("puts the triangle back when the app saves what it read", () => {
+    const read = readGroup();
 
-    expect(restoreUnknownVariants(schema, "Page", { ...read, title: "Renamed" })).toEqual({
-      title: "Renamed",
-      blocks: [{ type: "paragraph", text: "Hi" }, checklist],
+    expect(restoreUnknownVariants(schema, "Group", { ...read, name: "Renamed" })).toEqual({
+      name: "Renamed",
+      shapes: [aBox, triangle],
     });
   });
 
-  it("restores the stored value after the app deep-copies it", () => {
-    const { blocks } = readPage();
+  it("puts the triangle back after the app deep-copies it", () => {
+    const { shapes } = readGroup();
 
-    expect(restoreUnknownVariants(schema, "Page", { blocks: structuredClone(blocks) })).toEqual({
-      blocks: [{ type: "paragraph", text: "Hi" }, checklist],
+    expect(restoreUnknownVariants(schema, "Group", { shapes: structuredClone(shapes) })).toEqual({
+      shapes: [aBox, triangle],
     });
   });
 
   it("throws when an unknown variant has no stored value", () => {
-    expect(() => restoreUnknownVariants(schema, "Page", { blocks: [{ type: "unknown" }] }))
-      .toThrow("Cannot save \"unknown\" as a Block variant without a rawValue.");
+    expect(() => restoreUnknownVariants(schema, "Group", { shapes: [{ shapeType: "unknown" }] }))
+      .toThrow("Cannot save \"unknown\" as a Shape variant without a rawValue.");
   });
 
   it("leaves non-union fields unchanged even when they look like an unknown variant", () => {
     const value = { status: "unknown", rawValue: { status: "ready" } };
 
-    expect(restoreUnknownVariants(schema, "Page", value)).toEqual(value);
+    expect(restoreUnknownVariants(schema, "Group", value)).toEqual(value);
   });
 
-  it("uses the current record to find the variant when a partial update leaves it out", () => {
-    const { blocks } = readPage();
+  it("uses the saved record to find the variant when a partial update leaves it out", () => {
+    const { shapes } = readGroup();
 
     expect(
-      restoreUnknownVariants(schema, "Layout", { blocks }, { kind: "frame", blocks: [] }),
-    ).toEqual({ blocks: [{ type: "paragraph", text: "Hi" }, checklist] });
+      restoreUnknownVariants(schema, "Layer", { shapes }, { layerType: "group", shapes: [] }),
+    ).toEqual({ shapes: [aBox, triangle] });
   });
 
-  it("restores edit descriptions and presence sent through app.state", () => {
+  it("puts the triangle back in edit descriptions and presence sent through app.state", () => {
     const app = createTestApp();
     const service = app.getModule(DOCUMENT_SERVICE_MODULE_KEY) as BaseYjsDocumentService;
     const withTransaction = vi.spyOn(service, "withTransaction").mockImplementation(() => {});
@@ -147,19 +139,19 @@ describe("unknown union variants", () => {
       .mockImplementation(() => {});
     const stateModule = getStateModule(app);
     const docRef = createDocRef(app, "doc-1" as DocumentId, schema);
-    const { blocks } = readPage();
-    const restored = { blocks: [{ type: "paragraph", text: "Hi" }, checklist] };
+    const { shapes } = readGroup();
+    const restored = { shapes: [aBox, triangle] };
 
-    stateModule.withTransaction(docRef, () => {}, { model: PageModel, data: { blocks } });
-    stateModule.updateCustomPresence(docRef, PageModel, { blocks } as never);
+    stateModule.withTransaction(docRef, () => {}, { model: GroupModel, data: { shapes } });
+    stateModule.updateCustomPresence(docRef, GroupModel, { shapes } as never);
 
     expect(withTransaction.mock.calls[0]![2]).toMatchObject({ data: restored });
     expect(updateCustomPresence.mock.calls[0]![2]).toEqual(restored);
   });
 
   it("leaves a value without unknown variants unchanged", () => {
-    const value = { title: "Notes", blocks: [{ type: "paragraph", text: "Hi" }] };
+    const value = { name: "Group 1", shapes: [aBox] };
 
-    expect(restoreUnknownVariants(schema, "Page", value)).toEqual(value);
+    expect(restoreUnknownVariants(schema, "Group", value)).toEqual(value);
   });
 });
