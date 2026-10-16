@@ -92,9 +92,14 @@ describe("unknown union variants", () => {
     });
   });
 
-  it("throws when an unknown variant has no rawValue", () => {
-    expect(() => toStoredValue(schema, "Group", { shapes: [{ shapeType: "unknown" }] }))
-      .toThrow("Cannot save \"unknown\" as a Shape variant without a rawValue.");
+  it.each([
+    ["missing", { shapeType: "unknown" }],
+    ["undefined", { shapeType: "unknown", rawValue: undefined }],
+    ["null", { shapeType: "unknown", rawValue: null }],
+    ["an object with no shapeType", { shapeType: "unknown", rawValue: {} }],
+  ])("throws when rawValue is %s", (_, wrapper) => {
+    expect(() => toStoredValue(schema, "Group", { shapes: [wrapper] }))
+      .toThrow("Cannot save \"unknown\" as a Shape variant: rawValue must be the stored variant.");
   });
 
   it("leaves a record alone even when it looks like the wrapper", () => {

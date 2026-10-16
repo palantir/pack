@@ -78,13 +78,16 @@ export function toStoredValue<T>(
     const variantName = value[union.discriminant] ?? saved?.[union.discriminant];
 
     // The wrapper: put back the stored value.
-    if (variantName === UNKNOWN_UNION_VARIANT && "rawValue" in value) {
+    if (
+      variantName === UNKNOWN_UNION_VARIANT && isStoredVariant(value.rawValue, union.discriminant)
+    ) {
       return value.rawValue;
     }
-    // Saving "unknown" with no stored value would mark a real variant.
+    // Saving "unknown" without the stored variant would break the record for every app.
     if (value[union.discriminant] === UNKNOWN_UNION_VARIANT) {
       throw new Error(
-        `Cannot save "${UNKNOWN_UNION_VARIANT}" as a ${union.modelName} variant without a rawValue.`,
+        `Cannot save "${UNKNOWN_UNION_VARIANT}" as a ${union.modelName} variant:`
+          + " rawValue must be the stored variant.",
       );
     }
 
@@ -155,6 +158,11 @@ export function toStoredValue<T>(
 
 function isUnion(model: UpgradeRegistryEntry): model is UnionUpgradeRegistry {
   return "discriminant" in model;
+}
+
+/** What the read step puts in `rawValue`: a stored variant, which always has its discriminant. */
+function isStoredVariant(value: unknown, discriminant: string): value is PlainObject {
+  return isPlainObject(value) && typeof value[discriminant] === "string";
 }
 
 function isPlainObject(value: unknown): value is PlainObject {
