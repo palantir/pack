@@ -160,9 +160,11 @@ function isUnion(model: UpgradeRegistryEntry): model is UnionUpgradeRegistry {
   return "discriminant" in model;
 }
 
-/** What the read step puts in `rawValue`: a stored variant, which always has its discriminant. */
+/** What the read step puts in `rawValue`: a stored variant, which always has a real discriminant. */
 function isStoredVariant(value: unknown, discriminant: string): value is PlainObject {
-  return isPlainObject(value) && typeof value[discriminant] === "string";
+  return isPlainObject(value)
+    && typeof value[discriminant] === "string"
+    && value[discriminant] !== UNKNOWN_UNION_VARIANT;
 }
 
 function isPlainObject(value: unknown): value is PlainObject {

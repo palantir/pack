@@ -66,6 +66,8 @@ export function generateModelMetadataFromChain(
   const recordNames: string[] = [];
   const unionNames: string[] = [];
   const variantNames: string[] = [];
+  // Each variant model's union, e.g. NodeShapeBox -> NodeShape.
+  const unionByVariantName = new Map<string, string>();
 
   for (const [modelKey, modelDef] of Object.entries(latestIr.models)) {
     if (modelDef.type === "record") {
@@ -73,7 +75,9 @@ export function generateModelMetadataFromChain(
     } else if (modelDef.type === "union") {
       unionNames.push(modelKey);
       for (const variantName of Object.keys(modelDef.union.variants)) {
-        variantNames.push(`${modelKey}${formatVariantName(variantName)}`);
+        const variantModelName = `${modelKey}${formatVariantName(variantName)}`;
+        variantNames.push(variantModelName);
+        unionByVariantName.set(variantModelName, modelKey);
       }
     }
   }
@@ -191,7 +195,11 @@ export function generateModelMetadataFromChain(
   let upgradesBlock: string;
   const allUpgradeNames = [...recordNames, ...unionNames];
   if (needsUpgradeRegistry && allUpgradeNames.length > 0) {
-    const upgradeEntries = allUpgradeNames.map(n => `        ${n}: ${n}Upgrades,`).join("\n");
+    // A variant model uses its union's registry, which finds the variant by its discriminant.
+    const upgradeEntries = [
+      ...allUpgradeNames.map(n => `        ${n}: ${n}Upgrades,`),
+      ...variantNames.map(n => `        ${n}: ${unionByVariantName.get(n)}Upgrades,`),
+    ].join("\n");
     upgradesBlock = `      upgrades: {\n${upgradeEntries}\n      },\n`;
   } else {
     upgradesBlock = "";

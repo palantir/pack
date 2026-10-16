@@ -99,6 +99,8 @@ export const DocumentModel = {
       Circle: CircleUpgrades,
       Rectangle: RectangleUpgrades,
       Shape: ShapeUpgrades,
+      ShapeCircle: ShapeUpgrades,
+      ShapeRectangle: ShapeUpgrades,
     },
   },
 } as const satisfies DocumentSchema;

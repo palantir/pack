@@ -97,6 +97,7 @@ describe("unknown union variants", () => {
     ["undefined", { shapeType: "unknown", rawValue: undefined }],
     ["null", { shapeType: "unknown", rawValue: null }],
     ["an object with no shapeType", { shapeType: "unknown", rawValue: {} }],
+    ["another unknown variant", { shapeType: "unknown", rawValue: wrappedTriangle }],
   ])("throws when rawValue is %s", (_, wrapper) => {
     expect(() => toStoredValue(schema, "Group", { shapes: [wrapper] }))
       .toThrow("Cannot save \"unknown\" as a Shape variant: rawValue must be the stored variant.");
