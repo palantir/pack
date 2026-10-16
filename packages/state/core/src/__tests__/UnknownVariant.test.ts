@@ -17,11 +17,10 @@
 import type {
   DocumentId,
   DocumentSchema,
+  FieldDef,
   Model,
   ModelData,
   RecordId,
-  UnionUpgradeRegistry,
-  UpgradeRegistry,
   UpgradeRegistryMap,
 } from "@palantir/pack.document-schema.model-types";
 import { Metadata } from "@palantir/pack.document-schema.model-types";
@@ -36,39 +35,21 @@ import { getStateModule } from "../types/StateModule.js";
 import { restoreUnknownVariants } from "../upgrade/UnknownVariant.js";
 import { createTestApp } from "./testUtils.js";
 
-// This app knows one shape type, `box`. A newer app added `triangle`.
-const shapeUnion: UnionUpgradeRegistry = {
-  modelName: "Shape",
-  discriminant: "shapeType",
-  variants: { box: "Box" },
-};
-const box: UpgradeRegistry = {
-  modelName: "Box",
-  allFields: { left: { type: { kind: "primitive" } }, top: { type: { kind: "primitive" } } },
-  steps: [],
-};
-// A group of shapes on the canvas.
-const group: UpgradeRegistry = {
-  modelName: "Group",
-  allFields: {
-    name: { type: { kind: "primitive" } },
-    shapes: { type: { kind: "array", element: { kind: "modelRef", model: "Shape" } } },
-    status: { type: { kind: "primitive" } },
-    rawValue: { type: { kind: "primitive" } },
-  },
-  steps: [],
-};
-// A canvas layer, whose `group` variant holds a list of shapes.
-const layerUnion: UnionUpgradeRegistry = {
-  modelName: "Layer",
-  discriminant: "layerType",
-  variants: { group: "Group" },
-};
+const primitive: FieldDef = { type: { kind: "primitive" } };
+const listOf = (model: string): FieldDef => ({
+  type: { kind: "array", element: { kind: "modelRef", model } },
+});
+
+// This app's schema. A shape can only be a box here; a newer app also has triangles.
 const upgrades: UpgradeRegistryMap = {
-  Shape: shapeUnion,
-  Box: box,
-  Group: group,
-  Layer: layerUnion,
+  Shape: { modelName: "Shape", discriminant: "shapeType", variants: { box: "Box" } },
+  Box: { modelName: "Box", allFields: { left: primitive, top: primitive }, steps: [] },
+  // A group of shapes on the canvas.
+  Group: { modelName: "Group", allFields: { name: primitive, shapes: listOf("Shape") }, steps: [] },
+  // A layer is a union too: its `group` variant is a Group.
+  Layer: { modelName: "Layer", discriminant: "layerType", variants: { group: "Group" } },
+  // A record, not a union, whose field names happen to match the wrapper's.
+  Note: { modelName: "Note", allFields: { shapeType: primitive, rawValue: primitive }, steps: [] },
 };
 const GroupModel: Model = { __type: {}, zodSchema: z.object({}), [Metadata]: { name: "Group" } };
 const schema = {
@@ -78,21 +59,20 @@ const schema = {
 
 const aBox = { shapeType: "box", left: 0, top: 0 };
 const triangle = { shapeType: "triangle", left: 5, top: 5 };
-const groupId = "group-1" as RecordId;
+const wrappedTriangle = { shapeType: "unknown", rawValue: triangle };
 
-/** Store a group with a box and a triangle, then read it back as this app. */
+/** Store a group holding a box and a triangle, then read it back as this app. */
 function readGroup(): { name: string; shapes: unknown[] } {
   const yDoc = new Y.Doc();
+  const groupId = "group-1" as RecordId;
   const storedGroup = { name: "Group 1", shapes: [aBox, triangle] };
   setRecord(yDoc, "Group", groupId, storedGroup as unknown as ModelData<Model>);
   return getRecordSnapshot(yDoc, "Group", groupId, upgrades) as { name: string; shapes: unknown[] };
 }
 
 describe("unknown union variants", () => {
-  it("reads a shape type this app doesn't know as an unknown variant", () => {
-    const { shapes } = readGroup();
-
-    expect(shapes).toEqual([aBox, { shapeType: "unknown", rawValue: triangle }]);
+  it("reads the triangle as an unknown variant", () => {
+    expect(readGroup().shapes).toEqual([aBox, wrappedTriangle]);
   });
 
   it("puts the triangle back when the app saves what it read", () => {
@@ -105,51 +85,53 @@ describe("unknown union variants", () => {
   });
 
   it("puts the triangle back after the app deep-copies it", () => {
-    const { shapes } = readGroup();
+    const shapes = structuredClone(readGroup().shapes);
 
-    expect(restoreUnknownVariants(schema, "Group", { shapes: structuredClone(shapes) })).toEqual({
+    expect(restoreUnknownVariants(schema, "Group", { shapes })).toEqual({
       shapes: [aBox, triangle],
     });
   });
 
-  it("throws when an unknown variant has no stored value", () => {
+  it("throws when an unknown variant has no rawValue", () => {
     expect(() => restoreUnknownVariants(schema, "Group", { shapes: [{ shapeType: "unknown" }] }))
       .toThrow("Cannot save \"unknown\" as a Shape variant without a rawValue.");
   });
 
-  it("leaves non-union fields unchanged even when they look like an unknown variant", () => {
-    const value = { status: "unknown", rawValue: { status: "ready" } };
+  it("leaves a record alone even when it looks like the wrapper", () => {
+    const note = { shapeType: "unknown", rawValue: "just text" };
 
-    expect(restoreUnknownVariants(schema, "Group", value)).toEqual(value);
+    expect(restoreUnknownVariants(schema, "Note", note)).toEqual(note);
   });
 
-  it("uses the saved record to find the variant when a partial update leaves it out", () => {
-    const { shapes } = readGroup();
+  it("uses the saved layerType when a partial update leaves it out", () => {
+    // Without the saved value, the SDK can't tell this update is for a group, so it can't find `shapes`.
+    const update = { shapes: [aBox, wrappedTriangle] };
+    const saved = { layerType: "group", shapes: [] };
 
-    expect(
-      restoreUnknownVariants(schema, "Layer", { shapes }, { layerType: "group", shapes: [] }),
-    ).toEqual({ shapes: [aBox, triangle] });
+    expect(restoreUnknownVariants(schema, "Layer", update, saved)).toEqual({
+      shapes: [aBox, triangle],
+    });
   });
 
-  it("puts the triangle back in edit descriptions and presence sent through app.state", () => {
+  it("puts the triangle back in edits and presence sent through app.state", () => {
+    // app.state sends these without going through setRecord, so check those paths too.
     const app = createTestApp();
     const service = app.getModule(DOCUMENT_SERVICE_MODULE_KEY) as BaseYjsDocumentService;
     const withTransaction = vi.spyOn(service, "withTransaction").mockImplementation(() => {});
     const updateCustomPresence = vi.spyOn(service, "updateCustomPresence")
       .mockImplementation(() => {});
-    const stateModule = getStateModule(app);
     const docRef = createDocRef(app, "doc-1" as DocumentId, schema);
-    const { shapes } = readGroup();
+    const read = { shapes: [aBox, wrappedTriangle] };
+
+    getStateModule(app).withTransaction(docRef, () => {}, { model: GroupModel, data: read });
+    getStateModule(app).updateCustomPresence(docRef, GroupModel, read as never);
+
     const restored = { shapes: [aBox, triangle] };
-
-    stateModule.withTransaction(docRef, () => {}, { model: GroupModel, data: { shapes } });
-    stateModule.updateCustomPresence(docRef, GroupModel, { shapes } as never);
-
     expect(withTransaction.mock.calls[0]![2]).toMatchObject({ data: restored });
     expect(updateCustomPresence.mock.calls[0]![2]).toEqual(restored);
   });
 
-  it("leaves a value without unknown variants unchanged", () => {
+  it("leaves a group with no unknown shapes unchanged", () => {
     const value = { name: "Group 1", shapes: [aBox] };
 
     expect(restoreUnknownVariants(schema, "Group", value)).toEqual(value);
