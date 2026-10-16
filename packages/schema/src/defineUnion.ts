@@ -61,9 +61,11 @@ export function defineUnion<const TVariants extends UnionVariantArgs>(
     variants,
   }: UnionArgs<TVariants>,
 ): UnionDef<ResolvedUnionVariants<TVariants>> {
-  const entries = Object.entries(variants).map(
-    ([key, value]) => [key, resolveUnionVariantArg(value)] as const,
-  );
+  assertDiscriminantAllowed(discriminant, name);
+  const entries = Object.entries(variants).map(([key, value]) => {
+    assertVariantNameAllowed(key, name);
+    return [key, resolveUnionVariantArg(value)] as const;
+  });
 
   const resolvedVariants = Object.fromEntries(entries) as ResolvedUnionVariants<TVariants>;
 
@@ -79,4 +81,34 @@ export function defineUnion<const TVariants extends UnionVariantArgs>(
 export function resolveUnionVariantArg(arg: UnionVariantArg): Ref {
   const resolved = typeof arg === "function" ? arg() : arg;
   return resolved.type === TypeKind.REF ? resolved : modelToRef(resolved);
+}
+
+/**
+ * Throw if a variant uses a reserved name. Every generated union has an Unknown case for variants
+ * an SDK doesn't know: its discriminant is "unknown" and its generated names end in "Unknown", so
+ * no variant may produce either (e.g. "unknown", "Unknown", "_unknown").
+ */
+export function assertVariantNameAllowed(variantName: string, unionName: string): void {
+  // Matches type-gen's formatVariantName: the generated type-name suffix for this variant,
+  // e.g. "_unknown" -> "Unknown".
+  const formattedName = variantName
+    .split(/[-_]/)
+    .map(part => part.charAt(0).toUpperCase() + part.slice(1))
+    .join("");
+  if (formattedName === "Unknown") {
+    throw new Error(
+      `Variant "${variantName}" in union "${unionName}" uses a reserved name. Every union has a`
+        + " generated Unknown case for variants an SDK doesn't know; choose another name.",
+    );
+  }
+}
+
+/** Throw if a discriminant uses `rawValue`, the field the Unknown case keeps the stored value in. */
+function assertDiscriminantAllowed(discriminant: string, unionName: string): void {
+  if (discriminant === "rawValue") {
+    throw new Error(
+      `Union "${unionName}" can't use "rawValue" as its discriminant. The generated Unknown case`
+        + " stores the original value in rawValue; choose another name.",
+    );
+  }
 }

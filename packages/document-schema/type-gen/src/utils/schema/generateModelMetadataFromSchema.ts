@@ -103,7 +103,8 @@ export function generateModelMetadataFromChain(
 
   // Upgrade imports (only if there are upgrades)
   const upgradeNames = [...recordNames, ...unionNames].map(n => `${n}Upgrades`);
-  if (chain.length > 1 && upgradeNames.length > 0) {
+  const needsUpgradeRegistry = chain.length > 1 || unionNames.length > 0;
+  if (needsUpgradeRegistry && upgradeNames.length > 0) {
     output += `import { ${upgradeNames.join(", ")} } from "${INTERNAL_UPGRADES_PATH}";\n`;
   }
 
@@ -189,7 +190,7 @@ export function generateModelMetadataFromChain(
   // Build upgrades map (includes both record and union entries)
   let upgradesBlock: string;
   const allUpgradeNames = [...recordNames, ...unionNames];
-  if (chain.length > 1 && allUpgradeNames.length > 0) {
+  if (needsUpgradeRegistry && allUpgradeNames.length > 0) {
     const upgradeEntries = allUpgradeNames.map(n => `        ${n}: ${n}Upgrades,`).join("\n");
     upgradesBlock = `      upgrades: {\n${upgradeEntries}\n      },\n`;
   } else {

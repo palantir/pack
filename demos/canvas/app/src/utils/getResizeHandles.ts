@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-import type { NodeShape } from "@demo/canvas.sdk";
 import { boundsToCenter } from "./boundsToCenter.js";
+import type { KnownNodeShape } from "./knownShape.js";
 
 export type ResizeHandle = "nw" | "ne" | "sw" | "se" | "center";
 
@@ -25,7 +25,7 @@ export interface HandlePosition {
   readonly y: number;
 }
 
-export function getResizeHandles(shape: NodeShape): readonly HandlePosition[] {
+export function getResizeHandles(shape: KnownNodeShape): readonly HandlePosition[] {
   const { centerX, centerY } = boundsToCenter(shape);
 
   return [

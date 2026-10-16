@@ -35,6 +35,23 @@ const doc = useDocRef(app, CanvasSchema, canvasId);
 
 The types are exhaustive: if you miss an entry (or add one that isn't needed), the `DocumentModel(...)` call fails to type-check.
 
+### Unknown variants
+
+A document can contain a union variant your copy of the app doesn't know, such as one added by a newer version. Every generated union has an extra **unknown** case for this. Its discriminant is `"unknown"`, so no real variant can use that name, and TypeScript makes you handle it wherever you check the variant:
+
+```tsx
+switch (shape.shapeType) {
+  case "box":
+    return <BoxShape shape={shape} />;
+  case "circle":
+    return <CircleShape shape={shape} />;
+  case "unknown":
+    return null; // added by a newer version; this copy can't draw it
+}
+```
+
+The unknown value keeps the stored data in `rawValue`. When you write a record, presence or activity that contains it, PACK writes the stored data back unchanged, so the newer variant isn't lost.
+
 ## Writing documents
 
 During a rolling deploy, old and new copies of your app run side by side. All clients operating on a document must be writing at the same schema version. We call this the **operational version**. This prevents cases where newer clients are writing fields that older clients don't understand. The operational version is monotonically increasing, computed by the backend, and passed to the client in the document's metadata. Typically, this will be the highest schema version that _every_ deployed copy can handle, computed from the set of currently in-use compatibility ranges.

@@ -14,8 +14,9 @@
  * limitations under the License.
  */
 
+import { UNKNOWN_UNION_VARIANT } from "@palantir/pack.document-schema.model-types";
 import type { IRealTimeDocumentSchema } from "../../lib/pack-docschema-api/pack-docschema-ir/index.js";
-import { formatVariantName } from "../formatVariantName.js";
+import { formatVariantName, UNKNOWN_VARIANT_SUFFIX } from "../formatVariantName.js";
 import { GENERATED_FILE_HEADER } from "../generatedFileHeader.js";
 import { convertFieldTypeToZodSchema } from "../ir/irFieldHelpers.js";
 import type { ResolvedIrChain, VersionedIrEntry } from "./resolveSchemaChain.js";
@@ -46,7 +47,7 @@ function generateZodSchemasForVersion(
       typeNames.push(versionedTypeName(modelKey, version));
     } else if (modelDef.type === "union") {
       typeNames.push(versionedTypeName(modelKey, version));
-      for (const variantName of Object.keys(modelDef.union.variants)) {
+      for (const variantName of [...Object.keys(modelDef.union.variants), UNKNOWN_UNION_VARIANT]) {
         typeNames.push(
           `${versionedTypeName(modelKey, version)}${formatVariantName(variantName)}`,
         );
@@ -115,6 +116,14 @@ function generateZodSchemasForVersion(
         output += `}) satisfies ZodType<${variantTypeName}>;\n\n`;
       }
     }
+
+    const unknownSchemaName = `${versionedSchemaName(modelKey, version)}${UNKNOWN_VARIANT_SUFFIX}`;
+    const unknownTypeName = `${versionedTypeName(modelKey, version)}${UNKNOWN_VARIANT_SUFFIX}`;
+    output += `export const ${unknownSchemaName} = z.object({\n`;
+    output += `  ${discriminantField}: z.literal("${UNKNOWN_UNION_VARIANT}"),\n`;
+    output += `  rawValue: z.unknown()\n`;
+    output += `}) satisfies ZodType<${unknownTypeName}>;\n\n`;
+    variantSchemaNames.push(unknownSchemaName);
 
     const unionZodSchemaName = versionedSchemaName(modelKey, version);
     const typeName = versionedTypeName(modelKey, version);
