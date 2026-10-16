@@ -22,6 +22,7 @@ import type {
   UpgradeRegistryEntry,
   UpgradeRegistryMap,
 } from "@palantir/pack.document-schema.model-types";
+import { createUnknownVariant } from "./UnknownVariant.js";
 
 function isUnionRegistry(entry: UpgradeRegistryEntry): entry is UnionUpgradeRegistry {
   return "discriminant" in entry;
@@ -33,7 +34,9 @@ function isUnionRegistry(entry: UpgradeRegistryEntry): entry is UnionUpgradeRegi
  * For record registries, applies the lens when the record or any nested record
  * may need upgrade treatment.
  * For union registries, reads the discriminant from the data to determine the
- * variant, then applies that variant's lens.
+ * variant, then applies that variant's lens. A variant this SDK doesn't know
+ * (e.g. one added by a newer app) is returned as an unknown variant that keeps
+ * the stored value.
  *
  * `upgradeFns` are the runtime-supplied typed forward callbacks (passed to the
  * generated `DocumentModel({...})` factory at boot). May be `undefined` for
@@ -49,6 +52,9 @@ export function resolveAndApplyLens(
   if (isUnionRegistry(entry)) {
     const discriminantValue = rawData[entry.discriminant];
     if (typeof discriminantValue === "string") {
+      if (!Object.hasOwn(entry.variants, discriminantValue)) {
+        return createUnknownVariant(entry.discriminant, rawData);
+      }
       const variantModelName = entry.variants[discriminantValue];
       if (variantModelName != null) {
         const variantRegistry = allRegistries[variantModelName];
@@ -90,14 +96,8 @@ function registryNeedsReadLens(
   visited = new Set<string>(),
 ): boolean {
   if (isUnionRegistry(entry)) {
-    if (visited.has(entry.modelName)) return false;
-    visited.add(entry.modelName);
-
-    return Object.values(entry.variants).some(variantModelName => {
-      const variantRegistry = allRegistries[variantModelName];
-      return variantRegistry != null
-        && registryNeedsReadLens(variantRegistry, allRegistries, visited);
-    });
+    // Every union needs the lens, to turn variants this SDK doesn't know into unknown variants.
+    return true;
   }
 
   if (entry.steps.length > 0) return true;

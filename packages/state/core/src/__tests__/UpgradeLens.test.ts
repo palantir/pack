@@ -612,11 +612,12 @@ describe("resolveAndApplyLens", () => {
     expect(result.radius).toBe(5);
   });
 
-  it("returns raw data when discriminant value is not a known variant", () => {
+  it("returns an unknown variant that keeps the stored value when the variant isn't known", () => {
     const rawData = { kind: "triangle", base: 3 };
     const result = resolveAndApplyLens(rawData, shapeUnion, allRegistries, upgradeFns);
 
-    expect(result).toBe(rawData);
+    expect(result).toEqual({ kind: "unknown", rawValue: rawData });
+    expect(result.rawValue).toBe(rawData);
   });
 
   it("returns raw data when discriminant field is missing", () => {
@@ -826,16 +827,16 @@ describe("resolveAndApplyLens", () => {
       expect(result).toBe(rawData);
     });
 
-    it("returns raw data when nested union discriminant is unknown", () => {
+    it("returns an unknown variant when a nested union's variant isn't known", () => {
       const rawData = {
         type: "livingBeing",
         value: { kind: "fungus", name: "Mushroom" },
       };
       const result = resolveAndApplyLens(rawData, entityUnion, nestedRegistries, nestedUpgradeFns);
 
-      // Unknown variant at LivingBeing level — returned unchanged
+      // Unknown variant at LivingBeing level — wrapped, with the stored value kept
       expect(result.type).toBe("livingBeing");
-      expect((result.value as Record<string, unknown>).kind).toBe("fungus");
+      expect(result.value).toEqual({ kind: "unknown", rawValue: rawData.value });
     });
 
     it("union → record routing still works alongside union → union", () => {

@@ -69,6 +69,7 @@ import type {
 import { DocumentLiveStatus, DocumentLoadStatus } from "../types/DocumentService.js";
 import { createRecordCollectionRef } from "../types/RecordCollectionRefImpl.js";
 import { createRecordRef } from "../types/RecordRefImpl.js";
+import { restoreUnknownVariants } from "../upgrade/UnknownVariant.js";
 import {
   addDocumentUpdateSchemaVersionToTransaction,
   getModelDataSchemaVersion,
@@ -827,16 +828,18 @@ export abstract class BaseYjsDocumentService<TDoc extends InternalYjsDoc = Inter
     // TODO: perhaps we just call this via onRecordSet instead?
 
     const storageName = getMetadata(recordRef.model).name;
+    // Save unknown union variants as their original stored values.
+    const storedState = restoreUnknownVariants(internalDoc.schema, storageName, state);
     const documentUpdateSchemaVersion = getModelDataSchemaVersion(
       internalDoc.schema,
       storageName,
-      state,
+      storedState,
     );
     YjsSchemaMapper.setRecord(
       internalDoc.yDoc,
       storageName,
       recordRef.id,
-      state,
+      storedState,
       documentUpdateSchemaVersion,
     );
 
@@ -876,17 +879,24 @@ export abstract class BaseYjsDocumentService<TDoc extends InternalYjsDoc = Inter
       this.markRecordInvalid(internalDoc, recordRef, thrown);
       return Promise.reject(new RecordInvalidError(thrown));
     }
-    const documentUpdateSchemaVersion = getPartialModelDataSchemaVersion(
+    // Save unknown union variants as their original stored values.
+    const storedPartialState = restoreUnknownVariants(
       internalDoc.schema,
       storageName,
       partialState,
+      currentState,
+    );
+    const documentUpdateSchemaVersion = getPartialModelDataSchemaVersion(
+      internalDoc.schema,
+      storageName,
+      storedPartialState,
       currentState,
     );
     const wasUpdated = YjsSchemaMapper.updateRecord(
       internalDoc.yDoc,
       storageName,
       recordRef.id,
-      partialState,
+      storedPartialState,
       documentUpdateSchemaVersion,
     );
 
