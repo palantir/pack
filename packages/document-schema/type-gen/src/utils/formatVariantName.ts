@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+import { UNKNOWN_UNION_VARIANT } from "@palantir/pack.document-schema.model-types";
+
 export function formatVariantName(variantName: string): string {
   // Convert kebab-case or snake_case to PascalCase
   return variantName
@@ -21,3 +23,6 @@ export function formatVariantName(variantName: string): string {
     .map(part => part.charAt(0).toUpperCase() + part.slice(1))
     .join("");
 }
+
+/** Name suffix for a union's Unknown case, e.g. `NodeShapeUnknown`. */
+export const UNKNOWN_VARIANT_SUFFIX: string = formatVariantName(UNKNOWN_UNION_VARIANT);

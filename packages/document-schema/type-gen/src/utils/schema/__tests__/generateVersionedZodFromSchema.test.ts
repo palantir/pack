@@ -94,3 +94,14 @@ describe("generateVersionedZodFromChain", () => {
     expect(result.zodSchemas.has(1)).toBe(false);
   });
 });
+
+describe("generateVersionedZodFromChain unknown union variants", () => {
+  it("accepts the Unknown case in every union schema", () => {
+    const zodSchemas = generateVersionedZodFromChain(resolveSchemaChain(unionTypesSchema))
+      .zodSchemas.get(1)!;
+
+    expect(zodSchemas).toContain("export const ShapeSchema_v1Unknown = z.object({");
+    expect(zodSchemas).toContain("type: z.literal(\"unknown\"),");
+    expect(zodSchemas).toMatch(/z\.discriminatedUnion\("type", \[[^\]]*ShapeSchema_v1Unknown/);
+  });
+});

@@ -10,9 +10,11 @@ import type {
   Animal_v1,
   Entity_v1,
   Entity_v1LivingBeing,
+  Entity_v1Unknown,
   LivingBeing_v1,
   LivingBeing_v1Animal,
   LivingBeing_v1Plant,
+  LivingBeing_v1Unknown,
   Plant_v1,
 } from './types_v1.js';
 
@@ -36,9 +38,15 @@ export const LivingBeingSchema_v1Plant = PlantSchema_v1.extend({
   type: z.literal('plant'),
 }) satisfies ZodType<LivingBeing_v1Plant>;
 
+export const LivingBeingSchema_v1Unknown = z.object({
+  type: z.literal('unknown'),
+  rawValue: z.unknown(),
+}) satisfies ZodType<LivingBeing_v1Unknown>;
+
 export const LivingBeingSchema_v1 = z.discriminatedUnion('type', [
   LivingBeingSchema_v1Animal,
   LivingBeingSchema_v1Plant,
+  LivingBeingSchema_v1Unknown,
 ]) satisfies ZodType<LivingBeing_v1>;
 
 export const EntitySchema_v1LivingBeing = z.object({
@@ -46,8 +54,14 @@ export const EntitySchema_v1LivingBeing = z.object({
   value: z.lazy((): ZodType<LivingBeing_v1> => LivingBeingSchema_v1),
 }) satisfies ZodType<Entity_v1LivingBeing>;
 
+export const EntitySchema_v1Unknown = z.object({
+  type: z.literal('unknown'),
+  rawValue: z.unknown(),
+}) satisfies ZodType<Entity_v1Unknown>;
+
 export const EntitySchema_v1 = z.discriminatedUnion('type', [
   EntitySchema_v1LivingBeing,
+  EntitySchema_v1Unknown,
 ]) satisfies ZodType<Entity_v1>;
 
 // ============================================================

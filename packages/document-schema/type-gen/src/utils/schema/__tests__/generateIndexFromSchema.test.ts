@@ -26,7 +26,7 @@ describe("generateIndexFromChain", () => {
     // Guards are exported as values (not `export type`) so consumers can narrow
     // a union at runtime without re-deriving the discriminant check.
     expect(result).toContain(
-      `export { isShape_v1Circle, isShape_v1Rectangle } from "./types_v1.js";`,
+      `export { isShape_v1Circle, isShape_v1Rectangle, isShape_v1Unknown } from "./types_v1.js";`,
     );
     // The variant *types* remain a separate type-only export.
     expect(result).toMatch(/export type \{[^}]*Shape_v1Circle[^}]*\} from "\.\/types_v1\.js";/);

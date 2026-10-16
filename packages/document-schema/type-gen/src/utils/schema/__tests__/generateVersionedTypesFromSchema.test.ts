@@ -105,3 +105,16 @@ describe("generateVersionedTypesFromChain", () => {
     expect(result.readTypes.has(1)).toBe(false);
   });
 });
+
+describe("generateVersionedTypesFromChain unknown union variants", () => {
+  it("adds an Unknown case and guard to every union", () => {
+    const readTypes = generateVersionedTypesFromChain(resolveSchemaChain(unionTypesSchema))
+      .readTypes.get(1)!;
+
+    expect(readTypes).toContain("export type Shape_v1Unknown = UnknownUnionVariant<\"type\">;");
+    expect(readTypes).toContain(
+      "export type Shape_v1 = Shape_v1Circle | Shape_v1Rectangle | Shape_v1Unknown;",
+    );
+    expect(readTypes).toContain("export function isShape_v1Unknown(value: Shape_v1)");
+  });
+});
