@@ -153,6 +153,7 @@ export function toStoredValue<T>(
     }
   }
 
+  // Typed as T for callers; the result can hold variants T doesn't list, e.g. a newer app's triangle.
   return unwrapModel(newValue, savedValue, modelName) as T;
 }
 
