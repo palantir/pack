@@ -131,9 +131,11 @@ export function useShapeDrag(
       const y = e.clientY - rect.top;
 
       if (selectedShapeRef != null) {
-        // A selected shape that was deleted, or added by a newer app, has no resize handles,
-        // so the click falls through to selecting a shape.
-        const selectedShape = narrowKnownNodeShape(await selectedShapeRef.getSnapshot());
+        // A selected shape that was deleted (e.g. by another user; getSnapshot rejects), or added
+        // by a newer app, has no resize handles, so the click falls through to selecting a shape.
+        const selectedShape = narrowKnownNodeShape(
+          await selectedShapeRef.getSnapshot().catch(() => undefined),
+        );
         if (selectedShape != null) {
           const handle = findHandleAtPoint(x, y, selectedShape);
           if (handle != null && handle !== "center") {
