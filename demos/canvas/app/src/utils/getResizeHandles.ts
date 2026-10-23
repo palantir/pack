@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
+import type { KnownNodeShape } from "@demo/canvas.sdk";
 import { boundsToCenter } from "./boundsToCenter.js";
-import type { KnownNodeShape } from "./knownShape.js";
 
 export type ResizeHandle = "nw" | "ne" | "sw" | "se" | "center";
 

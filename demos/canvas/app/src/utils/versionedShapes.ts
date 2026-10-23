@@ -14,8 +14,7 @@
  * limitations under the License.
  */
 
-import type { NodeShape_v1, NodeShape_v2, NodeShape_v3 } from "@demo/canvas.sdk";
-import type { KnownNodeShape } from "./knownShape.js";
+import type { KnownNodeShape, NodeShape_v1, NodeShape_v2, NodeShape_v3 } from "@demo/canvas.sdk";
 
 export function toNodeShapeV1(shape: KnownNodeShape): NodeShape_v1 {
   const color = getShapeColor(shape);

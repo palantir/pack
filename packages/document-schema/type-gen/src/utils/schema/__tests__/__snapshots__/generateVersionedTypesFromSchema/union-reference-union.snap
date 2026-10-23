@@ -35,6 +35,15 @@ export type LivingBeing_v1 =
   | LivingBeing_v1Plant
   | LivingBeing_v1Unknown;
 
+export type KnownLivingBeing_v1 = LivingBeing_v1Animal | LivingBeing_v1Plant;
+
+/** Return the value if this SDK knows its variant, otherwise undefined. */
+export function narrowKnownLivingBeing_v1(
+  value: LivingBeing_v1 | undefined
+): KnownLivingBeing_v1 | undefined {
+  return value == null || value.type === 'unknown' ? undefined : value;
+}
+
 export function isLivingBeing_v1Animal(
   value: LivingBeing_v1
 ): value is LivingBeing_v1Animal {
@@ -61,6 +70,15 @@ export interface Entity_v1LivingBeing {
 export type Entity_v1Unknown = UnknownUnionVariant<'type'>;
 
 export type Entity_v1 = Entity_v1LivingBeing | Entity_v1Unknown;
+
+export type KnownEntity_v1 = Entity_v1LivingBeing;
+
+/** Return the value if this SDK knows its variant, otherwise undefined. */
+export function narrowKnownEntity_v1(
+  value: Entity_v1 | undefined
+): KnownEntity_v1 | undefined {
+  return value == null || value.type === 'unknown' ? undefined : value;
+}
 
 export function isEntity_v1LivingBeing(
   value: Entity_v1
@@ -97,9 +115,13 @@ export type PlantUpdate_v1 = {
 export type { Animal_v1 as Animal } from './types_v1.js';
 export type { Plant_v1 as Plant } from './types_v1.js';
 export type { LivingBeing_v1 as LivingBeing } from './types_v1.js';
+export type { KnownLivingBeing_v1 as KnownLivingBeing } from './types_v1.js';
+export { narrowKnownLivingBeing_v1 as narrowKnownLivingBeing } from './types_v1.js';
 export type { LivingBeing_v1Animal as LivingBeingAnimal } from './types_v1.js';
 export type { LivingBeing_v1Plant as LivingBeingPlant } from './types_v1.js';
 export type { LivingBeing_v1Unknown as LivingBeingUnknown } from './types_v1.js';
 export type { Entity_v1 as Entity } from './types_v1.js';
+export type { KnownEntity_v1 as KnownEntity } from './types_v1.js';
+export { narrowKnownEntity_v1 as narrowKnownEntity } from './types_v1.js';
 export type { Entity_v1LivingBeing as EntityLivingBeing } from './types_v1.js';
 export type { Entity_v1Unknown as EntityUnknown } from './types_v1.js';

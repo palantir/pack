@@ -87,6 +87,15 @@ export type NodeShape_v3Unknown = UnknownUnionVariant<"shapeType">;
 
 export type NodeShape_v3 = NodeShape_v3Box | NodeShape_v3Circle | NodeShape_v3Unknown;
 
+export type KnownNodeShape_v3 = NodeShape_v3Box | NodeShape_v3Circle;
+
+/** Return the value if this SDK knows its variant, otherwise undefined. */
+export function narrowKnownNodeShape_v3(
+  value: NodeShape_v3 | undefined,
+): KnownNodeShape_v3 | undefined {
+  return value == null || value.shapeType === "unknown" ? undefined : value;
+}
+
 export function isNodeShape_v3Box(value: NodeShape_v3): value is NodeShape_v3Box {
   return value.shapeType === "box";
 }
@@ -114,6 +123,15 @@ export interface CanvasActivity_v3ShapeUpdated extends ShapeUpdatedActivity_v3 {
 export type CanvasActivity_v3Unknown = UnknownUnionVariant<"activityType">;
 
 export type CanvasActivity_v3 = CanvasActivity_v3ShapeAdded | CanvasActivity_v3ShapeDeleted | CanvasActivity_v3ShapeUpdated | CanvasActivity_v3Unknown;
+
+export type KnownCanvasActivity_v3 = CanvasActivity_v3ShapeAdded | CanvasActivity_v3ShapeDeleted | CanvasActivity_v3ShapeUpdated;
+
+/** Return the value if this SDK knows its variant, otherwise undefined. */
+export function narrowKnownCanvasActivity_v3(
+  value: CanvasActivity_v3 | undefined,
+): KnownCanvasActivity_v3 | undefined {
+  return value == null || value.activityType === "unknown" ? undefined : value;
+}
 
 export function isCanvasActivity_v3ShapeAdded(value: CanvasActivity_v3): value is CanvasActivity_v3ShapeAdded {
   return value.activityType === "shapeAdded";

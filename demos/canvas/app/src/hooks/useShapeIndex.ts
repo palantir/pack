@@ -14,14 +14,12 @@
  * limitations under the License.
  */
 
-import type { VersionedDocRef } from "@demo/canvas.sdk";
-import { NodeShapeModel } from "@demo/canvas.sdk";
+import type { KnownNodeShape, VersionedDocRef } from "@demo/canvas.sdk";
+import { narrowKnownNodeShape, NodeShapeModel } from "@demo/canvas.sdk";
 import type { RecordRef } from "@palantir/pack.document-schema.model-types";
 import type { BBox } from "rbush";
 import RBush from "rbush";
 import { useCallback, useEffect, useRef } from "react";
-import type { KnownNodeShape } from "../utils/knownShape.js";
-import { isKnownShape } from "../utils/knownShape.js";
 
 interface ShapeIndexEntry {
   readonly recordRef: RecordRef<typeof NodeShapeModel>;
@@ -72,9 +70,9 @@ export function useShapeIndex(doc: VersionedDocRef): ShapeIndex {
     // Shapes added by a newer version of the app aren't indexed, since this build can't draw them.
     const indexEntry = (
       recordRef: RecordRef<typeof NodeShapeModel>,
-      shape: Awaited<ReturnType<typeof recordRef.getSnapshot>>,
+      shape: KnownNodeShape | undefined,
     ): ShapeIndexEntry | undefined => {
-      if (shape == null || !isKnownShape(shape)) {
+      if (shape == null) {
         entryCache.current?.delete(recordRef);
         return undefined;
       }
@@ -85,7 +83,9 @@ export function useShapeIndex(doc: VersionedDocRef): ShapeIndex {
 
     const indexShapes = (items: readonly RecordRef<typeof NodeShapeModel>[]) =>
       Promise.all(
-        items.map(recordRef => recordRef.getSnapshot().then(shape => indexEntry(recordRef, shape))),
+        items.map(recordRef =>
+          recordRef.getSnapshot().then(shape => indexEntry(recordRef, narrowKnownNodeShape(shape)))
+        ),
       ).then(entries => rbush.current?.load(entries.filter(isIndexed)));
 
     const unsubscribeAdded = shapeCollection.onItemsAdded(indexShapes);
@@ -105,7 +105,9 @@ export function useShapeIndex(doc: VersionedDocRef): ShapeIndex {
       const oldEntries = items.map(recordRef => entryCache.current?.get(recordRef));
 
       Promise.all(
-        items.map(recordRef => recordRef.getSnapshot().then(shape => indexEntry(recordRef, shape))),
+        items.map(recordRef =>
+          recordRef.getSnapshot().then(shape => indexEntry(recordRef, narrowKnownNodeShape(shape)))
+        ),
       ).then(entries => {
         oldEntries.forEach(oldEntry => {
           if (oldEntry != null) {

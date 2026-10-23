@@ -22,7 +22,9 @@ import { resolveMinVersion } from "./resolveSchemaChain.js";
 import {
   DOCUMENT_TYPE_PATH,
   INTERNAL_UPGRADE_FNS_PATH,
+  knownTypeName,
   MODELS_PATH,
+  narrowKnownFunctionName,
   TYPES_REEXPORT_PATH,
   typesFilePath,
   VERSIONED_DOC_REF_PATH,
@@ -78,7 +80,9 @@ export function generateIndexFromChain(
       if (modelDef.type === "record") {
         typeNames.push(versionedTypeName(modelKey, version));
       } else if (modelDef.type === "union") {
-        typeNames.push(versionedTypeName(modelKey, version));
+        const unionTypeName = versionedTypeName(modelKey, version);
+        typeNames.push(unionTypeName, knownTypeName(unionTypeName));
+        guardNames.push(narrowKnownFunctionName(unionTypeName));
 
         // Union variant types and their generated `is<Variant>` guards, including the Unknown case.
         for (

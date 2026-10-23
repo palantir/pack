@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-import type { NodeShapeModel, VersionedDocRef } from "@demo/canvas.sdk";
-import { CanvasActivityModel, matchVersion } from "@demo/canvas.sdk";
+import type { KnownNodeShape, NodeShapeModel, VersionedDocRef } from "@demo/canvas.sdk";
+import { CanvasActivityModel, matchVersion, narrowKnownNodeShape } from "@demo/canvas.sdk";
 import type { RecordRef } from "@palantir/pack.document-schema.model-types";
 import type { MouseEvent } from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -24,8 +24,6 @@ import { boundsToCenter } from "../utils/boundsToCenter.js";
 import { centerToBounds } from "../utils/centerToBounds.js";
 import type { ResizeHandle } from "../utils/getResizeHandles.js";
 import { getResizeHandles } from "../utils/getResizeHandles.js";
-import type { KnownNodeShape } from "../utils/knownShape.js";
-import { isKnownShape } from "../utils/knownShape.js";
 import { toNodeShapeV1, toNodeShapeV2, toNodeShapeV3 } from "../utils/versionedShapes.js";
 import type { ShapeIndex } from "./useShapeIndex.js";
 
@@ -133,13 +131,12 @@ export function useShapeDrag(
       const y = e.clientY - rect.top;
 
       if (selectedShapeRef != null) {
-        const selectedShape = await selectedShapeRef.getSnapshot();
-        if (selectedShape == null) {
-          return;
-        }
-
-        // An unknown shape has no resize handles, so the click falls through to selecting a shape.
-        if (isKnownShape(selectedShape)) {
+        // A selected shape that was deleted (e.g. by another user; getSnapshot rejects), or added
+        // by a newer app, has no resize handles, so the click falls through to selecting a shape.
+        const selectedShape = narrowKnownNodeShape(
+          await selectedShapeRef.getSnapshot().catch(() => undefined),
+        );
+        if (selectedShape != null) {
           const handle = findHandleAtPoint(x, y, selectedShape);
           if (handle != null && handle !== "center") {
             setDragState({
@@ -161,8 +158,8 @@ export function useShapeDrag(
         return;
       }
 
-      const shape = await shapeRef.getSnapshot();
-      if (shape == null || !isKnownShape(shape)) return;
+      const shape = narrowKnownNodeShape(await shapeRef.getSnapshot());
+      if (shape == null) return;
 
       onShapeSelect(shapeRef);
       setDragState({
@@ -267,8 +264,8 @@ export function useShapeDrag(
     }
     lastUpdateTime.current = 0;
 
-    const finalShape = await dragState.shapeRef.getSnapshot();
-    if (finalShape != null && isKnownShape(finalShape)) {
+    const finalShape = narrowKnownNodeShape(await dragState.shapeRef.getSnapshot());
+    if (finalShape != null) {
       const initial = dragState.initialShape;
 
       const wasModified = finalShape.left !== initial.left

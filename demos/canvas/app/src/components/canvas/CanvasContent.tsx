@@ -14,7 +14,8 @@
  * limitations under the License.
  */
 
-import type { FreehandStrokeModel, NodeShapeModel } from "@demo/canvas.sdk";
+import type { FreehandStrokeModel, KnownNodeShape, NodeShapeModel } from "@demo/canvas.sdk";
+import { narrowKnownNodeShape } from "@demo/canvas.sdk";
 import type { RecordRef, UserId } from "@palantir/pack.document-schema.model-types";
 import { useRecord } from "@palantir/pack.state.react";
 import type { MouseEvent } from "react";
@@ -22,8 +23,6 @@ import { memo, useMemo } from "react";
 import { getUserColor } from "../../hooks/useRemotePresence.js";
 import { boundsToCenter } from "../../utils/boundsToCenter.js";
 import { getResizeHandles } from "../../utils/getResizeHandles.js";
-import type { KnownNodeShape } from "../../utils/knownShape.js";
-import { isKnownShape } from "../../utils/knownShape.js";
 import styles from "./CanvasContent.module.css";
 import { FreehandStrokeRenderer, PenPreview } from "./FreehandStrokeRenderer.js";
 import { RemoteCursor } from "./RemoteCursor.js";
@@ -59,12 +58,8 @@ const ShapeRenderer = memo(function ShapeRenderer({
   shapeRef: RecordRef<typeof NodeShapeModel>;
   userIdsBySelectedNodeId: ReadonlyMap<string, ReadonlySet<UserId>>;
 }) {
-  const record = useRecord(shapeRef);
-
-  if (record.status !== "loaded") return null;
-
-  const shape = record.data;
-  if (!isKnownShape(shape)) return null;
+  const shape = narrowKnownNodeShape(useRecord(shapeRef).data);
+  if (shape == null) return null;
 
   return (
     <ConnectedShapeRenderer

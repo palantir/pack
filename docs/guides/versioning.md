@@ -50,6 +50,13 @@ switch (shape.shapeType) {
 }
 ```
 
+When code only needs the variants your app knows, narrow first. Every union has a generated `Known<Union>` type and a `narrowKnown<Union>()` function, which returns `undefined` for an unknown value:
+
+```ts
+const shape = narrowKnownNodeShape(await shapeRef.getSnapshot()); // KnownNodeShape | undefined
+if (shape == null) return; // added by a newer version
+```
+
 The unknown value keeps the stored data in `rawValue`. When you write a record, presence or activity that contains it, PACK writes the stored data back unchanged, so the newer variant isn't lost.
 
 ## Writing documents
