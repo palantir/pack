@@ -19,6 +19,16 @@ export function versionedTypeName(exportName: string, version: number): string {
   return `${exportName}_v${version}`;
 }
 
+/** e.g. `NodeShape_v3` -> `KnownNodeShape_v3`: a union's variants without the Unknown case. */
+export function knownTypeName(unionTypeName: string): string {
+  return `Known${unionTypeName}`;
+}
+
+/** e.g. `NodeShape_v3` -> `narrowKnownNodeShape_v3`. */
+export function narrowKnownFunctionName(unionTypeName: string): string {
+  return `narrowKnown${unionTypeName}`;
+}
+
 /** Versioned write type name: `RecordNameUpdate_vN` */
 export function versionedWriteTypeName(exportName: string, version: number): string {
   return `${exportName}Update_v${version}`;

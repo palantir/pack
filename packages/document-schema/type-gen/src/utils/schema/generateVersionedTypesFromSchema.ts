@@ -25,7 +25,13 @@ import {
 } from "../ir/irFieldHelpers.js";
 import type { ResolvedIrChain, VersionedIrEntry } from "./resolveSchemaChain.js";
 import { resolveMinVersion } from "./resolveSchemaChain.js";
-import { typesFilePath, versionedTypeName, versionedWriteTypeName } from "./runtimeSchema.js";
+import {
+  knownTypeName,
+  narrowKnownFunctionName,
+  typesFilePath,
+  versionedTypeName,
+  versionedWriteTypeName,
+} from "./runtimeSchema.js";
 
 export interface VersionedTypesOutput {
   /** types_vN.ts files keyed by version number */
@@ -110,11 +116,25 @@ function generateReadTypesForVersion(
       }
     }
 
+    const knownVariantNames = variantInterfaces.map(v => v.name);
     const unknownName = `${typeName}${UNKNOWN_VARIANT_SUFFIX}`;
     output += `export type ${unknownName} = UnknownUnionVariant<"${discriminantField}">;\n\n`;
     variantInterfaces.push({ name: unknownName, discriminatorValue: UNKNOWN_UNION_VARIANT });
 
     output += `export type ${typeName} = ${variantInterfaces.map(v => v.name).join(" | ")};\n\n`;
+
+    // The variants this SDK knows, and a helper to narrow to them before reading variant fields.
+    const knownName = knownTypeName(typeName);
+    output += `export type ${knownName} = ${
+      knownVariantNames.length > 0 ? knownVariantNames.join(" | ") : "never"
+    };\n\n`;
+    output += "/** Return the value if this SDK knows its variant, otherwise undefined. */\n";
+    output += `export function ${narrowKnownFunctionName(typeName)}(\n`;
+    output += `  value: ${typeName} | undefined,\n`;
+    output += `): ${knownName} | undefined {\n`;
+    output +=
+      `  return value == null || value.${discriminantField} === "${UNKNOWN_UNION_VARIANT}" ? undefined : value;\n`;
+    output += "}\n\n";
 
     for (const variant of variantInterfaces) {
       output +=
@@ -198,6 +218,14 @@ function generateTypesReExport({ ir, version }: VersionedIrEntry): string {
         `export type { ${versioned} as ${modelKey} } from "${typesFilePath(version)}";`,
       );
 
+      reExports.push(
+        `export type { ${knownTypeName(versioned)} as ${knownTypeName(modelKey)} } from "${
+          typesFilePath(version)
+        }";`,
+        `export { ${narrowKnownFunctionName(versioned)} as ${
+          narrowKnownFunctionName(modelKey)
+        } } from "${typesFilePath(version)}";`,
+      );
       // Also re-export union variant types, including the Unknown case
       for (const variantName of [...Object.keys(modelDef.union.variants), UNKNOWN_UNION_VARIANT]) {
         const formattedVariant = formatVariantName(variantName);

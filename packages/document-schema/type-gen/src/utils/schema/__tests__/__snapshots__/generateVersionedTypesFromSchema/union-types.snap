@@ -33,6 +33,15 @@ export type Shape_v1Unknown = UnknownUnionVariant<'type'>;
 
 export type Shape_v1 = Shape_v1Circle | Shape_v1Rectangle | Shape_v1Unknown;
 
+export type KnownShape_v1 = Shape_v1Circle | Shape_v1Rectangle;
+
+/** Return the value if this SDK knows its variant, otherwise undefined. */
+export function narrowKnownShape_v1(
+  value: Shape_v1 | undefined
+): KnownShape_v1 | undefined {
+  return value == null || value.type === 'unknown' ? undefined : value;
+}
+
 export function isShape_v1Circle(value: Shape_v1): value is Shape_v1Circle {
   return value.type === 'circle';
 }
@@ -71,6 +80,8 @@ export type RectangleUpdate_v1 = {
 export type { Circle_v1 as Circle } from './types_v1.js';
 export type { Rectangle_v1 as Rectangle } from './types_v1.js';
 export type { Shape_v1 as Shape } from './types_v1.js';
+export type { KnownShape_v1 as KnownShape } from './types_v1.js';
+export { narrowKnownShape_v1 as narrowKnownShape } from './types_v1.js';
 export type { Shape_v1Circle as ShapeCircle } from './types_v1.js';
 export type { Shape_v1Rectangle as ShapeRectangle } from './types_v1.js';
 export type { Shape_v1Unknown as ShapeUnknown } from './types_v1.js';

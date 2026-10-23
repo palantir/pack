@@ -15,7 +15,7 @@
  */
 
 import { boundsToCenter } from "./boundsToCenter.js";
-import type { KnownNodeShape } from "./knownShape.js";
+import type { KnownNodeShape } from "@demo/canvas.sdk";
 
 export function isPointInShape(
   x: number,
