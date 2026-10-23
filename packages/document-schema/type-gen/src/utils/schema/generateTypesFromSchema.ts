@@ -15,8 +15,7 @@
  */
 
 import type { ReturnedSchema, Schema } from "@palantir/pack.schema";
-import { TypeKind as SchemaTypeKind } from "@palantir/pack.schema";
-import { formatVariantName } from "../formatVariantName.js";
+import { formatVariantName, TypeKind as SchemaTypeKind } from "@palantir/pack.schema";
 import { GENERATED_FILE_HEADER } from "../generatedFileHeader.js";
 
 const TypeKind: typeof SchemaTypeKind & { readonly ANY: "any" } = {

@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
+import { formatVariantName } from "@palantir/pack.schema";
 import invariant from "tiny-invariant";
 import type { IRealTimeDocumentSchema } from "../../lib/pack-docschema-api/pack-docschema-ir/index.js";
-import { formatVariantName } from "../formatVariantName.js";
 import { GENERATED_FILE_HEADER } from "../generatedFileHeader.js";
 
 export interface ModelGeneratorOptions {

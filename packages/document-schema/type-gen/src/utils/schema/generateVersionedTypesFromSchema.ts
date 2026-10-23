@@ -15,14 +15,15 @@
  */
 
 import { UNKNOWN_UNION_VARIANT } from "@palantir/pack.document-schema.model-types";
+import { formatVariantName } from "@palantir/pack.schema";
 import type { IRealTimeDocumentSchema } from "../../lib/pack-docschema-api/pack-docschema-ir/index.js";
-import { formatVariantName, UNKNOWN_VARIANT_SUFFIX } from "../formatVariantName.js";
 import { GENERATED_FILE_HEADER } from "../generatedFileHeader.js";
 import {
   collectReferencedTypes,
   convertFieldTypeToTypeScript,
   detectUsedRefTypes,
 } from "../ir/irFieldHelpers.js";
+import { UNKNOWN_VARIANT_SUFFIX } from "../unknownVariantSuffix.js";
 import type { ResolvedIrChain, VersionedIrEntry } from "./resolveSchemaChain.js";
 import { resolveMinVersion } from "./resolveSchemaChain.js";
 import { typesFilePath, versionedTypeName, versionedWriteTypeName } from "./runtimeSchema.js";

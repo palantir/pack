@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
+import { formatVariantName } from "@palantir/pack.schema";
 import type { IRecordDef } from "../../lib/pack-docschema-api/pack-docschema-ir/index.js";
-import { formatVariantName } from "../formatVariantName.js";
 import { GENERATED_FILE_HEADER } from "../generatedFileHeader.js";
 import { findExternalRefType } from "../ir/irFieldHelpers.js";
 import type { ResolvedIrChain } from "./resolveSchemaChain.js";

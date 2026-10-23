@@ -15,7 +15,7 @@
  */
 
 import { UNKNOWN_UNION_VARIANT } from "@palantir/pack.document-schema.model-types";
-import { formatVariantName } from "../formatVariantName.js";
+import { formatVariantName } from "@palantir/pack.schema";
 import { GENERATED_FILE_HEADER } from "../generatedFileHeader.js";
 import type { ResolvedIrChain } from "./resolveSchemaChain.js";
 import { resolveMinVersion } from "./resolveSchemaChain.js";
