@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-import { boundsToCenter } from "./boundsToCenter.js";
 import type { KnownNodeShape } from "@demo/canvas.sdk";
+import { boundsToCenter } from "./boundsToCenter.js";
 
 export function isPointInShape(
   x: number,
