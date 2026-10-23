@@ -12,6 +12,7 @@ import type {
   Shape_v1,
   Shape_v1Circle,
   Shape_v1Rectangle,
+  Shape_v1Unknown,
 } from './types_v1.js';
 
 export const CircleSchema_v1 = z
@@ -35,9 +36,15 @@ export const ShapeSchema_v1Rectangle = RectangleSchema_v1.extend({
   type: z.literal('rectangle'),
 }) satisfies ZodType<Shape_v1Rectangle>;
 
+export const ShapeSchema_v1Unknown = z.object({
+  type: z.literal('unknown'),
+  rawValue: z.unknown(),
+}) satisfies ZodType<Shape_v1Unknown>;
+
 export const ShapeSchema_v1 = z.discriminatedUnion('type', [
   ShapeSchema_v1Circle,
   ShapeSchema_v1Rectangle,
+  ShapeSchema_v1Unknown,
 ]) satisfies ZodType<Shape_v1>;
 
 // ============================================================

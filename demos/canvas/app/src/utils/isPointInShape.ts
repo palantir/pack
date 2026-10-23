@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
-import type { NodeShape } from "@demo/canvas.sdk";
 import { boundsToCenter } from "./boundsToCenter.js";
+import type { KnownNodeShape } from "./knownShape.js";
 
 export function isPointInShape(
   x: number,
   y: number,
-  shape: NodeShape | (NodeShape & { readonly id: string }),
+  shape: KnownNodeShape | (KnownNodeShape & { readonly id: string }),
 ): boolean {
   if (shape.shapeType === "box") {
     return x >= shape.left && x <= shape.right && y >= shape.top && y <= shape.bottom;

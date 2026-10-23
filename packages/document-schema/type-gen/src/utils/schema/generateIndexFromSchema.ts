@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+import { UNKNOWN_UNION_VARIANT } from "@palantir/pack.document-schema.model-types";
 import { formatVariantName } from "../formatVariantName.js";
 import { GENERATED_FILE_HEADER } from "../generatedFileHeader.js";
 import type { ResolvedIrChain } from "./resolveSchemaChain.js";
@@ -79,8 +80,10 @@ export function generateIndexFromChain(
       } else if (modelDef.type === "union") {
         typeNames.push(versionedTypeName(modelKey, version));
 
-        // Union variant types and their generated `is<Variant>` guards.
-        for (const variantName of Object.keys(modelDef.union.variants)) {
+        // Union variant types and their generated `is<Variant>` guards, including the Unknown case.
+        for (
+          const variantName of [...Object.keys(modelDef.union.variants), UNKNOWN_UNION_VARIANT]
+        ) {
           const formattedVariant = formatVariantName(variantName);
           const variantTypeName = `${versionedTypeName(modelKey, version)}${formattedVariant}`;
           typeNames.push(variantTypeName);

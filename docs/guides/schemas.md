@@ -31,10 +31,13 @@ For modifying existing records:
 **Note:** a field cannot be changed or removed from a record once added, only deprecated. This is to ensure documents written at older versions are always readable by newer clients.
 
 For a modifying existing unions:
+
 - `.addVariant(name, value)` - create a new variant of the union, with a value type a nested record or union.
 - `.build()` — return the updated union.
 
 **Note:** a variant cannot be changed or removed from a union once added. This is to ensure documents written at older versions are always readable by newer clients.
+
+**Note:** the backend doesn't yet accept new variants on a union that is already deployed, so `addVariant` only works in development mode or before the document type is first deployed.
 
 ## Example
 

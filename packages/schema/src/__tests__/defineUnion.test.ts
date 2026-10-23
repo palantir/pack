@@ -268,3 +268,23 @@ describe("defineUnion", () => {
     });
   });
 });
+
+describe("reserved union variant names", () => {
+  const Circle = defineRecord("Circle", { docs: "A circle", fields: { radius: P.Double } });
+
+  it.each(["unknown", "Unknown", "_unknown"])("should reject a variant named %s", variantName => {
+    expect(() =>
+      defineUnion("Shape", { docs: "A shape", variants: { circle: Circle, [variantName]: Circle } })
+    ).toThrow(`Variant "${variantName}" in union "Shape" uses a reserved name.`);
+  });
+
+  it("should reject rawValue as the discriminant", () => {
+    expect(() =>
+      defineUnion("Shape", {
+        discriminant: "rawValue",
+        docs: "A shape",
+        variants: { circle: Circle },
+      })
+    ).toThrow("Union \"Shape\" can't use \"rawValue\" as its discriminant.");
+  });
+});

@@ -14,16 +14,18 @@
  * limitations under the License.
  */
 
-import type { NodeShape, VersionedDocRef } from "@demo/canvas.sdk";
+import type { VersionedDocRef } from "@demo/canvas.sdk";
 import { NodeShapeModel } from "@demo/canvas.sdk";
 import type { RecordRef } from "@palantir/pack.document-schema.model-types";
 import type { BBox } from "rbush";
 import RBush from "rbush";
 import { useCallback, useEffect, useRef } from "react";
+import type { KnownNodeShape } from "../utils/knownShape.js";
+import { isKnownShape } from "../utils/knownShape.js";
 
 interface ShapeIndexEntry {
   readonly recordRef: RecordRef<typeof NodeShapeModel>;
-  readonly shape: NodeShape;
+  readonly shape: KnownNodeShape;
 }
 
 export interface ShapeIndex {
@@ -49,6 +51,10 @@ class RBushShapeIndex extends RBush<ShapeIndexEntry> {
   }
 }
 
+function isIndexed(entry: ShapeIndexEntry | undefined): entry is ShapeIndexEntry {
+  return entry != null;
+}
+
 export function useShapeIndex(doc: VersionedDocRef): ShapeIndex {
   const rbush = useRef<RBushShapeIndex | null>(null);
   const entryCache = useRef<Map<RecordRef<NodeShapeModel>, ShapeIndexEntry> | null>(null);
@@ -63,15 +69,24 @@ export function useShapeIndex(doc: VersionedDocRef): ShapeIndex {
   useEffect(() => {
     const shapeCollection = doc.getRecords(NodeShapeModel);
 
+    // Shapes added by a newer version of the app aren't indexed, since this build can't draw them.
+    const indexEntry = (
+      recordRef: RecordRef<typeof NodeShapeModel>,
+      shape: Awaited<ReturnType<typeof recordRef.getSnapshot>>,
+    ): ShapeIndexEntry | undefined => {
+      if (shape == null || !isKnownShape(shape)) {
+        entryCache.current?.delete(recordRef);
+        return undefined;
+      }
+      const entry: ShapeIndexEntry = { shape, recordRef };
+      entryCache.current?.set(recordRef, entry);
+      return entry;
+    };
+
     const indexShapes = (items: readonly RecordRef<typeof NodeShapeModel>[]) =>
-      Promise.all(items.map(recordRef =>
-        recordRef.getSnapshot()
-          .then(shape => {
-            const entry: ShapeIndexEntry = { shape, recordRef };
-            entryCache.current?.set(recordRef, entry);
-            return entry;
-          })
-      )).then(entries => rbush.current?.load(entries));
+      Promise.all(
+        items.map(recordRef => recordRef.getSnapshot().then(shape => indexEntry(recordRef, shape))),
+      ).then(entries => rbush.current?.load(entries.filter(isIndexed)));
 
     const unsubscribeAdded = shapeCollection.onItemsAdded(indexShapes);
     // Also index existing shapes: reopening a loaded document fires no "added" events.
@@ -89,20 +104,15 @@ export function useShapeIndex(doc: VersionedDocRef): ShapeIndex {
     const unsubscribeChanged = shapeCollection.onItemsChanged(items => {
       const oldEntries = items.map(recordRef => entryCache.current?.get(recordRef));
 
-      Promise.all(items.map(recordRef =>
-        recordRef.getSnapshot()
-          .then(shape => {
-            const entry: ShapeIndexEntry = { shape, recordRef };
-            entryCache.current?.set(recordRef, entry);
-            return entry;
-          })
-      )).then(entries => {
+      Promise.all(
+        items.map(recordRef => recordRef.getSnapshot().then(shape => indexEntry(recordRef, shape))),
+      ).then(entries => {
         oldEntries.forEach(oldEntry => {
           if (oldEntry != null) {
             rbush.current?.remove(oldEntry);
           }
         });
-        rbush.current?.load(entries);
+        rbush.current?.load(entries.filter(isIndexed));
       });
     });
 

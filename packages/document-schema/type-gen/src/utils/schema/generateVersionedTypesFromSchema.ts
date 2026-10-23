@@ -14,8 +14,9 @@
  * limitations under the License.
  */
 
+import { UNKNOWN_UNION_VARIANT } from "@palantir/pack.document-schema.model-types";
 import type { IRealTimeDocumentSchema } from "../../lib/pack-docschema-api/pack-docschema-ir/index.js";
-import { formatVariantName } from "../formatVariantName.js";
+import { formatVariantName, UNKNOWN_VARIANT_SUFFIX } from "../formatVariantName.js";
 import { GENERATED_FILE_HEADER } from "../generatedFileHeader.js";
 import {
   collectReferencedTypes,
@@ -43,6 +44,9 @@ function generateReadTypesForVersion(
   ir: IRealTimeDocumentSchema,
 ): string {
   const usedRefTypes = detectUsedRefTypes(ir);
+  if (Object.values(ir.models).some(model => model.type === "union")) {
+    usedRefTypes.add("UnknownUnionVariant");
+  }
 
   let output = GENERATED_FILE_HEADER;
 
@@ -105,6 +109,10 @@ function generateReadTypesForVersion(
         output += "}\n\n";
       }
     }
+
+    const unknownName = `${typeName}${UNKNOWN_VARIANT_SUFFIX}`;
+    output += `export type ${unknownName} = UnknownUnionVariant<"${discriminantField}">;\n\n`;
+    variantInterfaces.push({ name: unknownName, discriminatorValue: UNKNOWN_UNION_VARIANT });
 
     output += `export type ${typeName} = ${variantInterfaces.map(v => v.name).join(" | ")};\n\n`;
 
@@ -190,8 +198,8 @@ function generateTypesReExport({ ir, version }: VersionedIrEntry): string {
         `export type { ${versioned} as ${modelKey} } from "${typesFilePath(version)}";`,
       );
 
-      // Also re-export union variant types
-      for (const variantName of Object.keys(modelDef.union.variants)) {
+      // Also re-export union variant types, including the Unknown case
+      for (const variantName of [...Object.keys(modelDef.union.variants), UNKNOWN_UNION_VARIANT]) {
         const formattedVariant = formatVariantName(variantName);
         const versionedVariant = `${versionedTypeName(modelKey, version)}${formattedVariant}`;
         const unversionedVariant = `${modelKey}${formattedVariant}`;

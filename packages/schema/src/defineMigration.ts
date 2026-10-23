@@ -15,7 +15,7 @@
  */
 
 import type { UnionVariantArg } from "./defineUnion.js";
-import { resolveUnionVariantArg } from "./defineUnion.js";
+import { assertVariantNameAllowed, resolveUnionVariantArg } from "./defineUnion.js";
 import type { ModelDefs, RecordDef, RecordFields, UnionDef, UnionVariants } from "./defs.js";
 import { ModelDefType } from "./defs.js";
 import type { Ref, Type } from "./primitives.js";
@@ -110,6 +110,7 @@ class UnionBuilderImpl<S extends UnionVariants> implements UnionBuilder<S> {
     if (Object.hasOwn(this.variants, variantName)) {
       throw new Error(`Variant "${variantName}" already exists in union "${this.name}".`);
     }
+    assertVariantNameAllowed(variantName, this.name);
     const ref: Ref = resolveUnionVariantArg(modelDefOrRef);
     const newVariants = { ...this.variants, [variantName]: ref };
 

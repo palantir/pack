@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import type { FreehandStrokeModel, NodeShape, NodeShapeModel } from "@demo/canvas.sdk";
+import type { FreehandStrokeModel, NodeShapeModel } from "@demo/canvas.sdk";
 import type { RecordRef, UserId } from "@palantir/pack.document-schema.model-types";
 import { useRecord } from "@palantir/pack.state.react";
 import type { MouseEvent } from "react";
@@ -22,6 +22,8 @@ import { memo, useMemo } from "react";
 import { getUserColor } from "../../hooks/useRemotePresence.js";
 import { boundsToCenter } from "../../utils/boundsToCenter.js";
 import { getResizeHandles } from "../../utils/getResizeHandles.js";
+import type { KnownNodeShape } from "../../utils/knownShape.js";
+import { isKnownShape } from "../../utils/knownShape.js";
 import styles from "./CanvasContent.module.css";
 import { FreehandStrokeRenderer, PenPreview } from "./FreehandStrokeRenderer.js";
 import { RemoteCursor } from "./RemoteCursor.js";
@@ -62,6 +64,7 @@ const ShapeRenderer = memo(function ShapeRenderer({
   if (record.status !== "loaded") return null;
 
   const shape = record.data;
+  if (!isKnownShape(shape)) return null;
 
   return (
     <ConnectedShapeRenderer
@@ -82,7 +85,7 @@ const ConnectedShapeRenderer = memo(function ShapeRenderer({
   selectedShapeId: string | undefined;
   shapeRef: RecordRef<typeof NodeShapeModel>;
   userIdsBySelectedNodeId: ReadonlyMap<string, ReadonlySet<UserId>>;
-  shape: NodeShape;
+  shape: KnownNodeShape;
 }) {
   const isSelected = shapeRef.id === selectedShapeId;
 

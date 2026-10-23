@@ -2,7 +2,7 @@
 
 import type { ZodType } from "zod";
 import { z } from "zod";
-import type { CanvasActivity_v3, CanvasActivity_v3ShapeAdded, CanvasActivity_v3ShapeDeleted, CanvasActivity_v3ShapeUpdated, CursorPresence_v3, FreehandStroke_v3, NodeShape_v3, NodeShape_v3Box, NodeShape_v3Circle, SelectionPresence_v3, ShapeAddedActivity_v3, ShapeBox_v3, ShapeCircle_v3, ShapeDeletedActivity_v3, ShapeUpdatedActivity_v3 } from "./types_v3.js";
+import type { CanvasActivity_v3, CanvasActivity_v3ShapeAdded, CanvasActivity_v3ShapeDeleted, CanvasActivity_v3ShapeUpdated, CanvasActivity_v3Unknown, CursorPresence_v3, FreehandStroke_v3, NodeShape_v3, NodeShape_v3Box, NodeShape_v3Circle, NodeShape_v3Unknown, SelectionPresence_v3, ShapeAddedActivity_v3, ShapeBox_v3, ShapeCircle_v3, ShapeDeletedActivity_v3, ShapeUpdatedActivity_v3 } from "./types_v3.js";
 
 export const ShapeBoxSchema_v3 = z.object({
   bottom: z.number(),
@@ -61,9 +61,15 @@ export const NodeShapeSchema_v3Circle = ShapeCircleSchema_v3.extend({
   shapeType: z.literal("circle")
 }) satisfies ZodType<NodeShape_v3Circle>;
 
+export const NodeShapeSchema_v3Unknown = z.object({
+  shapeType: z.literal("unknown"),
+  rawValue: z.unknown()
+}) satisfies ZodType<NodeShape_v3Unknown>;
+
 export const NodeShapeSchema_v3 = z.discriminatedUnion("shapeType", [
   NodeShapeSchema_v3Box,
-  NodeShapeSchema_v3Circle
+  NodeShapeSchema_v3Circle,
+  NodeShapeSchema_v3Unknown
 ]) satisfies ZodType<NodeShape_v3>;
 
 export const CanvasActivitySchema_v3ShapeAdded = ShapeAddedActivitySchema_v3.extend({
@@ -78,9 +84,15 @@ export const CanvasActivitySchema_v3ShapeUpdated = ShapeUpdatedActivitySchema_v3
   activityType: z.literal("shapeUpdated")
 }) satisfies ZodType<CanvasActivity_v3ShapeUpdated>;
 
+export const CanvasActivitySchema_v3Unknown = z.object({
+  activityType: z.literal("unknown"),
+  rawValue: z.unknown()
+}) satisfies ZodType<CanvasActivity_v3Unknown>;
+
 export const CanvasActivitySchema_v3 = z.discriminatedUnion("activityType", [
   CanvasActivitySchema_v3ShapeAdded,
   CanvasActivitySchema_v3ShapeDeleted,
-  CanvasActivitySchema_v3ShapeUpdated
+  CanvasActivitySchema_v3ShapeUpdated,
+  CanvasActivitySchema_v3Unknown
 ]) satisfies ZodType<CanvasActivity_v3>;
 

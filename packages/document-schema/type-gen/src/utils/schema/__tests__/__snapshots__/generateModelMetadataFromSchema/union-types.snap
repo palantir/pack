@@ -24,6 +24,11 @@ import {
   ShapeCircleSchema,
   ShapeRectangleSchema,
 } from './schema.js';
+import {
+  CircleUpgrades,
+  RectangleUpgrades,
+  ShapeUpgrades,
+} from './_internal/upgrades.js';
 
 export interface CircleModel extends RecordModel<Circle, typeof CircleSchema> {}
 export const CircleModel: CircleModel = {
@@ -90,6 +95,13 @@ export const DocumentModel = {
   ShapeRectangle: ShapeRectangleModel,
   [Metadata]: {
     version: 1,
+    upgrades: {
+      Circle: CircleUpgrades,
+      Rectangle: RectangleUpgrades,
+      Shape: ShapeUpgrades,
+      ShapeCircle: ShapeUpgrades,
+      ShapeRectangle: ShapeUpgrades,
+    },
   },
 } as const satisfies DocumentSchema;
 
