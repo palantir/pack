@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 Palantir Technologies, Inc. All rights reserved.
+ * Copyright 2026 Palantir Technologies, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,14 +15,7 @@
  */
 
 import { UNKNOWN_UNION_VARIANT } from "@palantir/pack.document-schema.model-types";
-
-export function formatVariantName(variantName: string): string {
-  // Convert kebab-case or snake_case to PascalCase
-  return variantName
-    .split(/[-_]/)
-    .map(part => part.charAt(0).toUpperCase() + part.slice(1))
-    .join("");
-}
+import { formatVariantName } from "@palantir/pack.schema";
 
 /** Name suffix for a union's Unknown case, e.g. `NodeShapeUnknown`. */
 export const UNKNOWN_VARIANT_SUFFIX: string = formatVariantName(UNKNOWN_UNION_VARIANT);

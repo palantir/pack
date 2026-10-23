@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+import { formatVariantName } from "@palantir/pack.schema";
 import consola from "consola";
 import invariant from "tiny-invariant";
 import type {
@@ -26,7 +27,6 @@ import type {
   IUnionDef,
 } from "../../lib/pack-docschema-api/pack-docschema-ir/index.js";
 import { assertNever } from "../assertNever.js";
-import { formatVariantName } from "../formatVariantName.js";
 import { GENERATED_FILE_HEADER } from "../generatedFileHeader.js";
 
 export interface ZodGeneratorOptions {

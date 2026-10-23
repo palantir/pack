@@ -84,18 +84,23 @@ export function resolveUnionVariantArg(arg: UnionVariantArg): Ref {
 }
 
 /**
+ * The name a variant gets in generated code: kebab-case or snake_case to PascalCase,
+ * e.g. "my-box" -> "MyBox", "_unknown" -> "Unknown".
+ */
+export function formatVariantName(variantName: string): string {
+  return variantName
+    .split(/[-_]/)
+    .map(part => part.charAt(0).toUpperCase() + part.slice(1))
+    .join("");
+}
+
+/**
  * Throw if a variant uses a reserved name. Every generated union has an Unknown case for variants
  * an SDK doesn't know: its discriminant is "unknown" and its generated names end in "Unknown", so
  * no variant may produce either (e.g. "unknown", "Unknown", "_unknown").
  */
 export function assertVariantNameAllowed(variantName: string, unionName: string): void {
-  // Matches type-gen's formatVariantName: the generated type-name suffix for this variant,
-  // e.g. "_unknown" -> "Unknown".
-  const formattedName = variantName
-    .split(/[-_]/)
-    .map(part => part.charAt(0).toUpperCase() + part.slice(1))
-    .join("");
-  if (formattedName === "Unknown") {
+  if (formatVariantName(variantName) === "Unknown") {
     throw new Error(
       `Variant "${variantName}" in union "${unionName}" uses a reserved name. Every union has a`
         + " generated Unknown case for variants an SDK doesn't know; choose another name.",
