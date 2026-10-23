@@ -37,7 +37,7 @@ The types are exhaustive: if you miss an entry (or add one that isn't needed), t
 
 ### Unknown variants
 
-A document can contain a union variant your copy of the app doesn't know, such as one added by a newer version. Every generated union has an extra **unknown** case for this. Its discriminant is `"unknown"`, so no real variant can use that name, and TypeScript makes you handle it wherever you check the variant:
+A document can contain a union variant your copy of the app doesn't know, such as one added by a newer minor version. Every generated union has an extra **unknown** case for this. Its discriminant is `"unknown"`, so no real variant can use that name, and TypeScript makes you handle it wherever you check the variant:
 
 ```tsx
 switch (shape.shapeType) {
