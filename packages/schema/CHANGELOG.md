@@ -1,5 +1,16 @@
 # @palantir/pack.schema
 
+## 0.32.0
+
+### Minor Changes
+
+- 2d9b1ae: `formatVariantName` now lives in `@palantir/pack.schema`, so the schema builder's reserved-name check and type-gen share one copy instead of two that must match.
+- 7e66bbc: `addVariant` and the union builder's `build` now keep the union's `discriminant` and `docs`. Before, both reset the discriminant to `"type"`, so a union with a custom discriminant got an SDK that couldn't read its existing records. `addVariant` now also rejects known duplicate variant names in TypeScript and throws for duplicates at runtime, instead of silently replacing them.
+
+  Record builders now preserve `docs` through `addField`, `deprecateField`, and `build`, so schema updates retain record documentation in the generated SDK.
+
+- 45c19fe: Every generated union now has an `Unknown` case for variants the SDK doesn't know, such as ones added by a newer version of the app. Reading one returns `{ [discriminant]: "unknown", rawValue }` instead of failing validation and hiding the record. Writing a record, presence or activity that contains it writes the stored value back unchanged. This is a breaking change for app code: checks on a union's variant must now handle `"unknown"`, which TypeScript enforces. `"unknown"` is now a reserved variant name.
+
 ## 0.31.0
 
 ## 0.30.0
