@@ -87,8 +87,10 @@ export function versionedDocRefName(version: number): string {
 }
 
 /**
- * Names the generated SDK always uses: its own fixed exports, the names it imports, and the
- * TypeScript globals it calls. No model may produce one of these.
+ * Names that share a file with a model's own name, so no model may produce one: the SDK's fixed
+ * exports, and the names `models.ts` uses next to every model name it imports from `./types.js`.
+ * Other library imports only sit next to suffixed names like `Foo_v1` or `FooModel`, so a model
+ * can't clash with them and they aren't listed.
  */
 export const RESERVED_SDK_NAMES: readonly string[] = [
   // Fixed SDK exports
@@ -102,34 +104,13 @@ export const RESERVED_SDK_NAMES: readonly string[] = [
   "VersionedDocRef",
   "asVersioned",
   "matchVersion",
-  // Imported from @palantir/pack.document-schema.model-types
-  "DocumentId",
-  "DocumentRef",
+  // Used in models.ts next to every model name: its model-types imports and the ReturnType global
   "DocumentSchema",
-  "EditDescription",
-  "MediaId",
   "Metadata",
-  "ObjectId",
-  "PresencePublishOptions",
-  "RecordId",
   "RecordModel",
-  "RecordRef",
-  "ResourceRid",
-  "UnionModel",
-  "UnionUpgradeRegistry",
-  "UnknownUnionVariant",
-  "UpgradeFns",
-  "UpgradeRegistry",
-  "UserId",
-  // Imported from zod
-  "ZodType",
-  "z",
-  // TypeScript globals
-  "Error",
-  "Partial",
-  "Pick",
-  "Promise",
   "ReturnType",
+  "UnionModel",
+  "UpgradeFns",
 ];
 
 /** Per-version types file path: `./types_vN.js` */

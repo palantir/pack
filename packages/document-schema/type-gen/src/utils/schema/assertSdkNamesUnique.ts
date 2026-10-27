@@ -16,7 +16,11 @@
 
 import { UNKNOWN_UNION_VARIANT } from "@palantir/pack.document-schema.model-types";
 import type { IModelDef } from "../../lib/pack-docschema-api/pack-docschema-ir/index.js";
-import { resolveMinVersion, type VersionedIrEntry } from "./resolveSchemaChain.js";
+import {
+  resolveMinVersion,
+  stripDeprecatedFieldsForSdk,
+  type VersionedIrEntry,
+} from "./resolveSchemaChain.js";
 import {
   internalSchemaName,
   internalTypeName,
@@ -54,10 +58,26 @@ export function assertSdkNamesUnique(
  * name, or if a generated type would have two properties with the same name.
  */
 export function listSdkNames(
-  chain: VersionedIrEntry[],
+  irChain: VersionedIrEntry[],
   minSupportedVersion: number | undefined,
 ): ReadonlyMap<string, string> {
-  const { minVersion } = resolveMinVersion(chain, minSupportedVersion);
+  const { minVersion } = resolveMinVersion(irChain, minSupportedVersion);
+  // The SDK leaves out deprecated fields, so check the fields it actually generates.
+  const chain = stripDeprecatedFieldsForSdk(irChain);
+
+  // Generated names end in "_v<version>", so a model key like "Foo_v2" passes today but
+  // clashes with record "Foo" once the schema reaches v2, when it can no longer be renamed.
+  for (const { ir } of chain) {
+    for (const modelKey of Object.keys(ir.models)) {
+      if (/_v\d/.test(modelKey)) {
+        throw new Error(
+          `Model "${modelKey}" can't contain "_v" followed by a number. The generated SDK adds`
+            + ` "_v<version>" to names, so this one could clash in a later schema version.`
+            + " Rename the model.",
+        );
+      }
+    }
+  }
   const names = new Map<string, string>();
   const add = (name: string, owner: string): void => {
     const existing = names.get(name);

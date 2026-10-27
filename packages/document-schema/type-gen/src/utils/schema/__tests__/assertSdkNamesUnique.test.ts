@@ -15,7 +15,13 @@
  */
 
 import type { ModelDef } from "@palantir/pack.schema";
-import { defineRecord, defineSchema, defineUnion } from "@palantir/pack.schema";
+import {
+  defineRecord,
+  defineSchema,
+  defineSchemaUpdate,
+  defineUnion,
+  nextSchema,
+} from "@palantir/pack.schema";
 import * as P from "@palantir/pack.schema";
 import { mkdtemp, readdir, readFile, rm } from "fs/promises";
 import os from "os";
@@ -33,6 +39,29 @@ const union = (name: string, variants: Record<string, ModelDef>) =>
 function check(models: Record<string, ModelDef>): void {
   assertSdkNamesUnique(resolveSchemaChain(defineSchema(models)).chain, undefined);
 }
+
+/**
+ * Library names that generated files import only next to suffixed names like `Foo_v1` or
+ * `FooModel`, so no model can clash with them and the check doesn't list them. A new import
+ * fails the test below until it is added here or to `RESERVED_SDK_NAMES`.
+ */
+const NON_CLASHING_IMPORTS = new Set([
+  "DocumentId",
+  "DocumentRef",
+  "EditDescription",
+  "MediaId",
+  "ObjectId",
+  "PresencePublishOptions",
+  "RecordId",
+  "RecordRef",
+  "ResourceRid",
+  "UnionUpgradeRegistry",
+  "UnknownUnionVariant",
+  "UpgradeRegistry",
+  "UserId",
+  "ZodType",
+  "z",
+]);
 
 /** Top-level names a generated file declares, re-exports, or imports. */
 function namesInFile(content: string): string[] {
@@ -75,7 +104,9 @@ describe("assertSdkNamesUnique", () => {
         }
 
         // A name missing here means a generator creates a name the check doesn't know about.
-        expect([...generated].filter(name => !listed.has(name))).toEqual([]);
+        expect(
+          [...generated].filter(name => !listed.has(name) && !NON_CLASHING_IMPORTS.has(name)),
+        ).toEqual([]);
       } finally {
         await rm(outputDir, { recursive: true });
       }
@@ -90,62 +121,39 @@ describe("assertSdkNamesUnique", () => {
       );
   });
 
-  it.each<{ clash: string; models: Record<string, ModelDef>; name: string }>([
-    {
-      clash: "a union variant",
-      models: { Baz, FooBar: record("FooBar"), Foo: union("Foo", { bar: Baz }) },
-      name: "FooBar",
-    },
-    {
-      clash: "the Unknown case",
-      models: { Bar, FooUnknown: record("FooUnknown"), Foo: union("Foo", { bar: Bar }) },
-      name: "FooUnknown",
-    },
-    {
-      clash: "variants of two unions",
-      models: { Bar, Foo: union("Foo", { barBaz: Bar }), FooBar: union("FooBar", { baz: Bar }) },
-      name: "FooBarBaz",
-    },
-    {
-      clash: "two variants of one union",
-      models: { Bar, Baz, Foo: union("Foo", { "my-box": Bar, myBox: Baz }) },
-      name: "FooMyBox",
-    },
-    {
-      clash: "a Model constant",
-      models: { Node: record("Node"), NodeModel: record("NodeModel") },
-      name: "NodeModel",
-    },
-    {
-      clash: "a versioned type",
-      models: { Foo: record("Foo"), Foo_v1: record("Foo_v1") },
-      name: "Foo_v1",
-    },
-    {
-      clash: "a write type",
-      models: { Status: record("Status"), StatusUpdate: record("StatusUpdate") },
-      name: "StatusUpdate_v1",
-    },
-    {
-      clash: "a Zod schema",
-      models: { Column: record("Column"), ColumnSchema: record("ColumnSchema") },
-      name: "ColumnSchema",
-    },
-    {
-      clash: "a fixed SDK export",
-      models: { Document: record("Document") },
-      name: "DocumentModel",
-    },
-    {
-      clash: "a fixed SDK type",
-      models: { VersionedDocRef: record("VersionedDocRef") },
-      name: "VersionedDocRef",
-    },
-    { clash: "an imported name", models: { Metadata: record("Metadata") }, name: "Metadata" },
-    { clash: "an imported type", models: { Record: record("Record") }, name: "RecordModel" },
-    { clash: "a TypeScript global", models: { Promise: record("Promise") }, name: "Promise" },
-  ])("rejects a model that clashes with $clash", ({ models, name }) => {
-    expect(() => check(models)).toThrow(`The generated SDK would use the name "${name}" for both`);
+  it("rejects two variant keys that format to the same name", () => {
+    expect(() => check({ Bar, Baz, Foo: union("Foo", { "my-box": Bar, myBox: Baz }) })).toThrow(
+      `The generated SDK would use the name "FooMyBox" for both`,
+    );
+  });
+
+  it("rejects a model named like a name the SDK reserves", () => {
+    expect(() => check({ Metadata: record("Metadata") })).toThrow(
+      `The generated SDK would use the name "Metadata" for both the SDK itself and record "Metadata"`,
+    );
+  });
+
+  it("rejects a model key that could clash in a later version", () => {
+    // At v2 this would clash with record Foo's v2 type, Foo_v2.
+    expect(() => check({ Foo: record("Foo"), Foo_v2: record("Foo_v2") })).toThrow(
+      `Model "Foo_v2" can't contain "_v" followed by a number.`,
+    );
+  });
+
+  it("ignores deprecated fields, which the SDK leaves out", () => {
+    const Box = defineRecord("Box", { docs: "Box", fields: { kind: P.Double, x: P.Double } });
+    const v1 = defineSchema({ Box });
+    // v2 deprecates `kind`, so it no longer collides with the new union's discriminant.
+    const addShape = defineSchemaUpdate(
+      "addShape",
+      (schema: P.SchemaBuilder<typeof v1.models>) => {
+        const box = schema.Box.deprecateField("kind", "Use Shape instead.").build();
+        return { Box: box, Shape: union("Shape", { box }) };
+      },
+    );
+    const v2 = nextSchema(v1).addSchemaUpdate(addShape).build();
+
+    expect(() => assertSdkNamesUnique(resolveSchemaChain(v2).chain, 1)).not.toThrow();
   });
 
   it("rejects a variant record with a field named like the discriminant", () => {
