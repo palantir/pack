@@ -15,6 +15,7 @@
  */
 
 import { UNKNOWN_UNION_VARIANT } from "@palantir/pack.document-schema.model-types";
+import { assertVariantNameAllowed } from "@palantir/pack.schema";
 import {
   resolveMinVersion,
   stripDeprecatedFieldsForSdk,
@@ -55,13 +56,26 @@ export function assertSdkNamesUnique(
   // Generated names end in "_v<version>", so a model key like "Foo_v2" passes today but
   // clashes with record "Foo" once the schema reaches v2, when it can no longer be renamed.
   for (const { ir } of chain) {
-    for (const modelKey of Object.keys(ir.models)) {
+    for (const [modelKey, modelDef] of Object.entries(ir.models)) {
       if (/_v\d/.test(modelKey)) {
         throw new Error(
           `Model "${modelKey}" can't contain "_v" followed by a number. The generated SDK adds`
             + ` "_v<version>" to names, so this one could clash in a later schema version.`
             + " Rename the model.",
         );
+      }
+
+      // JSON input bypasses defineUnion, so enforce its reserved names here too.
+      if (modelDef.type === "union") {
+        if (modelDef.union.discriminant === "rawValue") {
+          throw new Error(
+            `Union "${modelKey}" can't use "rawValue" as its discriminant. The generated Unknown case`
+              + " stores the original value in rawValue; choose another name.",
+          );
+        }
+        for (const variantKey of Object.keys(modelDef.union.variants)) {
+          assertVariantNameAllowed(variantKey, modelKey);
+        }
       }
     }
   }

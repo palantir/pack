@@ -120,4 +120,35 @@ describe("resolveIrInput", () => {
         `"StatusUpdate_v1" for both record "Status" (v1 write type) and record "StatusUpdate" (v1 type)`,
       );
   });
+
+  it.each([
+    ["unknown", "kind", `Variant "unknown" in union "Shape" uses a reserved name.`],
+    ["Unknown", "kind", `Variant "Unknown" in union "Shape" uses a reserved name.`],
+    ["_unknown", "kind", `Variant "_unknown" in union "Shape" uses a reserved name.`],
+    ["box", "rawValue", `Union "Shape" can't use "rawValue" as its discriminant.`],
+  ])(
+    "rejects JSON union variant %s and discriminant %s when reserved",
+    (variantKey, discriminant, message) => {
+      const models: Record<string, IModelDef> = {
+        Box: record("Box"),
+        Shape: {
+          type: "union",
+          union: {
+            key: "Shape",
+            name: "Shape",
+            discriminant,
+            variants: { [variantKey]: "Box" },
+            metadata: { addedInVersion: 1 },
+          },
+        },
+      };
+
+      expect(() =>
+        resolveIrInput(
+          { latestVersion: 1, chain: [{ version: 1, ir: { ...ir(1), models } }] },
+          "chain.json",
+        )
+      ).toThrow(message);
+    },
+  );
 });

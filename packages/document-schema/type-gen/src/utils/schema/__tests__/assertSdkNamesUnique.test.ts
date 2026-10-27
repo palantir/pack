@@ -85,9 +85,9 @@ describe("assertSdkNamesUnique", () => {
   it.each(Object.entries(fixtures))(
     "lists every name the SDK generated from %s uses",
     async (_fixtureName, schema) => {
-      const { chain } = resolveSchemaChain(schema);
-      const minSupportedVersion = chain[0]!.version;
-      const resolved = resolveSchemaChain(schema, minSupportedVersion);
+      const resolved = resolveSchemaChain(schema);
+      // Support every version, so the SDK has files for all of them.
+      const minSupportedVersion = resolved.chain[0]!.version;
       const listed = assertSdkNamesUnique(resolved.chain, minSupportedVersion);
 
       const outputDir = await mkdtemp(path.join(os.tmpdir(), "sdk-names-"));
