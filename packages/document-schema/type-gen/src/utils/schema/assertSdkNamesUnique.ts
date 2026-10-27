@@ -15,7 +15,6 @@
  */
 
 import { UNKNOWN_UNION_VARIANT } from "@palantir/pack.document-schema.model-types";
-import type { IModelDef } from "../../lib/pack-docschema-api/pack-docschema-ir/index.js";
 import {
   resolveMinVersion,
   stripDeprecatedFieldsForSdk,
@@ -43,21 +42,9 @@ import {
  * Throw if the generated SDK would use one name for two different things, so a clash fails
  * here with a clear message instead of as a TypeScript error in the generated files. Run it
  * before a schema is deployed: model keys are stored in documents, so renaming a model
- * afterwards breaks existing data.
+ * afterwards breaks existing data. Returns the names it checked, for tests.
  */
 export function assertSdkNamesUnique(
-  chain: VersionedIrEntry[],
-  minSupportedVersion: number | undefined,
-): void {
-  listSdkNames(chain, minSupportedVersion);
-}
-
-/**
- * Every top-level name in the generated SDK, mapped to what it is, e.g.
- * `"KnownShape"` -> `union "Shape" (Known type)`. Throws if two different things share a
- * name, or if a generated type would have two properties with the same name.
- */
-export function listSdkNames(
   irChain: VersionedIrEntry[],
   minSupportedVersion: number | undefined,
 ): ReadonlyMap<string, string> {
@@ -78,100 +65,90 @@ export function listSdkNames(
       }
     }
   }
-  const names = new Map<string, string>();
-  const add = (name: string, owner: string): void => {
-    const existing = names.get(name);
-    if (existing != null && existing !== owner) {
+
+  // Each name the SDK uses, and what uses it, e.g. "KnownShape" -> 'union "Shape" (Known type)'.
+  const usedNames = new Map<string, string>();
+  const useName = (name: string, usedFor: string): void => {
+    const alreadyUsedFor = usedNames.get(name);
+    // The same thing can be added again, e.g. once per version. Only a different thing clashes.
+    if (alreadyUsedFor != null && alreadyUsedFor !== usedFor) {
       throw new Error(
-        `The generated SDK would use the name "${name}" for both ${existing} and ${owner}.`
+        `The generated SDK would use the name "${name}" for both ${alreadyUsedFor} and ${usedFor}.`
           + " Rename a model so the names differ.",
       );
     }
-    names.set(name, owner);
+    usedNames.set(name, usedFor);
   };
 
   for (const name of RESERVED_SDK_NAMES) {
-    add(name, "the SDK itself");
+    useName(name, "the SDK itself");
   }
 
   // types.ts, schema.ts and models.ts: unversioned names from the latest version.
   const latestIr = chain[chain.length - 1]!.ir;
   for (const [modelKey, modelDef] of Object.entries(latestIr.models)) {
-    const model = describeModel(modelKey, modelDef);
-    add(modelKey, model);
-    add(modelName(modelKey), `${model} (Model)`);
-    add(schemaName(modelKey), `${model} (Zod schema)`);
+    const model = `${modelDef.type} "${modelKey}"`; // e.g. 'record "Foo"'
+    useName(modelKey, model);
+    useName(modelName(modelKey), `${model} (Model)`);
+    useName(schemaName(modelKey), `${model} (Zod schema)`);
     if (modelDef.type !== "union") continue;
 
-    add(knownTypeName(modelKey), `${model} (Known type)`);
-    add(narrowKnownFunctionName(modelKey), `${model} (narrowKnown function)`);
-    add(upgradesName(modelKey), `${model} (upgrades)`);
+    useName(knownTypeName(modelKey), `${model} (Known type)`);
+    useName(narrowKnownFunctionName(modelKey), `${model} (narrowKnown function)`);
+    useName(upgradesName(modelKey), `${model} (upgrades)`);
     for (const variantKey of Object.keys(modelDef.union.variants)) {
       const variant = `variant "${variantKey}" of ${model}`;
       const variantName = unionVariantName(modelKey, variantKey);
-      add(variantName, variant);
-      add(modelName(variantName), `${variant} (Model)`);
-      add(schemaName(variantName), `${variant} (Zod schema)`);
+      useName(variantName, variant);
+      useName(modelName(variantName), `${variant} (Model)`);
+      useName(schemaName(variantName), `${variant} (Zod schema)`);
     }
-    add(unionVariantName(modelKey, UNKNOWN_UNION_VARIANT), `the Unknown case of ${model}`);
+    useName(
+      unionVariantName(modelKey, UNKNOWN_UNION_VARIANT),
+      `variant "${UNKNOWN_UNION_VARIANT}" of ${model}`,
+    );
   }
 
   // types_vN.ts, writeTypes_vN.ts, schema_vN.ts and versionedDocRef.ts, for each supported version.
   for (const { version, ir } of chain) {
     if (version < minVersion) continue;
 
-    add(versionedDocRefName(version), "the SDK itself");
+    useName(versionedDocRefName(version), "the SDK itself");
     for (const [modelKey, modelDef] of Object.entries(ir.models)) {
-      const model = describeModel(modelKey, modelDef);
+      const model = `${modelDef.type} "${modelKey}"`;
       const typeName = versionedTypeName(modelKey, version);
-      add(typeName, `${model} (v${version} type)`);
-      add(versionedSchemaName(modelKey, version), `${model} (v${version} Zod schema)`);
+      const zodName = versionedSchemaName(modelKey, version);
+      useName(typeName, `${model} (v${version} type)`);
+      useName(zodName, `${model} (v${version} Zod schema)`);
       if (modelDef.type === "record") {
-        add(versionedWriteTypeName(modelKey, version), `${model} (v${version} write type)`);
-        assertPropertiesUnique(
-          typeName,
-          modelDef.record.fields.map(field => field.key),
-          "Rename one of the fields.",
-        );
+        useName(versionedWriteTypeName(modelKey, version), `${model} (v${version} write type)`);
         continue;
       }
 
-      add(knownTypeName(typeName), `${model} (v${version} Known type)`);
-      add(narrowKnownFunctionName(typeName), `${model} (v${version} narrowKnown function)`);
+      useName(knownTypeName(typeName), `${model} (v${version} Known type)`);
+      useName(narrowKnownFunctionName(typeName), `${model} (v${version} narrowKnown function)`);
       const { discriminant, variants } = modelDef.union;
-      const variantTypes = [
-        ...Object.entries(variants).map(([variantKey, targetKey]) => {
-          const target = ir.models[targetKey];
-          const isRecord = target != null && target.type === "record";
-          return {
-            variantKey,
-            owner: `variant "${variantKey}" of ${model}`,
-            // A record variant extends the record; any other variant holds it in `value`.
-            properties: [
-              discriminant,
-              ...(isRecord ? target.record.fields.map(field => field.key) : ["value"]),
-            ],
-            fix: isRecord
-              ? `Rename the field in record "${targetKey}" or the discriminant of ${model}.`
-              : `Rename the discriminant of ${model}.`,
-          };
-        }),
-        {
-          variantKey: UNKNOWN_UNION_VARIANT,
-          owner: `the Unknown case of ${model}`,
-          properties: [discriminant, "rawValue"],
-          fix: `Rename the discriminant of ${model}.`,
-        },
-      ];
-      for (const { variantKey, owner, properties, fix } of variantTypes) {
+      for (const variantKey of [...Object.keys(variants), UNKNOWN_UNION_VARIANT]) {
+        const variant = `variant "${variantKey}" of ${model}`;
         const variantType = unionVariantName(typeName, variantKey);
-        add(variantType, `${owner} (v${version} type)`);
-        add(typeGuardName(variantType), `${owner} (v${version} type guard)`);
-        add(
-          unionVariantName(versionedSchemaName(modelKey, version), variantKey),
-          `${owner} (v${version} Zod schema)`,
-        );
-        assertPropertiesUnique(variantType, properties, fix);
+        useName(variantType, `${variant} (v${version} type)`);
+        useName(typeGuardName(variantType), `${variant} (v${version} type guard)`);
+        useName(unionVariantName(zodName, variantKey), `${variant} (v${version} Zod schema)`);
+      }
+
+      // A variant's type is its record's fields (or `value` for any other variant) plus the
+      // discriminant, so a field named like the discriminant would appear twice.
+      for (const [variantKey, targetKey] of Object.entries(variants)) {
+        const target = ir.models[targetKey];
+        const fields = target?.type === "record"
+          ? target.record.fields.map(field => field.key)
+          : ["value"];
+        if (fields.includes(discriminant)) {
+          throw new Error(
+            `The generated type "${unionVariantName(typeName, variantKey)}" would have two`
+              + ` properties named "${discriminant}". Rename the discriminant of ${model}.`,
+          );
+        }
       }
     }
   }
@@ -181,29 +158,13 @@ export function listSdkNames(
     for (const [modelKey, modelDef] of Object.entries(ir.models)) {
       if (modelDef.type !== "record") continue;
 
-      const model = describeModel(modelKey, modelDef);
-      add(internalTypeName(modelKey), `${model} (internal type)`);
-      add(versionedInternalTypeName(modelKey, version), `${model} (v${version} internal type)`);
-      add(internalSchemaName(modelKey), `${model} (internal Zod schema)`);
-      add(upgradesName(modelKey), `${model} (upgrades)`);
+      const model = `record "${modelKey}"`;
+      useName(internalTypeName(modelKey), `${model} (internal type)`);
+      useName(versionedInternalTypeName(modelKey, version), `${model} (v${version} internal type)`);
+      useName(internalSchemaName(modelKey), `${model} (internal Zod schema)`);
+      useName(upgradesName(modelKey), `${model} (upgrades)`);
     }
   }
 
-  return names;
-}
-
-function describeModel(modelKey: string, modelDef: IModelDef): string {
-  return `${modelDef.type} "${modelKey}"`;
-}
-
-function assertPropertiesUnique(typeName: string, properties: string[], fix: string): void {
-  const seen = new Set<string>();
-  for (const property of properties) {
-    if (seen.has(property)) {
-      throw new Error(
-        `The generated type "${typeName}" would have two properties named "${property}". ${fix}`,
-      );
-    }
-    seen.add(property);
-  }
+  return usedNames;
 }

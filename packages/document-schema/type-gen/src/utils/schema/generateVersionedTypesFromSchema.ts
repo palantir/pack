@@ -138,9 +138,8 @@ function generateReadTypesForVersion(
     output += "}\n\n";
 
     for (const variant of variantInterfaces) {
-      output += `export function ${
-        typeGuardName(variant.name)
-      }(value: ${typeName}): value is ${variant.name} {\n`;
+      const guardName = typeGuardName(variant.name);
+      output += `export function ${guardName}(value: ${typeName}): value is ${variant.name} {\n`;
       output += `  return value.${discriminantField} === "${variant.discriminatorValue}";\n`;
       output += "}\n\n";
     }

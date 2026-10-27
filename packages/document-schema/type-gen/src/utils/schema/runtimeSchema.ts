@@ -87,10 +87,8 @@ export function versionedDocRefName(version: number): string {
 }
 
 /**
- * Names that share a file with a model's own name, so no model may produce one: the SDK's fixed
- * exports, and the names `models.ts` uses next to every model name it imports from `./types.js`.
- * Other library imports only sit next to suffixed names like `Foo_v1` or `FooModel`, so a model
- * can't clash with them and they aren't listed.
+ * Names the SDK uses in the same files as model names, so no model may produce one. Other
+ * library names only appear next to suffixed names like `Foo_v1`, so they can't clash.
  */
 export const RESERVED_SDK_NAMES: readonly string[] = [
   // Fixed SDK exports
@@ -104,7 +102,7 @@ export const RESERVED_SDK_NAMES: readonly string[] = [
   "VersionedDocRef",
   "asVersioned",
   "matchVersion",
-  // Used in models.ts next to every model name: its model-types imports and the ReturnType global
+  // Imported or called by models.ts
   "DocumentSchema",
   "Metadata",
   "RecordModel",

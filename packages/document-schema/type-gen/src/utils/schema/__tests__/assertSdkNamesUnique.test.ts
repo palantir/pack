@@ -27,7 +27,7 @@ import { mkdtemp, readdir, readFile, rm } from "fs/promises";
 import os from "os";
 import path from "path";
 import { describe, expect, it } from "vitest";
-import { assertSdkNamesUnique, listSdkNames } from "../assertSdkNamesUnique.js";
+import { assertSdkNamesUnique } from "../assertSdkNamesUnique.js";
 import { resolveSchemaChain } from "../resolveSchemaChain.js";
 import { writeAllSdkFiles } from "../writeAllSdkFiles.js";
 import * as fixtures from "./fixtures.js";
@@ -41,9 +41,8 @@ function check(models: Record<string, ModelDef>): void {
 }
 
 /**
- * Library names that generated files import only next to suffixed names like `Foo_v1` or
- * `FooModel`, so no model can clash with them and the check doesn't list them. A new import
- * fails the test below until it is added here or to `RESERVED_SDK_NAMES`.
+ * Library names that can't clash with a model (see `RESERVED_SDK_NAMES`), so the check doesn't
+ * list them. A new import fails the test below until it's added here or there.
  */
 const NON_CLASHING_IMPORTS = new Set([
   "DocumentId",
@@ -89,7 +88,7 @@ describe("assertSdkNamesUnique", () => {
       const { chain } = resolveSchemaChain(schema);
       const minSupportedVersion = chain[0]!.version;
       const resolved = resolveSchemaChain(schema, minSupportedVersion);
-      const listed = listSdkNames(resolved.chain, minSupportedVersion);
+      const listed = assertSdkNamesUnique(resolved.chain, minSupportedVersion);
 
       const outputDir = await mkdtemp(path.join(os.tmpdir(), "sdk-names-"));
       try {
@@ -161,7 +160,7 @@ describe("assertSdkNamesUnique", () => {
 
     expect(() => check({ Box, Shape: union("Shape", { box: Box }) })).toThrow(
       `The generated type "Shape_v1Box" would have two properties named "kind".`
-        + ` Rename the field in record "Box" or the discriminant of union "Shape".`,
+        + ` Rename the discriminant of union "Shape".`,
     );
   });
 

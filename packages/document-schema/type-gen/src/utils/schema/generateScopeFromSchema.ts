@@ -96,9 +96,8 @@ export function generateScopeFromChain(
 
   // Generate per-version VersionedDocRef interfaces extending DocumentRef.
   for (const { version, ir } of supportedVersions) {
-    output += `export interface ${
-      versionedDocRefName(version)
-    } extends DocumentRef<DocumentModel> {\n`;
+    const docRefName = versionedDocRefName(version);
+    output += `export interface ${docRefName} extends DocumentRef<DocumentModel> {\n`;
     output += `  readonly version: ${version};\n`;
 
     // updateRecord overloads — record models get write types, union models get Partial<read>
@@ -144,14 +143,8 @@ export function generateScopeFromChain(
   }
 
   // Union type
-  if (supportedVersions.length === 1) {
-    output += `export type VersionedDocRef = ${
-      versionedDocRefName(supportedVersions[0]!.version)
-    };\n`;
-  } else {
-    const unionMembers = supportedVersions.map(v => versionedDocRefName(v.version)).join(" | ");
-    output += `export type VersionedDocRef = ${unionMembers};\n`;
-  }
+  const unionMembers = supportedVersions.map(v => versionedDocRefName(v.version)).join(" | ");
+  output += `export type VersionedDocRef = ${unionMembers};\n`;
 
   // asVersioned — identity cast to unlock version-specific write overloads
   output += `\n/** Narrow a DocumentRef to a version-discriminated type for type-safe writes. */\n`;

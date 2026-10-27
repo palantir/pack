@@ -94,14 +94,13 @@ function generateZodSchemasForVersion(
 
     const union = modelDef.union;
     const discriminantField = union.discriminant;
+    const unionZodSchemaName = versionedSchemaName(modelKey, version);
+    const typeName = versionedTypeName(modelKey, version);
     const variantSchemaNames: string[] = [];
 
     for (const [variantName, variantModelKey] of Object.entries(union.variants)) {
-      const variantZodSchemaName = unionVariantName(
-        versionedSchemaName(modelKey, version),
-        variantName,
-      );
-      const variantTypeName = unionVariantName(versionedTypeName(modelKey, version), variantName);
+      const variantZodSchemaName = unionVariantName(unionZodSchemaName, variantName);
+      const variantTypeName = unionVariantName(typeName, variantName);
       variantSchemaNames.push(variantZodSchemaName);
 
       // Look up the variant's model to check if it's a record
@@ -122,22 +121,14 @@ function generateZodSchemasForVersion(
       }
     }
 
-    const unknownSchemaName = unionVariantName(
-      versionedSchemaName(modelKey, version),
-      UNKNOWN_UNION_VARIANT,
-    );
-    const unknownTypeName = unionVariantName(
-      versionedTypeName(modelKey, version),
-      UNKNOWN_UNION_VARIANT,
-    );
+    const unknownSchemaName = unionVariantName(unionZodSchemaName, UNKNOWN_UNION_VARIANT);
+    const unknownTypeName = unionVariantName(typeName, UNKNOWN_UNION_VARIANT);
     output += `export const ${unknownSchemaName} = z.object({\n`;
     output += `  ${discriminantField}: z.literal("${UNKNOWN_UNION_VARIANT}"),\n`;
     output += `  rawValue: z.unknown()\n`;
     output += `}) satisfies ZodType<${unknownTypeName}>;\n\n`;
     variantSchemaNames.push(unknownSchemaName);
 
-    const unionZodSchemaName = versionedSchemaName(modelKey, version);
-    const typeName = versionedTypeName(modelKey, version);
     output +=
       `export const ${unionZodSchemaName} = z.discriminatedUnion("${discriminantField}", [\n  ${
         variantSchemaNames.join(",\n  ")

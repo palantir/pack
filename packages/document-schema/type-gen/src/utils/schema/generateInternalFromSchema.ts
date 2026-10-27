@@ -490,17 +490,16 @@ function generateUpgradeFns(
       output += `  ${modelKey}: {\n`;
       for (const step of steps) {
         output += `    v${step.currentVersion}: {\n`;
+        const currentType = versionedInternalTypeName(modelKey, step.currentVersion);
+        const priorType = versionedInternalTypeName(modelKey, step.priorVersion);
         for (const f of step.fields) {
-          const returnType = `${
-            versionedInternalTypeName(modelKey, step.currentVersion)
-          }["${f.fieldName}"]`;
+          const returnType = `${currentType}["${f.fieldName}"]`;
           if (f.derivedFrom.length === 0) {
             output += `      ${f.fieldName}: () => ${returnType};\n`;
           } else {
             const pickKeys = f.derivedFrom.map(d => `"${d}"`).join(" | ");
-            output += `      ${f.fieldName}: (oldFields: Pick<${
-              versionedInternalTypeName(modelKey, step.priorVersion)
-            }, ${pickKeys}>) => ${returnType};\n`;
+            output +=
+              `      ${f.fieldName}: (oldFields: Pick<${priorType}, ${pickKeys}>) => ${returnType};\n`;
           }
         }
         output += `    };\n`;
