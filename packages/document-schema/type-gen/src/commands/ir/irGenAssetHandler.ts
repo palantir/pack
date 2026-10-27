@@ -14,14 +14,13 @@
  * limitations under the License.
  */
 
-import type { FileSystemType } from "@osdk/foundry.pack";
+import type { DocumentTypeAsset, FileSystemType } from "@osdk/foundry.pack";
 import { CommanderError } from "commander";
 import { consola } from "consola";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "fs";
 import { basename, dirname, extname, join, resolve } from "path";
 import { GENERATED_JSON_COMMENT } from "../../utils/generatedFileHeader.js";
 import { convertIrToWireSchema } from "../../utils/ir/convertIrToWireSchema.js";
-import type { DocumentTypeAssetWithMinor } from "../../utils/ir/foundryPackMinorVersionTypes.js";
 import { formatSchemaVersion } from "../../utils/schema/resolveSchemaChain.js";
 import { resolveIrInput } from "./resolveIrInput.js";
 
@@ -100,7 +99,7 @@ export function irGenAssetHandler(options: IrGenAssetOptions): void {
       );
     }
 
-    const asset: DocumentTypeAssetWithMinor = {
+    const asset: DocumentTypeAsset = {
       comment: GENERATED_JSON_COMMENT,
       documentTypeName,
       documentStorageType: {

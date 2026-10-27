@@ -21,6 +21,7 @@ import type {
   FieldValueType,
   FieldValueUnion,
   ModelDef,
+  SchemaMetadata,
 } from "@osdk/foundry.pack";
 import type {
   IFieldDef,
@@ -30,7 +31,6 @@ import type {
   IRealTimeDocumentSchema,
   ISchemaMeta,
 } from "../../lib/pack-docschema-api/pack-docschema-ir/index.js";
-import type { SchemaMetadataWithMinor } from "./foundryPackMinorVersionTypes.js";
 
 /**
  * Converts the internal IR schema to the wire format expected by the Foundry API.
@@ -194,7 +194,7 @@ function convertFieldValueUnion(value: IFieldValueUnion): FieldValueUnion {
   }
 }
 
-function convertSchemaMeta(meta: ISchemaMeta): SchemaMetadataWithMinor {
+function convertSchemaMeta(meta: ISchemaMeta): SchemaMetadata {
   return {
     addedInVersion: meta.addedInVersion,
     addedInMinorVersion: orUndefined(meta.addedInMinorVersion),

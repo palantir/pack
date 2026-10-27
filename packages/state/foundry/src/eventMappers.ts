@@ -160,7 +160,7 @@ function getActivityEventData(
     default: {
       // Fails to compile when a @osdk/foundry.pack bump adds an event type this switch doesn't map.
       eventData satisfies never;
-      const unknownEventData = eventData as Record<string, unknown>;
+      const unknownEventData: { readonly type?: unknown } = eventData;
       return {
         rawData: eventData,
         rawType: typeof unknownEventData.type === "string" ? unknownEventData.type : "unknown",

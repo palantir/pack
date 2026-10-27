@@ -15,18 +15,13 @@
  */
 
 import { createPlatformClient } from "@osdk/client";
-import type { UpdateSchemaDocumentTypeRequest } from "@osdk/foundry.pack";
+import type { UpdateSchemaDocumentTypeRequest, UpdateSchemaRequestBody } from "@osdk/foundry.pack";
 import { DocumentTypes } from "@osdk/foundry.pack";
 import { CommanderError } from "commander";
 import { consola } from "consola";
 import { readFileSync } from "fs";
 import { resolve } from "path";
 import { convertIrToWireSchema } from "../../utils/ir/convertIrToWireSchema.js";
-import {
-  isSchemaMinorVersionNotSupported,
-  type UpdateSchemaRequestBodyWithMinor,
-  type UpdateSchemaSuccessWithMinor,
-} from "../../utils/ir/foundryPackMinorVersionTypes.js";
 import { formatSchemaVersion } from "../../utils/schema/resolveSchemaChain.js";
 import { buildPrefixRewriteFetch, DEFAULT_API_PREFIX } from "../utils/firstPartyPrefix.js";
 import { resolveIrInput } from "./resolveIrInput.js";
@@ -70,7 +65,7 @@ export async function irUpdateSchemaHandler(options: IrUpdateSchemaOptions): Pro
       fetchFn,
     );
 
-    const requestBody: UpdateSchemaRequestBodyWithMinor = {
+    const requestBody: UpdateSchemaRequestBody = {
       ontologyRid: options.ontologyRid,
       schema,
       version: latestVersion,
@@ -88,10 +83,9 @@ export async function irUpdateSchemaHandler(options: IrUpdateSchemaOptions): Pro
     const result = await DocumentTypes.updateSchema(osdkClient, request, { preview: true });
 
     if (result.type === "success") {
-      const resultMinorVersion = (result as UpdateSchemaSuccessWithMinor).schemaMinorVersion ?? 0;
       consola.success(
         `Schema updated successfully (version ${
-          formatSchemaVersion(result.version, resultMinorVersion)
+          formatSchemaVersion(result.version, result.schemaMinorVersion)
         })`,
       );
       return;
@@ -128,4 +122,11 @@ export async function irUpdateSchemaHandler(options: IrUpdateSchemaOptions): Pro
     consola.error("❌ Error during update-schema:", error);
     throw new CommanderError(1, "ERRIRUPDATESCHEMA", "Error updating schema from IR");
   }
+}
+
+/** True for the error a stack returns until it can store minor versions. */
+function isSchemaMinorVersionNotSupported(error: unknown): boolean {
+  return typeof error === "object"
+    && error != null
+    && (error as { errorName?: unknown }).errorName === "SchemaMinorVersionNotSupported";
 }
