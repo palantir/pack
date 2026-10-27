@@ -51,6 +51,8 @@ export interface SchemaMetadata {
 export interface SchemaProvenance {
   readonly fieldVersions?: Record<string, Record<string, number>>;
   readonly modelVersions?: Record<string, number>;
+  readonly fieldMinorVersions?: Record<string, Record<string, number>>;
+  readonly modelMinorVersions?: Record<string, number>;
   readonly deprecations?: P.VersionDeprecations;
 }
 
@@ -160,9 +162,11 @@ export function convertRecordDefToIr(
 ): IRecordDef {
   const modelKey = exportKey ?? recordDef.name;
   const fieldVersions = provenance?.fieldVersions?.[modelKey];
+  const fieldMinorVersions = provenance?.fieldMinorVersions?.[modelKey];
   const deprecations = provenance?.deprecations?.[modelKey];
   const fields = Object.entries(recordDef.fields).map(([fieldKey, fieldType]): IFieldDef => {
     const dep = deprecations?.[fieldKey];
+    const addedInMinorVersion = fieldMinorVersions?.[fieldKey] ?? 0;
     return {
       key: fieldKey,
       name: fieldKey,
@@ -170,6 +174,7 @@ export function convertRecordDefToIr(
       fieldType: convertTypeToFieldTypeUnion(fieldType, nameToExportKey),
       metadata: {
         addedInVersion: fieldVersions?.[fieldKey] ?? fallbackVersion,
+        ...(addedInMinorVersion > 0 ? { addedInMinorVersion } : {}),
         ...(dep != null
           ? {
             deprecatedFromVersion: dep.fromVersion,
@@ -207,6 +212,7 @@ export function convertUnionDefToIr(
   );
 
   const unionAddedIn = provenance?.modelVersions?.[modelKey] ?? fallbackVersion;
+  const unionAddedInMinor = provenance?.modelMinorVersions?.[modelKey] ?? 0;
 
   return {
     key: modelKey,
@@ -214,7 +220,10 @@ export function convertUnionDefToIr(
     description: unionDef.docs,
     discriminant: unionDef.discriminant,
     variants: Object.fromEntries(variantEntries),
-    metadata: { addedInVersion: unionAddedIn },
+    metadata: {
+      addedInVersion: unionAddedIn,
+      ...(unionAddedInMinor > 0 ? { addedInMinorVersion: unionAddedInMinor } : {}),
+    },
   };
 }
 

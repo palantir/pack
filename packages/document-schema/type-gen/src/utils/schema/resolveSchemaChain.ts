@@ -36,6 +36,7 @@ export type SerializedVersionMigrations = Record<
 
 export interface VersionedIrEntry {
   version: number;
+  minorVersion?: number;
   ir: IRealTimeDocumentSchema;
   migrations?: SerializedVersionMigrations;
 }
@@ -44,6 +45,11 @@ export interface ResolvedIrChain {
   chain: VersionedIrEntry[];
   latestVersion: number;
   minVersion: number;
+  /**
+   * The chain before `collapseChainToMajors`, with every minor version. Upgrade steps come from
+   * this, so a field added in a minor version gets its own step. Defaults to `chain`.
+   */
+  stepChain?: VersionedIrEntry[];
 }
 
 export interface IrChainPayload {
@@ -52,6 +58,27 @@ export interface IrChainPayload {
   minSupportedVersion?: number;
   owningApplicationId?: string;
   chain: VersionedIrEntry[];
+}
+
+export interface FullSchemaVersion {
+  readonly major: number;
+  readonly minor: number;
+}
+
+export function getEntryMinorVersion(entry: VersionedIrEntry): number {
+  return entry.minorVersion ?? 0;
+}
+
+export function formatSchemaVersion(major: number, minor: number): string {
+  return minor > 0 ? `${major}.${minor}` : `${major}`;
+}
+
+function formatEntryVersion(entry: VersionedIrEntry): string {
+  return formatSchemaVersion(entry.version, getEntryMinorVersion(entry));
+}
+
+function getSchemaMinorVersion(schema: SchemaDefinition): number {
+  return schema.type === "versioned" ? schema.minorVersion ?? 0 : 0;
 }
 
 export interface SchemaIdentity {
@@ -66,15 +93,21 @@ function collectVersionedIrChain(
   const schemas = collectSchemaDefinitions(input);
   const provenances = deriveProvenance(schemas);
 
-  return schemas.map((schema, index): VersionedIrEntry => ({
-    version: schema.version,
-    ir: convertSchemaToIr(
-      schema.models,
-      { version: schema.version, name: identity.name, description: identity.description },
-      provenances[index]!,
-    ),
-    ...(schema.type === "versioned" ? { migrations: serializeMigrations(schema.migrations) } : {}),
-  }));
+  return schemas.map((schema, index): VersionedIrEntry => {
+    const minorVersion = getSchemaMinorVersion(schema);
+    return {
+      version: schema.version,
+      ...(minorVersion > 0 ? { minorVersion } : {}),
+      ir: convertSchemaToIr(
+        schema.models,
+        { version: schema.version, name: identity.name, description: identity.description },
+        provenances[index]!,
+      ),
+      ...(schema.type === "versioned"
+        ? { migrations: serializeMigrations(schema.migrations) }
+        : {}),
+    };
+  });
 }
 
 function collectSchemaDefinitions(input: SchemaDefinition): SchemaDefinition[] {
@@ -92,47 +125,64 @@ function collectSchemaDefinitions(input: SchemaDefinition): SchemaDefinition[] {
 
 /**
  * Build field/model provenance by walking the version chain from oldest to
- * newest. The first version where a model key or record field appears is the
- * version stamped into IR metadata.
+ * newest. The first version (major and minor) where a model key or record field
+ * appears is the version stamped into IR metadata.
  */
 function deriveProvenance(schemas: readonly SchemaDefinition[]): SchemaProvenance[] {
-  const firstModelVersions = new Map<string, number>();
-  const firstFieldVersions = new Map<string, Map<string, number>>();
+  const firstModelVersions = new Map<string, FullSchemaVersion>();
+  const firstFieldVersions = new Map<string, Map<string, FullSchemaVersion>>();
 
   return schemas.map(schema => {
+    const currentVersion = { major: schema.version, minor: getSchemaMinorVersion(schema) };
     const modelVersions: Record<string, number> = {};
+    const modelMinorVersions: Record<string, number> = {};
     const fieldVersions: Record<string, Record<string, number>> = {};
+    const fieldMinorVersions: Record<string, Record<string, number>> = {};
 
     for (const [modelKey, modelDef] of Object.entries(schema.models)) {
       if (!firstModelVersions.has(modelKey)) {
-        firstModelVersions.set(modelKey, schema.version);
+        firstModelVersions.set(modelKey, currentVersion);
       }
-      modelVersions[modelKey] = firstModelVersions.get(modelKey)!;
+      const modelVersion = firstModelVersions.get(modelKey)!;
+      modelVersions[modelKey] = modelVersion.major;
+      if (modelVersion.minor > 0) {
+        modelMinorVersions[modelKey] = modelVersion.minor;
+      }
 
       if (modelDef.type !== "record") continue;
 
       let fieldVersionsForModel = firstFieldVersions.get(modelKey);
       if (fieldVersionsForModel == null) {
-        fieldVersionsForModel = new Map<string, number>();
+        fieldVersionsForModel = new Map<string, FullSchemaVersion>();
         firstFieldVersions.set(modelKey, fieldVersionsForModel);
       }
 
       const fields: Record<string, number> = {};
+      const minorFields: Record<string, number> = {};
       for (const fieldKey of Object.keys(modelDef.fields)) {
         if (!fieldVersionsForModel.has(fieldKey)) {
-          fieldVersionsForModel.set(fieldKey, schema.version);
+          fieldVersionsForModel.set(fieldKey, currentVersion);
         }
-        fields[fieldKey] = fieldVersionsForModel.get(fieldKey)!;
+        const fieldVersion = fieldVersionsForModel.get(fieldKey)!;
+        fields[fieldKey] = fieldVersion.major;
+        if (fieldVersion.minor > 0) {
+          minorFields[fieldKey] = fieldVersion.minor;
+        }
       }
 
       if (Object.keys(fields).length > 0) {
         fieldVersions[modelKey] = fields;
+      }
+      if (Object.keys(minorFields).length > 0) {
+        fieldMinorVersions[modelKey] = minorFields;
       }
     }
 
     return {
       fieldVersions,
       modelVersions,
+      fieldMinorVersions,
+      modelMinorVersions,
       deprecations: "deprecations" in schema ? schema.deprecations : undefined,
     };
   });
@@ -173,7 +223,7 @@ export function resolveMinVersion(
   if (minSupportedVersion != null && !chain.some(c => c.version === minSupportedVersion)) {
     throw new Error(
       `minSupportedVersion ${minSupportedVersion} is not in the schema chain `
-        + `(available versions: ${chain.map(c => c.version).join(", ")})`,
+        + `(available versions: ${chain.map(formatEntryVersion).join(", ")})`,
     );
   }
 
@@ -185,20 +235,26 @@ export function resolveMinVersion(
 
 function capVersionedIrChain(
   chain: VersionedIrEntry[],
-  maxVersion: number | undefined,
+  maxVersion: FullSchemaVersion | undefined,
 ): VersionedIrEntry[] {
   if (maxVersion == null) {
     return chain;
   }
 
-  if (!chain.some(c => c.version === maxVersion)) {
+  const maxIndex = chain.findIndex(c =>
+    c.version === maxVersion.major && getEntryMinorVersion(c) === maxVersion.minor
+  );
+  if (maxIndex === -1) {
     throw new Error(
-      `maxVersion ${maxVersion} is not in the schema chain `
-        + `(available versions: ${chain.map(c => c.version).join(", ")})`,
+      `maxVersion ${
+        formatSchemaVersion(maxVersion.major, maxVersion.minor)
+      } is not in the schema chain `
+        + `(available versions: ${chain.map(formatEntryVersion).join(", ")})`,
     );
   }
 
-  return chain.filter(c => c.version <= maxVersion);
+  // The chain is in version order, so everything up to the match is at or below it.
+  return chain.slice(0, maxIndex + 1);
 }
 
 /**
@@ -213,7 +269,7 @@ export function resolveSchemaChain(
   schema: SchemaDefinition,
   minSupportedVersion?: number,
   identity: SchemaIdentity = {},
-  maxVersion?: number,
+  maxVersion?: FullSchemaVersion,
 ): ResolvedIrChain {
   const chain = capVersionedIrChain(collectVersionedIrChain(schema, identity), maxVersion);
   const { latestVersion, minVersion } = resolveMinVersion(chain, minSupportedVersion);
@@ -250,6 +306,47 @@ export function stripDeprecatedFieldsForSdk(chain: VersionedIrEntry[]): Versione
 }
 
 /**
+ * Collapse the chain to one entry per major version, for SDK generation.
+ *
+ * Generated types are per major: each major uses its last minor's IR, so the SDK
+ * includes every field known for that major. Migrations are merged from every
+ * entry of the major, because they only live on the entry that introduced them.
+ */
+export function collapseChainToMajors(chain: VersionedIrEntry[]): VersionedIrEntry[] {
+  const collapsed: VersionedIrEntry[] = [];
+  for (const entry of chain) {
+    const previous = collapsed[collapsed.length - 1];
+    const migrations = previous?.version === entry.version
+      ? mergeMigrations(previous.migrations, entry.migrations)
+      : entry.migrations;
+    const collapsedEntry: VersionedIrEntry = {
+      version: entry.version,
+      ir: entry.ir,
+      ...(migrations != null ? { migrations } : {}),
+    };
+    if (previous?.version === entry.version) {
+      collapsed[collapsed.length - 1] = collapsedEntry;
+    } else {
+      collapsed.push(collapsedEntry);
+    }
+  }
+  return collapsed;
+}
+
+function mergeMigrations(
+  base: SerializedVersionMigrations | undefined,
+  override: SerializedVersionMigrations | undefined,
+): SerializedVersionMigrations | undefined {
+  if (base == null) return override;
+  if (override == null) return base;
+  const result: SerializedVersionMigrations = { ...base };
+  for (const [modelKey, fields] of Object.entries(override)) {
+    result[modelKey] = { ...result[modelKey], ...fields };
+  }
+  return result;
+}
+
+/**
  * True if the chain has any field that requires a runtime upgrade function.
  * Drives whether the generated SDK emits `DocumentModel` as a factory
  * (requires the app to supply typed upgrade functions) or as a const.
@@ -261,6 +358,7 @@ export function stripDeprecatedFieldsForSdk(chain: VersionedIrEntry[]): Versione
  *    app must supply a zero-arg thunk; `undefined` is not a legal value.
  *
  * Optional additive fields don't trigger it; the lens leaves them alone.
+ * Pass the full chain (with minor versions) so fields added in a minor count.
  */
 export function chainNeedsUpgradeFns(chain: VersionedIrEntry[]): boolean {
   for (let i = 1; i < chain.length; i++) {
@@ -281,4 +379,9 @@ export function chainNeedsUpgradeFns(chain: VersionedIrEntry[]): boolean {
     }
   }
   return false;
+}
+
+/** Upgrade function key for a step: `v2` for 2.0, `v2_1` for 2.1. Matches the runtime read lens. */
+export function upgradeStepKey(major: number, minor: number): string {
+  return minor > 0 ? `v${major}_${minor}` : `v${major}`;
 }

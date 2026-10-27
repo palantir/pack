@@ -17,6 +17,7 @@
 import type { ISchemaVersion } from "../pack-docschema-api/schemaVersion.js";
 export interface ISchemaMeta {
   readonly "addedInVersion": ISchemaVersion;
+  readonly "addedInMinorVersion"?: number | null;
   readonly "deprecatedFromVersion"?: ISchemaVersion | null;
   readonly "deprecatedMessage"?: string | null;
 }

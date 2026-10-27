@@ -20,7 +20,12 @@ import path from "path";
 import { GENERATED_JSON_COMMENT } from "../../utils/generatedFileHeader.js";
 import { assertSdkNamesUnique } from "../../utils/schema/assertSdkNamesUnique.js";
 import { loadSchemaModule } from "../../utils/schema/loadSchemaModule.js";
-import { resolveSchemaChain } from "../../utils/schema/resolveSchemaChain.js";
+import {
+  formatSchemaVersion,
+  type FullSchemaVersion,
+  getEntryMinorVersion,
+  resolveSchemaChain,
+} from "../../utils/schema/resolveSchemaChain.js";
 
 interface SchemaIrOptions {
   input: string;
@@ -109,18 +114,20 @@ export async function readPackConfig(configPath: string): Promise<PackConfigValu
   return { documentTypeName, documentTypeDescription, minSupportedVersion, owningApplicationId };
 }
 
-function parseMaxVersion(maxVersion: string | undefined): number | undefined {
+/** Parse `--max-version`: `2` means 2.0, `2.1` means 2.1. */
+export function parseMaxVersion(maxVersion: string | undefined): FullSchemaVersion | undefined {
   if (maxVersion == null) {
     return undefined;
   }
 
-  if (!/^[1-9]\d*$/.test(maxVersion)) {
+  const match = /^([1-9]\d*)(?:\.(0|[1-9]\d*))?$/.exec(maxVersion);
+  if (match == null) {
     throw new Error(
-      `--max-version must be a positive integer, got: ${JSON.stringify(maxVersion)}`,
+      `--max-version must be a version like 2 or 2.1, got: ${JSON.stringify(maxVersion)}`,
     );
   }
 
-  return Number(maxVersion);
+  return { major: Number(match[1]), minor: Number(match[2] ?? 0) };
 }
 
 /**
@@ -194,9 +201,10 @@ export async function schemaIrHandler(options: SchemaIrOptions): Promise<void> {
   };
   await fs.writeFile(outputPath, JSON.stringify(payload, null, 2) + "\n", "utf8");
 
+  const latestEntry = chain[chain.length - 1]!;
   consola.success(
-    `Wrote IR chain (${chain.length} version(s), min=${
-      minSupportedVersion ?? latestVersion
-    }, max=${latestVersion}) to: ${outputPath}`,
+    `Wrote IR chain (${chain.length} version(s), min=${minSupportedVersion ?? latestVersion}, max=${
+      formatSchemaVersion(latestEntry.version, getEntryMinorVersion(latestEntry))
+    }) to: ${outputPath}`,
   );
 }
