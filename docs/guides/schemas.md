@@ -37,6 +37,8 @@ For a modifying existing unions:
 
 **Note:** a variant cannot be changed or removed from a union once added. This is to ensure documents written at older versions are always readable by newer clients.
 
+**Note:** the backend doesn't yet accept new variants on a union that is already deployed, so `addVariant` only works in development mode or before the document type is first deployed.
+
 ## Example
 
 import SchemaExample from "./_schema-example.md";
