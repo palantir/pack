@@ -14,13 +14,15 @@
  * limitations under the License.
  */
 
-import type { DocumentTypeAsset, FileSystemType } from "@osdk/foundry.pack";
+import type { FileSystemType } from "@osdk/foundry.pack";
 import { CommanderError } from "commander";
 import { consola } from "consola";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "fs";
 import { basename, dirname, extname, join, resolve } from "path";
 import { GENERATED_JSON_COMMENT } from "../../utils/generatedFileHeader.js";
 import { convertIrToWireSchema } from "../../utils/ir/convertIrToWireSchema.js";
+import type { DocumentTypeAssetWithMinor } from "../../utils/ir/foundryPackMinorVersionTypes.js";
+import { formatSchemaVersion } from "../../utils/schema/resolveSchemaChain.js";
 import { resolveIrInput } from "./resolveIrInput.js";
 
 interface IrGenAssetOptions {
@@ -79,7 +81,13 @@ export function irGenAssetHandler(options: IrGenAssetOptions): void {
 
     const resolved = resolveIrInput(parsed, irPath);
 
-    const { ir: irSchema, latestVersion, minSupportedVersion, owningApplicationId } = resolved;
+    const {
+      ir: irSchema,
+      latestVersion,
+      latestMinorVersion,
+      minSupportedVersion,
+      owningApplicationId,
+    } = resolved;
     const { name: documentTypeName } = irSchema;
     const wireSchema = convertIrToWireSchema(irSchema);
 
@@ -92,7 +100,7 @@ export function irGenAssetHandler(options: IrGenAssetOptions): void {
       );
     }
 
-    const asset: DocumentTypeAsset = {
+    const asset: DocumentTypeAssetWithMinor = {
       comment: GENERATED_JSON_COMMENT,
       documentTypeName,
       documentStorageType: {
@@ -101,6 +109,7 @@ export function irGenAssetHandler(options: IrGenAssetOptions): void {
       },
       fileSystemType,
       schemaVersion: latestVersion,
+      ...(latestMinorVersion > 0 ? { schemaMinorVersion: latestMinorVersion } : {}),
       ...(owningApplicationId != null ? { owningApplicationId } : {}),
       ...(options.forceOverwrite ? { forceOverwrite: true } : {}),
     };
@@ -142,7 +151,7 @@ export function irGenAssetHandler(options: IrGenAssetOptions): void {
     consola.info(`   Output: ${outputPath}`);
     consola.info(`   Compatibility range output: ${compatibilityRangePath}`);
     consola.info(`   Document type: ${documentTypeName}`);
-    consola.info(`   Schema version: ${latestVersion}`);
+    consola.info(`   Schema version: ${formatSchemaVersion(latestVersion, latestMinorVersion)}`);
     consola.info(`   Compatibility range: [${minSupportedVersion}, ${latestVersion}]`);
     consola.info(`   File system type: ${fileSystemType}`);
     if (owningApplicationId != null) {

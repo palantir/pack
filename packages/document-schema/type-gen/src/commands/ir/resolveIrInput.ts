@@ -17,11 +17,17 @@
 import { CommanderError } from "commander";
 import type { IRealTimeDocumentSchema } from "../../lib/pack-docschema-api/pack-docschema-ir/index.js";
 import { assertSdkNamesUnique } from "../../utils/schema/assertSdkNamesUnique.js";
-import { type IrChainPayload, resolveMinVersion } from "../../utils/schema/resolveSchemaChain.js";
+import {
+  getEntryMinorVersion,
+  type IrChainPayload,
+  resolveMinVersion,
+} from "../../utils/schema/resolveSchemaChain.js";
 
 export interface ResolvedIrInput {
   readonly ir: IRealTimeDocumentSchema;
   readonly latestVersion: number;
+  /** The minor version within `latestVersion`. 0 for a .0 version. */
+  readonly latestMinorVersion: number;
   readonly minSupportedVersion: number;
   readonly owningApplicationId?: string;
 }
@@ -48,25 +54,20 @@ function resolveFromChain(payload: IrChainPayload, irPath: string): ResolvedIrIn
     payload.chain,
     payload.minSupportedVersion,
   );
-  const latestEntry = payload.chain.find(c => c.version === latestVersion);
-  if (latestEntry == null) {
-    throw new CommanderError(
-      1,
-      "EINVAL",
-      `IR chain payload at ${irPath} has no entry matching latestVersion ${latestVersion}`,
-    );
-  }
+  // The last entry is the latest version. Several entries can share a major (e.g. 2.0 and 2.1).
+  const latestEntry = payload.chain[payload.chain.length - 1]!;
   assertSdkNamesUnique(payload.chain, payload.minSupportedVersion);
   return {
     ir: latestEntry.ir,
     latestVersion,
+    latestMinorVersion: getEntryMinorVersion(latestEntry),
     minSupportedVersion: minVersion,
     owningApplicationId: payload.owningApplicationId,
   };
 }
 
 function resolveFromSingleIr(ir: IRealTimeDocumentSchema): ResolvedIrInput {
-  return { ir, latestVersion: ir.version, minSupportedVersion: ir.version };
+  return { ir, latestVersion: ir.version, latestMinorVersion: 0, minSupportedVersion: ir.version };
 }
 
 export function resolveIrInput(parsed: unknown, irPath: string): ResolvedIrInput {

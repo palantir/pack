@@ -63,7 +63,7 @@ export async function irDeployHandler(options: DeployOptions): Promise<void> {
     const irPath = resolve(options.ir);
     consola.info(`Reading schema from: ${irPath}`);
 
-    const { ir, owningApplicationId } = resolveIrInput(
+    const { ir, latestVersion, latestMinorVersion, owningApplicationId } = resolveIrInput(
       JSON.parse(readFileSync(irPath, "utf8")) as unknown,
       irPath,
     );
@@ -79,6 +79,16 @@ export async function irDeployHandler(options: DeployOptions): Promise<void> {
         owningApplicationId,
       );
     } else {
+      if (latestMinorVersion > 0) {
+        // Creating a document type can't set a minor version, so the first deploy must be a .0 version.
+        throw new CommanderError(
+          1,
+          "EINVAL",
+          `The first deploy must be a .0 version, but the IR is at ${latestVersion}.${latestMinorVersion}.`
+            + ` Build the IR with \`type-gen schema ir --max-version ${latestVersion}\`, deploy it,`
+            + ` then apply the minor version with \`type-gen ir update-schema\`.`,
+        );
+      }
       await deployThirdParty(options, ir.name, convertIrToWireSchema(ir), fileSystemType);
     }
   } catch (error) {
