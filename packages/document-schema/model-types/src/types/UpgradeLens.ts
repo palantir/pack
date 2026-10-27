@@ -38,8 +38,10 @@ export interface FieldDef {
 }
 
 export interface UpgradeStepDef {
-  /** Schema version this step upgrades to. Unique within a model's chain. */
+  /** Major schema version this step upgrades to. With `addedInMinorVersion`, unique within a model's chain. */
   addedInVersion: number;
+  /** Minor schema version within `addedInVersion`. Absent means 0. */
+  addedInMinorVersion?: number;
   fields: Record<string, FieldLensDef>;
   removedFields?: string[];
 }
@@ -73,7 +75,8 @@ export type UpgradeRegistryMap = Record<string, UpgradeRegistryEntry>;
  * Runtime-supplied collection of forward upgrade functions. The application
  * passes a `DocumentUpgradeFns` value to the generated `DocumentModel(...)`
  * factory at boot; the factory installs it on the schema's metadata under
- * this loose shape: `fns[modelName][\`v${addedInVersion}\`][fieldName] -> fn`.
+ * this loose shape: `fns[modelName][stepKey][fieldName] -> fn`, where `stepKey` is
+ * `v2` for version 2.0 and `v2_1` for version 2.1.
  *
  * The generated `DocumentUpgradeFns` interface is a precisely-typed refinement
  * of this shape; both `BaseYjsDocumentService` and `applyReadLens` read from

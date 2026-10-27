@@ -185,7 +185,8 @@ export function applyReadLens(
       }
       if (!canDerive) continue;
 
-      const stepKey = `v${step.addedInVersion}`;
+      const minor = step.addedInMinorVersion ?? 0;
+      const stepKey = minor > 0 ? `v${step.addedInVersion}_${minor}` : `v${step.addedInVersion}`;
       const forward = upgradeFns?.[registry.modelName]?.[stepKey]?.[fieldName];
       if (forward == null) {
         throw new Error(

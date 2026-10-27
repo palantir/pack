@@ -27,7 +27,9 @@ import {
 } from "../ir/irFieldHelpers.js";
 import {
   chainNeedsUpgradeFns,
+  getEntryMinorVersion,
   type ResolvedIrChain,
+  upgradeStepKey,
   type VersionedIrEntry,
 } from "./resolveSchemaChain.js";
 import {
@@ -52,8 +54,10 @@ export interface InternalTypesOutput {
 interface AllFieldInfo {
   fieldType: IFieldTypeUnion;
   isOptional: boolean;
-  /** Versions where this field exists. */
+  /** Major versions where this field exists. */
   presentInVersions: Set<number>;
+  /** Number of chain entries (including minor versions) where this field exists. */
+  presentInEntries: number;
   /** Whether field is always optional. */
   alwaysOptional: boolean;
   /** Whether field is optional in at least one version. */
@@ -71,8 +75,14 @@ interface AllFieldInfo {
  */
 interface UpgradeStep {
   addedInVersion: number;
-  fields: Map<string, { derivedFrom: string[]; isOptional: boolean }>;
+  addedInMinorVersion: number;
+  fields: Map<string, UpgradeStepField>;
   removedFields: string[];
+}
+
+interface UpgradeStepField {
+  derivedFrom: string[];
+  isOptional: boolean;
 }
 
 interface RecordModelInfo {
@@ -93,6 +103,8 @@ function getAddedInVersion(fieldInfo: AllFieldInfo): number {
 
 /**
  * Collect all record model info across all versions and compute upgrade steps.
+ * Takes the full chain (with minor versions), so a field added in 1.1 gets its
+ * own step and counts as missing from 1.0 records.
  */
 function collectRecordModels(
   chain: VersionedIrEntry[],
@@ -120,11 +132,13 @@ function collectRecordModels(
             fieldType: field.fieldType,
             isOptional: field.isOptional === true,
             presentInVersions: new Set([version]),
+            presentInEntries: 1,
             alwaysOptional: field.isOptional === true,
             everOptional: field.isOptional === true,
           });
         } else {
           existing.presentInVersions.add(version);
+          existing.presentInEntries += 1;
           if (field.isOptional !== true) {
             existing.alwaysOptional = false;
           }
@@ -156,10 +170,7 @@ function collectRecordModels(
       // Fields added in this version that require lens treatment. Optional
       // additive fields are skipped — `undefined` is a legal v_current value
       // for them, so the lens has nothing to invent.
-      const addedFields = new Map<
-        string,
-        { derivedFrom: string[]; isOptional: boolean }
-      >();
+      const addedFields = new Map<string, UpgradeStepField>();
       const recordUpgrades = currEntry.migrations?.[modelKey];
       for (const field of currModelDef.record.fields) {
         const fieldKey = field.key;
@@ -182,6 +193,7 @@ function collectRecordModels(
       if (addedFields.size > 0 || removedFields.length > 0) {
         model.steps.push({
           addedInVersion: currEntry.version,
+          addedInMinorVersion: getEntryMinorVersion(currEntry),
           fields: addedFields,
           removedFields,
         });
@@ -190,10 +202,10 @@ function collectRecordModels(
   }
 
   // Mark fields that are not present in ALL versions as optional in internal type
-  const totalVersions = chain.length;
+  const totalEntries = chain.length;
   for (const model of allRecordModels.values()) {
     for (const [, fieldInfo] of model.allFields) {
-      if (fieldInfo.presentInVersions.size < totalVersions) {
+      if (fieldInfo.presentInEntries < totalEntries) {
         fieldInfo.alwaysOptional = true;
       }
     }
@@ -327,6 +339,9 @@ function generateUpgrades(
     for (const step of model.steps) {
       output += `    {\n`;
       output += `      addedInVersion: ${step.addedInVersion},\n`;
+      if (step.addedInMinorVersion > 0) {
+        output += `      addedInMinorVersion: ${step.addedInMinorVersion},\n`;
+      }
       output += `      fields: {\n`;
       for (const [fieldName, fieldMeta] of step.fields) {
         output += `        ${fieldName}: {\n`;
@@ -422,8 +437,9 @@ function generateUpgradeFns(
     derivedFrom: readonly string[];
   }
   interface StepEntry {
+    stepKey: string;
     currentVersion: number;
-    priorVersion: number;
+    priorVersion: number | undefined;
     fields: UpgradeFnEntry[];
   }
 
@@ -432,15 +448,17 @@ function generateUpgradeFns(
 
   for (const [modelKey, model] of sortedEntries(allRecordModels)) {
     for (const step of model.steps) {
+      // `chain` has one entry per major. Derived fields read the previous major's types; minor
+      // versions can't add derived fields, so a minor step never needs a prior version.
       const currentIdx = chain.findIndex(c => c.version === step.addedInVersion);
-      if (currentIdx <= 0) continue;
-      const priorVersion = chain[currentIdx - 1]!.version;
+      const priorVersion = currentIdx > 0 ? chain[currentIdx - 1]!.version : undefined;
 
       const fields: UpgradeFnEntry[] = [];
       for (const [fieldName, fieldMeta] of step.fields) {
         fields.push({ fieldName, derivedFrom: [...fieldMeta.derivedFrom] });
       }
       if (fields.length === 0) continue;
+      if (priorVersion == null && fields.some(f => f.derivedFrom.length > 0)) continue;
 
       let list = perModel.get(modelKey);
       if (list == null) {
@@ -448,12 +466,13 @@ function generateUpgradeFns(
         perModel.set(modelKey, list);
       }
       list.push({
+        stepKey: upgradeStepKey(step.addedInVersion, step.addedInMinorVersion),
         currentVersion: step.addedInVersion,
         priorVersion,
         fields,
       });
       // Prior-version type only needed when at least one field derives from it.
-      if (fields.some(f => f.derivedFrom.length > 0)) {
+      if (priorVersion != null && fields.some(f => f.derivedFrom.length > 0)) {
         neededTypes.add(versionedInternalTypeName(modelKey, priorVersion));
       }
       neededTypes.add(versionedInternalTypeName(modelKey, step.addedInVersion));
@@ -475,7 +494,7 @@ function generateUpgradeFns(
   output += ` * call site. Derived fields receive their declared source fields; required\n`;
   output += ` * additive fields receive no arguments. Optional additive fields are absent\n`;
   output += ` * — \`undefined\` is a legal value at the new version, so the runtime lens\n`;
-  output += ` * leaves them alone.\n`;
+  output += ` * leaves them alone. Keys are \`v2\` for version 2.0 and \`v2_1\` for 2.1.\n`;
   output += ` */\n`;
   if (perModel.size === 0) {
     output += `// eslint-disable-next-line @typescript-eslint/no-empty-object-type\n`;
@@ -489,14 +508,15 @@ function generateUpgradeFns(
     ) {
       output += `  ${modelKey}: {\n`;
       for (const step of steps) {
-        output += `    v${step.currentVersion}: {\n`;
+        output += `    ${step.stepKey}: {\n`;
         const currentType = versionedInternalTypeName(modelKey, step.currentVersion);
-        const priorType = versionedInternalTypeName(modelKey, step.priorVersion);
         for (const f of step.fields) {
           const returnType = `${currentType}["${f.fieldName}"]`;
           if (f.derivedFrom.length === 0) {
             output += `      ${f.fieldName}: () => ${returnType};\n`;
           } else {
+            // Steps with derived fields always have a prior version (others are skipped above).
+            const priorType = versionedInternalTypeName(modelKey, step.priorVersion!);
             const pickKeys = f.derivedFrom.map(d => `"${d}"`).join(" | ");
             output +=
               `      ${f.fieldName}: (oldFields: Pick<${priorType}, ${pickKeys}>) => ${returnType};\n`;
@@ -520,12 +540,13 @@ export function generateInternalFromChain(
   resolved: ResolvedIrChain,
 ): InternalTypesOutput {
   const { chain } = resolved;
+  const stepChain = resolved.stepChain ?? chain;
   const latestIr = chain[chain.length - 1]!.ir;
 
-  const allRecordModels = collectRecordModels(chain);
+  const allRecordModels = collectRecordModels(stepChain);
 
   const internalTypes = generateInternalTypes(allRecordModels)
-    + (chainNeedsUpgradeFns(chain) ? generatePerVersionInternalTypes(chain) : "");
+    + (chainNeedsUpgradeFns(stepChain) ? generatePerVersionInternalTypes(chain) : "");
   const upgrades = generateUpgrades(allRecordModels, latestIr);
   const internalSchema = generateInternalSchemaContent(allRecordModels);
   const internalUpgradeFns = generateUpgradeFns(chain, allRecordModels);

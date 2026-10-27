@@ -18,6 +18,7 @@ import { consola } from "consola";
 import fs from "fs-extra";
 import path from "path";
 import {
+  collapseChainToMajors,
   type IrChainPayload,
   resolveMinVersion,
   stripDeprecatedFieldsForSdk,
@@ -46,8 +47,11 @@ export async function irGenTypesHandler(options: IrGenTypesOptions): Promise<voi
 
   const { minSupportedVersion } = payload;
   const { latestVersion, minVersion } = resolveMinVersion(payload.chain, minSupportedVersion);
-  const chain = stripDeprecatedFieldsForSdk(payload.chain);
-  const resolved = { chain, latestVersion, minVersion };
+  // Generated types are per major, so minor versions fold into their major. Upgrade steps still
+  // come from every version, so a field added in a minor gets its own upgrade function.
+  const stepChain = stripDeprecatedFieldsForSdk(payload.chain);
+  const chain = collapseChainToMajors(stepChain);
+  const resolved = { chain, latestVersion, minVersion, stepChain };
 
   const resolvedOutputDir = path.resolve(outputDir);
   await writeAllSdkFiles(resolved, resolvedOutputDir, minSupportedVersion);
