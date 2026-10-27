@@ -15,7 +15,10 @@
  */
 
 import { describe, expect, it } from "vitest";
-import type { IRealTimeDocumentSchema } from "../../../lib/pack-docschema-api/pack-docschema-ir/index.js";
+import type {
+  IModelDef,
+  IRealTimeDocumentSchema,
+} from "../../../lib/pack-docschema-api/pack-docschema-ir/index.js";
 import { resolveIrInput } from "../resolveIrInput.js";
 
 function ir(version: number): IRealTimeDocumentSchema {
@@ -26,6 +29,10 @@ function ir(version: number): IRealTimeDocumentSchema {
     primaryModelKeys: [],
     models: {},
   };
+}
+
+function record(key: string): IModelDef {
+  return { type: "record", record: { key, name: key, fields: [] } };
 }
 
 describe("resolveIrInput", () => {
@@ -98,5 +105,26 @@ describe("resolveIrInput", () => {
         ],
       }, "missing.json")
     ).toThrow("minSupportedVersion 2");
+  });
+
+  it("rejects an IR chain whose SDK would use one name twice", () => {
+    const models = { Status: record("Status"), StatusUpdate: record("StatusUpdate") };
+
+    expect(() =>
+      resolveIrInput(
+        { latestVersion: 1, chain: [{ version: 1, ir: { ...ir(1), models } }] },
+        "chain.json",
+      )
+    )
+      .toThrow(
+        `"StatusUpdate_v1" for both record "Status" (v1 write type) and record "StatusUpdate" (v1 type)`,
+      );
+  });
+
+  it("rejects single-version IR whose SDK would use one name twice", () => {
+    const models = { Metadata: record("Metadata") };
+
+    expect(() => resolveIrInput({ ...ir(1), models }, "legacy.json"))
+      .toThrow(`"Metadata" for both the SDK itself and record "Metadata"`);
   });
 });

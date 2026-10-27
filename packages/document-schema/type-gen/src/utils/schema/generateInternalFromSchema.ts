@@ -30,6 +30,12 @@ import {
   type ResolvedIrChain,
   type VersionedIrEntry,
 } from "./resolveSchemaChain.js";
+import {
+  internalSchemaName,
+  internalTypeName,
+  upgradesName,
+  versionedInternalTypeName,
+} from "./runtimeSchema.js";
 
 export interface InternalTypesOutput {
   /** _internal/types.ts content */
@@ -207,7 +213,7 @@ function generateInternalTypes(
 
   for (const [modelKey, model] of sortedEntries(allRecordModels)) {
     output += `/** Internal representation containing all fields across all schema versions. */\n`;
-    output += `export interface ${modelKey}__Internal {\n`;
+    output += `export interface ${internalTypeName(modelKey)} {\n`;
 
     for (const [fieldName, fieldInfo] of sortedEntries(model.allFields)) {
       const tsType = convertFieldTypeToInternalTypeScript(
@@ -261,7 +267,7 @@ function generatePerVersionInternalTypes(
   for (const [modelKey, versions] of sortedModels) {
     for (const { version, fields } of versions) {
       output += `/** Internal representation of ${modelKey} at schema version ${version}. */\n`;
-      output += `export interface ${modelKey}__v${version} {\n`;
+      output += `export interface ${versionedInternalTypeName(modelKey, version)} {\n`;
       const sortedFields = [...fields].sort((a, b) => a.key.localeCompare(b.key));
       for (const field of sortedFields) {
         const tsType = convertFieldTypeToInternalTypeScript(
@@ -300,7 +306,7 @@ function generateUpgrades(
   }
 
   for (const [modelKey, model] of sortedEntries(allRecordModels)) {
-    output += `export const ${modelKey}Upgrades: UpgradeRegistry<"${modelKey}"> = {\n`;
+    output += `export const ${upgradesName(modelKey)}: UpgradeRegistry<"${modelKey}"> = {\n`;
     output += `  modelName: "${modelKey}",\n`;
 
     // allFields
@@ -345,7 +351,7 @@ function generateUpgrades(
     if (modelDef.type !== "union") continue;
 
     const union = modelDef.union;
-    output += `export const ${modelKey}Upgrades: UnionUpgradeRegistry<"${modelKey}"> = {\n`;
+    output += `export const ${upgradesName(modelKey)}: UnionUpgradeRegistry<"${modelKey}"> = {\n`;
     output += `  modelName: "${modelKey}",\n`;
     output += `  discriminant: "${union.discriminant}",\n`;
     output += `  variants: {\n`;
@@ -369,7 +375,7 @@ function generateInternalSchemaContent(
   output += `import { z } from "zod";\n\n`;
 
   for (const [modelKey, model] of sortedEntries(allRecordModels)) {
-    output += `export const ${modelKey}InternalSchema = z.object({\n`;
+    output += `export const ${internalSchemaName(modelKey)} = z.object({\n`;
 
     for (const [fieldName, fieldInfo] of sortedEntries(model.allFields)) {
       // Use everOptional: a field optional in ANY version must stay optional
@@ -448,9 +454,9 @@ function generateUpgradeFns(
       });
       // Prior-version type only needed when at least one field derives from it.
       if (fields.some(f => f.derivedFrom.length > 0)) {
-        neededTypes.add(`${modelKey}__v${priorVersion}`);
+        neededTypes.add(versionedInternalTypeName(modelKey, priorVersion));
       }
-      neededTypes.add(`${modelKey}__v${step.addedInVersion}`);
+      neededTypes.add(versionedInternalTypeName(modelKey, step.addedInVersion));
     }
   }
 
@@ -485,13 +491,16 @@ function generateUpgradeFns(
       for (const step of steps) {
         output += `    v${step.currentVersion}: {\n`;
         for (const f of step.fields) {
-          const returnType = `${modelKey}__v${step.currentVersion}["${f.fieldName}"]`;
+          const returnType = `${
+            versionedInternalTypeName(modelKey, step.currentVersion)
+          }["${f.fieldName}"]`;
           if (f.derivedFrom.length === 0) {
             output += `      ${f.fieldName}: () => ${returnType};\n`;
           } else {
             const pickKeys = f.derivedFrom.map(d => `"${d}"`).join(" | ");
-            output +=
-              `      ${f.fieldName}: (oldFields: Pick<${modelKey}__v${step.priorVersion}, ${pickKeys}>) => ${returnType};\n`;
+            output += `      ${f.fieldName}: (oldFields: Pick<${
+              versionedInternalTypeName(modelKey, step.priorVersion)
+            }, ${pickKeys}>) => ${returnType};\n`;
           }
         }
         output += `    };\n`;

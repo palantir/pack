@@ -15,7 +15,6 @@
  */
 
 import { UNKNOWN_UNION_VARIANT } from "@palantir/pack.document-schema.model-types";
-import { formatVariantName } from "@palantir/pack.schema";
 import type { IRealTimeDocumentSchema } from "../../lib/pack-docschema-api/pack-docschema-ir/index.js";
 import { GENERATED_FILE_HEADER } from "../generatedFileHeader.js";
 import {
@@ -23,13 +22,14 @@ import {
   convertFieldTypeToTypeScript,
   detectUsedRefTypes,
 } from "../ir/irFieldHelpers.js";
-import { UNKNOWN_VARIANT_SUFFIX } from "../unknownVariantSuffix.js";
 import type { ResolvedIrChain, VersionedIrEntry } from "./resolveSchemaChain.js";
 import { resolveMinVersion } from "./resolveSchemaChain.js";
 import {
   knownTypeName,
   narrowKnownFunctionName,
+  typeGuardName,
   typesFilePath,
+  unionVariantName,
   versionedTypeName,
   versionedWriteTypeName,
 } from "./runtimeSchema.js";
@@ -97,7 +97,7 @@ function generateReadTypesForVersion(
     const variantInterfaces: Array<{ name: string; discriminatorValue: string }> = [];
 
     for (const [variantName, variantModelKey] of Object.entries(union.variants)) {
-      const interfaceName = `${typeName}${formatVariantName(variantName)}`;
+      const interfaceName = unionVariantName(typeName, variantName);
       variantInterfaces.push({ name: interfaceName, discriminatorValue: variantName });
 
       // Look up the variant's model to check if it's a record
@@ -118,7 +118,7 @@ function generateReadTypesForVersion(
     }
 
     const knownVariantNames = variantInterfaces.map(v => v.name);
-    const unknownName = `${typeName}${UNKNOWN_VARIANT_SUFFIX}`;
+    const unknownName = unionVariantName(typeName, UNKNOWN_UNION_VARIANT);
     output += `export type ${unknownName} = UnknownUnionVariant<"${discriminantField}">;\n\n`;
     variantInterfaces.push({ name: unknownName, discriminatorValue: UNKNOWN_UNION_VARIANT });
 
@@ -138,8 +138,9 @@ function generateReadTypesForVersion(
     output += "}\n\n";
 
     for (const variant of variantInterfaces) {
-      output +=
-        `export function is${variant.name}(value: ${typeName}): value is ${variant.name} {\n`;
+      output += `export function ${
+        typeGuardName(variant.name)
+      }(value: ${typeName}): value is ${variant.name} {\n`;
       output += `  return value.${discriminantField} === "${variant.discriminatorValue}";\n`;
       output += "}\n\n";
     }
@@ -229,9 +230,8 @@ function generateTypesReExport({ ir, version }: VersionedIrEntry): string {
       );
       // Also re-export union variant types, including the Unknown case
       for (const variantName of [...Object.keys(modelDef.union.variants), UNKNOWN_UNION_VARIANT]) {
-        const formattedVariant = formatVariantName(variantName);
-        const versionedVariant = `${versionedTypeName(modelKey, version)}${formattedVariant}`;
-        const unversionedVariant = `${modelKey}${formattedVariant}`;
+        const versionedVariant = unionVariantName(versioned, variantName);
+        const unversionedVariant = unionVariantName(modelKey, variantName);
         reExports.push(
           `export type { ${versionedVariant} as ${unversionedVariant} } from "${
             typesFilePath(version)

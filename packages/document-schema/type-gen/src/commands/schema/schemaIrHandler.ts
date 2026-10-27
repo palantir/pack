@@ -18,6 +18,7 @@ import { consola } from "consola";
 import fs from "fs-extra";
 import path from "path";
 import { GENERATED_JSON_COMMENT } from "../../utils/generatedFileHeader.js";
+import { assertSdkNamesUnique } from "../../utils/schema/assertSdkNamesUnique.js";
 import { loadSchemaModule } from "../../utils/schema/loadSchemaModule.js";
 import { resolveSchemaChain } from "../../utils/schema/resolveSchemaChain.js";
 
@@ -179,6 +180,7 @@ export async function schemaIrHandler(options: SchemaIrOptions): Promise<void> {
     },
     maxVersion,
   );
+  assertSdkNamesUnique(chain, minSupportedVersion);
 
   const outputPath = path.resolve(output);
   await fs.ensureDir(path.dirname(outputPath));

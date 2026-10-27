@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-import { formatVariantName } from "@palantir/pack.schema";
 import type { IRecordDef } from "../../lib/pack-docschema-api/pack-docschema-ir/index.js";
 import { GENERATED_FILE_HEADER } from "../generatedFileHeader.js";
 import { findExternalRefType } from "../ir/irFieldHelpers.js";
@@ -27,6 +26,8 @@ import {
   SCHEMA_REEXPORT_PATH,
   schemaName,
   TYPES_REEXPORT_PATH,
+  unionVariantName,
+  upgradesName,
 } from "./runtimeSchema.js";
 
 export interface ModelMetadataOutput {
@@ -75,7 +76,7 @@ export function generateModelMetadataFromChain(
     } else if (modelDef.type === "union") {
       unionNames.push(modelKey);
       for (const variantName of Object.keys(modelDef.union.variants)) {
-        const variantModelName = `${modelKey}${formatVariantName(variantName)}`;
+        const variantModelName = unionVariantName(modelKey, variantName);
         variantNames.push(variantModelName);
         unionByVariantName.set(variantModelName, modelKey);
       }
@@ -106,7 +107,7 @@ export function generateModelMetadataFromChain(
   }
 
   // Upgrade imports (only if there are upgrades)
-  const upgradeNames = [...recordNames, ...unionNames].map(n => `${n}Upgrades`);
+  const upgradeNames = [...recordNames, ...unionNames].map(n => upgradesName(n));
   const needsUpgradeRegistry = chain.length > 1 || unionNames.length > 0;
   if (needsUpgradeRegistry && upgradeNames.length > 0) {
     output += `import { ${upgradeNames.join(", ")} } from "${INTERNAL_UPGRADES_PATH}";\n`;
@@ -158,8 +159,7 @@ export function generateModelMetadataFromChain(
 
       // Generate variant models
       for (const variantName of Object.keys(union.variants)) {
-        const formattedVariant = formatVariantName(variantName);
-        const variantTypeName = `${modelKey}${formattedVariant}`;
+        const variantTypeName = unionVariantName(modelKey, variantName);
         const variantMetadata: string[] = [];
         variantMetadata.push(`    discriminant: "${union.discriminant}",`);
         variantMetadata.push(`    name: "${variantTypeName}",`);
@@ -184,8 +184,7 @@ export function generateModelMetadataFromChain(
     } else if (modelDef.type === "union") {
       modelEntries.push(`  ${modelKey}: ${modelName(modelKey)}`);
       for (const variantName of Object.keys(modelDef.union.variants)) {
-        const formattedVariant = formatVariantName(variantName);
-        const variantTypeName = `${modelKey}${formattedVariant}`;
+        const variantTypeName = unionVariantName(modelKey, variantName);
         modelEntries.push(`  ${variantTypeName}: ${modelName(variantTypeName)}`);
       }
     }
@@ -197,8 +196,8 @@ export function generateModelMetadataFromChain(
   if (needsUpgradeRegistry && allUpgradeNames.length > 0) {
     // A variant model uses its union's registry, which finds the variant by its discriminant.
     const upgradeEntries = [
-      ...allUpgradeNames.map(n => `        ${n}: ${n}Upgrades,`),
-      ...variantNames.map(n => `        ${n}: ${unionByVariantName.get(n)}Upgrades,`),
+      ...allUpgradeNames.map(n => `        ${n}: ${upgradesName(n)},`),
+      ...variantNames.map(n => `        ${n}: ${upgradesName(unionByVariantName.get(n)!)},`),
     ].join("\n");
     upgradesBlock = `      upgrades: {\n${upgradeEntries}\n      },\n`;
   } else {
