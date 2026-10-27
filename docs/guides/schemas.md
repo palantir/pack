@@ -14,7 +14,7 @@ A **union** is a choice between several record variants, defined with [`defineUn
 
 ## Versions
 
-A schema is a **chain of versions**. Version 1 is a single call to [`defineSchema`](/api/schema/functions/defineSchema). Each later version builds on the previous one with [`nextSchema`](/api/schema/functions/nextSchema), composing one or more named [`defineSchemaUpdate`](/api/schema/functions/defineSchemaUpdate) steps.
+A schema is a **chain of versions**. Version 1.0 is a single call to [`defineSchema`](/api/schema/functions/defineSchema). Each later version builds on the previous one with [`nextSchema`](/api/schema/functions/nextSchema), composing one or more named [`defineSchemaUpdate`](/api/schema/functions/defineSchemaUpdate) steps. `nextSchema(previous)` creates the next major version; `nextSchema(previous, { bump: "minor" })` creates the next minor version, which may only add fields and new models (see [Minor versions](./versioning.md#minor-versions)).
 
 The module's **default export must be the latest version**. The generator follows the chain back to the minimum supported version, emitting per-version types and the machinery to upgrade older documents.
 
@@ -36,8 +36,6 @@ For a modifying existing unions:
 - `.build()` — return the updated union.
 
 **Note:** a variant cannot be changed or removed from a union once added. This is to ensure documents written at older versions are always readable by newer clients.
-
-**Note:** the backend doesn't yet accept new variants on a union that is already deployed, so `addVariant` only works in development mode or before the document type is first deployed.
 
 ## Example
 

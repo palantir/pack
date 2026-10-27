@@ -28,6 +28,7 @@ export interface ShapeBox__Internal {
   readonly bottom: number;
   readonly color?: (string | undefined);
   readonly fillColor?: (string | undefined);
+  readonly label?: (string | undefined);
   readonly left: number;
   readonly opacity?: number;
   readonly right: number;
@@ -40,6 +41,7 @@ export interface ShapeCircle__Internal {
   readonly bottom: number;
   readonly color?: (string | undefined);
   readonly fillColor?: (string | undefined);
+  readonly label?: (string | undefined);
   readonly left: number;
   readonly opacity?: number;
   readonly right: number;
@@ -138,6 +140,7 @@ export interface ShapeBox__v2 {
 export interface ShapeBox__v3 {
   readonly bottom: number;
   readonly fillColor?: (string | undefined);
+  readonly label?: (string | undefined);
   readonly left: number;
   readonly opacity: number;
   readonly right: number;
@@ -169,6 +172,7 @@ export interface ShapeCircle__v2 {
 export interface ShapeCircle__v3 {
   readonly bottom: number;
   readonly fillColor?: (string | undefined);
+  readonly label?: (string | undefined);
   readonly left: number;
   readonly opacity: number;
   readonly right: number;

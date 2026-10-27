@@ -9,7 +9,7 @@ import type { ShapeBox__v1, ShapeBox__v2, ShapeCircle__v1, ShapeCircle__v2, Shap
  * call site. Derived fields receive their declared source fields; required
  * additive fields receive no arguments. Optional additive fields are absent
  * — `undefined` is a legal value at the new version, so the runtime lens
- * leaves them alone.
+ * leaves them alone. Keys are `v2` for version 2.0 and `v2_1` for 2.1.
  */
 export interface DocumentUpgradeFns {
   ShapeBox: {

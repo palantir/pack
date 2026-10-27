@@ -42,6 +42,7 @@ describe("resolveIrInput", () => {
     expect(resolved).toEqual({
       ir: ir(2),
       latestVersion: 2,
+      latestMinorVersion: 0,
       minSupportedVersion: 2,
     });
   });
@@ -59,8 +60,25 @@ describe("resolveIrInput", () => {
     expect(resolved).toEqual({
       ir: ir(3),
       latestVersion: 3,
+      latestMinorVersion: 0,
       minSupportedVersion: 1,
     });
+  });
+
+  it("selects the latest minor version when entries share a major version", () => {
+    const latestIr = { ...ir(3), name: "Test v3.1" };
+    const resolved = resolveIrInput({
+      latestVersion: 3,
+      chain: [
+        { version: 1, ir: ir(1) },
+        { version: 3, ir: ir(3) },
+        { version: 3, minorVersion: 1, ir: latestIr },
+      ],
+    }, "chain.json");
+
+    expect(resolved.ir).toBe(latestIr);
+    expect(resolved.latestVersion).toBe(3);
+    expect(resolved.latestMinorVersion).toBe(1);
   });
 
   it("carries owningApplicationId through from a chain payload", () => {

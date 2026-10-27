@@ -22,6 +22,7 @@ import type {
   IModelDef,
 } from "../../../lib/pack-docschema-api/pack-docschema-ir/index.js";
 import {
+  collapseChainToMajors,
   resolveSchemaChain,
   stripDeprecatedFieldsForSdk,
   type VersionedIrEntry,
@@ -65,7 +66,10 @@ describe("resolveSchemaChain provenance", () => {
   });
 
   it("caps the chain at maxVersion", () => {
-    const { chain, latestVersion, minVersion } = resolveSchemaChain(v2, 1, {}, 1);
+    const { chain, latestVersion, minVersion } = resolveSchemaChain(v2, 1, {}, {
+      major: 1,
+      minor: 0,
+    });
 
     expect(chain.map(entry => entry.version)).toEqual([1]);
     expect(latestVersion).toBe(1);
@@ -73,7 +77,7 @@ describe("resolveSchemaChain provenance", () => {
   });
 
   it("rejects a maxVersion that is not in the chain", () => {
-    expect(() => resolveSchemaChain(v2, undefined, {}, 3)).toThrow(
+    expect(() => resolveSchemaChain(v2, undefined, {}, { major: 3, minor: 0 })).toThrow(
       "maxVersion 3 is not in the schema chain",
     );
   });
@@ -135,5 +139,60 @@ describe("resolveSchemaChain — union provenance", () => {
       if (union.type !== "union") throw new Error("NodeShape should be a union");
       expect(union.union.metadata.addedInVersion).toBe(1);
     }
+  });
+});
+
+describe("resolveSchemaChain minor versions", () => {
+  const v1 = defineSchema({
+    ShapeBox: defineRecord("ShapeBox", { docs: "A box", fields: { color: P.String } }),
+  });
+  const v2 = nextSchema(v1)
+    .addSchemaUpdate(defineSchemaUpdate("addFill", (schema: P.SchemaBuilder<typeof v1.models>) => ({
+      ShapeBox: schema.ShapeBox
+        .addField("fillColor", P.Optional(P.String), { derivedFrom: ["color"] })
+        .build(),
+    })))
+    .build();
+  const v2_1 = nextSchema(v2, { bump: "minor" })
+    .addSchemaUpdate(
+      defineSchemaUpdate("addLabel", (schema: P.SchemaBuilder<typeof v2.models>) => ({
+        ShapeBox: schema.ShapeBox.addField("label", P.Optional(P.String)).build(),
+      })),
+    )
+    .build();
+
+  it("records the minor version on chain entries and on fields added in a minor version", () => {
+    const { chain, latestVersion } = resolveSchemaChain(v2_1);
+
+    expect(chain.map(entry => [entry.version, entry.minorVersion])).toEqual([
+      [1, undefined],
+      [2, undefined],
+      [2, 1],
+    ]);
+    expect(latestVersion).toBe(2);
+
+    const fields = fieldsByKey(chain[2]!, "ShapeBox");
+    expect(fields.label!.metadata).toEqual({ addedInVersion: 2, addedInMinorVersion: 1 });
+    expect(fields.fillColor!.metadata).toEqual({ addedInVersion: 2 });
+  });
+
+  it("caps the chain at a minor version or at a .0 version", () => {
+    expect(resolveSchemaChain(v2_1, undefined, {}, { major: 2, minor: 1 }).chain).toHaveLength(3);
+    expect(resolveSchemaChain(v2_1, undefined, {}, { major: 2, minor: 0 }).chain).toHaveLength(2);
+    expect(() => resolveSchemaChain(v2_1, undefined, {}, { major: 2, minor: 2 })).toThrow(
+      "maxVersion 2.2 is not in the schema chain (available versions: 1, 2, 2.1)",
+    );
+  });
+
+  it("collapseChainToMajors keeps the last minor's IR and the major's migrations", () => {
+    const { chain } = resolveSchemaChain(v2_1);
+    const collapsed = collapseChainToMajors(chain);
+
+    expect(collapsed.map(entry => entry.version)).toEqual([1, 2]);
+    expect(collapsed[1]!.minorVersion).toBeUndefined();
+    expect(fieldsByKey(collapsed[1]!, "ShapeBox").label).toBeDefined();
+    expect(collapsed[1]!.migrations).toEqual({
+      ShapeBox: { fillColor: { derivedFrom: ["color"] } },
+    });
   });
 });

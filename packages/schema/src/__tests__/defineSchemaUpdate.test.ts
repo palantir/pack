@@ -520,3 +520,123 @@ describe("defineSchemaUpdate", () => {
     assertExactKeys<typeof schemaV2.models.Entity.variants, "person" | "organization">();
   });
 });
+
+describe("nextSchema minor versions", () => {
+  const Box = defineRecord("Box", { docs: "A box", fields: { color: P.String } });
+  const Circle = defineRecord("Circle", { docs: "A circle", fields: { radius: P.Double } });
+  const schemaV1 = defineSchema({
+    Box,
+    Circle,
+    Shape: defineUnion("Shape", { docs: "A shape", variants: { box: Box } }),
+  });
+
+  const addNote = defineSchemaUpdate(
+    "addNote",
+    (schema: SchemaBuilder<typeof schemaV1.models>) => ({
+      Box: schema.Box.addField("note", P.Optional(P.String)).build(),
+    }),
+  );
+
+  it("should keep the major version and bump the minor version", () => {
+    const schemaV1_1 = nextSchema(schemaV1, { bump: "minor" }).addSchemaUpdate(addNote).build();
+    const schemaV1_2 = nextSchema(schemaV1_1, { bump: "minor" }).build();
+
+    expect(schemaV1_1.version).toBe(1);
+    expect(schemaV1_1.minorVersion).toBe(1);
+    expect(schemaV1_1.previous).toBe(schemaV1);
+    expect(schemaV1_2.version).toBe(1);
+    expect(schemaV1_2.minorVersion).toBe(2);
+    expect(schemaV1_2.models.Box.fields.note).toEqual({
+      type: "optional",
+      item: { type: "string" },
+    });
+  });
+
+  it("should reset the minor version on the next major version", () => {
+    const schemaV1_1 = nextSchema(schemaV1, { bump: "minor" }).addSchemaUpdate(addNote).build();
+    const schemaV2 = nextSchema(schemaV1_1).build();
+
+    expect(schemaV2.version).toBe(2);
+    expect(schemaV2.minorVersion).toBeUndefined();
+    expect("minorVersion" in nextSchema(schemaV1).build()).toBe(false);
+  });
+
+  it("should allow new models in a minor version", () => {
+    const schemaV1_1 = nextSchema(schemaV1, { bump: "minor" })
+      .addSchemaUpdate(defineSchemaUpdate("addLine", () => ({
+        Line: defineRecord("Line", { docs: "A line", fields: { length: P.Double } }),
+      })))
+      .build();
+
+    expect(schemaV1_1.models.Line.fields.length).toEqual({ type: "double" });
+  });
+
+  it("should allow a required field in a minor version", () => {
+    const schemaV1_1 = nextSchema(schemaV1, { bump: "minor" })
+      .addSchemaUpdate(defineSchemaUpdate("addOpacity", schema => ({
+        Box: schema.Box.addField("opacity", P.Double).build(),
+      })))
+      .build();
+
+    expect(schemaV1_1.models.Box.fields.opacity).toEqual({ type: "double" });
+  });
+
+  it("should reject derivedFrom in a minor version", () => {
+    expect(() =>
+      nextSchema(schemaV1, { bump: "minor" })
+        .addSchemaUpdate(defineSchemaUpdate("addFillColor", schema => ({
+          Box: schema.Box.addField("fillColor", P.Optional(P.String), { derivedFrom: ["color"] })
+            .build(),
+        })))
+        .build()
+    ).toThrow("Field \"Box.fillColor\" cannot use derivedFrom in minor version 1.1.");
+  });
+
+  it("should reject a deprecation in a minor version", () => {
+    expect(() =>
+      nextSchema(schemaV1, { bump: "minor" })
+        .addSchemaUpdate(defineSchemaUpdate("deprecateColor", schema => ({
+          Box: schema.Box.deprecateField("color").build(),
+        })))
+        .build()
+    ).toThrow("Field \"Box.color\" cannot be deprecated in minor version 1.1.");
+  });
+
+  it("should reject adding a union variant in a minor version", () => {
+    expect(() =>
+      nextSchema(schemaV1, { bump: "minor" })
+        .addSchemaUpdate(defineSchemaUpdate("addCircle", schema => ({
+          Shape: schema.Shape.addVariant("circle", Circle).build(),
+        })))
+        .build()
+    ).toThrow("Union \"Shape\" cannot add variants in minor version 1.1: circle.");
+  });
+
+  it("should reject removing a union variant in a minor version", () => {
+    expect(() =>
+      nextSchema(schemaV1, { bump: "minor" })
+        .addSchemaUpdate(defineSchemaUpdate("replaceBox", () => ({
+          Shape: defineUnion("Shape", { docs: "A shape", variants: { circle: Circle } }),
+        })))
+        .build()
+    ).toThrow("Union \"Shape\" cannot remove variants in minor version 1.1: box.");
+  });
+
+  it("should keep deprecations from the major version in a minor version", () => {
+    const schemaV2 = nextSchema(schemaV1)
+      .addSchemaUpdate(defineSchemaUpdate("deprecateColor", schema => ({
+        Box: schema.Box.deprecateField("color", "Use fillColor.").build(),
+      })))
+      .build();
+    const schemaV2_1 = nextSchema(schemaV2, { bump: "minor" })
+      .addSchemaUpdate(defineSchemaUpdate("addNote", schema => ({
+        Box: schema.Box.addField("note", P.Optional(P.String)).build(),
+      })))
+      .build();
+
+    expect(schemaV2_1.deprecations?.Box?.color).toEqual({
+      fromVersion: 2,
+      message: "Use fillColor.",
+    });
+  });
+});

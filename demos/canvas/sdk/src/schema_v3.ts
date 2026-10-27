@@ -11,7 +11,8 @@ export const ShapeBoxSchema_v3 = z.object({
   top: z.number(),
   fillColor: z.string().optional(),
   strokeColor: z.string().optional(),
-  opacity: z.number()
+  opacity: z.number(),
+  label: z.string().optional()
 }).passthrough() satisfies ZodType<ShapeBox_v3>;
 
 export const ShapeCircleSchema_v3 = z.object({
@@ -21,7 +22,8 @@ export const ShapeCircleSchema_v3 = z.object({
   top: z.number(),
   fillColor: z.string().optional(),
   strokeColor: z.string().optional(),
-  opacity: z.number()
+  opacity: z.number(),
+  label: z.string().optional()
 }).passthrough() satisfies ZodType<ShapeCircle_v3>;
 
 export const ShapeAddedActivitySchema_v3 = z.object({

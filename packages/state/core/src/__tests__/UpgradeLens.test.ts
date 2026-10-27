@@ -28,6 +28,26 @@ const primitive: FieldTypeDescriptor = { kind: "primitive" };
 const optionalPrimitive: FieldTypeDescriptor = { kind: "optional", inner: primitive };
 
 describe("applyReadLens", () => {
+  it("uses the minor-version upgrade fn key for a step added in a minor version", () => {
+    const registry: UpgradeRegistry = {
+      modelName: "Shape",
+      allFields: {
+        color: { type: primitive },
+        label: { type: primitive, addedInVersion: 1 },
+      },
+      steps: [{
+        addedInVersion: 1,
+        addedInMinorVersion: 1,
+        fields: { label: { derivedFrom: [] } },
+      }],
+    };
+    const upgradeFns: UpgradeFns = { Shape: { v1_1: { label: () => "Untitled" } } };
+
+    const result = applyReadLens({ color: "blue" }, registry, { Shape: registry }, upgradeFns);
+
+    expect(result).toEqual({ color: "blue", label: "Untitled" });
+  });
+
   it("applies forward transform when source fields are present and target is absent", () => {
     const registry: UpgradeRegistry = {
       modelName: "ShapeBox",

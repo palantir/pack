@@ -13,6 +13,7 @@ export interface ShapeBox_v3 {
   readonly fillColor?: string;
   readonly strokeColor?: string;
   readonly opacity: number;
+  readonly label?: string;
 }
 
 /**
@@ -26,6 +27,7 @@ export interface ShapeCircle_v3 {
   readonly fillColor?: string;
   readonly strokeColor?: string;
   readonly opacity: number;
+  readonly label?: string;
 }
 
 /**
