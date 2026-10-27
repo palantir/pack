@@ -17,6 +17,7 @@
 import { consola } from "consola";
 import fs from "fs-extra";
 import path from "path";
+import { assertSdkNamesUnique } from "./assertSdkNamesUnique.js";
 import { generateDocumentTypeFromChain } from "./generateDocumentTypeFromSchema.js";
 import { generateIndexFromChain } from "./generateIndexFromSchema.js";
 import { generateInternalFromChain } from "./generateInternalFromSchema.js";
@@ -36,6 +37,7 @@ export async function writeAllSdkFiles(
   outputDir: string,
   minSupportedVersion: number | undefined,
 ): Promise<void> {
+  assertSdkNamesUnique(resolved.chain, minSupportedVersion);
   await fs.ensureDir(outputDir);
 
   // Versioned types

@@ -15,14 +15,18 @@
  */
 
 import { UNKNOWN_UNION_VARIANT } from "@palantir/pack.document-schema.model-types";
-import { formatVariantName } from "@palantir/pack.schema";
 import type { IRealTimeDocumentSchema } from "../../lib/pack-docschema-api/pack-docschema-ir/index.js";
 import { GENERATED_FILE_HEADER } from "../generatedFileHeader.js";
 import { convertFieldTypeToZodSchema } from "../ir/irFieldHelpers.js";
-import { UNKNOWN_VARIANT_SUFFIX } from "../unknownVariantSuffix.js";
 import type { ResolvedIrChain, VersionedIrEntry } from "./resolveSchemaChain.js";
 import { resolveMinVersion } from "./resolveSchemaChain.js";
-import { typesFilePath, versionedSchemaName, versionedTypeName } from "./runtimeSchema.js";
+import {
+  schemaName,
+  typesFilePath,
+  unionVariantName,
+  versionedSchemaName,
+  versionedTypeName,
+} from "./runtimeSchema.js";
 
 export interface VersionedZodOutput {
   /** schema_vN.ts files keyed by version number */
@@ -49,9 +53,7 @@ function generateZodSchemasForVersion(
     } else if (modelDef.type === "union") {
       typeNames.push(versionedTypeName(modelKey, version));
       for (const variantName of [...Object.keys(modelDef.union.variants), UNKNOWN_UNION_VARIANT]) {
-        typeNames.push(
-          `${versionedTypeName(modelKey, version)}${formatVariantName(variantName)}`,
-        );
+        typeNames.push(unionVariantName(versionedTypeName(modelKey, version), variantName));
       }
     }
   }
@@ -92,12 +94,13 @@ function generateZodSchemasForVersion(
 
     const union = modelDef.union;
     const discriminantField = union.discriminant;
+    const unionZodSchemaName = versionedSchemaName(modelKey, version);
+    const typeName = versionedTypeName(modelKey, version);
     const variantSchemaNames: string[] = [];
 
     for (const [variantName, variantModelKey] of Object.entries(union.variants)) {
-      const formattedVariant = formatVariantName(variantName);
-      const variantZodSchemaName = `${versionedSchemaName(modelKey, version)}${formattedVariant}`;
-      const variantTypeName = `${versionedTypeName(modelKey, version)}${formattedVariant}`;
+      const variantZodSchemaName = unionVariantName(unionZodSchemaName, variantName);
+      const variantTypeName = unionVariantName(typeName, variantName);
       variantSchemaNames.push(variantZodSchemaName);
 
       // Look up the variant's model to check if it's a record
@@ -118,16 +121,14 @@ function generateZodSchemasForVersion(
       }
     }
 
-    const unknownSchemaName = `${versionedSchemaName(modelKey, version)}${UNKNOWN_VARIANT_SUFFIX}`;
-    const unknownTypeName = `${versionedTypeName(modelKey, version)}${UNKNOWN_VARIANT_SUFFIX}`;
+    const unknownSchemaName = unionVariantName(unionZodSchemaName, UNKNOWN_UNION_VARIANT);
+    const unknownTypeName = unionVariantName(typeName, UNKNOWN_UNION_VARIANT);
     output += `export const ${unknownSchemaName} = z.object({\n`;
     output += `  ${discriminantField}: z.literal("${UNKNOWN_UNION_VARIANT}"),\n`;
     output += `  rawValue: z.unknown()\n`;
     output += `}) satisfies ZodType<${unknownTypeName}>;\n\n`;
     variantSchemaNames.push(unknownSchemaName);
 
-    const unionZodSchemaName = versionedSchemaName(modelKey, version);
-    const typeName = versionedTypeName(modelKey, version);
     output +=
       `export const ${unionZodSchemaName} = z.discriminatedUnion("${discriminantField}", [\n  ${
         variantSchemaNames.join(",\n  ")
@@ -151,19 +152,18 @@ function generateSchemaReExport(
     if (modelDef.type === "record") {
       const versioned = versionedSchemaName(modelKey, version);
       reExports.push(
-        `export { ${versioned} as ${modelKey}Schema } from "./schema_v${version}.js";`,
+        `export { ${versioned} as ${schemaName(modelKey)} } from "./schema_v${version}.js";`,
       );
     } else if (modelDef.type === "union") {
       const versioned = versionedSchemaName(modelKey, version);
       reExports.push(
-        `export { ${versioned} as ${modelKey}Schema } from "./schema_v${version}.js";`,
+        `export { ${versioned} as ${schemaName(modelKey)} } from "./schema_v${version}.js";`,
       );
 
       // Also re-export union variant schemas
       for (const variantName of Object.keys(modelDef.union.variants)) {
-        const formattedVariant = formatVariantName(variantName);
-        const versionedVariant = `${versionedSchemaName(modelKey, version)}${formattedVariant}`;
-        const unversionedVariant = `${modelKey}${formattedVariant}Schema`;
+        const versionedVariant = unionVariantName(versioned, variantName);
+        const unversionedVariant = schemaName(unionVariantName(modelKey, variantName));
         reExports.push(
           `export { ${versionedVariant} as ${unversionedVariant} } from "./schema_v${version}.js";`,
         );

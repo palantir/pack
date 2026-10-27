@@ -15,7 +15,6 @@
  */
 
 import { UNKNOWN_UNION_VARIANT } from "@palantir/pack.document-schema.model-types";
-import { formatVariantName } from "@palantir/pack.schema";
 import { GENERATED_FILE_HEADER } from "../generatedFileHeader.js";
 import type { ResolvedIrChain } from "./resolveSchemaChain.js";
 import { resolveMinVersion } from "./resolveSchemaChain.js";
@@ -25,8 +24,10 @@ import {
   knownTypeName,
   MODELS_PATH,
   narrowKnownFunctionName,
+  typeGuardName,
   TYPES_REEXPORT_PATH,
   typesFilePath,
+  unionVariantName,
   VERSIONED_DOC_REF_PATH,
   versionedTypeName,
   VERSIONS_PATH,
@@ -88,10 +89,9 @@ export function generateIndexFromChain(
         for (
           const variantName of [...Object.keys(modelDef.union.variants), UNKNOWN_UNION_VARIANT]
         ) {
-          const formattedVariant = formatVariantName(variantName);
-          const variantTypeName = `${versionedTypeName(modelKey, version)}${formattedVariant}`;
+          const variantTypeName = unionVariantName(unionTypeName, variantName);
           typeNames.push(variantTypeName);
-          guardNames.push(`is${variantTypeName}`);
+          guardNames.push(typeGuardName(variantTypeName));
         }
       }
     }

@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+import { formatVariantName } from "@palantir/pack.schema";
+
 /** Versioned read type name: `RecordName_vN` */
 export function versionedTypeName(exportName: string, version: number): string {
   return `${exportName}_v${version}`;
@@ -48,6 +50,66 @@ export function modelName(exportName: string): string {
 export function schemaName(exportName: string): string {
   return `${exportName}Schema`;
 }
+
+/** Union variant name: (`Shape_v1`, `"my-box"`) -> `Shape_v1MyBox`. */
+export function unionVariantName(unionName: string, variantKey: string): string {
+  return `${unionName}${formatVariantName(variantKey)}`;
+}
+
+/** Type guard function name: `isShape_v1Circle` */
+export function typeGuardName(typeName: string): string {
+  return `is${typeName}`;
+}
+
+/** Upgrade registry constant name: `RecordNameUpgrades` */
+export function upgradesName(modelKey: string): string {
+  return `${modelKey}Upgrades`;
+}
+
+/** All-versions internal type name: `RecordName__Internal` */
+export function internalTypeName(modelKey: string): string {
+  return `${modelKey}__Internal`;
+}
+
+/** Per-version internal type name: `RecordName__vN` */
+export function versionedInternalTypeName(modelKey: string, version: number): string {
+  return `${modelKey}__v${version}`;
+}
+
+/** Internal Zod schema name: `RecordNameInternalSchema` */
+export function internalSchemaName(modelKey: string): string {
+  return `${modelKey}InternalSchema`;
+}
+
+/** Versioned document ref type name: `VersionedDocRef_vN` */
+export function versionedDocRefName(version: number): string {
+  return `VersionedDocRef_v${version}`;
+}
+
+/**
+ * Names the SDK uses in the same files as model names, so no model may produce one. Other
+ * library names only appear next to suffixed names like `Foo_v1`, so they can't clash.
+ */
+export const RESERVED_SDK_NAMES: readonly string[] = [
+  // Fixed SDK exports
+  "DOCUMENT_TYPE_DESCRIPTION",
+  "DOCUMENT_TYPE_NAME",
+  "DocumentModel",
+  "DocumentUpgradeFns",
+  "LatestVersion",
+  "MinSupportedVersion",
+  "SupportedVersions",
+  "VersionedDocRef",
+  "asVersioned",
+  "matchVersion",
+  // Imported or called by models.ts
+  "DocumentSchema",
+  "Metadata",
+  "RecordModel",
+  "ReturnType",
+  "UnionModel",
+  "UpgradeFns",
+];
 
 /** Per-version types file path: `./types_vN.js` */
 export function typesFilePath(version: number): string {

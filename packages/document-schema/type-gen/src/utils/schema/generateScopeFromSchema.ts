@@ -21,6 +21,7 @@ import {
   modelName,
   MODELS_PATH,
   typesFilePath,
+  versionedDocRefName,
   versionedTypeName,
   versionedWriteTypeName,
   writeTypesFilePath,
@@ -95,7 +96,8 @@ export function generateScopeFromChain(
 
   // Generate per-version VersionedDocRef interfaces extending DocumentRef.
   for (const { version, ir } of supportedVersions) {
-    output += `export interface VersionedDocRef_v${version} extends DocumentRef<DocumentModel> {\n`;
+    const docRefName = versionedDocRefName(version);
+    output += `export interface ${docRefName} extends DocumentRef<DocumentModel> {\n`;
     output += `  readonly version: ${version};\n`;
 
     // updateRecord overloads — record models get write types, union models get Partial<read>
@@ -141,12 +143,8 @@ export function generateScopeFromChain(
   }
 
   // Union type
-  if (supportedVersions.length === 1) {
-    output += `export type VersionedDocRef = VersionedDocRef_v${supportedVersions[0]!.version};\n`;
-  } else {
-    const unionMembers = supportedVersions.map(v => `VersionedDocRef_v${v.version}`).join(" | ");
-    output += `export type VersionedDocRef = ${unionMembers};\n`;
-  }
+  const unionMembers = supportedVersions.map(v => versionedDocRefName(v.version)).join(" | ");
+  output += `export type VersionedDocRef = ${unionMembers};\n`;
 
   // asVersioned — identity cast to unlock version-specific write overloads
   output += `\n/** Narrow a DocumentRef to a version-discriminated type for type-safe writes. */\n`;
@@ -156,7 +154,7 @@ export function generateScopeFromChain(
 
   // matchVersion — exhaustive version handler
   const handlerProps = supportedVersions.map(
-    v => `  readonly ${v.version}: (doc: VersionedDocRef_v${v.version}) => R;`,
+    v => `  readonly ${v.version}: (doc: ${versionedDocRefName(v.version)}) => R;`,
   ).join("\n");
 
   output += `\n/**\n`;

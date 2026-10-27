@@ -16,6 +16,7 @@
 
 import { CommanderError } from "commander";
 import type { IRealTimeDocumentSchema } from "../../lib/pack-docschema-api/pack-docschema-ir/index.js";
+import { assertSdkNamesUnique } from "../../utils/schema/assertSdkNamesUnique.js";
 import { type IrChainPayload, resolveMinVersion } from "../../utils/schema/resolveSchemaChain.js";
 
 export interface ResolvedIrInput {
@@ -55,6 +56,7 @@ function resolveFromChain(payload: IrChainPayload, irPath: string): ResolvedIrIn
       `IR chain payload at ${irPath} has no entry matching latestVersion ${latestVersion}`,
     );
   }
+  assertSdkNamesUnique(payload.chain, payload.minSupportedVersion);
   return {
     ir: latestEntry.ir,
     latestVersion,
