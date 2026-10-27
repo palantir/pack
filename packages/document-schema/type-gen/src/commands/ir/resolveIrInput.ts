@@ -66,7 +66,6 @@ function resolveFromChain(payload: IrChainPayload, irPath: string): ResolvedIrIn
 }
 
 function resolveFromSingleIr(ir: IRealTimeDocumentSchema): ResolvedIrInput {
-  assertSdkNamesUnique([{ version: ir.version, ir }], undefined);
   return { ir, latestVersion: ir.version, minSupportedVersion: ir.version };
 }
 

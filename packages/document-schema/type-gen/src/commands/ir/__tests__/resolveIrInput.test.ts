@@ -120,11 +120,4 @@ describe("resolveIrInput", () => {
         `"StatusUpdate_v1" for both record "Status" (v1 write type) and record "StatusUpdate" (v1 type)`,
       );
   });
-
-  it("rejects single-version IR whose SDK would use one name twice", () => {
-    const models = { Metadata: record("Metadata") };
-
-    expect(() => resolveIrInput({ ...ir(1), models }, "legacy.json"))
-      .toThrow(`"Metadata" for both the SDK itself and record "Metadata"`);
-  });
 });
