@@ -29,6 +29,8 @@ import { RemoteCursor } from "./RemoteCursor.js";
 
 const PRIMARY_COLOR = "#0066cc";
 const DEFAULT_SHAPE_COLOR = "#000000";
+const LABEL_COLOR = "#1c2127";
+const TITLE_COLOR = "#5f6b7c";
 
 interface UserPresence {
   readonly cursor?: { readonly x: number; readonly y: number };
@@ -113,6 +115,12 @@ const ConnectedShapeRenderer = memo(function ShapeRenderer({
           x={shape.left}
           y={shape.top}
         />
+        <ShapeLabel
+          label={shape.label}
+          x={(shape.left + shape.right) / 2}
+          y={(shape.top + shape.bottom) / 2}
+        />
+        <ShapeTitle shape={shape} />
         {isSelected && (
           <>
             <rect
@@ -167,6 +175,8 @@ const ConnectedShapeRenderer = memo(function ShapeRenderer({
         stroke={strokeColor}
         strokeWidth={2}
       />
+      <ShapeLabel label={shape.label} x={centerX} y={centerY} />
+      <ShapeTitle shape={shape} />
       {isSelected && (
         <>
           <ellipse
@@ -205,6 +215,34 @@ const ConnectedShapeRenderer = memo(function ShapeRenderer({
     </g>
   );
 });
+
+// `label` was added in schema 3.1, so shapes from older apps have none.
+function ShapeLabel({ label, x, y }: { label: string | undefined; x: number; y: number }) {
+  if (label == null || label.length === 0) return null;
+
+  return (
+    <text
+      dominantBaseline="central"
+      fill={LABEL_COLOR}
+      fontSize={14}
+      pointerEvents="none"
+      textAnchor="middle"
+      x={x}
+      y={y}
+    >
+      {label}
+    </text>
+  );
+}
+
+// `title` was added in schema 3.2. Shapes from older apps get the upgrade function's default.
+function ShapeTitle({ shape }: { shape: KnownNodeShape }) {
+  return (
+    <text fill={TITLE_COLOR} fontSize={12} pointerEvents="none" x={shape.left} y={shape.top - 6}>
+      {shape.title}
+    </text>
+  );
+}
 
 export const CanvasContent = memo(function CanvasContent({
   canvasProps,

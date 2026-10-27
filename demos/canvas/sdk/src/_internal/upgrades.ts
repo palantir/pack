@@ -51,6 +51,7 @@ export const ShapeBoxUpgrades: UpgradeRegistry<"ShapeBox"> = {
     opacity: { type: { kind: "primitive" }, addedInVersion: 2 },
     right: { type: { kind: "primitive" }, addedInVersion: 1 },
     strokeColor: { type: { kind: "optional", inner: { kind: "primitive" } }, addedInVersion: 2 },
+    title: { type: { kind: "primitive" }, addedInVersion: 3 },
     top: { type: { kind: "primitive" }, addedInVersion: 1 },
   },
   steps: [
@@ -69,6 +70,15 @@ export const ShapeBoxUpgrades: UpgradeRegistry<"ShapeBox"> = {
       },
       removedFields: ["color"],
     },
+    {
+      addedInVersion: 3,
+      addedInMinorVersion: 2,
+      fields: {
+        title: {
+          derivedFrom: [],
+        },
+      },
+    },
   ],
 };
 
@@ -83,6 +93,7 @@ export const ShapeCircleUpgrades: UpgradeRegistry<"ShapeCircle"> = {
     opacity: { type: { kind: "primitive" }, addedInVersion: 2 },
     right: { type: { kind: "primitive" }, addedInVersion: 1 },
     strokeColor: { type: { kind: "optional", inner: { kind: "primitive" } }, addedInVersion: 2 },
+    title: { type: { kind: "primitive" }, addedInVersion: 3 },
     top: { type: { kind: "primitive" }, addedInVersion: 1 },
   },
   steps: [
@@ -100,6 +111,15 @@ export const ShapeCircleUpgrades: UpgradeRegistry<"ShapeCircle"> = {
         },
       },
       removedFields: ["color"],
+    },
+    {
+      addedInVersion: 3,
+      addedInMinorVersion: 2,
+      fields: {
+        title: {
+          derivedFrom: [],
+        },
+      },
     },
   ],
 };

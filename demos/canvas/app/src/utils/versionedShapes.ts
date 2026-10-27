@@ -32,9 +32,29 @@ export function toNodeShapeV1(shape: KnownNodeShape): NodeShape_v1 {
 }
 
 export function toNodeShapeV2(shape: KnownNodeShape): NodeShape_v2 {
+  const base = getShapeV2Base(shape);
+
+  return shape.shapeType === "box"
+    ? { ...base, shapeType: "box" }
+    : { ...base, shapeType: "circle" };
+}
+
+export function toNodeShapeV3(shape: KnownNodeShape): NodeShape_v3 {
+  const base = {
+    ...getShapeV2Base(shape),
+    title: shape.title,
+    ...(shape.label != null ? { label: shape.label } : {}),
+  };
+
+  return shape.shapeType === "box"
+    ? { ...base, shapeType: "box" }
+    : { ...base, shapeType: "circle" };
+}
+
+function getShapeV2Base(shape: KnownNodeShape) {
   const fillColor = shape.fillColor ?? getLegacyColor(shape);
   const strokeColor = shape.strokeColor ?? fillColor;
-  const base = {
+  return {
     bottom: shape.bottom,
     left: shape.left,
     right: shape.right,
@@ -43,14 +63,6 @@ export function toNodeShapeV2(shape: KnownNodeShape): NodeShape_v2 {
     ...(fillColor != null ? { fillColor } : {}),
     ...(strokeColor != null ? { strokeColor } : {}),
   };
-
-  return shape.shapeType === "box"
-    ? { ...base, shapeType: "box" }
-    : { ...base, shapeType: "circle" };
-}
-
-export function toNodeShapeV3(shape: KnownNodeShape): NodeShape_v3 {
-  return toNodeShapeV2(shape);
 }
 
 function getShapeColor(shape: KnownNodeShape): string | undefined {

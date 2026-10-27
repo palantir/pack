@@ -33,6 +33,7 @@ export interface ShapeBox__Internal {
   readonly opacity?: number;
   readonly right: number;
   readonly strokeColor?: (string | undefined);
+  readonly title?: string;
   readonly top: number;
 }
 
@@ -46,6 +47,7 @@ export interface ShapeCircle__Internal {
   readonly opacity?: number;
   readonly right: number;
   readonly strokeColor?: (string | undefined);
+  readonly title?: string;
   readonly top: number;
 }
 
@@ -145,6 +147,7 @@ export interface ShapeBox__v3 {
   readonly opacity: number;
   readonly right: number;
   readonly strokeColor?: (string | undefined);
+  readonly title: string;
   readonly top: number;
 }
 
@@ -177,6 +180,7 @@ export interface ShapeCircle__v3 {
   readonly opacity: number;
   readonly right: number;
   readonly strokeColor?: (string | undefined);
+  readonly title: string;
   readonly top: number;
 }
 

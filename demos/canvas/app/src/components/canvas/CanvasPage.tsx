@@ -192,13 +192,17 @@ function CanvasEditor({ doc, statusToaster, toaster, onOpenVersion }: CanvasEdit
       <CanvasToolbar
         canDelete={interaction.selectedShapeId != null}
         currentColor={interaction.currentColor}
+        currentLabel={interaction.currentLabel}
         currentOpacity={interaction.currentOpacity}
+        currentTitle={interaction.currentTitle}
         currentTool={interaction.currentTool}
         doc={doc}
         onColorChange={interaction.setColor}
         onDelete={interaction.deleteSelected}
+        onLabelChange={interaction.setLabel}
         onOpacityChange={interaction.setOpacity}
         onOpenVersion={onOpenVersion}
+        onTitleChange={interaction.setTitle}
         onToolChange={interaction.setTool}
       />
       <CanvasContent

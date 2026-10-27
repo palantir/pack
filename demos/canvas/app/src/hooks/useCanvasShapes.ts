@@ -21,6 +21,7 @@ import type { RecordId, RecordRef } from "@palantir/pack.document-schema.model-t
 import { isValidRecordRef } from "@palantir/pack.state.core";
 import { useRecords } from "@palantir/pack.state.react";
 import { useCallback } from "react";
+import { getNewShapeTitle } from "../utils/shapeTitles.js";
 
 export interface UseCanvasShapesResult {
   readonly addShape: (
@@ -78,7 +79,10 @@ export function useCanvasShapes(doc: VersionedDocRef): UseCanvasShapesResult {
         3: doc =>
           doc.withTransaction(
             () => {
-              void doc.setRecord(NodeShapeModel, id, v2ShapeData);
+              void doc.setRecord(NodeShapeModel, id, {
+                ...v2ShapeData,
+                title: getNewShapeTitle(shapeType),
+              });
             },
             doc.describeEdit(CanvasActivityModel, {
               activityType: "shapeAdded",

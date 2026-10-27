@@ -213,4 +213,17 @@ const schemaV3_1 = S.nextSchema(schemaV3, { bump: "minor" })
   .addSchemaUpdate(addShapeLabel)
   .build();
 
-export default schemaV3_1;
+// --- Schema change: add a required shape title ---
+const addShapeTitle = S.defineSchemaUpdate("addShapeTitle", schema => {
+  const ShapeBox = schema.ShapeBox.addField("title", S.String).build();
+  const ShapeCircle = schema.ShapeCircle.addField("title", S.String).build();
+  return { ShapeBox, ShapeCircle };
+});
+
+// --- Schema v3.2: a minor version with a required field. Shapes written by 3.0 and 3.1 apps have
+// no title, so the app supplies a `v3_2` upgrade function in `DocumentModel(...)` to fill it in.
+const schemaV3_2 = S.nextSchema(schemaV3_1, { bump: "minor" })
+  .addSchemaUpdate(addShapeTitle)
+  .build();
+
+export default schemaV3_2;
