@@ -96,12 +96,6 @@ export async function irUpdateSchemaHandler(options: IrUpdateSchemaOptions): Pro
         `  - ${violation.fieldPath}: ${violation.message} (${violation.violationType})`,
       );
     }
-    if (result.violations.some(violation => violation.violationType === "INCORRECT_VERSION")) {
-      consola.info(
-        "Schema versions must be applied one step at a time (e.g. 1.0 -> 1.1 -> 2.0)."
-          + " Build the IR for the next step with `type-gen schema ir --max-version <version>`.",
-      );
-    }
     throw new CommanderError(1, "ERRIRUPDATESCHEMA", "Schema validation failed");
   } catch (error) {
     if (error instanceof CommanderError) {
