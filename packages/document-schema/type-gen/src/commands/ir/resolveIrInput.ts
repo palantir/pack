@@ -26,7 +26,6 @@ import {
 export interface ResolvedIrInput {
   readonly ir: IRealTimeDocumentSchema;
   readonly latestVersion: number;
-  /** The minor version within `latestVersion`. 0 for a .0 version. */
   readonly latestMinorVersion: number;
   readonly minSupportedVersion: number;
   readonly owningApplicationId?: string;
@@ -54,7 +53,6 @@ function resolveFromChain(payload: IrChainPayload, irPath: string): ResolvedIrIn
     payload.chain,
     payload.minSupportedVersion,
   );
-  // The last entry is the latest version. Several entries can share a major (e.g. 2.0 and 2.1).
   const latestEntry = payload.chain[payload.chain.length - 1]!;
   assertSdkNamesUnique(payload.chain, payload.minSupportedVersion);
   return {

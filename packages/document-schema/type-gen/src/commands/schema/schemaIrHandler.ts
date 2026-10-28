@@ -114,7 +114,6 @@ export async function readPackConfig(configPath: string): Promise<PackConfigValu
   return { documentTypeName, documentTypeDescription, minSupportedVersion, owningApplicationId };
 }
 
-/** Parse `--max-version`: `2` means 2.0, `2.1` means 2.1. */
 function parseMaxVersion(maxVersion: string | undefined): FullSchemaVersion | undefined {
   if (maxVersion == null) {
     return undefined;
