@@ -69,7 +69,6 @@ export async function irUpdateSchemaHandler(options: IrUpdateSchemaOptions): Pro
       ontologyRid: options.ontologyRid,
       schema,
       version: latestVersion,
-      // Only sent for minor versions, so major-only updates still work on stacks without minor versions.
       ...(latestMinorVersion > 0 ? { schemaMinorVersion: latestMinorVersion } : {}),
       ...(options.forceOverwrite ? { forceOverwrite: true } : {}),
     };
