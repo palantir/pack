@@ -24,6 +24,8 @@ export type {
   ActivityEventDataDocumentDiscretionarySecurityUpdate,
   ActivityEventDataDocumentMandatorySecurityUpdate,
   ActivityEventDataDocumentRename,
+  ActivityEventDataPublishedVersionCreate,
+  ActivityEventDataPublishedVersionDelete,
   ActivityEventDataUnknown,
   ActivityEventId,
 } from "./types/ActivityEvent.js";

@@ -29,6 +29,8 @@ import type {
   ActivityEventDataDocumentDiscretionarySecurityUpdate,
   ActivityEventDataDocumentMandatorySecurityUpdate,
   ActivityEventDataDocumentRename,
+  ActivityEventDataPublishedVersionCreate,
+  ActivityEventDataPublishedVersionDelete,
   ChannelError,
   DocumentSchema,
   PresenceEvent,
@@ -114,6 +116,22 @@ function getActivityEventData(
         type: ActivityEventDataType.DOCUMENT_DISCRETIONARY_SECURITY_UPDATE,
       } satisfies ActivityEventDataDocumentDiscretionarySecurityUpdate;
 
+    case "publishedVersionCreate":
+      return {
+        description: eventData.description,
+        name: eventData.name,
+        publishedVersionId: eventData.ref,
+        type: ActivityEventDataType.PUBLISHED_VERSION_CREATE,
+      } satisfies ActivityEventDataPublishedVersionCreate;
+
+    case "publishedVersionDelete":
+      return {
+        description: eventData.description,
+        name: eventData.name,
+        publishedVersionId: eventData.ref,
+        type: ActivityEventDataType.PUBLISHED_VERSION_DELETE,
+      } satisfies ActivityEventDataPublishedVersionDelete;
+
     case "documentCustomEvent": {
       const { eventType, data } = eventData;
       const customPayload = readCustomPayload({
@@ -140,6 +158,8 @@ function getActivityEventData(
     }
 
     default: {
+      // Fails to compile when a @osdk/foundry.pack bump adds an event type this switch doesn't map.
+      eventData satisfies never;
       const unknownEventData = eventData as Record<string, unknown>;
       return {
         rawData: eventData,
