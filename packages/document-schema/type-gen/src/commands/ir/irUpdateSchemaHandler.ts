@@ -107,25 +107,7 @@ export async function irUpdateSchemaHandler(options: IrUpdateSchemaOptions): Pro
     if (error instanceof CommanderError) {
       throw error;
     }
-    if (isSchemaMinorVersionNotSupported(error)) {
-      consola.error(
-        "This Foundry stack can't store schema minor versions yet. Retry once it is upgraded,"
-          + " or publish a major version instead.",
-      );
-      throw new CommanderError(
-        1,
-        "ERRIRUPDATESCHEMA",
-        "Schema minor versions are not supported yet",
-      );
-    }
     consola.error("❌ Error during update-schema:", error);
     throw new CommanderError(1, "ERRIRUPDATESCHEMA", "Error updating schema from IR");
   }
-}
-
-/** True for the error a stack returns until it can store minor versions. */
-function isSchemaMinorVersionNotSupported(error: unknown): boolean {
-  return typeof error === "object"
-    && error != null
-    && (error as { errorName?: unknown }).errorName === "SchemaMinorVersionNotSupported";
 }
