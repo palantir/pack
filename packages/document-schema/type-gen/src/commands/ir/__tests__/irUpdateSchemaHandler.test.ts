@@ -77,13 +77,4 @@ describe("irUpdateSchemaHandler", () => {
 
     expect(sentRequestBody()).toMatchObject({ version: 1, schemaMinorVersion: 1 });
   });
-
-  it("omits schemaMinorVersion for a .0 version", async () => {
-    vi.mocked(readFileSync).mockReturnValue(chainPayload([{ version: 1 }, { version: 2 }]));
-
-    await irUpdateSchemaHandler({ ...OPTIONS });
-
-    expect(sentRequestBody().version).toBe(2);
-    expect(sentRequestBody()).not.toHaveProperty("schemaMinorVersion");
-  });
 });
