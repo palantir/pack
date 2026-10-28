@@ -40,10 +40,8 @@ export interface UseCanvasInteractionResult {
     onMouseUp: (e: MouseEvent<SVGSVGElement>) => void;
   };
   readonly currentColor: string;
-  /** The selected shape's label: "" when it has none, undefined when nothing is selected. */
   readonly currentLabel: string | undefined;
   readonly currentOpacity: number | undefined;
-  /** The selected shape's title, or undefined when nothing is selected. */
   readonly currentTitle: string | undefined;
   readonly currentTool: ToolMode;
   deleteSelected: () => void;
