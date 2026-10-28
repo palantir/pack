@@ -46,8 +46,9 @@ export interface ResolvedIrChain {
   latestVersion: number;
   minVersion: number;
   /**
-   * The chain before `collapseChainToMajors`, with every minor version. Upgrade steps come from
-   * this, so a field added in a minor version gets its own step. Defaults to `chain`.
+   * Every version, including minors (e.g. 3.0, 3.1, 3.2). `chain` merges these into one entry per
+   * major. Upgrade steps compare neighbors here, so `title` added in 3.2 gets a `v3_2` step.
+   * If absent, `chain` is used.
    */
   stepChain?: VersionedIrEntry[];
 }
@@ -306,11 +307,10 @@ export function stripDeprecatedFieldsForSdk(chain: VersionedIrEntry[]): Versione
 }
 
 /**
- * Collapse the chain to one entry per major version, for SDK generation.
+ * Merge each major's minor versions into one entry, for generating SDK types.
  *
- * Generated types are per major: each major uses its last minor's IR, so the SDK
- * includes every field known for that major. Migrations are merged from every
- * entry of the major, because they only live on the entry that introduced them.
+ * E.g. 3.0, 3.1 and 3.2 become one `3` entry that uses 3.2's IR, so `ShapeBox_v3` has every 3.x
+ * field. Migrations from all three are kept, because each lives only on the version that added it.
  */
 export function collapseChainToMajors(chain: VersionedIrEntry[]): VersionedIrEntry[] {
   const collapsed: VersionedIrEntry[] = [];
@@ -358,7 +358,7 @@ function mergeMigrations(
  *    app must supply a zero-arg thunk; `undefined` is not a legal value.
  *
  * Optional additive fields don't trigger it; the lens leaves them alone.
- * Pass the full chain (with minor versions) so fields added in a minor count.
+ * Pass every version (`stepChain`), so a required field added in a minor, like `title` in 3.2, counts.
  */
 export function chainNeedsUpgradeFns(chain: VersionedIrEntry[]): boolean {
   for (let i = 1; i < chain.length; i++) {
@@ -381,7 +381,7 @@ export function chainNeedsUpgradeFns(chain: VersionedIrEntry[]): boolean {
   return false;
 }
 
-/** Upgrade function key for a step: `v2` for 2.0, `v2_1` for 2.1. Matches the runtime read lens. */
+/** Upgrade function key for a step: `v2` for 2.0, `v2_1` for 2.1. Must match the key `applyReadLens` builds. */
 export function upgradeStepKey(major: number, minor: number): string {
   return minor > 0 ? `v${major}_${minor}` : `v${major}`;
 }

@@ -109,7 +109,7 @@ export interface SchemaVersionBuilder<T extends ModelDefs> {
   ): SchemaVersionBuilder<T & S>;
   /** Attach explicit field migrations, supplementing the `derivedFrom` sugar on `addField`. */
   withMigrations(migrations: VersionMigrations): SchemaVersionBuilder<T>;
-  /** Produce the finished {@link VersionedSchema}. Throws if a minor version breaks a minor-version rule. */
+  /** Produce the finished {@link VersionedSchema}. In a minor version, throws for `derivedFrom`, new deprecations, and union variant changes. */
   build(): VersionedSchema<T>;
 }
 
@@ -198,10 +198,11 @@ function getMinorVersion(schema: SchemaDefinition): number {
 }
 
 /**
- * Throw if a minor version changes anything other than adding fields or new models.
- * Older apps on the same major keep editing during a minor version,
- * so they won't keep derived fields in sync or stop reading deprecated fields.
- * New required fields are fine: their upgrade function fills them in on read.
+ * Throw for changes that break older apps on the same major, which keep editing during a minor:
+ * - `derivedFrom`: older apps edit the source field and never update the derived one.
+ * - New deprecations: newer apps stop writing a field that older apps still read.
+ * - Adding or removing union variants.
+ * New fields, even required ones, are fine: their upgrade function fills them in on read.
  */
 function assertMinorVersionChanges(
   previous: SchemaDefinition,

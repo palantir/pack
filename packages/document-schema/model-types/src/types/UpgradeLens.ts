@@ -38,9 +38,9 @@ export interface FieldDef {
 }
 
 export interface UpgradeStepDef {
-  /** Major schema version this step upgrades to. With `addedInMinorVersion`, unique within a model's chain. */
+  /** Major version that added this step's fields, e.g. 3 for a step added in 3.2. */
   addedInVersion: number;
-  /** Minor schema version within `addedInVersion`. Absent means 0. */
+  /** Minor version that added this step's fields, e.g. 2 for 3.2. Absent means 0. */
   addedInMinorVersion?: number;
   fields: Record<string, FieldLensDef>;
   removedFields?: string[];

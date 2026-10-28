@@ -47,8 +47,8 @@ export async function irGenTypesHandler(options: IrGenTypesOptions): Promise<voi
 
   const { minSupportedVersion } = payload;
   const { latestVersion, minVersion } = resolveMinVersion(payload.chain, minSupportedVersion);
-  // Generated types are per major, so minor versions fold into their major. Upgrade steps still
-  // come from every version, so a field added in a minor gets its own upgrade function.
+  // Types are generated per major, so `chain` merges 3.0, 3.1 and 3.2 into one `3` entry.
+  // Upgrade steps compare every version in `stepChain`, so `title` added in 3.2 gets a `v3_2` step.
   const stepChain = stripDeprecatedFieldsForSdk(payload.chain);
   const chain = collapseChainToMajors(stepChain);
   const resolved = { chain, latestVersion, minVersion, stepChain };

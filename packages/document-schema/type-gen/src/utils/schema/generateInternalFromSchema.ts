@@ -56,7 +56,7 @@ interface AllFieldInfo {
   isOptional: boolean;
   /** Major versions where this field exists. */
   presentInVersions: Set<number>;
-  /** Number of chain entries (including minor versions) where this field exists. */
+  /** How many versions have this field, counting 3.0, 3.1 and 3.2 separately. Fewer than all → optional. */
   presentInEntries: number;
   /** Whether field is always optional. */
   alwaysOptional: boolean;
@@ -448,8 +448,8 @@ function generateUpgradeFns(
 
   for (const [modelKey, model] of sortedEntries(allRecordModels)) {
     for (const step of model.steps) {
-      // `chain` has one entry per major. Derived fields read the previous major's types; minor
-      // versions can't add derived fields, so a minor step never needs a prior version.
+      // A derived field's function takes the previous major's type, e.g. `Pick<ShapeBox__v1, "color">`
+      // for a 2.0 step. Minor versions can't use `derivedFrom`, so minor steps never need it.
       const currentIdx = chain.findIndex(c => c.version === step.addedInVersion);
       const priorVersion = currentIdx > 0 ? chain[currentIdx - 1]!.version : undefined;
 

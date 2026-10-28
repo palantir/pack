@@ -109,7 +109,6 @@ export function generateModelMetadataFromChain(
 
   // Upgrade imports (only if there are upgrades)
   const upgradeNames = [...recordNames, ...unionNames].map(n => upgradesName(n));
-  // Included for upgrade steps (more than one step, minor versions included) and for unions.
   const needsUpgradeRegistry = stepChain.length > 1 || unionNames.length > 0;
   if (needsUpgradeRegistry && upgradeNames.length > 0) {
     output += `import { ${upgradeNames.join(", ")} } from "${INTERNAL_UPGRADES_PATH}";\n`;
