@@ -133,7 +133,7 @@ function parseMaxVersion(maxVersion: string | undefined): FullSchemaVersion | un
  * Resolve a TypeScript schema module to a versioned IR chain JSON file.
  *
  * The output is a `{ latestVersion, minSupportedVersion?, chain }` payload
- * where each entry is `{ version, ir, migrations? }` and `ir` is a
+ * where each entry is `{ version, minorVersion?, ir, migrations? }` and `ir` is a
  * single-version `IRealTimeDocumentSchema`. This is the input format for
  * `ir gen-types` and `ir asset`.
  *
@@ -156,8 +156,8 @@ function parseMaxVersion(maxVersion: string | undefined): FullSchemaVersion | un
  *
  * Note: this is distinct from the legacy single-version IR JSON consumed by
  * `ir zod`, which is a bare `IRealTimeDocumentSchema` (no chain, no migrations).
- * Tools that previously read that format should pick the entry matching
- * `latestVersion` from `chain` and use its `ir` field.
+ * Tools that previously read that format should use the `ir` field of the last
+ * entry in `chain` (several entries can share a major version, e.g. 3.0 and 3.1).
  */
 export async function schemaIrHandler(options: SchemaIrOptions): Promise<void> {
   const { input, output, config } = options;
