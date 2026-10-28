@@ -80,7 +80,6 @@ export async function irDeployHandler(options: DeployOptions): Promise<void> {
       );
     } else {
       if (latestMinorVersion > 0) {
-        // Creating a document type can't set a minor version, so the first deploy must be a .0 version.
         throw new CommanderError(
           1,
           "EINVAL",
