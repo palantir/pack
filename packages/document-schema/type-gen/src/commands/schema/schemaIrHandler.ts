@@ -115,7 +115,7 @@ export async function readPackConfig(configPath: string): Promise<PackConfigValu
 }
 
 /** Parse `--max-version`: `2` means 2.0, `2.1` means 2.1. */
-export function parseMaxVersion(maxVersion: string | undefined): FullSchemaVersion | undefined {
+function parseMaxVersion(maxVersion: string | undefined): FullSchemaVersion | undefined {
   if (maxVersion == null) {
     return undefined;
   }

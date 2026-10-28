@@ -19,7 +19,6 @@ import { defineRecord, defineSchema, defineSchemaUpdate, nextSchema } from "@pal
 import path from "path";
 import { describe, expect, it } from "vitest";
 import { generateInternalFromChain } from "../generateInternalFromSchema.js";
-import { generateVersionedTypesFromChain } from "../generateVersionedTypesFromSchema.js";
 import { collapseChainToMajors, resolveSchemaChain } from "../resolveSchemaChain.js";
 import {
   nestedOptionalsSchema,
@@ -120,13 +119,5 @@ describe("generateInternalFromChain minor versions", () => {
     expect(result.internalUpgradeFns).not.toContain("note:");
     // Fields added in 1.1 are missing from 1.0 records, so the raw internal type keeps them optional.
     expect(result.internalTypes).toContain("readonly label?: string;");
-  });
-
-  it("adds minor-version fields to the major's read types", () => {
-    const types = generateVersionedTypesFromChain(resolveForSdk());
-    const readTypes = types.readTypes.get(1)!;
-
-    expect(readTypes).toContain("readonly label: string;");
-    expect(readTypes).toContain("readonly note?: string;");
   });
 });

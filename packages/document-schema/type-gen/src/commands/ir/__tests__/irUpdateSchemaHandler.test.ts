@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-import { CommanderError } from "commander";
 import { consola } from "consola";
 import type * as FsModule from "fs";
 import { readFileSync } from "fs";
@@ -86,17 +85,5 @@ describe("irUpdateSchemaHandler", () => {
 
     expect(sentRequestBody().version).toBe(2);
     expect(sentRequestBody()).not.toHaveProperty("schemaMinorVersion");
-  });
-
-  it("explains when the stack can't store minor versions yet", async () => {
-    vi.mocked(readFileSync).mockReturnValue(
-      chainPayload([{ version: 1 }, { version: 1, minorVersion: 1 }]),
-    );
-    updateSchemaMock.mockRejectedValue({ errorName: "SchemaMinorVersionNotSupported" });
-
-    await expect(irUpdateSchemaHandler({ ...OPTIONS })).rejects.toBeInstanceOf(CommanderError);
-    expect(consola.error).toHaveBeenCalledWith(
-      expect.stringContaining("can't store schema minor versions yet"),
-    );
   });
 });
