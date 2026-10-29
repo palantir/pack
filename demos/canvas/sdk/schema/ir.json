@@ -1442,6 +1442,1172 @@
           }
         }
       }
+    },
+    {
+      "version": 3,
+      "minorVersion": 1,
+      "ir": {
+        "name": "Canvas Document Type",
+        "description": "Document type description for demo canvas",
+        "version": 3,
+        "primaryModelKeys": [
+          "NodeShape",
+          "ShapeBox",
+          "ShapeCircle",
+          "CanvasActivity",
+          "ShapeAddedActivity",
+          "ShapeDeletedActivity",
+          "ShapeUpdatedActivity",
+          "CursorPresence",
+          "SelectionPresence",
+          "FreehandStroke"
+        ],
+        "models": {
+          "NodeShape": {
+            "union": {
+              "key": "NodeShape",
+              "name": "NodeShape",
+              "description": "The shape of a node.",
+              "discriminant": "shapeType",
+              "variants": {
+                "box": "ShapeBox",
+                "circle": "ShapeCircle"
+              },
+              "metadata": {
+                "addedInVersion": 1
+              }
+            },
+            "type": "union"
+          },
+          "ShapeBox": {
+            "record": {
+              "key": "ShapeBox",
+              "name": "ShapeBox",
+              "description": "A box.",
+              "fields": [
+                {
+                  "key": "bottom",
+                  "name": "bottom",
+                  "fieldType": {
+                    "value": {
+                      "double": {},
+                      "type": "double"
+                    },
+                    "type": "value"
+                  },
+                  "metadata": {
+                    "addedInVersion": 1
+                  }
+                },
+                {
+                  "key": "left",
+                  "name": "left",
+                  "fieldType": {
+                    "value": {
+                      "double": {},
+                      "type": "double"
+                    },
+                    "type": "value"
+                  },
+                  "metadata": {
+                    "addedInVersion": 1
+                  }
+                },
+                {
+                  "key": "right",
+                  "name": "right",
+                  "fieldType": {
+                    "value": {
+                      "double": {},
+                      "type": "double"
+                    },
+                    "type": "value"
+                  },
+                  "metadata": {
+                    "addedInVersion": 1
+                  }
+                },
+                {
+                  "key": "top",
+                  "name": "top",
+                  "fieldType": {
+                    "value": {
+                      "double": {},
+                      "type": "double"
+                    },
+                    "type": "value"
+                  },
+                  "metadata": {
+                    "addedInVersion": 1
+                  }
+                },
+                {
+                  "key": "color",
+                  "name": "color",
+                  "fieldType": {
+                    "value": {
+                      "string": {},
+                      "type": "string"
+                    },
+                    "type": "value"
+                  },
+                  "metadata": {
+                    "addedInVersion": 1,
+                    "deprecatedFromVersion": 2,
+                    "deprecatedMessage": "Use fillColor and strokeColor instead."
+                  },
+                  "isOptional": true
+                },
+                {
+                  "key": "fillColor",
+                  "name": "fillColor",
+                  "fieldType": {
+                    "value": {
+                      "string": {},
+                      "type": "string"
+                    },
+                    "type": "value"
+                  },
+                  "metadata": {
+                    "addedInVersion": 2
+                  },
+                  "isOptional": true
+                },
+                {
+                  "key": "strokeColor",
+                  "name": "strokeColor",
+                  "fieldType": {
+                    "value": {
+                      "string": {},
+                      "type": "string"
+                    },
+                    "type": "value"
+                  },
+                  "metadata": {
+                    "addedInVersion": 2
+                  },
+                  "isOptional": true
+                },
+                {
+                  "key": "opacity",
+                  "name": "opacity",
+                  "fieldType": {
+                    "value": {
+                      "double": {},
+                      "type": "double"
+                    },
+                    "type": "value"
+                  },
+                  "metadata": {
+                    "addedInVersion": 2
+                  }
+                },
+                {
+                  "key": "label",
+                  "name": "label",
+                  "fieldType": {
+                    "value": {
+                      "string": {},
+                      "type": "string"
+                    },
+                    "type": "value"
+                  },
+                  "metadata": {
+                    "addedInVersion": 3,
+                    "addedInMinorVersion": 1
+                  },
+                  "isOptional": true
+                }
+              ]
+            },
+            "type": "record"
+          },
+          "ShapeCircle": {
+            "record": {
+              "key": "ShapeCircle",
+              "name": "ShapeCircle",
+              "description": "A circle.",
+              "fields": [
+                {
+                  "key": "bottom",
+                  "name": "bottom",
+                  "fieldType": {
+                    "value": {
+                      "double": {},
+                      "type": "double"
+                    },
+                    "type": "value"
+                  },
+                  "metadata": {
+                    "addedInVersion": 1
+                  }
+                },
+                {
+                  "key": "left",
+                  "name": "left",
+                  "fieldType": {
+                    "value": {
+                      "double": {},
+                      "type": "double"
+                    },
+                    "type": "value"
+                  },
+                  "metadata": {
+                    "addedInVersion": 1
+                  }
+                },
+                {
+                  "key": "right",
+                  "name": "right",
+                  "fieldType": {
+                    "value": {
+                      "double": {},
+                      "type": "double"
+                    },
+                    "type": "value"
+                  },
+                  "metadata": {
+                    "addedInVersion": 1
+                  }
+                },
+                {
+                  "key": "top",
+                  "name": "top",
+                  "fieldType": {
+                    "value": {
+                      "double": {},
+                      "type": "double"
+                    },
+                    "type": "value"
+                  },
+                  "metadata": {
+                    "addedInVersion": 1
+                  }
+                },
+                {
+                  "key": "color",
+                  "name": "color",
+                  "fieldType": {
+                    "value": {
+                      "string": {},
+                      "type": "string"
+                    },
+                    "type": "value"
+                  },
+                  "metadata": {
+                    "addedInVersion": 1,
+                    "deprecatedFromVersion": 2,
+                    "deprecatedMessage": "Use fillColor and strokeColor instead."
+                  },
+                  "isOptional": true
+                },
+                {
+                  "key": "fillColor",
+                  "name": "fillColor",
+                  "fieldType": {
+                    "value": {
+                      "string": {},
+                      "type": "string"
+                    },
+                    "type": "value"
+                  },
+                  "metadata": {
+                    "addedInVersion": 2
+                  },
+                  "isOptional": true
+                },
+                {
+                  "key": "strokeColor",
+                  "name": "strokeColor",
+                  "fieldType": {
+                    "value": {
+                      "string": {},
+                      "type": "string"
+                    },
+                    "type": "value"
+                  },
+                  "metadata": {
+                    "addedInVersion": 2
+                  },
+                  "isOptional": true
+                },
+                {
+                  "key": "opacity",
+                  "name": "opacity",
+                  "fieldType": {
+                    "value": {
+                      "double": {},
+                      "type": "double"
+                    },
+                    "type": "value"
+                  },
+                  "metadata": {
+                    "addedInVersion": 2
+                  }
+                },
+                {
+                  "key": "label",
+                  "name": "label",
+                  "fieldType": {
+                    "value": {
+                      "string": {},
+                      "type": "string"
+                    },
+                    "type": "value"
+                  },
+                  "metadata": {
+                    "addedInVersion": 3,
+                    "addedInMinorVersion": 1
+                  },
+                  "isOptional": true
+                }
+              ]
+            },
+            "type": "record"
+          },
+          "CanvasActivity": {
+            "union": {
+              "key": "CanvasActivity",
+              "name": "CanvasActivity",
+              "description": "Canvas-specific custom activity payload.",
+              "discriminant": "activityType",
+              "variants": {
+                "shapeAdded": "ShapeAddedActivity",
+                "shapeDeleted": "ShapeDeletedActivity",
+                "shapeUpdated": "ShapeUpdatedActivity"
+              },
+              "metadata": {
+                "addedInVersion": 1
+              }
+            },
+            "type": "union"
+          },
+          "ShapeAddedActivity": {
+            "record": {
+              "key": "ShapeAddedActivity",
+              "name": "ShapeAddedActivity",
+              "description": "Activity payload for a shape addition.",
+              "fields": [
+                {
+                  "key": "nodeId",
+                  "name": "nodeId",
+                  "fieldType": {
+                    "value": {
+                      "string": {},
+                      "type": "string"
+                    },
+                    "type": "value"
+                  },
+                  "metadata": {
+                    "addedInVersion": 1
+                  }
+                }
+              ]
+            },
+            "type": "record"
+          },
+          "ShapeDeletedActivity": {
+            "record": {
+              "key": "ShapeDeletedActivity",
+              "name": "ShapeDeletedActivity",
+              "description": "Activity payload for a shape deletion.",
+              "fields": [
+                {
+                  "key": "nodeId",
+                  "name": "nodeId",
+                  "fieldType": {
+                    "value": {
+                      "string": {},
+                      "type": "string"
+                    },
+                    "type": "value"
+                  },
+                  "metadata": {
+                    "addedInVersion": 1
+                  }
+                }
+              ]
+            },
+            "type": "record"
+          },
+          "ShapeUpdatedActivity": {
+            "record": {
+              "key": "ShapeUpdatedActivity",
+              "name": "ShapeUpdatedActivity",
+              "description": "Activity payload for a shape update.",
+              "fields": [
+                {
+                  "key": "nodeId",
+                  "name": "nodeId",
+                  "fieldType": {
+                    "value": {
+                      "string": {},
+                      "type": "string"
+                    },
+                    "type": "value"
+                  },
+                  "metadata": {
+                    "addedInVersion": 1
+                  }
+                },
+                {
+                  "key": "oldShape",
+                  "name": "oldShape",
+                  "fieldType": {
+                    "value": {
+                      "modelRef": {
+                        "modelTypes": [
+                          "NodeShape"
+                        ]
+                      },
+                      "type": "modelRef"
+                    },
+                    "type": "value"
+                  },
+                  "metadata": {
+                    "addedInVersion": 1
+                  }
+                },
+                {
+                  "key": "newShape",
+                  "name": "newShape",
+                  "fieldType": {
+                    "value": {
+                      "modelRef": {
+                        "modelTypes": [
+                          "NodeShape"
+                        ]
+                      },
+                      "type": "modelRef"
+                    },
+                    "type": "value"
+                  },
+                  "metadata": {
+                    "addedInVersion": 1
+                  }
+                },
+                {
+                  "key": "summary",
+                  "name": "summary",
+                  "fieldType": {
+                    "value": {
+                      "string": {},
+                      "type": "string"
+                    },
+                    "type": "value"
+                  },
+                  "metadata": {
+                    "addedInVersion": 3
+                  }
+                }
+              ]
+            },
+            "type": "record"
+          },
+          "CursorPresence": {
+            "record": {
+              "key": "CursorPresence",
+              "name": "CursorPresence",
+              "description": "Cursor position for a remote user.",
+              "fields": [
+                {
+                  "key": "x",
+                  "name": "x",
+                  "fieldType": {
+                    "value": {
+                      "double": {},
+                      "type": "double"
+                    },
+                    "type": "value"
+                  },
+                  "metadata": {
+                    "addedInVersion": 1
+                  }
+                },
+                {
+                  "key": "y",
+                  "name": "y",
+                  "fieldType": {
+                    "value": {
+                      "double": {},
+                      "type": "double"
+                    },
+                    "type": "value"
+                  },
+                  "metadata": {
+                    "addedInVersion": 1
+                  }
+                }
+              ]
+            },
+            "type": "record"
+          },
+          "SelectionPresence": {
+            "record": {
+              "key": "SelectionPresence",
+              "name": "SelectionPresence",
+              "description": "Selected shape ids for a remote user.",
+              "fields": [
+                {
+                  "key": "selectedNodeIds",
+                  "name": "selectedNodeIds",
+                  "fieldType": {
+                    "array": {
+                      "allowNullValue": false,
+                      "value": {
+                        "string": {},
+                        "type": "string"
+                      }
+                    },
+                    "type": "array"
+                  },
+                  "metadata": {
+                    "addedInVersion": 1
+                  }
+                }
+              ]
+            },
+            "type": "record"
+          },
+          "FreehandStroke": {
+            "record": {
+              "key": "FreehandStroke",
+              "name": "FreehandStroke",
+              "description": "A freehand pen stroke stored as a JSON-encoded array of [x, y, pressure] tuples.",
+              "fields": [
+                {
+                  "key": "points",
+                  "name": "points",
+                  "fieldType": {
+                    "value": {
+                      "string": {},
+                      "type": "string"
+                    },
+                    "type": "value"
+                  },
+                  "metadata": {
+                    "addedInVersion": 3
+                  }
+                },
+                {
+                  "key": "color",
+                  "name": "color",
+                  "fieldType": {
+                    "value": {
+                      "string": {},
+                      "type": "string"
+                    },
+                    "type": "value"
+                  },
+                  "metadata": {
+                    "addedInVersion": 3
+                  },
+                  "isOptional": true
+                }
+              ]
+            },
+            "type": "record"
+          }
+        }
+      }
+    },
+    {
+      "version": 3,
+      "minorVersion": 2,
+      "ir": {
+        "name": "Canvas Document Type",
+        "description": "Document type description for demo canvas",
+        "version": 3,
+        "primaryModelKeys": [
+          "NodeShape",
+          "ShapeBox",
+          "ShapeCircle",
+          "CanvasActivity",
+          "ShapeAddedActivity",
+          "ShapeDeletedActivity",
+          "ShapeUpdatedActivity",
+          "CursorPresence",
+          "SelectionPresence",
+          "FreehandStroke"
+        ],
+        "models": {
+          "NodeShape": {
+            "union": {
+              "key": "NodeShape",
+              "name": "NodeShape",
+              "description": "The shape of a node.",
+              "discriminant": "shapeType",
+              "variants": {
+                "box": "ShapeBox",
+                "circle": "ShapeCircle"
+              },
+              "metadata": {
+                "addedInVersion": 1
+              }
+            },
+            "type": "union"
+          },
+          "ShapeBox": {
+            "record": {
+              "key": "ShapeBox",
+              "name": "ShapeBox",
+              "description": "A box.",
+              "fields": [
+                {
+                  "key": "bottom",
+                  "name": "bottom",
+                  "fieldType": {
+                    "value": {
+                      "double": {},
+                      "type": "double"
+                    },
+                    "type": "value"
+                  },
+                  "metadata": {
+                    "addedInVersion": 1
+                  }
+                },
+                {
+                  "key": "left",
+                  "name": "left",
+                  "fieldType": {
+                    "value": {
+                      "double": {},
+                      "type": "double"
+                    },
+                    "type": "value"
+                  },
+                  "metadata": {
+                    "addedInVersion": 1
+                  }
+                },
+                {
+                  "key": "right",
+                  "name": "right",
+                  "fieldType": {
+                    "value": {
+                      "double": {},
+                      "type": "double"
+                    },
+                    "type": "value"
+                  },
+                  "metadata": {
+                    "addedInVersion": 1
+                  }
+                },
+                {
+                  "key": "top",
+                  "name": "top",
+                  "fieldType": {
+                    "value": {
+                      "double": {},
+                      "type": "double"
+                    },
+                    "type": "value"
+                  },
+                  "metadata": {
+                    "addedInVersion": 1
+                  }
+                },
+                {
+                  "key": "color",
+                  "name": "color",
+                  "fieldType": {
+                    "value": {
+                      "string": {},
+                      "type": "string"
+                    },
+                    "type": "value"
+                  },
+                  "metadata": {
+                    "addedInVersion": 1,
+                    "deprecatedFromVersion": 2,
+                    "deprecatedMessage": "Use fillColor and strokeColor instead."
+                  },
+                  "isOptional": true
+                },
+                {
+                  "key": "fillColor",
+                  "name": "fillColor",
+                  "fieldType": {
+                    "value": {
+                      "string": {},
+                      "type": "string"
+                    },
+                    "type": "value"
+                  },
+                  "metadata": {
+                    "addedInVersion": 2
+                  },
+                  "isOptional": true
+                },
+                {
+                  "key": "strokeColor",
+                  "name": "strokeColor",
+                  "fieldType": {
+                    "value": {
+                      "string": {},
+                      "type": "string"
+                    },
+                    "type": "value"
+                  },
+                  "metadata": {
+                    "addedInVersion": 2
+                  },
+                  "isOptional": true
+                },
+                {
+                  "key": "opacity",
+                  "name": "opacity",
+                  "fieldType": {
+                    "value": {
+                      "double": {},
+                      "type": "double"
+                    },
+                    "type": "value"
+                  },
+                  "metadata": {
+                    "addedInVersion": 2
+                  }
+                },
+                {
+                  "key": "label",
+                  "name": "label",
+                  "fieldType": {
+                    "value": {
+                      "string": {},
+                      "type": "string"
+                    },
+                    "type": "value"
+                  },
+                  "metadata": {
+                    "addedInVersion": 3,
+                    "addedInMinorVersion": 1
+                  },
+                  "isOptional": true
+                },
+                {
+                  "key": "title",
+                  "name": "title",
+                  "fieldType": {
+                    "value": {
+                      "string": {},
+                      "type": "string"
+                    },
+                    "type": "value"
+                  },
+                  "metadata": {
+                    "addedInVersion": 3,
+                    "addedInMinorVersion": 2
+                  }
+                }
+              ]
+            },
+            "type": "record"
+          },
+          "ShapeCircle": {
+            "record": {
+              "key": "ShapeCircle",
+              "name": "ShapeCircle",
+              "description": "A circle.",
+              "fields": [
+                {
+                  "key": "bottom",
+                  "name": "bottom",
+                  "fieldType": {
+                    "value": {
+                      "double": {},
+                      "type": "double"
+                    },
+                    "type": "value"
+                  },
+                  "metadata": {
+                    "addedInVersion": 1
+                  }
+                },
+                {
+                  "key": "left",
+                  "name": "left",
+                  "fieldType": {
+                    "value": {
+                      "double": {},
+                      "type": "double"
+                    },
+                    "type": "value"
+                  },
+                  "metadata": {
+                    "addedInVersion": 1
+                  }
+                },
+                {
+                  "key": "right",
+                  "name": "right",
+                  "fieldType": {
+                    "value": {
+                      "double": {},
+                      "type": "double"
+                    },
+                    "type": "value"
+                  },
+                  "metadata": {
+                    "addedInVersion": 1
+                  }
+                },
+                {
+                  "key": "top",
+                  "name": "top",
+                  "fieldType": {
+                    "value": {
+                      "double": {},
+                      "type": "double"
+                    },
+                    "type": "value"
+                  },
+                  "metadata": {
+                    "addedInVersion": 1
+                  }
+                },
+                {
+                  "key": "color",
+                  "name": "color",
+                  "fieldType": {
+                    "value": {
+                      "string": {},
+                      "type": "string"
+                    },
+                    "type": "value"
+                  },
+                  "metadata": {
+                    "addedInVersion": 1,
+                    "deprecatedFromVersion": 2,
+                    "deprecatedMessage": "Use fillColor and strokeColor instead."
+                  },
+                  "isOptional": true
+                },
+                {
+                  "key": "fillColor",
+                  "name": "fillColor",
+                  "fieldType": {
+                    "value": {
+                      "string": {},
+                      "type": "string"
+                    },
+                    "type": "value"
+                  },
+                  "metadata": {
+                    "addedInVersion": 2
+                  },
+                  "isOptional": true
+                },
+                {
+                  "key": "strokeColor",
+                  "name": "strokeColor",
+                  "fieldType": {
+                    "value": {
+                      "string": {},
+                      "type": "string"
+                    },
+                    "type": "value"
+                  },
+                  "metadata": {
+                    "addedInVersion": 2
+                  },
+                  "isOptional": true
+                },
+                {
+                  "key": "opacity",
+                  "name": "opacity",
+                  "fieldType": {
+                    "value": {
+                      "double": {},
+                      "type": "double"
+                    },
+                    "type": "value"
+                  },
+                  "metadata": {
+                    "addedInVersion": 2
+                  }
+                },
+                {
+                  "key": "label",
+                  "name": "label",
+                  "fieldType": {
+                    "value": {
+                      "string": {},
+                      "type": "string"
+                    },
+                    "type": "value"
+                  },
+                  "metadata": {
+                    "addedInVersion": 3,
+                    "addedInMinorVersion": 1
+                  },
+                  "isOptional": true
+                },
+                {
+                  "key": "title",
+                  "name": "title",
+                  "fieldType": {
+                    "value": {
+                      "string": {},
+                      "type": "string"
+                    },
+                    "type": "value"
+                  },
+                  "metadata": {
+                    "addedInVersion": 3,
+                    "addedInMinorVersion": 2
+                  }
+                }
+              ]
+            },
+            "type": "record"
+          },
+          "CanvasActivity": {
+            "union": {
+              "key": "CanvasActivity",
+              "name": "CanvasActivity",
+              "description": "Canvas-specific custom activity payload.",
+              "discriminant": "activityType",
+              "variants": {
+                "shapeAdded": "ShapeAddedActivity",
+                "shapeDeleted": "ShapeDeletedActivity",
+                "shapeUpdated": "ShapeUpdatedActivity"
+              },
+              "metadata": {
+                "addedInVersion": 1
+              }
+            },
+            "type": "union"
+          },
+          "ShapeAddedActivity": {
+            "record": {
+              "key": "ShapeAddedActivity",
+              "name": "ShapeAddedActivity",
+              "description": "Activity payload for a shape addition.",
+              "fields": [
+                {
+                  "key": "nodeId",
+                  "name": "nodeId",
+                  "fieldType": {
+                    "value": {
+                      "string": {},
+                      "type": "string"
+                    },
+                    "type": "value"
+                  },
+                  "metadata": {
+                    "addedInVersion": 1
+                  }
+                }
+              ]
+            },
+            "type": "record"
+          },
+          "ShapeDeletedActivity": {
+            "record": {
+              "key": "ShapeDeletedActivity",
+              "name": "ShapeDeletedActivity",
+              "description": "Activity payload for a shape deletion.",
+              "fields": [
+                {
+                  "key": "nodeId",
+                  "name": "nodeId",
+                  "fieldType": {
+                    "value": {
+                      "string": {},
+                      "type": "string"
+                    },
+                    "type": "value"
+                  },
+                  "metadata": {
+                    "addedInVersion": 1
+                  }
+                }
+              ]
+            },
+            "type": "record"
+          },
+          "ShapeUpdatedActivity": {
+            "record": {
+              "key": "ShapeUpdatedActivity",
+              "name": "ShapeUpdatedActivity",
+              "description": "Activity payload for a shape update.",
+              "fields": [
+                {
+                  "key": "nodeId",
+                  "name": "nodeId",
+                  "fieldType": {
+                    "value": {
+                      "string": {},
+                      "type": "string"
+                    },
+                    "type": "value"
+                  },
+                  "metadata": {
+                    "addedInVersion": 1
+                  }
+                },
+                {
+                  "key": "oldShape",
+                  "name": "oldShape",
+                  "fieldType": {
+                    "value": {
+                      "modelRef": {
+                        "modelTypes": [
+                          "NodeShape"
+                        ]
+                      },
+                      "type": "modelRef"
+                    },
+                    "type": "value"
+                  },
+                  "metadata": {
+                    "addedInVersion": 1
+                  }
+                },
+                {
+                  "key": "newShape",
+                  "name": "newShape",
+                  "fieldType": {
+                    "value": {
+                      "modelRef": {
+                        "modelTypes": [
+                          "NodeShape"
+                        ]
+                      },
+                      "type": "modelRef"
+                    },
+                    "type": "value"
+                  },
+                  "metadata": {
+                    "addedInVersion": 1
+                  }
+                },
+                {
+                  "key": "summary",
+                  "name": "summary",
+                  "fieldType": {
+                    "value": {
+                      "string": {},
+                      "type": "string"
+                    },
+                    "type": "value"
+                  },
+                  "metadata": {
+                    "addedInVersion": 3
+                  }
+                }
+              ]
+            },
+            "type": "record"
+          },
+          "CursorPresence": {
+            "record": {
+              "key": "CursorPresence",
+              "name": "CursorPresence",
+              "description": "Cursor position for a remote user.",
+              "fields": [
+                {
+                  "key": "x",
+                  "name": "x",
+                  "fieldType": {
+                    "value": {
+                      "double": {},
+                      "type": "double"
+                    },
+                    "type": "value"
+                  },
+                  "metadata": {
+                    "addedInVersion": 1
+                  }
+                },
+                {
+                  "key": "y",
+                  "name": "y",
+                  "fieldType": {
+                    "value": {
+                      "double": {},
+                      "type": "double"
+                    },
+                    "type": "value"
+                  },
+                  "metadata": {
+                    "addedInVersion": 1
+                  }
+                }
+              ]
+            },
+            "type": "record"
+          },
+          "SelectionPresence": {
+            "record": {
+              "key": "SelectionPresence",
+              "name": "SelectionPresence",
+              "description": "Selected shape ids for a remote user.",
+              "fields": [
+                {
+                  "key": "selectedNodeIds",
+                  "name": "selectedNodeIds",
+                  "fieldType": {
+                    "array": {
+                      "allowNullValue": false,
+                      "value": {
+                        "string": {},
+                        "type": "string"
+                      }
+                    },
+                    "type": "array"
+                  },
+                  "metadata": {
+                    "addedInVersion": 1
+                  }
+                }
+              ]
+            },
+            "type": "record"
+          },
+          "FreehandStroke": {
+            "record": {
+              "key": "FreehandStroke",
+              "name": "FreehandStroke",
+              "description": "A freehand pen stroke stored as a JSON-encoded array of [x, y, pressure] tuples.",
+              "fields": [
+                {
+                  "key": "points",
+                  "name": "points",
+                  "fieldType": {
+                    "value": {
+                      "string": {},
+                      "type": "string"
+                    },
+                    "type": "value"
+                  },
+                  "metadata": {
+                    "addedInVersion": 3
+                  }
+                },
+                {
+                  "key": "color",
+                  "name": "color",
+                  "fieldType": {
+                    "value": {
+                      "string": {},
+                      "type": "string"
+                    },
+                    "type": "value"
+                  },
+                  "metadata": {
+                    "addedInVersion": 3
+                  },
+                  "isOptional": true
+                }
+              ]
+            },
+            "type": "record"
+          }
+        }
+      }
     }
   ]
 }

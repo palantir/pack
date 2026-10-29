@@ -72,7 +72,7 @@ export const ConfigInternalSchema = z
  * call site. Derived fields receive their declared source fields; required
  * additive fields receive no arguments. Optional additive fields are absent
  * — `undefined` is a legal value at the new version, so the runtime lens
- * leaves them alone.
+ * leaves them alone. Keys are `v2` for version 2.0 and `v2_1` for 2.1.
  */
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type
 export interface DocumentUpgradeFns {}

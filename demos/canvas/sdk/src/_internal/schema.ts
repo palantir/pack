@@ -24,10 +24,12 @@ export const ShapeBoxInternalSchema = z.object({
   bottom: z.number(),
   color: z.string().optional(),
   fillColor: z.string().optional(),
+  label: z.string().optional(),
   left: z.number(),
   opacity: z.number().optional(),
   right: z.number(),
   strokeColor: z.string().optional(),
+  title: z.string().optional(),
   top: z.number(),
 }).passthrough();
 
@@ -35,10 +37,12 @@ export const ShapeCircleInternalSchema = z.object({
   bottom: z.number(),
   color: z.string().optional(),
   fillColor: z.string().optional(),
+  label: z.string().optional(),
   left: z.number(),
   opacity: z.number().optional(),
   right: z.number(),
   strokeColor: z.string().optional(),
+  title: z.string().optional(),
   top: z.number(),
 }).passthrough();
 

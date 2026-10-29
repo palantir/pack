@@ -10,6 +10,8 @@ export type ShapeBoxUpdate_v3 = {
   readonly fillColor?: string;
   readonly strokeColor?: string;
   readonly opacity?: number;
+  readonly label?: string;
+  readonly title?: string;
 };
 
 export type ShapeCircleUpdate_v3 = {
@@ -20,6 +22,8 @@ export type ShapeCircleUpdate_v3 = {
   readonly fillColor?: string;
   readonly strokeColor?: string;
   readonly opacity?: number;
+  readonly label?: string;
+  readonly title?: string;
 };
 
 export type ShapeAddedActivityUpdate_v3 = {

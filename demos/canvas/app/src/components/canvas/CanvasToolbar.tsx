@@ -30,26 +30,34 @@ import { VersionsPanel } from "./VersionsPanel.js";
 export interface CanvasToolbarProps {
   readonly canDelete: boolean;
   readonly currentColor: string;
+  readonly currentLabel: string | undefined;
   readonly currentOpacity: number | undefined;
+  readonly currentTitle: string | undefined;
   readonly currentTool: ToolMode;
   readonly doc: VersionedDocRef;
   onColorChange: (color: string) => void;
   onDelete: () => void;
+  onLabelChange: (label: string) => void;
   onOpacityChange: (opacity: number) => void;
   onOpenVersion: (versionId: PublishedVersionId | undefined) => void;
+  onTitleChange: (title: string) => void;
   onToolChange: (tool: ToolMode) => void;
 }
 
 export const CanvasToolbar = memo(function CanvasToolbar({
   canDelete,
   currentColor,
+  currentLabel,
   currentOpacity,
+  currentTitle,
   currentTool,
   doc,
   onColorChange,
   onDelete,
+  onLabelChange,
   onOpacityChange,
   onOpenVersion,
+  onTitleChange,
   onToolChange,
 }: CanvasToolbarProps) {
   const { metadata } = useDocMetadata(doc);
@@ -61,6 +69,14 @@ export const CanvasToolbar = memo(function CanvasToolbar({
 
   const handleOpacityChange = (e: ChangeEvent<HTMLInputElement>) => {
     onOpacityChange(Number(e.target.value));
+  };
+
+  const handleLabelChange = (e: ChangeEvent<HTMLInputElement>) => {
+    onLabelChange(e.target.value);
+  };
+
+  const handleTitleChange = (e: ChangeEvent<HTMLInputElement>) => {
+    onTitleChange(e.target.value);
   };
 
   return (
@@ -136,6 +152,37 @@ export const CanvasToolbar = memo(function CanvasToolbar({
               value={currentOpacity}
             />
             <span className={styles.opacityValue}>{Math.round(currentOpacity * 100)}%</span>
+          </label>
+        </div>
+      )}
+
+      {doc.version >= 3 && currentTitle != null && (
+        <div className={styles.toolGroup}>
+          <label className={styles.label}>
+            Title:
+            <input
+              className={styles.textInput}
+              maxLength={50}
+              onChange={handleTitleChange}
+              type="text"
+              value={currentTitle}
+            />
+          </label>
+        </div>
+      )}
+
+      {doc.version >= 3 && currentLabel != null && (
+        <div className={styles.toolGroup}>
+          <label className={styles.label}>
+            Label:
+            <input
+              className={styles.textInput}
+              maxLength={50}
+              onChange={handleLabelChange}
+              placeholder="None"
+              type="text"
+              value={currentLabel}
+            />
           </label>
         </div>
       )}

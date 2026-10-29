@@ -91,6 +91,13 @@
   width: 120px;
 }
 
+.textInput {
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  padding: 4px 8px;
+  width: 140px;
+}
+
 .opacityValue {
   color: #5f6b7c;
   font-size: 12px;

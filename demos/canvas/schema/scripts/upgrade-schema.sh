@@ -53,8 +53,8 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-if [[ -n "$SCHEMA_VERSION" && ! "$SCHEMA_VERSION" =~ ^[1-9][0-9]*$ ]]; then
-  echo "ERROR: --version must be a positive integer."
+if [[ -n "$SCHEMA_VERSION" && ! "$SCHEMA_VERSION" =~ ^[1-9][0-9]*(\.(0|[1-9][0-9]*))?$ ]]; then
+  echo "ERROR: --version must be a version like 2 or 2.1."
   exit 1
 fi
 

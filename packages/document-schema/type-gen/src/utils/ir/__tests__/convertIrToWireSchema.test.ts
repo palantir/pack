@@ -26,6 +26,33 @@ import { IFieldValueUnion } from "../../../lib/pack-docschema-api/pack-docschema
 import { convertIrToWireSchema } from "../convertIrToWireSchema.js";
 
 describe("convertIrToWireSchema", () => {
+  it("should pass through the minor version a field was added in", () => {
+    const record: IRecordDef = {
+      key: "Shape",
+      name: "Shape",
+      fields: [
+        {
+          key: "label",
+          name: "label",
+          fieldType: { type: "value", value: IFieldValueUnion.string({}) },
+          metadata: { addedInVersion: 2, addedInMinorVersion: 1 },
+          isOptional: true,
+        },
+      ],
+    };
+    const ir: IRealTimeDocumentSchema = {
+      name: "Test",
+      description: "Test schema",
+      version: 2,
+      primaryModelKeys: ["Shape"],
+      models: { Shape: { type: "record", record } as IModelDef },
+    };
+
+    const shape = convertIrToWireSchema(ir).models["Shape"] as { type: "record" } & RecordDef;
+
+    expect(shape.fields[0]!.metadata).toEqual({ addedInVersion: 2, addedInMinorVersion: 1 });
+  });
+
   it("should flatten record model and rename fields correctly", () => {
     const record: IRecordDef = {
       key: "Person",

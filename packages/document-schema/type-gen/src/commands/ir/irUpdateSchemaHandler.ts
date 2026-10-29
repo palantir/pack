@@ -15,13 +15,14 @@
  */
 
 import { createPlatformClient } from "@osdk/client";
-import type { UpdateSchemaDocumentTypeRequest } from "@osdk/foundry.pack";
+import type { UpdateSchemaDocumentTypeRequest, UpdateSchemaRequestBody } from "@osdk/foundry.pack";
 import { DocumentTypes } from "@osdk/foundry.pack";
 import { CommanderError } from "commander";
 import { consola } from "consola";
 import { readFileSync } from "fs";
 import { resolve } from "path";
 import { convertIrToWireSchema } from "../../utils/ir/convertIrToWireSchema.js";
+import { formatSchemaVersion } from "../../utils/schema/resolveSchemaChain.js";
 import { buildPrefixRewriteFetch, DEFAULT_API_PREFIX } from "../utils/firstPartyPrefix.js";
 import { resolveIrInput } from "./resolveIrInput.js";
 
@@ -43,11 +44,12 @@ export async function irUpdateSchemaHandler(options: IrUpdateSchemaOptions): Pro
     const irPath = resolve(options.ir);
     consola.info(`Reading schema from: ${irPath}`);
 
-    const { ir, latestVersion } = resolveIrInput(
+    const { ir, latestVersion, latestMinorVersion } = resolveIrInput(
       JSON.parse(readFileSync(irPath, "utf8")) as unknown,
       irPath,
     );
     const schema = convertIrToWireSchema(ir);
+    const versionLabel = formatSchemaVersion(latestVersion, latestMinorVersion);
 
     const fetchFn = options.firstPartyPrefix != null
       ? buildPrefixRewriteFetch(options.firstPartyPrefix)
@@ -63,25 +65,28 @@ export async function irUpdateSchemaHandler(options: IrUpdateSchemaOptions): Pro
       fetchFn,
     );
 
-    const request: UpdateSchemaDocumentTypeRequest = {
-      documentTypeName: ir.name,
-      requestBody: {
-        ontologyRid: options.ontologyRid,
-        schema,
-        version: latestVersion,
-        ...(options.forceOverwrite ? { forceOverwrite: true } : {}),
-      },
+    const requestBody: UpdateSchemaRequestBody = {
+      ontologyRid: options.ontologyRid,
+      schema,
+      version: latestVersion,
+      ...(latestMinorVersion > 0 ? { schemaMinorVersion: latestMinorVersion } : {}),
+      ...(options.forceOverwrite ? { forceOverwrite: true } : {}),
     };
+    const request: UpdateSchemaDocumentTypeRequest = { documentTypeName: ir.name, requestBody };
 
     if (options.forceOverwrite) {
       consola.warn("--force-overwrite is set: backwards-compatibility validation will be skipped.");
     }
-    consola.info(`Updating schema for document type "${ir.name}" -> version ${latestVersion}`);
+    consola.info(`Updating schema for document type "${ir.name}" -> version ${versionLabel}`);
 
     const result = await DocumentTypes.updateSchema(osdkClient, request, { preview: true });
 
     if (result.type === "success") {
-      consola.success(`Schema updated successfully (version ${result.version})`);
+      consola.success(
+        `Schema updated successfully (version ${
+          formatSchemaVersion(result.version, result.schemaMinorVersion)
+        })`,
+      );
       return;
     }
 

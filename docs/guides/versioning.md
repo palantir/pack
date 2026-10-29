@@ -8,9 +8,11 @@ A document type's schema can change over time. You can add fields, split one fie
 
 ## Schema version
 
-The **schema version** is a monotonically increasing integer (v1, v2, v3, …). See [Writing a Schema](./schemas.md) for how to author these.
+The **schema version** has two parts: a **major** version and a **minor** version (1.0, 1.1, 2.0, …). See [Writing a Schema](./schemas.md) for how to author these, and [Minor versions](#minor-versions) for when to use each.
 
-When you update your schema (using the `update-schema` command), the backend enforces that the new version is exactly one higher than the currently deployed version, and that the change is backwards-compatible. If you need to bypass that validation, pass `--force-overwrite`.
+For third-party document types, you update your schema with the `update-schema` command. The backend enforces that the new version is exactly one step past the currently deployed version (the next major with minor 0, or the next minor in the same major), and that the change is backwards-compatible. If you need to bypass that validation, pass `--force-overwrite`. To publish a specific step, build the IR with `type-gen schema ir --max-version <version>` first.
+
+First-party document types don't use `update-schema`. New versions ship as document type assets (`type-gen ir asset`) with your app release. Assets don't need to be one step apart: the backend checks the new schema against every version in between, and the highest version wins.
 
 ## Reading documents
 
@@ -72,7 +74,6 @@ Wrap each write in a **version guard** so you only ever write fields the operati
 ```ts
 import { asVersioned, matchVersion } from "@demo/canvas.sdk";
 
-
 const doc = asVersioned(docRef);
 
 matchVersion(doc, {
@@ -125,4 +126,47 @@ Raising it will drop support for writing older versions of the document, and the
 
 ### Compatibility Range
 
-Each generated build declares which schema versions it can read and write as a **compatibility range**. `min` defaults to your `minSupportedVersion` and `max` to the latest version.
+Each generated build declares which schema versions it can read and write as a **compatibility range**. `min` defaults to your `minSupportedVersion` and `max` to the latest version. The range, the operational version and `doc.version` only use major versions.
+
+## Minor versions
+
+A **minor version** (e.g. 1.0 → 1.1) adds new things without waiting for every copy of your app to upgrade. Declare one with `{ bump: "minor" }`:
+
+```js
+const schemaV1_1 = S.nextSchema(schemaV1, { bump: "minor" })
+  .addSchemaUpdate(addShapeLabel)
+  .build();
+```
+
+How it differs from a major version:
+
+|                    | Major (1.x → 2.0)                           | Minor (1.0 → 1.1)                                    |
+| ------------------ | ------------------------------------------- | ---------------------------------------------------- |
+| Writing new fields | Only once the operational version reaches 2 | Right away, while `doc.version` is 1                 |
+| Older apps         | Must upgrade before the new fields are used | Keep editing; they ignore the new fields             |
+| Allowed changes    | Any supported change                        | Add fields, new records or unions                    |
+| Generated types    | A new `_v2` set of types                    | The new fields are added to the existing `_v1` types |
+
+Because older apps on the same major keep editing during a minor version, they never write the new fields. A new required field works the same as in a major version: give it a default in `DocumentModel(...)`, keyed by the minor version, and the read lens fills it in for records written by older apps:
+
+```ts
+export const CanvasSchema = DocumentModel({
+  ShapeBox: {
+    v1_1: { zIndex: () => 0 }, // a required field added in 1.1
+  },
+});
+```
+
+In a minor version:
+
+- New fields can't use `derivedFrom`: older apps keep editing the source field and never update the derived one.
+- Fields can't be deprecated: newer apps stop writing the field while older apps still read it.
+- Union variants can't be added or removed. The server doesn't accept new variants on an existing union yet.
+
+`build()` throws if a minor version breaks one of these rules; use a major version instead. No version guard is needed for minor-version fields — write them in the existing branch for that major:
+
+```ts
+matchVersion(doc, {
+  1: doc => doc.updateRecord(shapeRef, { label }), // `label` was added in 1.1
+});
+```

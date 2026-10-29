@@ -17,9 +17,9 @@
 import type { FieldDeprecation, SchemaBuilder } from "./defineMigration.js";
 import { applyMigration } from "./defineMigration.js";
 import type { ModelDefs } from "./defs.js";
-import { isRecordDef } from "./utils.js";
+import { isRecordDef, isUnionDef } from "./utils.js";
 
-/** Version 1 of a schema, produced by {@link defineSchema}. */
+/** Version 1.0 of a schema, produced by {@link defineSchema}. */
 export interface InitialSchema<T extends ModelDefs = ModelDefs> {
   readonly type: "initial";
   readonly version: 1;
@@ -38,23 +38,27 @@ export interface FieldDeprecationInfo {
 }
 export type VersionDeprecations = Record<string, Record<string, FieldDeprecationInfo>>;
 
-/** Version 2 or later of a schema, produced by {@link nextSchema}. Links back to the `previous` version. */
+/**
+ * Any version after 1.0, produced by {@link nextSchema}. Links back to the `previous` version.
+ * `version` is the major version; `minorVersion` is the minor version within it (absent means 0).
+ */
 export interface VersionedSchema<T extends ModelDefs = ModelDefs> {
   readonly type: "versioned";
   readonly models: T;
   readonly version: number;
+  readonly minorVersion?: number;
   readonly previous: SchemaDefinition;
   readonly migrations?: VersionMigrations;
   readonly deprecations?: VersionDeprecations;
 }
 
-/** Any version of a schema: the {@link InitialSchema} (v1) or a {@link VersionedSchema} (v2+). */
+/** Any version of a schema: the {@link InitialSchema} (1.0) or a {@link VersionedSchema} (any later version). */
 export type SchemaDefinition<T extends ModelDefs = ModelDefs> =
   | InitialSchema<T>
   | VersionedSchema<T>;
 
 /**
- * Define version 1 of a schema from its initial set of models (records and
+ * Define version 1.0 of a schema from its initial set of models (records and
  * unions). Later versions extend it via {@link nextSchema} and
  * {@link defineSchemaUpdate}.
  *
@@ -105,8 +109,17 @@ export interface SchemaVersionBuilder<T extends ModelDefs> {
   ): SchemaVersionBuilder<T & S>;
   /** Attach explicit field migrations, supplementing the `derivedFrom` sugar on `addField`. */
   withMigrations(migrations: VersionMigrations): SchemaVersionBuilder<T>;
-  /** Produce the finished {@link VersionedSchema}. */
+  /** Produce the finished {@link VersionedSchema}. In a minor version, throws for `derivedFrom`, new deprecations, and union variant changes. */
   build(): VersionedSchema<T>;
+}
+
+/** Options for {@link nextSchema}. */
+export interface NextSchemaOptions {
+  /**
+   * `"major"` (default) bumps 1.x to 2.0. `"minor"` bumps 1.0 to 1.1 and may only add fields and
+   * new models, since apps on older minor versions of the same major keep editing the document.
+   */
+  readonly bump?: "major" | "minor";
 }
 
 /**
@@ -180,9 +193,79 @@ function stampDeprecationVersions(
   return result;
 }
 
+function getMinorVersion(schema: SchemaDefinition): number {
+  return schema.type === "versioned" ? schema.minorVersion ?? 0 : 0;
+}
+
+/**
+ * Throw for changes that break older apps on the same major, which keep editing during a minor:
+ * - `derivedFrom`: older apps edit the source field and never update the derived one.
+ * - New deprecations: newer apps stop writing a field that older apps still read.
+ * - Adding or removing union variants.
+ * New fields, even required ones, are fine: their upgrade function fills them in on read.
+ */
+function assertMinorVersionChanges(
+  previous: SchemaDefinition,
+  models: ModelDefs,
+  migrations: VersionMigrations | undefined,
+  deprecations: VersionDeprecations | undefined,
+  versionLabel: string,
+): void {
+  const useMajor = "Use nextSchema(previous) for a major version instead.";
+  const previousDeprecations = previous.type === "versioned" ? previous.deprecations : undefined;
+
+  for (const [modelKey, previousDef] of Object.entries(previous.models)) {
+    const def = models[modelKey];
+    if (isUnionDef(previousDef) && isUnionDef(def)) {
+      const removedVariants = Object.keys(previousDef.variants).filter(
+        variantName => !Object.hasOwn(def.variants, variantName),
+      );
+      if (removedVariants.length > 0) {
+        throw new Error(
+          `Union "${modelKey}" cannot remove variants in minor version ${versionLabel}:`
+            + ` ${removedVariants.join(", ")}.`,
+        );
+      }
+      // TODO: allow once the server accepts new variants and we send each variant's version.
+      // Older apps already read a new variant as unknown and keep it when they save.
+      const addedVariants = Object.keys(def.variants).filter(
+        variantName => !Object.hasOwn(previousDef.variants, variantName),
+      );
+      if (addedVariants.length > 0) {
+        throw new Error(
+          `Union "${modelKey}" cannot add variants in minor version ${versionLabel}:`
+            + ` ${addedVariants.join(", ")}.`
+            + " The server doesn't accept new variants on an existing union yet.",
+        );
+      }
+    }
+  }
+
+  for (const [modelKey, fields] of Object.entries(migrations ?? {})) {
+    for (const [fieldName, migration] of Object.entries(fields)) {
+      if (migration.derivedFrom.length > 0) {
+        throw new Error(
+          `Field "${modelKey}.${fieldName}" cannot use derivedFrom in minor version ${versionLabel}. ${useMajor}`,
+        );
+      }
+    }
+  }
+
+  for (const [modelKey, fields] of Object.entries(deprecations ?? {})) {
+    for (const fieldName of Object.keys(fields)) {
+      if (previousDeprecations?.[modelKey]?.[fieldName] == null) {
+        throw new Error(
+          `Field "${modelKey}.${fieldName}" cannot be deprecated in minor version ${versionLabel}. ${useMajor}`,
+        );
+      }
+    }
+  }
+}
+
 class SchemaVersionBuilderImpl<T extends ModelDefs> implements SchemaVersionBuilder<T> {
   private readonly models: T;
   private readonly version: number;
+  private readonly minorVersion: number;
   private readonly previous: SchemaDefinition;
   private readonly _migrations: VersionMigrations | undefined;
   private readonly _deprecations: VersionDeprecations | undefined;
@@ -190,12 +273,14 @@ class SchemaVersionBuilderImpl<T extends ModelDefs> implements SchemaVersionBuil
   constructor(
     models: T,
     version: number,
+    minorVersion: number,
     previous: SchemaDefinition,
     migrations: VersionMigrations | undefined,
     deprecations?: VersionDeprecations,
   ) {
     this.models = models;
     this.version = version;
+    this.minorVersion = minorVersion;
     this.previous = previous;
     this._migrations = migrations;
     this._deprecations = deprecations;
@@ -220,6 +305,7 @@ class SchemaVersionBuilderImpl<T extends ModelDefs> implements SchemaVersionBuil
     return new SchemaVersionBuilderImpl(
       models,
       this.version,
+      this.minorVersion,
       this.previous,
       pruned,
       mergedDeprecations,
@@ -232,6 +318,7 @@ class SchemaVersionBuilderImpl<T extends ModelDefs> implements SchemaVersionBuil
     return new SchemaVersionBuilderImpl(
       this.models,
       this.version,
+      this.minorVersion,
       this.previous,
       pruned,
       this._deprecations,
@@ -239,10 +326,20 @@ class SchemaVersionBuilderImpl<T extends ModelDefs> implements SchemaVersionBuil
   }
 
   build(): VersionedSchema<T> {
+    if (this.minorVersion > 0) {
+      assertMinorVersionChanges(
+        this.previous,
+        this.models,
+        this._migrations,
+        this._deprecations,
+        `${this.version}.${this.minorVersion}`,
+      );
+    }
     return {
       type: "versioned",
       models: { ...this.models },
       version: this.version,
+      ...(this.minorVersion > 0 ? { minorVersion: this.minorVersion } : {}),
       previous: this.previous,
       ...(this._migrations != null ? { migrations: this._migrations } : {}),
       ...(this._deprecations != null ? { deprecations: this._deprecations } : {}),
@@ -252,21 +349,29 @@ class SchemaVersionBuilderImpl<T extends ModelDefs> implements SchemaVersionBuil
 
 /**
  * Start building the next version of a schema. Chain {@link SchemaVersionBuilder.addSchemaUpdate}
- * calls and finish with `build()`; the new version is the previous one's plus one.
+ * calls and finish with `build()`.
+ *
+ * By default this is a major version (1.x to 2.0). Pass `{ bump: "minor" }` for a minor version
+ * (1.0 to 1.1), which may only add fields and new models.
  *
  * @example
  * ```ts
  * const schemaV2 = nextSchema(schemaV1).addSchemaUpdate(splitColor).build();
+ * const schemaV2_1 = nextSchema(schemaV2, { bump: "minor" }).addSchemaUpdate(addNote).build();
  * ```
  */
 export function nextSchema<T extends ModelDefs>(
   previous: SchemaDefinition<T>,
+  options: NextSchemaOptions = {},
 ): SchemaVersionBuilder<T> {
-  const version = previous.version + 1;
+  const isMinor = options.bump === "minor";
+  const version = isMinor ? previous.version : previous.version + 1;
+  const minorVersion = isMinor ? getMinorVersion(previous) + 1 : 0;
   const deprecations = "deprecations" in previous ? previous.deprecations : undefined;
   return new SchemaVersionBuilderImpl(
     previous.models,
     version,
+    minorVersion,
     previous,
     undefined,
     deprecations,

@@ -58,7 +58,8 @@ export function generateModelMetadataFromChain(
   const { chain } = resolved;
   const { latestVersion, minVersion } = resolveMinVersion(chain, minSupportedVersion);
   const latestIr = chain[chain.length - 1]!.ir;
-  const needsUpgradeFns = chainNeedsUpgradeFns(chain);
+  const stepChain = resolved.stepChain ?? chain;
+  const needsUpgradeFns = chainNeedsUpgradeFns(stepChain);
 
   // --- Generate models.ts ---
   let output = GENERATED_FILE_HEADER;
@@ -108,7 +109,7 @@ export function generateModelMetadataFromChain(
 
   // Upgrade imports (only if there are upgrades)
   const upgradeNames = [...recordNames, ...unionNames].map(n => upgradesName(n));
-  const needsUpgradeRegistry = chain.length > 1 || unionNames.length > 0;
+  const needsUpgradeRegistry = stepChain.length > 1 || unionNames.length > 0;
   if (needsUpgradeRegistry && upgradeNames.length > 0) {
     output += `import { ${upgradeNames.join(", ")} } from "${INTERNAL_UPGRADES_PATH}";\n`;
   }

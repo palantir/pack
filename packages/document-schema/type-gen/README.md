@@ -69,6 +69,13 @@ type-gen ir update-schema -i <ir.json> -b <base-url> -a <token> -o <ontology-rid
   [--force-overwrite] [--first-party-prefix /api/gotham]
 ```
 
+`ir update-schema` is for third-party document types. The backend applies those schema versions one
+step at a time (e.g. 1.0 → 1.1 → 2.0). To publish a specific step, build the IR capped at that
+version first with `type-gen schema ir ... --max-version <version>`, where `<version>` is `2`
+(meaning 2.0) or `2.1`. A third-party `ir deploy` must be at a `.0` version; publish minor versions
+with `ir update-schema`. First-party document types publish new versions as assets (`ir asset`),
+which have no one-step rule.
+
 `ir asset` (generate an asset JSON consumed by backpack's asset-track loader) remains available;
 the deploy/update-schema REST commands are IR-sourced.
 

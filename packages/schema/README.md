@@ -13,9 +13,10 @@ Field types come from the primitives on the namespace — {@link String}, {@link
 
 A schema is a chain of versions:
 
-- {@link defineSchema} — version 1, the initial set of models.
+- {@link defineSchema} — version 1.0, the initial set of models.
 - {@link defineSchemaUpdate} — a named change that evolves records through a builder.
-- {@link nextSchema} — compose one or more updates into the next version.
+- {@link nextSchema} — compose one or more updates into the next major version, or pass
+  `{ bump: "minor" }` for the next minor version (which may only add fields and new models).
 
 Export the latest version as the module's default export; the generator walks the chain back to the minimum supported version.
 

@@ -14,10 +14,12 @@
  * limitations under the License.
  */
 
+import * as P from "@palantir/pack.schema";
+import { defineRecord, defineSchema, defineSchemaUpdate, nextSchema } from "@palantir/pack.schema";
 import path from "path";
 import { describe, expect, it } from "vitest";
 import { generateInternalFromChain } from "../generateInternalFromSchema.js";
-import { resolveSchemaChain } from "../resolveSchemaChain.js";
+import { collapseChainToMajors, resolveSchemaChain } from "../resolveSchemaChain.js";
 import {
   nestedOptionalsSchema,
   nestedUnionSchema,
@@ -85,5 +87,37 @@ describe("generateInternalFromChain", () => {
     await expect(await formatInternalTypesSnapshot(result)).toMatchFileSnapshot(
       path.join(snapshotDir, "two-version-optional-fields.snap"),
     );
+  });
+});
+
+describe("generateInternalFromChain minor versions", () => {
+  const v1 = defineSchema({
+    Shape: defineRecord("Shape", { docs: "A shape", fields: { color: P.String } }),
+  });
+  const v1_1 = nextSchema(v1, { bump: "minor" })
+    .addSchemaUpdate(
+      defineSchemaUpdate("addFields", (schema: P.SchemaBuilder<typeof v1.models>) => ({
+        Shape: schema.Shape
+          .addField("label", P.String)
+          .addField("note", P.Optional(P.String))
+          .build(),
+      })),
+    )
+    .build();
+
+  function resolveForSdk() {
+    const { chain, latestVersion, minVersion } = resolveSchemaChain(v1_1);
+    return { chain: collapseChainToMajors(chain), latestVersion, minVersion, stepChain: chain };
+  }
+
+  it("emits a minor-version upgrade step and keyed upgrade functions", () => {
+    const result = generateInternalFromChain(resolveForSdk());
+
+    expect(result.upgrades).toContain("addedInMinorVersion: 1");
+    expect(result.internalUpgradeFns).toContain("v1_1: {");
+    expect(result.internalUpgradeFns).toContain("label: () => Shape__v1[\"label\"]");
+    expect(result.internalUpgradeFns).not.toContain("note:");
+    // Fields added in 1.1 are missing from 1.0 records, so the raw internal type keeps them optional.
+    expect(result.internalTypes).toContain("readonly label?: string;");
   });
 });

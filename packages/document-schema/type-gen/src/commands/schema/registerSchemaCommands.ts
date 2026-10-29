@@ -41,7 +41,7 @@ export function registerSchemaCommands(program: Command): void {
     )
     .option(
       "--max-version <version>",
-      "Generate an IR chain capped at this schema version",
+      "Generate an IR chain capped at this schema version, e.g. 2 (meaning 2.0) or 2.1",
     )
     .action(schemaIrHandler);
 }

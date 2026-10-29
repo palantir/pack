@@ -197,6 +197,7 @@ function convertFieldValueUnion(value: IFieldValueUnion): FieldValueUnion {
 function convertSchemaMeta(meta: ISchemaMeta): SchemaMetadata {
   return {
     addedInVersion: meta.addedInVersion,
+    addedInMinorVersion: orUndefined(meta.addedInMinorVersion),
     deprecatedFromVersion: orUndefined(meta.deprecatedFromVersion),
     deprecatedMessage: orUndefined(meta.deprecatedMessage),
   };

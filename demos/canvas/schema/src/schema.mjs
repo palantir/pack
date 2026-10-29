@@ -200,4 +200,30 @@ const schemaV3 = S.nextSchema(schemaV2)
   .addSchemaUpdate(addShapeUpdatedActivitySummary)
   .build();
 
-export default schemaV3;
+// --- Schema change: add an optional shape label ---
+const addShapeLabel = S.defineSchemaUpdate("addShapeLabel", schema => {
+  const ShapeBox = schema.ShapeBox.addField("label", S.Optional(S.String)).build();
+  const ShapeCircle = schema.ShapeCircle.addField("label", S.Optional(S.String)).build();
+  return { ShapeBox, ShapeCircle };
+});
+
+// --- Schema v3.1: a minor version. It only adds optional fields, so apps on 3.0 keep editing
+// alongside apps on 3.1, and 3.1 apps can write `label` as soon as documents are at version 3.
+const schemaV3_1 = S.nextSchema(schemaV3, { bump: "minor" })
+  .addSchemaUpdate(addShapeLabel)
+  .build();
+
+// --- Schema change: add a required shape title ---
+const addShapeTitle = S.defineSchemaUpdate("addShapeTitle", schema => {
+  const ShapeBox = schema.ShapeBox.addField("title", S.String).build();
+  const ShapeCircle = schema.ShapeCircle.addField("title", S.String).build();
+  return { ShapeBox, ShapeCircle };
+});
+
+// --- Schema v3.2: a minor version with a required field. Shapes written by 3.0 and 3.1 apps have
+// no title, so the app supplies a `v3_2` upgrade function in `DocumentModel(...)` to fill it in.
+const schemaV3_2 = S.nextSchema(schemaV3_1, { bump: "minor" })
+  .addSchemaUpdate(addShapeTitle)
+  .build();
+
+export default schemaV3_2;

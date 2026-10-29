@@ -40,13 +40,17 @@ export interface UseCanvasInteractionResult {
     onMouseUp: (e: MouseEvent<SVGSVGElement>) => void;
   };
   readonly currentColor: string;
+  readonly currentLabel: string | undefined;
   readonly currentOpacity: number | undefined;
+  readonly currentTitle: string | undefined;
   readonly currentTool: ToolMode;
   deleteSelected: () => void;
   readonly penPoints: readonly [number, number, number][] | undefined;
   readonly selectedShapeId: string | undefined;
   setColor: (color: string) => void;
+  setLabel: (label: string) => void;
   setOpacity: (opacity: number) => void;
+  setTitle: (title: string) => void;
   setTool: (tool: ToolMode) => void;
   readonly shapeRefs: readonly RecordRef<typeof NodeShapeModel>[];
   readonly strokeRefs: readonly RecordRef<typeof FreehandStrokeModel>[];
@@ -63,6 +67,8 @@ export function useCanvasInteraction(
   const [currentTool, setCurrentTool] = useState<ToolMode>("select");
   const [currentColor, setCurrentColor] = useState<string>(getDefaultColor());
   const [currentOpacity, setCurrentOpacity] = useState<number | undefined>();
+  const [currentLabel, setCurrentLabel] = useState<string | undefined>();
+  const [currentTitle, setCurrentTitle] = useState<string | undefined>();
 
   const creationStateRef = useRef<{ startX: number; startY: number } | undefined>(undefined);
   const [penPoints, setPenPoints] = useState<[number, number, number][] | undefined>(undefined);
@@ -71,13 +77,17 @@ export function useCanvasInteraction(
     (ref: RecordRef<typeof NodeShapeModel> | undefined) => {
       selectShape(ref);
       broadcastSelection(ref != null ? [ref.id] : []);
+      setCurrentOpacity(undefined);
+      setCurrentLabel(undefined);
+      setCurrentTitle(undefined);
       if (ref == null) {
-        setCurrentOpacity(undefined);
         return;
       }
-      setCurrentOpacity(undefined);
-      void ref.getSnapshot().then(shape => {
-        setCurrentOpacity(narrowKnownNodeShape(shape)?.opacity);
+      void ref.getSnapshot().then(snapshot => {
+        const shape = narrowKnownNodeShape(snapshot);
+        setCurrentOpacity(shape?.opacity);
+        setCurrentLabel(shape != null ? shape.label ?? "" : undefined);
+        setCurrentTitle(shape?.title);
       });
     },
     [broadcastSelection, selectShape],
@@ -128,6 +138,8 @@ export function useCanvasInteraction(
       clearSelection();
       broadcastSelection([]);
       setCurrentOpacity(undefined);
+      setCurrentLabel(undefined);
+      setCurrentTitle(undefined);
     }
   }, [broadcastSelection, clearSelection, doc, selectedShapeRef]);
 
@@ -255,6 +267,57 @@ export function useCanvasInteraction(
     [doc, selectedShapeRef],
   );
 
+  const updateShapeText = useCallback(
+    async (changes: { readonly label?: string | undefined; readonly title?: string }) => {
+      if (selectedShapeRef == null) {
+        return;
+      }
+
+      const oldShape = narrowKnownNodeShape(await selectedShapeRef.getSnapshot());
+      if (oldShape == null) return;
+
+      matchVersion(doc, {
+        // Labels (3.1) and titles (3.2) only exist in the v3 schema.
+        1: () => {},
+        2: () => {},
+        3: doc => {
+          const oldShapeV3 = toNodeShapeV3(oldShape);
+          const newShapeV3 = toNodeShapeV3({ ...oldShape, ...changes });
+          doc.withTransaction(
+            () => {
+              void doc.updateRecord(selectedShapeRef, changes);
+            },
+            doc.describeEdit(CanvasActivityModel, {
+              activityType: "shapeUpdated",
+              nodeId: selectedShapeRef.id,
+              oldShape: oldShapeV3,
+              newShape: newShapeV3,
+              summary: getShapeUpdatedActivitySummary(selectedShapeRef.id),
+            }),
+          );
+        },
+      });
+    },
+    [doc, selectedShapeRef],
+  );
+
+  const setLabel = useCallback(
+    (label: string) => {
+      setCurrentLabel(label);
+      // An empty label removes the field rather than storing "".
+      void updateShapeText({ label: label.length > 0 ? label : undefined });
+    },
+    [updateShapeText],
+  );
+
+  const setTitle = useCallback(
+    (title: string) => {
+      setCurrentTitle(title);
+      void updateShapeText({ title });
+    },
+    [updateShapeText],
+  );
+
   const setTool = useCallback((tool: ToolMode) => {
     setCurrentTool(tool);
     creationStateRef.current = undefined;
@@ -373,13 +436,17 @@ export function useCanvasInteraction(
       onMouseUp,
     },
     currentColor,
+    currentLabel,
     currentOpacity,
+    currentTitle,
     currentTool,
     deleteSelected,
     penPoints,
     selectedShapeId: selectedShapeRef?.id,
     setColor,
+    setLabel,
     setOpacity,
+    setTitle,
     setTool,
     shapeRefs,
     strokeRefs,
