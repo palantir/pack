@@ -1,5 +1,22 @@
 # @palantir/pack.document-schema.type-gen
 
+## 0.33.0
+
+### Minor Changes
+
+- 5431a80: Add schema minor versions. `nextSchema(previous, { bump: "minor" })` creates the next minor version (e.g. 1.0 → 1.1), which may add fields and new models; `build()` throws for `derivedFrom`, deprecations, and adding or removing union variants. Minor-version fields are added to the existing per-major SDK types, so apps can write them as soon as documents reach that major. A required field added in a minor version gets an upgrade function keyed by that version (e.g. `v1_1`), the same as in a major version.
+
+  `type-gen` records `addedInMinorVersion` in the IR, sends `schemaMinorVersion` from `ir update-schema` and `ir asset`, and accepts versions like `2.1` for `schema ir --max-version`. `ir update-schema` and `ir asset` now use the latest entry of the chain instead of the first entry of the latest major. A third-party `ir deploy` must be at a `.0` version.
+
+- d1d5f1f: type-gen now throws a clear error when two things in the generated SDK would have the same name, for example a record `KnownFoo` next to a union `Foo`, or a model named like a name the SDK already uses, such as `Metadata` or `DocumentModel`. It also throws when a generated type would have two properties with the same name, such as a union variant record with a field named like the discriminant, and when a model name contains `_v` followed by a number, which could clash in a later schema version. The check runs in `schema ir`, in every command that reads an IR chain, and before an SDK is generated. Before, these schemas produced an SDK that failed to compile or, in some cases, exported the wrong type.
+
+### Patch Changes
+
+- Updated dependencies [78774fb]
+- Updated dependencies [5431a80]
+  - @palantir/pack.document-schema.model-types@0.33.0
+  - @palantir/pack.schema@0.33.0
+
 ## 0.32.0
 
 ### Minor Changes
