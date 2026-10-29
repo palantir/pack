@@ -384,7 +384,12 @@ describe("Foundry Document Status Tracking", () => {
 
     it("rejects publishing while edits are still waiting for an ack", async () => {
       vi.mocked(PublishedVersions.create).mockResolvedValue({
-        publishedVersion: { createdAt: "2026-10-12T00:00:00Z", ref: "v1" },
+        publishedVersion: {
+          createdAt: "2026-10-12T00:00:00Z",
+          documentSchemaMinorVersion: 0,
+          documentSchemaVersion: 1,
+          ref: "v1",
+        },
         autoEvictedPublishedVersions: [],
       });
       const docRef = createDocRef(mockApp, "test-doc-publish" as DocumentId, testSchema);

@@ -36,6 +36,10 @@ function getActivityMessage(event: ActivityEvent): string | undefined {
     case ActivityEventDataType.DOCUMENT_MANDATORY_SECURITY_UPDATE:
     case ActivityEventDataType.DOCUMENT_DISCRETIONARY_SECURITY_UPDATE:
       return "Updated document security settings";
+    case ActivityEventDataType.PUBLISHED_VERSION_CREATE:
+      return `Published version "${event.eventData.name ?? "Untitled version"}"`;
+    case ActivityEventDataType.PUBLISHED_VERSION_DELETE:
+      return `Deleted version "${event.eventData.name ?? "Untitled version"}"`;
     case ActivityEventDataType.CUSTOM_EVENT:
       if (ActivityEvents.isEdit(event.eventData, CanvasActivityModel)) {
         switch (event.eventData.data.activityType) {

@@ -20,6 +20,7 @@ import type {
   DocumentSecurityMandatory,
 } from "./DocumentMetadata.js";
 import type { Model, ModelData } from "./Model.js";
+import type { PublishedVersionId } from "./PublishedVersion.js";
 import type { UserId } from "./UserRef.js";
 
 export type ActivityEventId = Flavored<"pack:EventId">;
@@ -31,6 +32,8 @@ export const ActivityEventDataType = {
   DOCUMENT_RENAME: "documentRename",
   DOCUMENT_MANDATORY_SECURITY_UPDATE: "documentMandatorySecurityUpdate",
   DOCUMENT_DISCRETIONARY_SECURITY_UPDATE: "documentDiscretionarySecurityUpdate",
+  PUBLISHED_VERSION_CREATE: "publishedVersionCreate",
+  PUBLISHED_VERSION_DELETE: "publishedVersionDelete",
   UNKNOWN: "unknown",
 } as const;
 
@@ -114,6 +117,26 @@ export interface ActivityEventDataDocumentMandatorySecurityUpdate {
 }
 
 /**
+ * Activity event emitted when a published version of a document is created.
+ */
+export interface ActivityEventDataPublishedVersionCreate {
+  readonly type: typeof ActivityEventDataType.PUBLISHED_VERSION_CREATE;
+  readonly publishedVersionId: PublishedVersionId;
+  readonly name?: string;
+  readonly description?: string;
+}
+
+/**
+ * Activity event emitted when a published version of a document is deleted.
+ */
+export interface ActivityEventDataPublishedVersionDelete {
+  readonly type: typeof ActivityEventDataType.PUBLISHED_VERSION_DELETE;
+  readonly publishedVersionId: PublishedVersionId;
+  readonly name?: string;
+  readonly description?: string;
+}
+
+/**
  * Fallback for unrecognized activity event types.
  *
  * This allows some flexibility with new event types added to the platform.
@@ -134,6 +157,8 @@ export type ActivityEventData =
   | ActivityEventDataDocumentRename
   | ActivityEventDataDocumentMandatorySecurityUpdate
   | ActivityEventDataDocumentDiscretionarySecurityUpdate
+  | ActivityEventDataPublishedVersionCreate
+  | ActivityEventDataPublishedVersionDelete
   | ActivityEventDataUnknown;
 
 /**

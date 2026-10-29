@@ -295,6 +295,45 @@ describe("getActivityEvent", () => {
     });
   });
 
+  it("maps publishedVersionCreate events", () => {
+    const result = getActivityEvent(
+      emptySchema,
+      makeActivityUpdate({
+        type: "publishedVersionCreate",
+        ref: "version-1",
+        name: "Release 1",
+        description: "First release",
+        documentSchemaVersion: 2,
+        documentSchemaMinorVersion: 1,
+      }),
+    );
+
+    expect(result!.eventData).toEqual({
+      type: ActivityEventDataType.PUBLISHED_VERSION_CREATE,
+      publishedVersionId: "version-1",
+      name: "Release 1",
+      description: "First release",
+    });
+  });
+
+  it("maps publishedVersionDelete events", () => {
+    const result = getActivityEvent(
+      emptySchema,
+      makeActivityUpdate({
+        type: "publishedVersionDelete",
+        ref: "version-1",
+        name: "Release 1",
+      }),
+    );
+
+    expect(result!.eventData).toEqual({
+      type: ActivityEventDataType.PUBLISHED_VERSION_DELETE,
+      publishedVersionId: "version-1",
+      name: "Release 1",
+      description: undefined,
+    });
+  });
+
   it("maps documentCustomEvent with known model to CUSTOM_EVENT", () => {
     const customData = { eventType: "shapeAdd", nodeId: "node-1" };
     const result = getActivityEvent(
