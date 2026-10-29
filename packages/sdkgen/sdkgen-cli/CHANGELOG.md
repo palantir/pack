@@ -1,5 +1,11 @@
 # @palantir/pack.sdkgen
 
+## 0.33.0
+
+### Patch Changes
+
+- @palantir/pack.codegen.core@0.33.0
+
 ## 0.32.0
 
 ### Patch Changes

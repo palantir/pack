@@ -1,5 +1,21 @@
 # @palantir/pack.state.foundry
 
+## 0.33.0
+
+### Minor Changes
+
+- 78774fb: Map `publishedVersionCreate` and `publishedVersionDelete` activity events to typed `ActivityEventDataType.PUBLISHED_VERSION_CREATE` and `PUBLISHED_VERSION_DELETE` events with `publishedVersionId`, `name`, and `description`. They were previously delivered as `UNKNOWN`.
+
+### Patch Changes
+
+- Updated dependencies [78774fb]
+- Updated dependencies [5431a80]
+  - @palantir/pack.document-schema.model-types@0.33.0
+  - @palantir/pack.state.core@0.33.0
+  - @palantir/pack.state.foundry-event@0.33.0
+  - @palantir/pack.auth@0.33.0
+  - @palantir/pack.core@0.33.0
+
 ## 0.32.0
 
 ### Patch Changes

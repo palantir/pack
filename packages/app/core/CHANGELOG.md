@@ -1,5 +1,18 @@
 # @palantir/pack.app
 
+## 0.33.0
+
+### Patch Changes
+
+- Updated dependencies [78774fb]
+- Updated dependencies [5431a80]
+  - @palantir/pack.state.foundry@0.33.0
+  - @palantir/pack.state.core@0.33.0
+  - @palantir/pack.state.demo@0.33.0
+  - @palantir/pack.auth@0.33.0
+  - @palantir/pack.auth.foundry@0.33.0
+  - @palantir/pack.core@0.33.0
+
 ## 0.32.0
 
 ### Patch Changes
