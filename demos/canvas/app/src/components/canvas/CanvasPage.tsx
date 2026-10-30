@@ -27,12 +27,14 @@ import { app } from "../../app.js";
 import { useActivityToast } from "../../hooks/useActivityToast.js";
 import { useBroadcastPresence } from "../../hooks/useBroadcastPresence.js";
 import { useCanvasInteraction } from "../../hooks/useCanvasInteraction.js";
+import { useLayerTree } from "../../hooks/useLayerTree.js";
 import { useRemotePresence } from "../../hooks/useRemotePresence.js";
 import { useStatusErrorToast } from "../../hooks/useStatusErrorToast.js";
 import { useCanvasDocRef } from "../../pack.js";
 import { CanvasContent } from "./CanvasContent.js";
 import styles from "./CanvasPage.module.css";
 import { CanvasToolbar } from "./CanvasToolbar.js";
+import { LayersPanel } from "./LayersPanel.js";
 import { PublishedCanvasView } from "./PublishedCanvasView.js";
 
 export const CanvasPage = () => {
@@ -158,7 +160,8 @@ interface CanvasEditorProps {
 function CanvasEditor({ doc, statusToaster, toaster, onOpenVersion }: CanvasEditorProps) {
   const { broadcastCursor, broadcastSelection } = useBroadcastPresence(doc);
   const { remoteUsersByUserId, userIdsBySelectedNodeId } = useRemotePresence(doc);
-  const interaction = useCanvasInteraction(doc, broadcastSelection);
+  const layerTree = useLayerTree(doc);
+  const interaction = useCanvasInteraction(doc, broadcastSelection, layerTree.drawRankById);
   useActivityToast(doc, toaster);
   useStatusErrorToast(app, doc, statusToaster);
 
@@ -201,19 +204,21 @@ function CanvasEditor({ doc, statusToaster, toaster, onOpenVersion }: CanvasEdit
         onOpenVersion={onOpenVersion}
         onToolChange={interaction.setTool}
       />
-      <CanvasContent
-        canvasProps={{
-          ...interaction.canvasProps,
-          onMouseMove: handleCanvasMouseMove,
-        }}
-        penColor={interaction.currentTool === "pen" ? interaction.currentColor : undefined}
-        penPoints={interaction.penPoints}
-        remoteUsersByUserId={remoteUsersByUserId}
-        selectedShapeId={interaction.selectedShapeId}
-        shapeRefs={interaction.shapeRefs}
-        strokeRefs={interaction.strokeRefs}
-        userIdsBySelectedNodeId={userIdsBySelectedNodeId}
-      />
+      <div className={styles.body}>
+        {doc.version >= 4 && <LayersPanel doc={doc} tree={layerTree} />}
+        <CanvasContent
+          canvasProps={{
+            ...interaction.canvasProps,
+            onMouseMove: handleCanvasMouseMove,
+          }}
+          items={layerTree.visibleItems}
+          penColor={interaction.currentTool === "pen" ? interaction.currentColor : undefined}
+          penPoints={interaction.penPoints}
+          remoteUsersByUserId={remoteUsersByUserId}
+          selectedShapeId={interaction.selectedShapeId}
+          userIdsBySelectedNodeId={userIdsBySelectedNodeId}
+        />
+      </div>
     </div>
   );
 }

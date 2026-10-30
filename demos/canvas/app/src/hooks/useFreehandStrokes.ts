@@ -42,6 +42,11 @@ export function useFreehandStrokes(doc: VersionedDocRef): UseFreehandStrokesResu
               points: JSON.stringify(points),
               color,
             }),
+          4: doc =>
+            doc.setRecord(FreehandStrokeModel, id, {
+              points: JSON.stringify(points),
+              color,
+            }),
         });
       });
     },

@@ -16,14 +16,14 @@
 
 import { Button, Callout, Spinner, Tag } from "@blueprintjs/core";
 import type { DocumentModel, VersionedDocRef } from "@demo/canvas.sdk";
-import { FreehandStrokeModel, NodeShapeModel } from "@demo/canvas.sdk";
 import type {
   PublishedVersionDocumentRef,
   PublishedVersionId,
 } from "@palantir/pack.document-schema.model-types";
 import type { UsePublishedVersionDocRefResult } from "@palantir/pack.state.react";
-import { useDocMetadata, useRecords } from "@palantir/pack.state.react";
+import { useDocMetadata } from "@palantir/pack.state.react";
 import { memo } from "react";
+import { useLayerTree } from "../../hooks/useLayerTree.js";
 import type { CanvasContentProps } from "./CanvasContent.js";
 import { CanvasContent } from "./CanvasContent.js";
 import pageStyles from "./CanvasPage.module.css";
@@ -101,16 +101,14 @@ const PublishedCanvas = memo(function PublishedCanvas({
 }: {
   readonly doc: PublishedVersionDocumentRef<DocumentModel>;
 }) {
-  const shapeRefs = useRecords(doc, NodeShapeModel);
-  const strokeRefs = useRecords(doc, FreehandStrokeModel);
+  const { visibleItems } = useLayerTree(doc);
 
   return (
     <CanvasContent
       canvasProps={NO_CANVAS_EVENTS}
+      items={visibleItems}
       remoteUsersByUserId={NO_REMOTE_USERS}
       selectedShapeId={undefined}
-      shapeRefs={shapeRefs}
-      strokeRefs={strokeRefs}
       userIdsBySelectedNodeId={NO_SELECTIONS}
     />
   );

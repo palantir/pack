@@ -27,15 +27,19 @@ import type { GeneratorContext } from "../types/index.js";
 async function runHook(): Promise<void> {
   const args = process.argv.slice(2);
 
-  if (args.length < 3) {
-    consola.error("Usage: hookRunner <hookPath> <hookName> <contextJson>");
+  if (args.length < 2) {
+    consola.error("Usage: hookRunner <hookPath> <hookName> < contextJson");
     process.exit(1);
   }
 
-  const [hookPath, hookName, contextJson] = args;
+  const [hookPath, hookName] = args;
   try {
-    // Parse the context
-    const context = JSON.parse(contextJson!) as GeneratorContext;
+    // Read and parse the context from stdin
+    const chunks: Buffer[] = [];
+    for await (const chunk of process.stdin) {
+      chunks.push(chunk as Buffer);
+    }
+    const context = JSON.parse(Buffer.concat(chunks).toString("utf8")) as GeneratorContext;
 
     // Import and execute the hook
     const hookUrl = pathToFileURL(hookPath!).href;

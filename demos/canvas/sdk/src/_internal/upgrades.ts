@@ -22,6 +22,35 @@ export const FreehandStrokeUpgrades: UpgradeRegistry<"FreehandStroke"> = {
   ],
 };
 
+export const LayerFolderUpgrades: UpgradeRegistry<"LayerFolder"> = {
+  modelName: "LayerFolder",
+  allFields: {
+    childIds: { type: { kind: "array", element: { kind: "primitive" } }, addedInVersion: 4 },
+    name: { type: { kind: "primitive" }, addedInVersion: 4 },
+    visible: { type: { kind: "primitive" }, addedInVersion: 4 },
+  },
+  steps: [
+  ],
+};
+
+export const LayerItemUpgrades: UpgradeRegistry<"LayerItem"> = {
+  modelName: "LayerItem",
+  allFields: {
+    visible: { type: { kind: "primitive" }, addedInVersion: 4 },
+  },
+  steps: [
+  ],
+};
+
+export const LayerRootUpgrades: UpgradeRegistry<"LayerRoot"> = {
+  modelName: "LayerRoot",
+  allFields: {
+    childIds: { type: { kind: "array", element: { kind: "primitive" } }, addedInVersion: 4 },
+  },
+  steps: [
+  ],
+};
+
 export const SelectionPresenceUpgrades: UpgradeRegistry<"SelectionPresence"> = {
   modelName: "SelectionPresence",
   allFields: {

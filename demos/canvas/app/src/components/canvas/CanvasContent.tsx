@@ -14,12 +14,13 @@
  * limitations under the License.
  */
 
-import type { FreehandStrokeModel, KnownNodeShape, NodeShapeModel } from "@demo/canvas.sdk";
+import type { KnownNodeShape, NodeShapeModel } from "@demo/canvas.sdk";
 import { narrowKnownNodeShape } from "@demo/canvas.sdk";
 import type { RecordRef, UserId } from "@palantir/pack.document-schema.model-types";
 import { useRecord } from "@palantir/pack.state.react";
 import type { MouseEvent } from "react";
 import { memo, useMemo } from "react";
+import type { LayerItemNode } from "../../hooks/useLayerTree.js";
 import { getUserColor } from "../../hooks/useRemotePresence.js";
 import { boundsToCenter } from "../../utils/boundsToCenter.js";
 import { getResizeHandles } from "../../utils/getResizeHandles.js";
@@ -40,12 +41,12 @@ export interface CanvasContentProps {
     onMouseMove: (e: MouseEvent<SVGSVGElement>) => void;
     onMouseUp: (e: MouseEvent<SVGSVGElement>) => void;
   };
+  /** Items to draw, bottom first. */
+  readonly items: readonly LayerItemNode[];
   readonly penColor?: string;
   readonly penPoints?: readonly [number, number, number][];
   readonly remoteUsersByUserId: ReadonlyMap<UserId, UserPresence>;
   readonly selectedShapeId: string | undefined;
-  readonly shapeRefs: readonly RecordRef<typeof NodeShapeModel>[];
-  readonly strokeRefs: readonly RecordRef<typeof FreehandStrokeModel>[];
   readonly userIdsBySelectedNodeId: ReadonlyMap<string, ReadonlySet<UserId>>;
 }
 
@@ -208,27 +209,27 @@ const ConnectedShapeRenderer = memo(function ShapeRenderer({
 
 export const CanvasContent = memo(function CanvasContent({
   canvasProps,
+  items,
   penColor,
   penPoints,
   remoteUsersByUserId,
   selectedShapeId,
-  shapeRefs,
-  strokeRefs,
   userIdsBySelectedNodeId,
 }: CanvasContentProps) {
   return (
     <svg className={styles.canvas} {...canvasProps}>
-      {strokeRefs.map(strokeRef => (
-        <FreehandStrokeRenderer key={strokeRef.id} strokeRef={strokeRef} />
-      ))}
-      {shapeRefs.map(shapeRef => (
-        <ShapeRenderer
-          key={shapeRef.id}
-          selectedShapeId={selectedShapeId}
-          shapeRef={shapeRef}
-          userIdsBySelectedNodeId={userIdsBySelectedNodeId}
-        />
-      ))}
+      {items.map(item =>
+        item.kind === "shape"
+          ? (
+            <ShapeRenderer
+              key={item.id}
+              selectedShapeId={selectedShapeId}
+              shapeRef={item.ref}
+              userIdsBySelectedNodeId={userIdsBySelectedNodeId}
+            />
+          )
+          : <FreehandStrokeRenderer key={item.id} strokeRef={item.ref} />
+      )}
       {penPoints != null && penColor != null && <PenPreview color={penColor} points={penPoints} />}
       {Array.from(remoteUsersByUserId.entries()).map(([userId, presence]) => {
         if (presence.cursor == null) return null;

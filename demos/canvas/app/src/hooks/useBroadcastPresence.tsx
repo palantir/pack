@@ -53,6 +53,7 @@ export function useBroadcastPresence(
                 1: doc => doc.updateCustomPresence(CursorPresenceModel, { x, y }),
                 2: doc => doc.updateCustomPresence(CursorPresenceModel, { x, y }),
                 3: doc => doc.updateCustomPresence(CursorPresenceModel, { x, y }),
+                4: doc => doc.updateCustomPresence(CursorPresenceModel, { x, y }),
               });
               lastCursorBroadcastRef.current = Date.now();
               pendingCursorRef.current = null;
@@ -67,6 +68,7 @@ export function useBroadcastPresence(
             1: doc => doc.updateCustomPresence(CursorPresenceModel, { x, y }),
             2: doc => doc.updateCustomPresence(CursorPresenceModel, { x, y }),
             3: doc => doc.updateCustomPresence(CursorPresenceModel, { x, y }),
+            4: doc => doc.updateCustomPresence(CursorPresenceModel, { x, y }),
           });
           lastCursorBroadcastRef.current = now;
           pendingCursorRef.current = null;
@@ -88,6 +90,10 @@ export function useBroadcastPresence(
             selectedNodeIds: [...nodeIds],
           }),
         3: doc =>
+          doc.updateCustomPresence(SelectionPresenceModel, {
+            selectedNodeIds: [...nodeIds],
+          }),
+        4: doc =>
           doc.updateCustomPresence(SelectionPresenceModel, {
             selectedNodeIds: [...nodeIds],
           }),

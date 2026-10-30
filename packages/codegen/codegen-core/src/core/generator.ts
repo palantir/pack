@@ -168,12 +168,15 @@ export class Generator {
 
           // Run hook as child process in template directory
           // Use spawnSync for better output streaming
+          // The context goes over stdin, not argv, because a single argument
+          // has a length limit (128KiB on Linux) and the context includes the schema
           const result = spawnSync(
             "node",
-            [hookRunnerPath, hookPath, hookName, contextJson],
+            [hookRunnerPath, hookPath, hookName],
             {
               cwd: this.templateDir,
               encoding: "utf8",
+              input: contextJson,
               // 'inherit' for stderr allows errors to stream immediately
               // 'pipe' for stdout so we can capture the result for beforeGenerate
               stdio: ["pipe", "pipe", "inherit"],

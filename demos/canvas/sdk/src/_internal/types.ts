@@ -14,6 +14,23 @@ export interface FreehandStroke__Internal {
 }
 
 /** Internal representation containing all fields across all schema versions. */
+export interface LayerFolder__Internal {
+  readonly childIds?: readonly string[];
+  readonly name?: string;
+  readonly visible?: boolean;
+}
+
+/** Internal representation containing all fields across all schema versions. */
+export interface LayerItem__Internal {
+  readonly visible?: boolean;
+}
+
+/** Internal representation containing all fields across all schema versions. */
+export interface LayerRoot__Internal {
+  readonly childIds?: readonly string[];
+}
+
+/** Internal representation containing all fields across all schema versions. */
 export interface SelectionPresence__Internal {
   readonly selectedNodeIds: readonly string[];
 }
@@ -78,10 +95,39 @@ export interface CursorPresence__v3 {
   readonly y: number;
 }
 
+/** Internal representation of CursorPresence at schema version 4. */
+export interface CursorPresence__v4 {
+  readonly x: number;
+  readonly y: number;
+}
+
 /** Internal representation of FreehandStroke at schema version 3. */
 export interface FreehandStroke__v3 {
   readonly color?: (string | undefined);
   readonly points: string;
+}
+
+/** Internal representation of FreehandStroke at schema version 4. */
+export interface FreehandStroke__v4 {
+  readonly color?: (string | undefined);
+  readonly points: string;
+}
+
+/** Internal representation of LayerFolder at schema version 4. */
+export interface LayerFolder__v4 {
+  readonly childIds: readonly string[];
+  readonly name: string;
+  readonly visible: boolean;
+}
+
+/** Internal representation of LayerItem at schema version 4. */
+export interface LayerItem__v4 {
+  readonly visible: boolean;
+}
+
+/** Internal representation of LayerRoot at schema version 4. */
+export interface LayerRoot__v4 {
+  readonly childIds: readonly string[];
 }
 
 /** Internal representation of SelectionPresence at schema version 1. */
@@ -99,6 +145,11 @@ export interface SelectionPresence__v3 {
   readonly selectedNodeIds: readonly string[];
 }
 
+/** Internal representation of SelectionPresence at schema version 4. */
+export interface SelectionPresence__v4 {
+  readonly selectedNodeIds: readonly string[];
+}
+
 /** Internal representation of ShapeAddedActivity at schema version 1. */
 export interface ShapeAddedActivity__v1 {
   readonly nodeId: string;
@@ -111,6 +162,11 @@ export interface ShapeAddedActivity__v2 {
 
 /** Internal representation of ShapeAddedActivity at schema version 3. */
 export interface ShapeAddedActivity__v3 {
+  readonly nodeId: string;
+}
+
+/** Internal representation of ShapeAddedActivity at schema version 4. */
+export interface ShapeAddedActivity__v4 {
   readonly nodeId: string;
 }
 
@@ -136,6 +192,17 @@ export interface ShapeBox__v2 {
 
 /** Internal representation of ShapeBox at schema version 3. */
 export interface ShapeBox__v3 {
+  readonly bottom: number;
+  readonly fillColor?: (string | undefined);
+  readonly left: number;
+  readonly opacity: number;
+  readonly right: number;
+  readonly strokeColor?: (string | undefined);
+  readonly top: number;
+}
+
+/** Internal representation of ShapeBox at schema version 4. */
+export interface ShapeBox__v4 {
   readonly bottom: number;
   readonly fillColor?: (string | undefined);
   readonly left: number;
@@ -176,6 +243,17 @@ export interface ShapeCircle__v3 {
   readonly top: number;
 }
 
+/** Internal representation of ShapeCircle at schema version 4. */
+export interface ShapeCircle__v4 {
+  readonly bottom: number;
+  readonly fillColor?: (string | undefined);
+  readonly left: number;
+  readonly opacity: number;
+  readonly right: number;
+  readonly strokeColor?: (string | undefined);
+  readonly top: number;
+}
+
 /** Internal representation of ShapeDeletedActivity at schema version 1. */
 export interface ShapeDeletedActivity__v1 {
   readonly nodeId: string;
@@ -188,6 +266,11 @@ export interface ShapeDeletedActivity__v2 {
 
 /** Internal representation of ShapeDeletedActivity at schema version 3. */
 export interface ShapeDeletedActivity__v3 {
+  readonly nodeId: string;
+}
+
+/** Internal representation of ShapeDeletedActivity at schema version 4. */
+export interface ShapeDeletedActivity__v4 {
   readonly nodeId: string;
 }
 
@@ -207,6 +290,14 @@ export interface ShapeUpdatedActivity__v2 {
 
 /** Internal representation of ShapeUpdatedActivity at schema version 3. */
 export interface ShapeUpdatedActivity__v3 {
+  readonly newShape: unknown;
+  readonly nodeId: string;
+  readonly oldShape: unknown;
+  readonly summary: string;
+}
+
+/** Internal representation of ShapeUpdatedActivity at schema version 4. */
+export interface ShapeUpdatedActivity__v4 {
   readonly newShape: unknown;
   readonly nodeId: string;
   readonly oldShape: unknown;

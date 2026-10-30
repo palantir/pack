@@ -2,9 +2,9 @@
 
 import type { DocumentSchema, RecordModel, UnionModel, UpgradeFns } from "@palantir/pack.document-schema.model-types";
 import { Metadata } from "@palantir/pack.document-schema.model-types";
-import type { CanvasActivity, CanvasActivityShapeAdded, CanvasActivityShapeDeleted, CanvasActivityShapeUpdated, CursorPresence, FreehandStroke, NodeShape, NodeShapeBox, NodeShapeCircle, SelectionPresence, ShapeAddedActivity, ShapeBox, ShapeCircle, ShapeDeletedActivity, ShapeUpdatedActivity } from "./types.js";
-import { CanvasActivitySchema, CanvasActivityShapeAddedSchema, CanvasActivityShapeDeletedSchema, CanvasActivityShapeUpdatedSchema, CursorPresenceSchema, FreehandStrokeSchema, NodeShapeSchema, NodeShapeBoxSchema, NodeShapeCircleSchema, SelectionPresenceSchema, ShapeAddedActivitySchema, ShapeBoxSchema, ShapeCircleSchema, ShapeDeletedActivitySchema, ShapeUpdatedActivitySchema } from "./schema.js";
-import { ShapeBoxUpgrades, ShapeCircleUpgrades, ShapeAddedActivityUpgrades, ShapeDeletedActivityUpgrades, ShapeUpdatedActivityUpgrades, CursorPresenceUpgrades, SelectionPresenceUpgrades, FreehandStrokeUpgrades, NodeShapeUpgrades, CanvasActivityUpgrades } from "./_internal/upgrades.js";
+import type { CanvasActivity, CanvasActivityShapeAdded, CanvasActivityShapeDeleted, CanvasActivityShapeUpdated, CursorPresence, FreehandStroke, LayerFolder, LayerItem, LayerRoot, NodeShape, NodeShapeBox, NodeShapeCircle, SelectionPresence, ShapeAddedActivity, ShapeBox, ShapeCircle, ShapeDeletedActivity, ShapeUpdatedActivity } from "./types.js";
+import { CanvasActivitySchema, CanvasActivityShapeAddedSchema, CanvasActivityShapeDeletedSchema, CanvasActivityShapeUpdatedSchema, CursorPresenceSchema, FreehandStrokeSchema, LayerFolderSchema, LayerItemSchema, LayerRootSchema, NodeShapeSchema, NodeShapeBoxSchema, NodeShapeCircleSchema, SelectionPresenceSchema, ShapeAddedActivitySchema, ShapeBoxSchema, ShapeCircleSchema, ShapeDeletedActivitySchema, ShapeUpdatedActivitySchema } from "./schema.js";
+import { ShapeBoxUpgrades, ShapeCircleUpgrades, ShapeAddedActivityUpgrades, ShapeDeletedActivityUpgrades, ShapeUpdatedActivityUpgrades, CursorPresenceUpgrades, SelectionPresenceUpgrades, FreehandStrokeUpgrades, LayerFolderUpgrades, LayerItemUpgrades, LayerRootUpgrades, NodeShapeUpgrades, CanvasActivityUpgrades } from "./_internal/upgrades.js";
 import type { DocumentUpgradeFns } from "./_internal/upgradeFns.js";
 
 export interface NodeShapeModel extends UnionModel<NodeShape, typeof NodeShapeSchema> {}
@@ -149,6 +149,33 @@ export const FreehandStrokeModel: FreehandStrokeModel = {
   },
 };
 
+export interface LayerFolderModel extends RecordModel<LayerFolder, typeof LayerFolderSchema> {}
+export const LayerFolderModel: LayerFolderModel = {
+  __type: {} as LayerFolder,
+  zodSchema: LayerFolderSchema,
+  [Metadata]: {
+    name: "LayerFolder",
+  },
+};
+
+export interface LayerItemModel extends RecordModel<LayerItem, typeof LayerItemSchema> {}
+export const LayerItemModel: LayerItemModel = {
+  __type: {} as LayerItem,
+  zodSchema: LayerItemSchema,
+  [Metadata]: {
+    name: "LayerItem",
+  },
+};
+
+export interface LayerRootModel extends RecordModel<LayerRoot, typeof LayerRootSchema> {}
+export const LayerRootModel: LayerRootModel = {
+  __type: {} as LayerRoot,
+  zodSchema: LayerRootSchema,
+  [Metadata]: {
+    name: "LayerRoot",
+  },
+};
+
 /**
  * Construct the DocumentModel for this SDK, wiring in the typed forward
  * functions the runtime needs to materialize fields added past v1.
@@ -170,8 +197,11 @@ export function DocumentModel(upgradeFns: DocumentUpgradeFns): DocumentSchema {
     CursorPresence: CursorPresenceModel,
     SelectionPresence: SelectionPresenceModel,
     FreehandStroke: FreehandStrokeModel,
+    LayerFolder: LayerFolderModel,
+    LayerItem: LayerItemModel,
+    LayerRoot: LayerRootModel,
     [Metadata]: {
-      version: 3,
+      version: 4,
       minSupportedVersion: 1,
       upgrades: {
         ShapeBox: ShapeBoxUpgrades,
@@ -182,6 +212,9 @@ export function DocumentModel(upgradeFns: DocumentUpgradeFns): DocumentSchema {
         CursorPresence: CursorPresenceUpgrades,
         SelectionPresence: SelectionPresenceUpgrades,
         FreehandStroke: FreehandStrokeUpgrades,
+        LayerFolder: LayerFolderUpgrades,
+        LayerItem: LayerItemUpgrades,
+        LayerRoot: LayerRootUpgrades,
         NodeShape: NodeShapeUpgrades,
         CanvasActivity: CanvasActivityUpgrades,
         NodeShapeBox: NodeShapeUpgrades,

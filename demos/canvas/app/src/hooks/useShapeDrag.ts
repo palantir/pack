@@ -16,7 +16,7 @@
 
 import type { KnownNodeShape, NodeShapeModel, VersionedDocRef } from "@demo/canvas.sdk";
 import { CanvasActivityModel, matchVersion, narrowKnownNodeShape } from "@demo/canvas.sdk";
-import type { RecordRef } from "@palantir/pack.document-schema.model-types";
+import type { RecordId, RecordRef } from "@palantir/pack.document-schema.model-types";
 import type { MouseEvent } from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { getShapeUpdatedActivitySummary } from "../utils/activityMessages.js";
@@ -24,7 +24,12 @@ import { boundsToCenter } from "../utils/boundsToCenter.js";
 import { centerToBounds } from "../utils/centerToBounds.js";
 import type { ResizeHandle } from "../utils/getResizeHandles.js";
 import { getResizeHandles } from "../utils/getResizeHandles.js";
-import { toNodeShapeV1, toNodeShapeV2, toNodeShapeV3 } from "../utils/versionedShapes.js";
+import {
+  toNodeShapeV1,
+  toNodeShapeV2,
+  toNodeShapeV3,
+  toNodeShapeV4,
+} from "../utils/versionedShapes.js";
 import type { ShapeIndex } from "./useShapeIndex.js";
 
 type DragMode = "move" | "resize";
@@ -53,6 +58,7 @@ export function useShapeDrag(
   shapeIndex: ShapeIndex,
   selectedShapeRef: RecordRef<typeof NodeShapeModel> | undefined,
   onShapeSelect: (ref: RecordRef<typeof NodeShapeModel> | undefined) => void,
+  drawRankById: ReadonlyMap<RecordId, number>,
 ): UseShapeDragResult {
   const [dragState, setDragState] = useState<DragState | undefined>();
 
@@ -85,6 +91,7 @@ export function useShapeDrag(
         1: doc => doc.updateRecord(shapeRef, bounds),
         2: doc => doc.updateRecord(shapeRef, bounds),
         3: doc => doc.updateRecord(shapeRef, bounds),
+        4: doc => doc.updateRecord(shapeRef, bounds),
       });
     },
     [doc],
@@ -130,7 +137,8 @@ export function useShapeDrag(
       const x = e.clientX - rect.left;
       const y = e.clientY - rect.top;
 
-      if (selectedShapeRef != null) {
+      // A hidden selected shape has no resize handles.
+      if (selectedShapeRef != null && drawRankById.has(selectedShapeRef.id)) {
         // A selected shape that was deleted (e.g. by another user; getSnapshot rejects), or added
         // by a newer app, has no resize handles, so the click falls through to selecting a shape.
         const selectedShape = narrowKnownNodeShape(
@@ -152,7 +160,7 @@ export function useShapeDrag(
         }
       }
 
-      const shapeRef = shapeIndex.findShapesAtPoint(x, y)[0];
+      const shapeRef = findTopShape(shapeIndex.findShapesAtPoint(x, y), drawRankById);
       if (shapeRef == null) {
         onShapeSelect(undefined);
         return;
@@ -170,7 +178,7 @@ export function useShapeDrag(
         startY: y,
       });
     },
-    [onShapeSelect, selectedShapeRef, shapeIndex],
+    [drawRankById, onShapeSelect, selectedShapeRef, shapeIndex],
   );
 
   const onMouseMove = useCallback(
@@ -327,6 +335,22 @@ export function useShapeDrag(
               }),
             );
           },
+          4: doc => {
+            const oldShape = toNodeShapeV4(dragState.initialShape);
+            const newShape = toNodeShapeV4(finalShape);
+            doc.withTransaction(
+              () => {
+                void doc.updateRecord(dragState.shapeRef, finalBounds);
+              },
+              doc.describeEdit(CanvasActivityModel, {
+                activityType: "shapeUpdated",
+                newShape,
+                nodeId: dragState.shapeRef.id,
+                oldShape,
+                summary: getShapeUpdatedActivitySummary(dragState.shapeRef.id),
+              }),
+            );
+          },
         });
       }
     }
@@ -339,6 +363,23 @@ export function useShapeDrag(
     onMouseMove,
     onMouseUp,
   };
+}
+
+/** The shape drawn on top, skipping hidden shapes (which have no draw rank). */
+function findTopShape(
+  shapeRefs: readonly RecordRef<typeof NodeShapeModel>[],
+  drawRankById: ReadonlyMap<RecordId, number>,
+): RecordRef<typeof NodeShapeModel> | undefined {
+  let topShapeRef: RecordRef<typeof NodeShapeModel> | undefined;
+  let topRank = -1;
+  for (const shapeRef of shapeRefs) {
+    const rank = drawRankById.get(shapeRef.id);
+    if (rank != null && rank > topRank) {
+      topShapeRef = shapeRef;
+      topRank = rank;
+    }
+  }
+  return topShapeRef;
 }
 
 function findHandleAtPoint(x: number, y: number, shape: KnownNodeShape): ResizeHandle | undefined {

@@ -85,6 +85,16 @@ export function useCanvasShapes(doc: VersionedDocRef): UseCanvasShapesResult {
               nodeId: id,
             }),
           ),
+        4: doc =>
+          doc.withTransaction(
+            () => {
+              void doc.setRecord(NodeShapeModel, id, v2ShapeData);
+            },
+            doc.describeEdit(CanvasActivityModel, {
+              activityType: "shapeAdded",
+              nodeId: id,
+            }),
+          ),
       });
 
       const collection = doc.getRecords(NodeShapeModel);

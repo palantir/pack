@@ -14,16 +14,21 @@
  * limitations under the License.
  */
 
-import type { FreehandStrokeModel, NodeShapeModel, VersionedDocRef } from "@demo/canvas.sdk";
+import type { NodeShapeModel, VersionedDocRef } from "@demo/canvas.sdk";
 import { CanvasActivityModel, matchVersion, narrowKnownNodeShape } from "@demo/canvas.sdk";
-import type { RecordRef } from "@palantir/pack.document-schema.model-types";
+import type { RecordId, RecordRef } from "@palantir/pack.document-schema.model-types";
 import type { MouseEvent } from "react";
 import { useCallback, useRef, useState } from "react";
 import { getShapeUpdatedActivitySummary } from "../utils/activityMessages.js";
 import { centerToBounds } from "../utils/centerToBounds.js";
 import { getDefaultColor } from "../utils/getDefaultColor.js";
 import { getDefaultShapeSize } from "../utils/getDefaultShapeSize.js";
-import { toNodeShapeV1, toNodeShapeV2, toNodeShapeV3 } from "../utils/versionedShapes.js";
+import {
+  toNodeShapeV1,
+  toNodeShapeV2,
+  toNodeShapeV3,
+  toNodeShapeV4,
+} from "../utils/versionedShapes.js";
 import { useCanvasShapes } from "./useCanvasShapes.js";
 import { useFreehandStrokes } from "./useFreehandStrokes.js";
 import { useShapeDrag } from "./useShapeDrag.js";
@@ -48,16 +53,15 @@ export interface UseCanvasInteractionResult {
   setColor: (color: string) => void;
   setOpacity: (opacity: number) => void;
   setTool: (tool: ToolMode) => void;
-  readonly shapeRefs: readonly RecordRef<typeof NodeShapeModel>[];
-  readonly strokeRefs: readonly RecordRef<typeof FreehandStrokeModel>[];
 }
 
 export function useCanvasInteraction(
   doc: VersionedDocRef,
   broadcastSelection: (nodeIds: readonly string[]) => void,
+  drawRankById: ReadonlyMap<RecordId, number>,
 ): UseCanvasInteractionResult {
-  const { addShape, shapeRefs } = useCanvasShapes(doc);
-  const { addStroke, strokeRefs } = useFreehandStrokes(doc);
+  const { addShape } = useCanvasShapes(doc);
+  const { addStroke } = useFreehandStrokes(doc);
   const shapeIndex = useShapeIndex(doc);
   const { clearSelection, selectedShapeRef, selectShape } = useShapeSelection();
   const [currentTool, setCurrentTool] = useState<ToolMode>("select");
@@ -88,6 +92,7 @@ export function useCanvasInteraction(
     shapeIndex,
     selectedShapeRef,
     selectShapeWithBroadcast,
+    drawRankById,
   );
 
   const deleteSelected = useCallback(() => {
@@ -115,6 +120,16 @@ export function useCanvasInteraction(
             }),
           ),
         3: doc =>
+          doc.withTransaction(
+            () => {
+              void doc.deleteRecord(selectedShapeRef);
+            },
+            doc.describeEdit(CanvasActivityModel, {
+              activityType: "shapeDeleted",
+              nodeId,
+            }),
+          ),
+        4: doc =>
           doc.withTransaction(
             () => {
               void doc.deleteRecord(selectedShapeRef);
@@ -199,6 +214,29 @@ export function useCanvasInteraction(
               }),
             );
           },
+          4: doc => {
+            const oldShapeV4 = toNodeShapeV4(oldShape);
+            const newShapeV4 = toNodeShapeV4({
+              ...oldShape,
+              fillColor: color,
+              strokeColor: color,
+            });
+            doc.withTransaction(
+              () => {
+                void doc.updateRecord(selectedShapeRef, {
+                  fillColor: color,
+                  strokeColor: color,
+                });
+              },
+              doc.describeEdit(CanvasActivityModel, {
+                activityType: "shapeUpdated",
+                nodeId: selectedShapeRef.id,
+                oldShape: oldShapeV4,
+                newShape: newShapeV4,
+                summary: getShapeUpdatedActivitySummary(selectedShapeRef.id),
+              }),
+            );
+          },
         });
       }
     },
@@ -246,6 +284,22 @@ export function useCanvasInteraction(
               nodeId: selectedShapeRef.id,
               oldShape: oldShapeV3,
               newShape: newShapeV3,
+              summary: getShapeUpdatedActivitySummary(selectedShapeRef.id),
+            }),
+          );
+        },
+        4: doc => {
+          const oldShapeV4 = toNodeShapeV4(oldShape);
+          const newShapeV4 = toNodeShapeV4({ ...oldShape, opacity: normalizedOpacity });
+          doc.withTransaction(
+            () => {
+              void doc.updateRecord(selectedShapeRef, { opacity: normalizedOpacity });
+            },
+            doc.describeEdit(CanvasActivityModel, {
+              activityType: "shapeUpdated",
+              nodeId: selectedShapeRef.id,
+              oldShape: oldShapeV4,
+              newShape: newShapeV4,
               summary: getShapeUpdatedActivitySummary(selectedShapeRef.id),
             }),
           );
@@ -381,8 +435,6 @@ export function useCanvasInteraction(
     setColor,
     setOpacity,
     setTool,
-    shapeRefs,
-    strokeRefs,
   };
 }
 

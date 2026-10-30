@@ -200,4 +200,41 @@ const schemaV3 = S.nextSchema(schemaV2)
   .addSchemaUpdate(addShapeUpdatedActivitySummary)
   .build();
 
-export default schemaV3;
+// --- Schema change: add layer folders (purely additive) ---
+// Each folder is its own record, so edits to different folders merge. Order
+// lives in the `childIds` arrays, which are rewritten whole on every reorder.
+const addLayerModels = S.defineSchemaUpdate("addLayerModels", () => {
+  const LayerFolder = S.defineRecord("LayerFolder", {
+    docs:
+      "A folder in the layers panel. `childIds` lists sub-folder and item ids in drawing order, bottom first.",
+    fields: {
+      name: S.String,
+      visible: S.Boolean,
+      childIds: S.Array(S.String),
+    },
+  });
+
+  const LayerRoot = S.defineRecord("LayerRoot", {
+    docs:
+      "The top level of the layers panel, stored under a fixed id. `childIds` is in drawing order, bottom first.",
+    fields: {
+      childIds: S.Array(S.String),
+    },
+  });
+
+  const LayerItem = S.defineRecord("LayerItem", {
+    docs: "Layers panel state for a shape or stroke, stored under the id `layer-<item id>`.",
+    fields: {
+      visible: S.Boolean,
+    },
+  });
+
+  return { LayerFolder, LayerItem, LayerRoot };
+});
+
+// --- Schema v4: add layer folders ---
+const schemaV4 = S.nextSchema(schemaV3)
+  .addSchemaUpdate(addLayerModels)
+  .build();
+
+export default schemaV4;

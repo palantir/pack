@@ -12,6 +12,20 @@ export const FreehandStrokeInternalSchema = z.object({
   points: z.string().optional(),
 }).passthrough();
 
+export const LayerFolderInternalSchema = z.object({
+  childIds: z.array(z.string()).optional(),
+  name: z.string().optional(),
+  visible: z.boolean().optional(),
+}).passthrough();
+
+export const LayerItemInternalSchema = z.object({
+  visible: z.boolean().optional(),
+}).passthrough();
+
+export const LayerRootInternalSchema = z.object({
+  childIds: z.array(z.string()).optional(),
+}).passthrough();
+
 export const SelectionPresenceInternalSchema = z.object({
   selectedNodeIds: z.array(z.string()),
 }).passthrough();
