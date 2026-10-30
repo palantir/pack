@@ -51,7 +51,7 @@ const apiGatewayVersion = readArg("--api-gateway-version");
 const gothamObjectsGatewayVersion = readArg("--gotham-objects-gateway-version");
 if (apiGatewayVersion == null || gothamObjectsGatewayVersion == null) {
   console.error(
-    "Usage: pnpm platform-sdk:generate --api-gateway-version <version> --gotham-objects-gateway-version <version>",
+    "Usage: pnpm platform-sdk:generate --api-gateway-version <x.y.z> --gotham-objects-gateway-version <x.y.z>",
   );
   process.exit(1);
 }
@@ -115,9 +115,11 @@ for (const packageDir of PACKAGES_USING_SDK) {
   writeJson(packageJsonPath, withSls(packageJson, sls));
 }
 
+// Returns the version after the flag, or undefined if it's missing or isn't a version like "1.1885.0".
 function readArg(name) {
   const index = process.argv.indexOf(name);
-  return index === -1 ? undefined : process.argv[index + 1];
+  const value = index === -1 ? undefined : process.argv[index + 1];
+  return value != null && /^\d+\.\d+\.\d+$/.test(value) ? value : undefined;
 }
 
 function withSls(packageJson, sls) {
