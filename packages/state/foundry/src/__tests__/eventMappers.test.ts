@@ -14,7 +14,10 @@
  * limitations under the License.
  */
 
-import type { ActivityCollaborativeUpdate, PresenceCollaborativeUpdate } from "@osdk/foundry.pack";
+import type {
+  ActivityCollaborativeUpdate,
+  PresenceCollaborativeUpdate,
+} from "@palantir/pack.core/generatedPlatformSdk";
 import type { DocumentSchema, Model } from "@palantir/pack.document-schema.model-types";
 import {
   ActivityEventDataType,

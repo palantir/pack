@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
+import type { PackAppInternal } from "@palantir/pack.core";
 import type {
   Document as WireDocument,
   DocumentTypeV2 as WireDocumentTypeV2,
-} from "@osdk/foundry.pack";
-import { Documents, DocumentTypes } from "@osdk/foundry.pack";
-import type { PackAppInternal } from "@palantir/pack.core";
+} from "@palantir/pack.core/generatedPlatformSdk";
+import { Documents, DocumentTypes } from "@palantir/pack.core/generatedPlatformSdk";
 import type { DocumentRef, DocumentSchema } from "@palantir/pack.document-schema.model-types";
 import { Metadata } from "@palantir/pack.document-schema.model-types";
 import type { FoundryEventService } from "@palantir/pack.state.foundry-event";
@@ -29,7 +29,7 @@ import { mock } from "vitest-mock-extended";
 import type { FoundryDocumentService } from "../FoundryDocumentService.js";
 import { internalCreateFoundryDocumentService } from "../FoundryDocumentService.js";
 
-vi.mock("@osdk/foundry.pack", () => ({
+vi.mock("@palantir/pack.core/generatedPlatformSdk", () => ({
   DocumentTypes: {
     loadV2: vi.fn(),
     loadByNameV2: vi.fn(),

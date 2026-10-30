@@ -22,7 +22,10 @@ import { irUpdateSchemaHandler } from "../irUpdateSchemaHandler.js";
 
 const { updateSchemaMock } = vi.hoisted(() => ({ updateSchemaMock: vi.fn() }));
 
-vi.mock("@osdk/foundry.pack", () => ({ DocumentTypes: { updateSchema: updateSchemaMock } }));
+vi.mock(
+  "@palantir/pack.core/generatedPlatformSdk",
+  () => ({ DocumentTypes: { updateSchema: updateSchemaMock } }),
+);
 
 vi.mock("@osdk/client", () => ({ createPlatformClient: vi.fn(() => ({})) }));
 

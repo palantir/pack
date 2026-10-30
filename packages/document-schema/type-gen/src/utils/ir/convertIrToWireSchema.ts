@@ -22,7 +22,7 @@ import type {
   FieldValueUnion,
   ModelDef,
   SchemaMetadata,
-} from "@osdk/foundry.pack";
+} from "@palantir/pack.core/generatedPlatformSdk";
 import type {
   IFieldDef,
   IFieldTypeUnion,
@@ -38,7 +38,7 @@ import type {
  * The IR uses conjure-style tagged unions where the payload is nested under a key
  * matching the discriminant (e.g. `{ type: "record", record: { ... } }`).
  *
- * The Foundry API (DocumentTypeSchema from @osdk/foundry.pack) uses flat discriminated
+ * The Foundry API (DocumentTypeSchema from the generated platform SDK) uses flat discriminated
  * unions where payload fields are spread alongside the type discriminant
  * (e.g. `{ type: "record", key: "...", name: "...", ... }`).
  *
@@ -61,16 +61,13 @@ export function convertIrToWireSchema(ir: IRealTimeDocumentSchema): DocumentType
 function convertModelDef(model: IModelDef): ModelDef {
   switch (model.type) {
     case "record":
-      // TODO: The @osdk/foundry.pack wire types still declare `metadata` as required on
-      // RecordDef, but the Pack API schema (api-gateway / backpack) has removed it.
-      // Cast through unknown until the published types catch up.
       return {
         type: "record",
         key: model.record.key,
         name: model.record.name,
         description: orUndefined(model.record.description),
         fields: [...model.record.fields.map(convertFieldDef)],
-      } as unknown as ModelDef;
+      };
     case "union":
       return {
         type: "union",
@@ -137,12 +134,10 @@ function convertFieldValueType(value: IFieldValueUnion): FieldValueType {
 function convertFieldValueUnion(value: IFieldValueUnion): FieldValueUnion {
   switch (value.type) {
     case "resourceRef":
-      // TODO: @osdk/foundry.pack does not yet declare the resourceRef variant. Drop the
-      // cast once the api-gateway publish and osdk regeneration land.
       return {
         type: "resourceRef",
         resourceRids: [...value.resourceRef.resourceRids],
-      } as unknown as FieldValueUnion;
+      };
     case "boolean":
       return { type: "boolean", defaultValue: orUndefined(value.boolean.defaultValue) };
     case "datetime":

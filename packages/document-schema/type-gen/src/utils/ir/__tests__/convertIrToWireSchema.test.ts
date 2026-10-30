@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import type { FieldValueType, RecordDef, UnionDef } from "@osdk/foundry.pack";
+import type { FieldValueType, RecordDef, UnionDef } from "@palantir/pack.core/generatedPlatformSdk";
 import { describe, expect, it } from "vitest";
 import type {
   IModelDef,

@@ -14,14 +14,14 @@
  * limitations under the License.
  */
 
+import type { PackAppInternal } from "@palantir/pack.core";
 import type {
   ActivityCollaborativeUpdate,
   Document,
   DocumentMetadataUpdate,
   PresenceCollaborativeUpdate,
-} from "@osdk/foundry.pack";
-import { Documents, PublishedVersions } from "@osdk/foundry.pack";
-import type { PackAppInternal } from "@palantir/pack.core";
+} from "@palantir/pack.core/generatedPlatformSdk";
+import { Documents, PublishedVersions } from "@palantir/pack.core/generatedPlatformSdk";
 import type { DocumentId, DocumentSchema, Model } from "@palantir/pack.document-schema.model-types";
 import { ChannelErrorCode, Metadata } from "@palantir/pack.document-schema.model-types";
 import {
@@ -44,7 +44,7 @@ import { internalCreateFoundryDocumentService } from "../FoundryDocumentService.
 
 /* eslint-disable @typescript-eslint/unbound-method */
 
-vi.mock("@osdk/foundry.pack", () => ({
+vi.mock("@palantir/pack.core/generatedPlatformSdk", () => ({
   Documents: {
     deleteDocument: vi.fn(),
     get: vi.fn(),

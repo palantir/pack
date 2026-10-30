@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
+import { invalidUserRef } from "@palantir/pack.auth";
 import type {
   ActivityCollaborativeUpdate,
   ActivityEvent as FoundryActivityEvent,
   ErrorMessage,
   PresenceCollaborativeUpdate,
-} from "@osdk/foundry.pack";
-import { invalidUserRef } from "@palantir/pack.auth";
+} from "@palantir/pack.core/generatedPlatformSdk";
 import type {
   ActivityEvent,
   ActivityEventData,
@@ -158,7 +158,7 @@ function getActivityEventData(
     }
 
     default: {
-      // Fails to compile when a @osdk/foundry.pack bump adds an event type this switch doesn't map.
+      // Fails to compile when the generated platform SDK gains an event type this switch doesn't map.
       eventData satisfies never;
       const unknownEventData: { readonly type?: unknown } = eventData;
       return {

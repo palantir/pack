@@ -21,12 +21,12 @@ catalogs:
     '@osdk/foundry.admin':
       specifier: ^2.56.0
       version: 2.56.0
-    '@osdk/foundry.pack':
-      specifier: ^2.86.0
-      version: 2.86.0
     '@osdk/oauth':
       specifier: ^1.14.0
       version: 1.14.0
+    '@osdk/platform-sdk-generator':
+      specifier: ^0.84.0
+      version: 0.84.0
     '@osdk/shared.client2':
       specifier: ^1.0.0
       version: 1.0.0
@@ -140,6 +140,9 @@ importers:
       '@monorepolint/rules':
         specifier: 0.6.0-alpha.6
         version: 0.6.0-alpha.6
+      '@osdk/platform-sdk-generator':
+        specifier: 'catalog:'
+        version: 0.84.0
       '@palantir/pack.monorepo.transpile':
         specifier: workspace:~
         version: link:packages/monorepo/transpile
@@ -628,6 +631,15 @@ importers:
       '@osdk/client':
         specifier: 'catalog:'
         version: 2.54.0
+      '@osdk/shared.client':
+        specifier: ^1.0.1
+        version: 1.0.1
+      '@osdk/shared.client2':
+        specifier: 'catalog:'
+        version: 1.0.0
+      '@osdk/shared.net.platformapi':
+        specifier: ^1.8.0
+        version: 1.9.0
       remeda:
         specifier: 'catalog:'
         version: 2.32.0
@@ -712,9 +724,9 @@ importers:
       '@osdk/client':
         specifier: 'catalog:'
         version: 2.54.0
-      '@osdk/foundry.pack':
-        specifier: 'catalog:'
-        version: 2.86.0
+      '@palantir/pack.core':
+        specifier: workspace:*
+        version: link:../../core
       '@palantir/pack.document-schema.model-types':
         specifier: workspace:~
         version: link:../model-types
@@ -1212,9 +1224,6 @@ importers:
       '@osdk/api':
         specifier: 'catalog:'
         version: 2.54.0
-      '@osdk/foundry.pack':
-        specifier: 'catalog:'
-        version: 2.86.0
       '@palantir/pack.auth':
         specifier: workspace:*
         version: link:../../auth/core
@@ -1264,9 +1273,6 @@ importers:
       '@osdk/api':
         specifier: 'catalog:'
         version: 2.54.0
-      '@osdk/foundry.pack':
-        specifier: 'catalog:'
-        version: 2.86.0
       '@palantir/pack.auth':
         specifier: workspace:*
         version: link:../../auth/core
@@ -4006,6 +4012,12 @@ packages:
       '@osdk/shared.test':
         optional: true
 
+  '@osdk/docs-spec-core@0.7.0':
+    resolution: {integrity: sha512-4PhFvnflrdOSum5+XO/EsRO95moUU7dsQ6Jjv+5fOT24yHtvk+8AZUfRWObbe2zChKRzZwfZLvWVuV5UXAvaIw==}
+
+  '@osdk/docs-spec-platform@0.3.0':
+    resolution: {integrity: sha512-oNHsQwCrJ7Z0OlNcudeU7xkCMXFQZMfMa0ZwM3MOn7VJZzBf2BwnA4HdTeQKDTJMGDvBE+7diGvhIn26cuwO0g==}
+
   '@osdk/foundry.admin@2.56.0':
     resolution: {integrity: sha512-c1ZfjCVv6sjPFOa08VeQ9m5KtPriwbx9ro7tD949Q3AE5K6P8/Z+uS2dZbZoXKj96w6X48jUQlsKeCQZO7vzkA==}
 
@@ -4014,9 +4026,6 @@ packages:
 
   '@osdk/foundry.core@2.70.0':
     resolution: {integrity: sha512-586F4+sfGJZPUybv630RHqgHEOUfSLWWmj3e8HP20mXiGvJLSS5tC2qlU16CmdbQxM2J9IpqV/iT/ufv5+Y64A==}
-
-  '@osdk/foundry.core@2.86.0':
-    resolution: {integrity: sha512-Zsd5YJU2v0qAd3h+vGmROfdgBZJZvY7ojeb01OYcmTUiCoDeUuU8ReRH5Hl84ZGddmQBdRkhnE3lKsWrV1NUsA==}
 
   '@osdk/foundry.datahealth@2.70.0':
     resolution: {integrity: sha512-7fgmTufDRyxlFrph6Fhjc+OznyKQlrD6yiCCLo2aUYPZGRlpv9B3Ok8Xb0RQ7t2VKRTZOmo5FY3RTAo4NNeIPQ==}
@@ -4027,9 +4036,6 @@ packages:
   '@osdk/foundry.filesystem@2.70.0':
     resolution: {integrity: sha512-DdB6bm5ivaIvNJ71zQGPORDyflQouqEkgTmJymEY//Twf/9MVmqnob8pFQTMUt851pxiAjrg+2/eBjkRXYqmtQ==}
 
-  '@osdk/foundry.filesystem@2.86.0':
-    resolution: {integrity: sha512-zV4xX6P4Fk7FU8vXNwyrkhH7w4utaJCEnUD/5QOPGufjsWoyqms+lwFMLuRenhpgRjYk05/aXNHNkGeSTdsICQ==}
-
   '@osdk/foundry.functions@2.70.0':
     resolution: {integrity: sha512-uI1KN+JvottagpJhgfm14kJn7qnYFDKd2LfCAN7wYTucooV/Itz4mxMjwUua0s7uljUZZdEH0p3EM1PQjKi14g==}
 
@@ -4039,23 +4045,21 @@ packages:
   '@osdk/foundry.geo@2.70.0':
     resolution: {integrity: sha512-c7g8QtFILSwyIoPAl72RXslqT0BWSkGU7qvtcxra6ZjskQIJDJqVR1MfRGQWn2vA9Qi8EAqI2wraZxJz+asvIw==}
 
-  '@osdk/foundry.geo@2.86.0':
-    resolution: {integrity: sha512-XbbOOeemtth7caJqs0Zde3slU5jqUPf3jSglnBqL+IsoGNSRinKWPhhQheXnFzsLWxkMWi5qfdOQ7DGi3wiOdA==}
-
   '@osdk/foundry.mediasets@2.70.0':
     resolution: {integrity: sha512-Ag4lm2H0WbIx6loOykYjoJWzxiqxvU2Fva+58XsTISIgg81CEEDvhls6UoLUX3IVq7vhWquYZnJUuogRTOYNeA==}
 
   '@osdk/foundry.ontologies@2.70.0':
     resolution: {integrity: sha512-QVYx/iJ4Fj6K/USKXg1GwLG0DwYtSuU0ok3Phygeua3iDMzpitQuroto5/Njy+I3dbhKaFdGVsQM5gDAL6fTTg==}
 
-  '@osdk/foundry.pack@2.86.0':
-    resolution: {integrity: sha512-E/CfLN1IMuZ1Kkl2KF+oi8IKDMru8lxBbGY6v3x+PSb4QN+8MR6jKEkE7Xm4rP3PCoIWJ/S6tMfphATDk06wFg==}
-
   '@osdk/generator-converters@2.54.0':
     resolution: {integrity: sha512-EJhkGb3QowMH7aJCVRrlwt0L8LbvM2lq982LT/0gVHEAPbRv/xMUx1sjKp1NY74p01/TbVT/yiYCMno5PM83xg==}
 
   '@osdk/oauth@1.14.0':
     resolution: {integrity: sha512-DQJiAjozTBcY63Pr2JyQDyIJVeZEmmQQJQT28hB1TZSua6bv06ElHqTp6sM7NV5gSFJ2ayYD3XSdcZ+JUnceEA==}
+
+  '@osdk/platform-sdk-generator@0.84.0':
+    resolution: {integrity: sha512-ruaBj4JfOZ261iaaoxsfD8ZZRN6wfYTdc0A+euHuJzcxZelkO+2aU9lgzmuiEw2m/cpNFlVVO/W/zulBePrCxQ==}
+    hasBin: true
 
   '@osdk/shared.client.impl@1.13.0':
     resolution: {integrity: sha512-spxhhd0xj0x+4wSl+5qK1uennVUuD7ksGryiSgCzEWY7vyeISx269ObCLyGAyWY95VGPhXFY29sCgwZtgOcvaQ==}
@@ -9517,6 +9521,9 @@ packages:
 
   remark-stringify@7.0.4:
     resolution: {integrity: sha512-qck+8NeA1D0utk1ttKcWAoHRrJxERYQzkHDyn+pF5Z4whX1ug98uCNPPSeFgLSaNERRxnD6oxIug6DzZQth6Pg==}
+
+  remark@15.0.1:
+    resolution: {integrity: sha512-Eht5w30ruCXgFmxVUSlNWQ9iiimq07URKeFS3hNc8cUWy1llX4KDWfyEDZRycMc+znsN9Ux5/tJ/BFdgdOwA3A==}
 
   remeda@2.32.0:
     resolution: {integrity: sha512-BZx9DsT4FAgXDTOdgJIc5eY6ECIXMwtlSPQoPglF20ycSWigttDDe88AozEsPPT4OWk5NujroGSBC1phw5uU+w==}
@@ -14991,6 +14998,12 @@ snapshots:
       - bufferutil
       - utf-8-validate
 
+  '@osdk/docs-spec-core@0.7.0': {}
+
+  '@osdk/docs-spec-platform@0.3.0':
+    dependencies:
+      '@osdk/docs-spec-core': 0.7.0
+
   '@osdk/foundry.admin@2.56.0':
     dependencies:
       '@osdk/foundry.core': 2.56.0
@@ -15011,13 +15024,6 @@ snapshots:
       '@osdk/shared.client': 1.0.1
       '@osdk/shared.client2': 1.0.0
       '@osdk/shared.net.platformapi': 1.7.0
-
-  '@osdk/foundry.core@2.86.0':
-    dependencies:
-      '@osdk/foundry.geo': 2.86.0
-      '@osdk/shared.client': 1.0.1
-      '@osdk/shared.client2': 1.0.0
-      '@osdk/shared.net.platformapi': 1.9.0
 
   '@osdk/foundry.datahealth@2.70.0':
     dependencies:
@@ -15042,13 +15048,6 @@ snapshots:
       '@osdk/shared.client2': 1.0.0
       '@osdk/shared.net.platformapi': 1.7.0
 
-  '@osdk/foundry.filesystem@2.86.0':
-    dependencies:
-      '@osdk/foundry.core': 2.86.0
-      '@osdk/shared.client': 1.0.1
-      '@osdk/shared.client2': 1.0.0
-      '@osdk/shared.net.platformapi': 1.9.0
-
   '@osdk/foundry.functions@2.70.0':
     dependencies:
       '@osdk/foundry.core': 2.70.0
@@ -15069,12 +15068,6 @@ snapshots:
       '@osdk/shared.client2': 1.0.0
       '@osdk/shared.net.platformapi': 1.7.0
 
-  '@osdk/foundry.geo@2.86.0':
-    dependencies:
-      '@osdk/shared.client': 1.0.1
-      '@osdk/shared.client2': 1.0.0
-      '@osdk/shared.net.platformapi': 1.9.0
-
   '@osdk/foundry.mediasets@2.70.0':
     dependencies:
       '@osdk/foundry.core': 2.70.0
@@ -15091,14 +15084,6 @@ snapshots:
       '@osdk/shared.client2': 1.0.0
       '@osdk/shared.net.platformapi': 1.7.0
 
-  '@osdk/foundry.pack@2.86.0':
-    dependencies:
-      '@osdk/foundry.core': 2.86.0
-      '@osdk/foundry.filesystem': 2.86.0
-      '@osdk/shared.client': 1.0.1
-      '@osdk/shared.client2': 1.0.0
-      '@osdk/shared.net.platformapi': 1.9.0
-
   '@osdk/generator-converters@2.54.0':
     dependencies:
       '@osdk/api': 2.54.0
@@ -15109,6 +15094,21 @@ snapshots:
       oauth4webapi: 2.17.0
       tiny-invariant: 1.3.3
       typescript-event-target: 1.1.1
+
+  '@osdk/platform-sdk-generator@0.84.0':
+    dependencies:
+      '@osdk/docs-spec-core': 0.7.0
+      '@osdk/docs-spec-platform': 0.3.0
+      find-up: 7.0.0
+      prettier: 3.7.3
+      remark: 15.0.1
+      semver: 7.8.5
+      tiny-invariant: 1.3.3
+      unist-util-visit: 5.1.0
+      yaml: 2.9.0
+      yargs: 17.7.2
+    transitivePeerDependencies:
+      - supports-color
 
   '@osdk/shared.client.impl@1.13.0':
     dependencies:
@@ -21371,6 +21371,15 @@ snapshots:
       stringify-entities: 2.0.0
       unherit: 1.1.3
       xtend: 4.0.2
+
+  remark@15.0.1:
+    dependencies:
+      '@types/mdast': 4.0.4
+      remark-parse: 11.0.0
+      remark-stringify: 11.0.0
+      unified: 11.0.5
+    transitivePeerDependencies:
+      - supports-color
 
   remeda@2.32.0:
     dependencies:

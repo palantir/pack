@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import type { DocumentPublishMessage, EditId } from "@osdk/foundry.pack";
+import type { DocumentPublishMessage, EditId } from "@palantir/pack.core/generatedPlatformSdk";
 
 /** A published update awaiting server acknowledgement. */
 export interface UnackedUpdate {

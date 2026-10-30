@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-import type { Document, DocumentSearchResponse } from "@osdk/foundry.pack";
-import { Documents } from "@osdk/foundry.pack";
 import type { PackAppInternal } from "@palantir/pack.core";
+import type { Document, DocumentSearchResponse } from "@palantir/pack.core/generatedPlatformSdk";
+import { Documents } from "@palantir/pack.core/generatedPlatformSdk";
 import type {
   DocumentId,
   DocumentMetadata,
@@ -31,7 +31,7 @@ import { mock } from "vitest-mock-extended";
 import type { FoundryDocumentService } from "../FoundryDocumentService.js";
 import { internalCreateFoundryDocumentService } from "../FoundryDocumentService.js";
 
-vi.mock("@osdk/foundry.pack", () => ({
+vi.mock("@palantir/pack.core/generatedPlatformSdk", () => ({
   Documents: {
     get: vi.fn(),
     search: vi.fn(),

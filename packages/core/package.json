@@ -21,9 +21,9 @@
       "browser": "./build/browser/public/*.js",
       "import": {
         "types": "./build/types/public/*.d.ts",
-        "default": "./build/js/public/*.js"
+        "default": "./build/esm/public/*.js"
       },
-      "require": "./build/cjs/public/*.js",
+      "require": "./build/cjs/public/*.cjs",
       "default": "./build/browser/public/*.js"
     }
   },
@@ -41,6 +41,9 @@
   },
   "dependencies": {
     "@osdk/client": "catalog:",
+    "@osdk/shared.client": "^1.0.1",
+    "@osdk/shared.client2": "catalog:",
+    "@osdk/shared.net.platformapi": "^1.8.0",
     "remeda": "catalog:"
   },
   "peerDependencies": {

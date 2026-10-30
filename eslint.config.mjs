@@ -248,6 +248,7 @@ export default tseslint.config(
       "**/dist",
       "**/node_modules/",
       "**/build/",
+      "**/src/generated/",
       "**/src/generatedNoCheck/",
       "**/src/generatedNoCheck2/",
       "**/templates/",

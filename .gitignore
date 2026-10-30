@@ -13,6 +13,9 @@ coverage
 # Test outputs
 test-output/
 
+# Scratch files from scripts/generatePlatformSdk.mjs (downloaded IR, generator output)
+/tmp/
+
 # IDE files
 .idea/
 .history

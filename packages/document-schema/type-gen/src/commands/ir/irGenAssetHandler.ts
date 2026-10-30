@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import type { DocumentTypeAsset, FileSystemType } from "@osdk/foundry.pack";
+import type { DocumentTypeAsset, FileSystemType } from "@palantir/pack.core/generatedPlatformSdk";
 import { CommanderError } from "commander";
 import { consola } from "consola";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "fs";

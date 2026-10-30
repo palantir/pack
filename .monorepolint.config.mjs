@@ -368,9 +368,9 @@ const archetypeConfig = archetypes(
                   browser: "./build/browser/public/*.js",
                   import: {
                     types: "./build/types/public/*.d.ts",
-                    default: "./build/js/public/*.js",
+                    default: "./build/esm/public/*.js",
                   },
-                  require: "./build/cjs/public/*.js",
+                  require: "./build/cjs/public/*.cjs",
                   default: "./build/browser/public/*.js",
                 },
               },
@@ -452,9 +452,9 @@ const archetypeConfig = archetypes(
                     browser: "./build/browser/public/*.js",
                     import: {
                       types: "./build/types/public/*.d.ts",
-                      default: "./build/js/public/*.js",
+                      default: "./build/esm/public/*.js",
                     },
-                    require: "./build/cjs/public/*.js",
+                    require: "./build/cjs/public/*.cjs",
                     default: "./build/browser/public/*.js",
                   },
                 },

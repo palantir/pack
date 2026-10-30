@@ -14,6 +14,14 @@
  * limitations under the License.
  */
 
+import { getAuthModule } from "@palantir/pack.auth";
+import {
+  assertNever,
+  getOntologyRid,
+  type ModuleConfigTuple,
+  type PackAppInternal,
+  type Unsubscribe,
+} from "@palantir/pack.core";
 import type {
   ClientSupportedVersionRange,
   CreateDocumentRequest,
@@ -25,16 +33,12 @@ import type {
   DocumentTypeV2 as WireDocumentTypeV2,
   PublishedVersion as WirePublishedVersion,
   SearchDocumentsRequest,
-} from "@osdk/foundry.pack";
-import { Documents, DocumentTypes, PublishedVersions } from "@osdk/foundry.pack";
-import { getAuthModule } from "@palantir/pack.auth";
+} from "@palantir/pack.core/generatedPlatformSdk";
 import {
-  assertNever,
-  getOntologyRid,
-  type ModuleConfigTuple,
-  type PackAppInternal,
-  type Unsubscribe,
-} from "@palantir/pack.core";
+  Documents,
+  DocumentTypes,
+  PublishedVersions,
+} from "@palantir/pack.core/generatedPlatformSdk";
 import type {
   ActivityEvent,
   DocumentId,
