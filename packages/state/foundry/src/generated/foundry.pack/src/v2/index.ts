@@ -182,6 +182,7 @@ export type {
   YjsUpdate,
 } from "./_components.js";
 export type {
+  ArtifactDocumentCreationInUsersNamespaceNotSupported,
   ArtifactDocumentCreationMissingNamespace,
   CannotDeleteAutosavedDocument,
   CannotDeleteHiddenDocument,

@@ -41,7 +41,6 @@
   },
   "dependencies": {
     "@osdk/api": "catalog:",
-    "@osdk/foundry.pack": "catalog:",
     "@osdk/shared.client": "^1.0.1",
     "@osdk/shared.client2": "catalog:",
     "@osdk/shared.net.platformapi": "^1.8.0",
@@ -75,7 +74,7 @@
   "sls": {
     "dependencies": {
       "com.palantir.foundry.api:api-gateway": {
-        "minVersion": "1.1856.0",
+        "minVersion": "1.1871.1",
         "maxVersion": "1.x.x",
         "optional": false
       }

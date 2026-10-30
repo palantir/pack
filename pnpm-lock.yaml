@@ -1215,9 +1215,6 @@ importers:
       '@osdk/api':
         specifier: 'catalog:'
         version: 2.54.0
-      '@osdk/foundry.pack':
-        specifier: 'catalog:'
-        version: 2.86.0
       '@osdk/shared.client':
         specifier: ^1.0.1
         version: 1.0.1

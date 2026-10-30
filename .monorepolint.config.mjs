@@ -31,6 +31,7 @@ const REPOSITORY_URL = "https://github.com/palantir/pack.git";
  * @property {boolean} [isBuildTools]
  * @property {boolean} [isDocs]
  * @property {boolean} [hasSdkgenTemplates]
+ * @property {boolean} [hasGeneratedPlatformSdk]
  * @property {boolean} [isPrivate]
  * @property {boolean} [isDemo]
  * @property {boolean} [isDemoSchema]
@@ -225,7 +226,11 @@ const archetypeConfig = archetypes(
           ? "templates/tsconfig.demo.json"
           : (rules.isSdkgenTemplate
             ? "templates/tsconfig.sdkgen-template.json"
-            : (rules.isCli ? "templates/tsconfig.cli.json" : "templates/tsconfig.json")),
+            : (rules.isCli
+              ? "templates/tsconfig.cli.json"
+              : (rules.hasGeneratedPlatformSdk
+                ? "templates/tsconfig.generated-platform-sdk.json"
+                : "templates/tsconfig.json"))),
       },
     });
 
@@ -240,7 +245,9 @@ const archetypeConfig = archetypes(
 
           const templateFile = hasHappyDom
             ? "templates/vitest.with-dom.config.mjs"
-            : "templates/vitest.config.mjs";
+            : (rules.hasGeneratedPlatformSdk
+              ? "templates/vitest.generated-platform-sdk.config.mjs"
+              : "templates/vitest.config.mjs");
 
           const { packageDir: workspacePackageDir } = context.getWorkspaceContext();
           const fullPath = path.resolve(workspacePackageDir, templateFile);
@@ -512,7 +519,7 @@ const packages = {
   "@palantir/pack.schema": {},
   "@palantir/pack.state.core": {},
   "@palantir/pack.state.demo": {},
-  "@palantir/pack.state.foundry": {},
+  "@palantir/pack.state.foundry": { hasGeneratedPlatformSdk: true },
   "@palantir/pack.state.foundry-event": {},
   "@palantir/pack.state.react": {},
 };

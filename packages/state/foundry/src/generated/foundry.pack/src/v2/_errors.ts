@@ -18,6 +18,23 @@ export type LooselyBrandedString<T extends string> = string & {
   __LOOSE_BRAND?: T;
 };
 
+/**  
+   * Artifact-backed documents cannot be created in the Users namespace, which contains home folders. Choose a
+different namespace when creating the document.
+   * 
+   * Log Safety: UNSAFE
+   */
+export interface ArtifactDocumentCreationInUsersNamespaceNotSupported {
+  errorCode: "INVALID_ARGUMENT";
+  errorName: "ArtifactDocumentCreationInUsersNamespaceNotSupported";
+  errorDescription: "Artifact-backed documents cannot be created in the Users namespace, which contains home folders. Choose a different namespace when creating the document.";
+  errorInstanceId: string;
+  parameters: {
+    documentTypeName: unknown;
+    providedParent: unknown;
+  };
+}
+
 /**
  * Artifact-backed documents require a namespace upon creation.
  *

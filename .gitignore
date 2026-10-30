@@ -13,6 +13,9 @@ coverage
 # Test outputs
 test-output/
 
+# api-gateway IR downloaded by scripts/getOpenApiIr.sh
+/tmp/
+
 # IDE files
 .idea/
 .history
