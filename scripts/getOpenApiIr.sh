@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 
+# Adapted from scripts/getOpenApiIr.sh in https://github.com/palantir/foundry-platform-typescript.
+# Changes: adds --outDir, and downloads the api-gateway bundle into <outDir>/.bundle.
+
 set -eu
 
 print_help() {
