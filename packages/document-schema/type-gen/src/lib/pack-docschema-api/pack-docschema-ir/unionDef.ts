@@ -27,4 +27,7 @@ export interface IUnionDef {
     readonly [key: IUnionVariantKey]: IModelTypeKey;
   };
   readonly "metadata": ISchemaMeta;
+  readonly "variantMetadata"?: {
+    readonly [key: IUnionVariantKey]: ISchemaMeta;
+  } | null;
 }

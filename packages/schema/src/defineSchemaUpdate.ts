@@ -226,7 +226,8 @@ function assertMinorVersionChanges(
             + ` ${removedVariants.join(", ")}.`,
         );
       }
-      // TODO: allow once the server accepts new variants and we send each variant's version.
+      // TODO: allow once api-gateway and backpack pass each variant's version (variantMetadata) on
+      // to schema validation. type-gen already sends it.
       // Older apps already read a new variant as unknown and keep it when they save.
       const addedVariants = Object.keys(def.variants).filter(
         variantName => !Object.hasOwn(previousDef.variants, variantName),

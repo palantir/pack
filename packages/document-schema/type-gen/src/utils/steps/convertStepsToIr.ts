@@ -24,6 +24,7 @@ import type {
   IFieldDef,
   IRealTimeDocumentSchema,
   IRecordDef,
+  ISchemaMeta,
   IUnionDef,
 } from "../../lib/pack-docschema-api/pack-docschema-ir/index.js";
 import {
@@ -53,6 +54,8 @@ export interface SchemaProvenance {
   readonly modelVersions?: Record<string, number>;
   readonly fieldMinorVersions?: Record<string, Record<string, number>>;
   readonly modelMinorVersions?: Record<string, number>;
+  readonly variantVersions?: Record<string, Record<string, number>>;
+  readonly variantMinorVersions?: Record<string, Record<string, number>>;
   readonly deprecations?: P.VersionDeprecations;
 }
 
@@ -214,6 +217,20 @@ export function convertUnionDefToIr(
   const unionAddedIn = provenance?.modelVersions?.[modelKey] ?? fallbackVersion;
   const unionAddedInMinor = provenance?.modelMinorVersions?.[modelKey] ?? 0;
 
+  // Only variants added after the union get an entry; the rest inherit the union's version. A union
+  // that never gained a variant has no variantMetadata, so its output stays the same.
+  const variantMetadata: Record<string, ISchemaMeta> = {};
+  for (const variantName of Object.keys(unionDef.variants)) {
+    const addedIn = provenance?.variantVersions?.[modelKey]?.[variantName] ?? unionAddedIn;
+    const addedInMinor = provenance?.variantMinorVersions?.[modelKey]?.[variantName] ?? 0;
+    if (addedIn !== unionAddedIn || addedInMinor !== unionAddedInMinor) {
+      variantMetadata[variantName] = {
+        addedInVersion: addedIn,
+        ...(addedInMinor > 0 ? { addedInMinorVersion: addedInMinor } : {}),
+      };
+    }
+  }
+
   return {
     key: modelKey,
     name: unionDef.name,
@@ -224,6 +241,7 @@ export function convertUnionDefToIr(
       addedInVersion: unionAddedIn,
       ...(unionAddedInMinor > 0 ? { addedInMinorVersion: unionAddedInMinor } : {}),
     },
+    ...(Object.keys(variantMetadata).length > 0 ? { variantMetadata } : {}),
   };
 }
 
