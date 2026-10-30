@@ -27,6 +27,9 @@ catalogs:
     '@osdk/oauth':
       specifier: ^1.14.0
       version: 1.14.0
+    '@osdk/platform-sdk-generator':
+      specifier: ^0.84.0
+      version: 0.84.0
     '@osdk/shared.client2':
       specifier: ^1.0.0
       version: 1.0.0
@@ -1215,6 +1218,15 @@ importers:
       '@osdk/foundry.pack':
         specifier: 'catalog:'
         version: 2.86.0
+      '@osdk/shared.client':
+        specifier: ^1.0.1
+        version: 1.0.1
+      '@osdk/shared.client2':
+        specifier: 'catalog:'
+        version: 1.0.0
+      '@osdk/shared.net.platformapi':
+        specifier: ^1.8.0
+        version: 1.9.0
       '@palantir/pack.auth':
         specifier: workspace:*
         version: link:../../auth/core
@@ -1240,6 +1252,9 @@ importers:
         specifier: 'catalog:'
         version: 13.6.27
     devDependencies:
+      '@osdk/platform-sdk-generator':
+        specifier: 'catalog:'
+        version: 0.84.0
       '@palantir/pack.monorepo.tsconfig':
         specifier: workspace:~
         version: link:../../monorepo/tsconfig
@@ -4006,6 +4021,12 @@ packages:
       '@osdk/shared.test':
         optional: true
 
+  '@osdk/docs-spec-core@0.7.0':
+    resolution: {integrity: sha512-4PhFvnflrdOSum5+XO/EsRO95moUU7dsQ6Jjv+5fOT24yHtvk+8AZUfRWObbe2zChKRzZwfZLvWVuV5UXAvaIw==}
+
+  '@osdk/docs-spec-platform@0.3.0':
+    resolution: {integrity: sha512-oNHsQwCrJ7Z0OlNcudeU7xkCMXFQZMfMa0ZwM3MOn7VJZzBf2BwnA4HdTeQKDTJMGDvBE+7diGvhIn26cuwO0g==}
+
   '@osdk/foundry.admin@2.56.0':
     resolution: {integrity: sha512-c1ZfjCVv6sjPFOa08VeQ9m5KtPriwbx9ro7tD949Q3AE5K6P8/Z+uS2dZbZoXKj96w6X48jUQlsKeCQZO7vzkA==}
 
@@ -4056,6 +4077,10 @@ packages:
 
   '@osdk/oauth@1.14.0':
     resolution: {integrity: sha512-DQJiAjozTBcY63Pr2JyQDyIJVeZEmmQQJQT28hB1TZSua6bv06ElHqTp6sM7NV5gSFJ2ayYD3XSdcZ+JUnceEA==}
+
+  '@osdk/platform-sdk-generator@0.84.0':
+    resolution: {integrity: sha512-ruaBj4JfOZ261iaaoxsfD8ZZRN6wfYTdc0A+euHuJzcxZelkO+2aU9lgzmuiEw2m/cpNFlVVO/W/zulBePrCxQ==}
+    hasBin: true
 
   '@osdk/shared.client.impl@1.13.0':
     resolution: {integrity: sha512-spxhhd0xj0x+4wSl+5qK1uennVUuD7ksGryiSgCzEWY7vyeISx269ObCLyGAyWY95VGPhXFY29sCgwZtgOcvaQ==}
@@ -9517,6 +9542,9 @@ packages:
 
   remark-stringify@7.0.4:
     resolution: {integrity: sha512-qck+8NeA1D0utk1ttKcWAoHRrJxERYQzkHDyn+pF5Z4whX1ug98uCNPPSeFgLSaNERRxnD6oxIug6DzZQth6Pg==}
+
+  remark@15.0.1:
+    resolution: {integrity: sha512-Eht5w30ruCXgFmxVUSlNWQ9iiimq07URKeFS3hNc8cUWy1llX4KDWfyEDZRycMc+znsN9Ux5/tJ/BFdgdOwA3A==}
 
   remeda@2.32.0:
     resolution: {integrity: sha512-BZx9DsT4FAgXDTOdgJIc5eY6ECIXMwtlSPQoPglF20ycSWigttDDe88AozEsPPT4OWk5NujroGSBC1phw5uU+w==}
@@ -14991,6 +15019,12 @@ snapshots:
       - bufferutil
       - utf-8-validate
 
+  '@osdk/docs-spec-core@0.7.0': {}
+
+  '@osdk/docs-spec-platform@0.3.0':
+    dependencies:
+      '@osdk/docs-spec-core': 0.7.0
+
   '@osdk/foundry.admin@2.56.0':
     dependencies:
       '@osdk/foundry.core': 2.56.0
@@ -15109,6 +15143,21 @@ snapshots:
       oauth4webapi: 2.17.0
       tiny-invariant: 1.3.3
       typescript-event-target: 1.1.1
+
+  '@osdk/platform-sdk-generator@0.84.0':
+    dependencies:
+      '@osdk/docs-spec-core': 0.7.0
+      '@osdk/docs-spec-platform': 0.3.0
+      find-up: 7.0.0
+      prettier: 3.7.3
+      remark: 15.0.1
+      semver: 7.8.5
+      tiny-invariant: 1.3.3
+      unist-util-visit: 5.1.0
+      yaml: 2.9.0
+      yargs: 17.7.2
+    transitivePeerDependencies:
+      - supports-color
 
   '@osdk/shared.client.impl@1.13.0':
     dependencies:
@@ -21371,6 +21420,15 @@ snapshots:
       stringify-entities: 2.0.0
       unherit: 1.1.3
       xtend: 4.0.2
+
+  remark@15.0.1:
+    dependencies:
+      '@types/mdast': 4.0.4
+      remark-parse: 11.0.0
+      remark-stringify: 11.0.0
+      unified: 11.0.5
+    transitivePeerDependencies:
+      - supports-color
 
   remeda@2.32.0:
     dependencies:

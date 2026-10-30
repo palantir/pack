@@ -55,6 +55,7 @@
     "yjs": "catalog:"
   },
   "devDependencies": {
+    "@osdk/platform-sdk-generator": "catalog:",
     "@palantir/pack.monorepo.tsconfig": "workspace:~",
     "@types/node": "catalog:",
     "rimraf": "catalog:",
