@@ -19,10 +19,16 @@
 // @palantir/pack.core, which exposes it as "@palantir/pack.core/generatedPlatformSdk". This lets PACK
 // use new api-gateway endpoints before @osdk/foundry.pack is published.
 //
-// Usage: MAVEN_DIST_RELEASE=<artifactory url> pnpm platform-sdk:generate --api-gateway-version <version>
+// Usage: MAVEN_DIST_RELEASE=<artifactory url> pnpm platform-sdk:generate \
+//   --api-gateway-version <version> --gotham-objects-gateway-version <version>
 //
 // The api-gateway version becomes the minimum api-gateway version of every package that uses the
 // SDK, so pick the oldest version that has the endpoints PACK needs.
+//
+// Gotham stacks serve the Pack API through gotham-objects-gateway, which bundles api-gateway. Pass the
+// gotham-objects-gateway release that bundles that api-gateway version (its release notes say
+// "Upgrade api-gateway to <version>"). It is an optional dependency: it only applies on stacks that
+// run gotham-objects-gateway.
 
 import { execFileSync } from "node:child_process";
 import fs from "node:fs";
@@ -41,10 +47,12 @@ const PACKAGES_USING_SDK = [
 const IR_DIR = path.join(REPO_DIR, "tmp/api-gateway-ir");
 const OUTPUT_DIR = path.join(REPO_DIR, "tmp/platformSdk");
 
-const versionArgIndex = process.argv.indexOf("--api-gateway-version");
-const apiGatewayVersion = versionArgIndex === -1 ? undefined : process.argv[versionArgIndex + 1];
-if (apiGatewayVersion == null) {
-  console.error("Usage: pnpm platform-sdk:generate --api-gateway-version <version>");
+const apiGatewayVersion = readArg("--api-gateway-version");
+const gothamObjectsGatewayVersion = readArg("--gotham-objects-gateway-version");
+if (apiGatewayVersion == null || gothamObjectsGatewayVersion == null) {
+  console.error(
+    "Usage: pnpm platform-sdk:generate --api-gateway-version <version> --gotham-objects-gateway-version <version>",
+  );
   process.exit(1);
 }
 
@@ -83,14 +91,24 @@ for (const file of listFiles(OUTPUT_DIR)) {
   }
 }
 
-// 3. Replace the SDK in @palantir/pack.core, and copy the api-gateway minimum to every package that
-//    uses the SDK.
+// 3. Replace the SDK in @palantir/pack.core, and copy the api-gateway and gotham-objects-gateway
+//    minimums to every package that uses the SDK.
 fs.rmSync(SDK_DIR, { recursive: true, force: true });
 fs.cpSync(OUTPUT_DIR, SDK_DIR, { recursive: true });
 const { sls } = readJson(firstPackageJson);
+sls.dependencies["com.palantir.gotham:gotham-objects-gateway"] = {
+  minVersion: gothamObjectsGatewayVersion,
+  maxVersion: `${gothamObjectsGatewayVersion.split(".")[0]}.x.x`,
+  optional: true,
+};
 for (const packageDir of PACKAGES_USING_SDK) {
   const packageJsonPath = path.join(REPO_DIR, packageDir, "package.json");
   writeJson(packageJsonPath, withSls(readJson(packageJsonPath), sls));
+}
+
+function readArg(name) {
+  const index = process.argv.indexOf(name);
+  return index === -1 ? undefined : process.argv[index + 1];
 }
 
 function withSls(packageJson, sls) {

@@ -63,9 +63,14 @@
   "sls": {
     "dependencies": {
       "com.palantir.foundry.api:api-gateway": {
-        "minVersion": "1.1871.1",
+        "minVersion": "1.1885.0",
         "maxVersion": "1.x.x",
         "optional": false
+      },
+      "com.palantir.gotham:gotham-objects-gateway": {
+        "minVersion": "2.955.0",
+        "maxVersion": "2.x.x",
+        "optional": true
       }
     }
   },

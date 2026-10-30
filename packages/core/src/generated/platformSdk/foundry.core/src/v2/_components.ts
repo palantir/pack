@@ -734,7 +734,7 @@ export type MediaItemPath = LooselyBrandedString<"MediaItemPath">;
 /**
  * A token that grants access to read specific media items.
  *
- * Log Safety: UNSAFE
+ * Log Safety: DO_NOT_LOG
  */
 export type MediaItemReadToken = LooselyBrandedString<"MediaItemReadToken">;
 
@@ -772,7 +772,7 @@ export type MediaSetRid = LooselyBrandedString<"MediaSetRid">;
 /**
  *
  *
- * Log Safety: UNSAFE
+ * Log Safety: DO_NOT_LOG
  */
 export interface MediaSetViewItem {
   mediaSetRid: MediaSetRid;
@@ -784,7 +784,7 @@ export interface MediaSetViewItem {
 /**
  *
  *
- * Log Safety: UNSAFE
+ * Log Safety: DO_NOT_LOG
  */
 export interface MediaSetViewItemWrapper {
   mediaSetViewItem: MediaSetViewItem;
