@@ -61,16 +61,13 @@ export function convertIrToWireSchema(ir: IRealTimeDocumentSchema): DocumentType
 function convertModelDef(model: IModelDef): ModelDef {
   switch (model.type) {
     case "record":
-      // TODO: The generated platform SDK wire types still declare `metadata` as required on
-      // RecordDef, but the Pack API schema (api-gateway / backpack) has removed it.
-      // Cast through unknown until the published types catch up.
       return {
         type: "record",
         key: model.record.key,
         name: model.record.name,
         description: orUndefined(model.record.description),
         fields: [...model.record.fields.map(convertFieldDef)],
-      } as unknown as ModelDef;
+      };
     case "union":
       return {
         type: "union",
@@ -137,12 +134,10 @@ function convertFieldValueType(value: IFieldValueUnion): FieldValueType {
 function convertFieldValueUnion(value: IFieldValueUnion): FieldValueUnion {
   switch (value.type) {
     case "resourceRef":
-      // TODO: The generated platform SDK does not yet declare the resourceRef variant. Drop the
-      // cast once the api-gateway publish and osdk regeneration land.
       return {
         type: "resourceRef",
         resourceRids: [...value.resourceRef.resourceRids],
-      } as unknown as FieldValueUnion;
+      };
     case "boolean":
       return { type: "boolean", defaultValue: orUndefined(value.boolean.defaultValue) };
     case "datetime":

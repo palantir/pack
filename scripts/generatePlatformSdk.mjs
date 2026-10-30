@@ -91,19 +91,27 @@ for (const file of listFiles(OUTPUT_DIR)) {
   }
 }
 
-// 3. Replace the SDK in @palantir/pack.core, and copy the api-gateway and gotham-objects-gateway
-//    minimums to every package that uses the SDK.
+// 3. Replace the SDK in @palantir/pack.core, and set the api-gateway and gotham-objects-gateway
+//    minimums in every package that uses the SDK. Other "sls" entries are left as they are.
 fs.rmSync(SDK_DIR, { recursive: true, force: true });
 fs.cpSync(OUTPUT_DIR, SDK_DIR, { recursive: true });
-const { sls } = readJson(firstPackageJson);
-sls.dependencies["com.palantir.gotham:gotham-objects-gateway"] = {
-  minVersion: gothamObjectsGatewayVersion,
-  maxVersion: `${gothamObjectsGatewayVersion.split(".")[0]}.x.x`,
-  optional: true,
+const apiGatewayKey = "com.palantir.foundry.api:api-gateway";
+const minimums = {
+  [apiGatewayKey]: readJson(firstPackageJson).sls.dependencies[apiGatewayKey],
+  "com.palantir.gotham:gotham-objects-gateway": {
+    minVersion: gothamObjectsGatewayVersion,
+    maxVersion: `${gothamObjectsGatewayVersion.split(".")[0]}.x.x`,
+    optional: true,
+  },
 };
 for (const packageDir of PACKAGES_USING_SDK) {
   const packageJsonPath = path.join(REPO_DIR, packageDir, "package.json");
-  writeJson(packageJsonPath, withSls(readJson(packageJsonPath), sls));
+  const packageJson = readJson(packageJsonPath);
+  const sls = {
+    ...packageJson.sls,
+    dependencies: { ...packageJson.sls?.dependencies, ...minimums },
+  };
+  writeJson(packageJsonPath, withSls(packageJson, sls));
 }
 
 function readArg(name) {
