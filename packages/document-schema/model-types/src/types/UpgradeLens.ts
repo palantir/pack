@@ -65,6 +65,8 @@ export interface UnionUpgradeRegistry<ModelName extends string = string> {
   discriminant: string;
   /** Maps discriminant values to variant model names in the UpgradeRegistryMap. */
   variants: Record<string, string>;
+  /** Major version each variant was added in, for variants added after the union. */
+  variantAddedInVersions?: Record<string, number>;
 }
 
 export type UpgradeRegistryEntry = UpgradeRegistry | UnionUpgradeRegistry;

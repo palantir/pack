@@ -374,6 +374,13 @@ function generateUpgrades(
       output += `    "${variantKey}": "${variantModelKey}",\n`;
     }
     output += `  },\n`;
+    if (union.variantMetadata != null) {
+      output += `  variantAddedInVersions: {\n`;
+      for (const [variantKey, meta] of Object.entries(union.variantMetadata)) {
+        output += `    "${variantKey}": ${meta.addedInVersion},\n`;
+      }
+      output += `  },\n`;
+    }
     output += `};\n\n`;
   }
 
