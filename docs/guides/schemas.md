@@ -37,7 +37,7 @@ For a modifying existing unions:
 
 **Note:** a variant cannot be changed or removed from a union once added. This is to ensure documents written at older versions are always readable by newer clients.
 
-**Note:** the backend doesn't yet accept new variants on a union that is already deployed, so `addVariant` only works in development mode or before the document type is first deployed.
+**Note:** type-gen sends the version each variant was added in (`variantMetadata`), and the backend uses it to accept a new variant on a union that is already deployed.
 
 ## Example
 

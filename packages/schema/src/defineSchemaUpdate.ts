@@ -116,8 +116,9 @@ export interface SchemaVersionBuilder<T extends ModelDefs> {
 /** Options for {@link nextSchema}. */
 export interface NextSchemaOptions {
   /**
-   * `"major"` (default) bumps 1.x to 2.0. `"minor"` bumps 1.0 to 1.1 and may only add fields and
-   * new models, since apps on older minor versions of the same major keep editing the document.
+   * `"major"` (default) bumps 1.x to 2.0. `"minor"` bumps 1.0 to 1.1 and may only add fields,
+   * union variants, and new models, since apps on older minor versions of the same major keep
+   * editing the document.
    */
   readonly bump?: "major" | "minor";
 }
@@ -341,7 +342,7 @@ class SchemaVersionBuilderImpl<T extends ModelDefs> implements SchemaVersionBuil
  * calls and finish with `build()`.
  *
  * By default this is a major version (1.x to 2.0). Pass `{ bump: "minor" }` for a minor version
- * (1.0 to 1.1), which may only add fields and new models.
+ * (1.0 to 1.1), which may only add fields, union variants, and new models.
  *
  * @example
  * ```ts
