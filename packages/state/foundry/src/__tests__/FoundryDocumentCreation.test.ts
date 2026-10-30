@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-import type { Document } from "@osdk/foundry.pack";
-import { Documents } from "@osdk/foundry.pack";
 import type { PackAppInternal } from "@palantir/pack.core";
+import type { Document } from "@palantir/pack.core/generatedPlatformSdk";
+import { Documents } from "@palantir/pack.core/generatedPlatformSdk";
 import type { DocumentSchema } from "@palantir/pack.document-schema.model-types";
 import { Metadata } from "@palantir/pack.document-schema.model-types";
 import type { CreateDocumentMetadata } from "@palantir/pack.state.core";
@@ -25,7 +25,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { mock } from "vitest-mock-extended";
 import { internalCreateFoundryDocumentService } from "../FoundryDocumentService.js";
 
-vi.mock("@osdk/foundry.pack", () => ({
+vi.mock("@palantir/pack.core/generatedPlatformSdk", () => ({
   Documents: {
     create: vi.fn(),
     createV2: vi.fn(),

@@ -1,8 +1,5 @@
 {
-  "extends": [
-    "@palantir/pack.monorepo.tsconfig/base.json",
-    "./src/generated/tsconfig.paths.json"
-  ],
+  "extends": "@palantir/pack.monorepo.tsconfig/base.json",
   "compilerOptions": {
     "outDir": "./build/esm",
     "rootDir": "./src",

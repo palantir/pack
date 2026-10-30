@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-export type { ClientSupportedVersionRange } from "@osdk/foundry.pack";
+export type { ClientSupportedVersionRange } from "@palantir/pack.core/generatedPlatformSdk";
 export { createFoundryEventService } from "./FoundryEventService.js";
 export type {
   FoundryEventService,

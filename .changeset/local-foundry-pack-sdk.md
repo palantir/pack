@@ -1,5 +1,8 @@
 ---
+"@palantir/pack.core": patch
+"@palantir/pack.document-schema.type-gen": patch
 "@palantir/pack.state.foundry": patch
+"@palantir/pack.state.foundry-event": patch
 ---
 
-Generate the Foundry Pack platform SDK inside PACK instead of depending on `@osdk/foundry.pack` from npm. This is the first test of that setup: it generates from api-gateway 1.1871.1, which is already stable and is the same minimum `@osdk/foundry.pack` 2.86.0 requires, so the api-gateway requirement doesn't change.
+Use the generated platform SDK instead of npm `@osdk/foundry.pack`. PACK now generates the Pack API client itself into `@palantir/pack.core` (imported as `@palantir/pack.core/generatedPlatformSdk`), and `state.foundry`, `state.foundry-event`, and `document-schema.type-gen` use it. This first version is generated from api-gateway 1.1871.1, which is already stable and matches what `@osdk/foundry.pack` 2.86.0 provides, so behavior and the api-gateway minimum don't change.

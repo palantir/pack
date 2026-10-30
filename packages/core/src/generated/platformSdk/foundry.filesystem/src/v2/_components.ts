@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import type * as _Core from "@osdk/foundry.core/v2";
+import type * as _Core from "../../../foundry.core/src/public/v2.js";
 
 export type LooselyBrandedString<T extends string> = string & {
   __LOOSE_BRAND?: T;

@@ -21,9 +21,9 @@
       "browser": "./build/browser/public/*.js",
       "import": {
         "types": "./build/types/public/*.d.ts",
-        "default": "./build/js/public/*.js"
+        "default": "./build/esm/public/*.js"
       },
-      "require": "./build/cjs/public/*.js",
+      "require": "./build/cjs/public/*.cjs",
       "default": "./build/browser/public/*.js"
     }
   },
@@ -41,9 +41,6 @@
   },
   "dependencies": {
     "@osdk/api": "catalog:",
-    "@osdk/shared.client": "^1.0.1",
-    "@osdk/shared.client2": "catalog:",
-    "@osdk/shared.net.platformapi": "^1.8.0",
     "@palantir/pack.auth": "workspace:*",
     "@palantir/pack.core": "workspace:*",
     "@palantir/pack.document-schema.model-types": "workspace:*",
@@ -54,7 +51,6 @@
     "yjs": "catalog:"
   },
   "devDependencies": {
-    "@osdk/platform-sdk-generator": "catalog:",
     "@palantir/pack.monorepo.tsconfig": "workspace:~",
     "@types/node": "catalog:",
     "rimraf": "catalog:",

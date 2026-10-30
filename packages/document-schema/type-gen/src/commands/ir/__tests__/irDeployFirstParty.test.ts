@@ -26,7 +26,10 @@ const { osdkCreateMock, createPlatformClientMock } = vi.hoisted(() => ({
   createPlatformClientMock: vi.fn(() => ({})),
 }));
 
-vi.mock("@osdk/foundry.pack", () => ({ DocumentTypes: { create: osdkCreateMock } }));
+vi.mock(
+  "@palantir/pack.core/generatedPlatformSdk",
+  () => ({ DocumentTypes: { create: osdkCreateMock } }),
+);
 
 vi.mock("@osdk/client", () => ({ createPlatformClient: createPlatformClientMock }));
 

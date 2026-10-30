@@ -25,66 +25,67 @@ import type {
 import type { FoundryPlatformMethod as $FoundryPlatformMethod } from "@osdk/shared.net.platformapi";
 import { foundryPlatformFetch as $foundryPlatformFetch } from "@osdk/shared.net.platformapi";
 import type * as _Filesystem from "../_components.js";
-import type * as _Core from "@osdk/foundry.core/v2";
+import type * as _Core from "../../../../foundry.core/src/public/v2.js";
 
 //
 
 const _list: $FoundryPlatformMethod<
   (
-    resourceRid: _Filesystem.ResourceRid,
+    projectRid: _Filesystem.ProjectRid,
 
     $queryParams?: {
-      includeInherited?: boolean | undefined;
+      referenceType?: _Filesystem.ProjectResourceReferenceType | undefined;
       pageSize?: _Core.PageSize | undefined;
       pageToken?: _Core.PageToken | undefined;
     },
-  ) => Promise<_Filesystem.ListResourceRolesResponse>
-> = [0, "/v2/filesystem/resources/{0}/roles", 2];
+  ) => Promise<_Filesystem.ListProjectResourceReferencesResponse>
+> = [0, "/v2/filesystem/projects/{0}/references", 2];
 
 /**
- * List the roles on a resource.
+ * List all references in the given project
  *
  *
  * @public
  *
  * Required Scopes: [api:filesystem-read]
- * URL: /v2/filesystem/resources/{resourceRid}/roles
+ * URL: /v2/filesystem/projects/{projectRid}/references
  */
 export function list(
   $ctx: $Client | $ClientContext | $OldClient | $OldClientContext,
   ...args: [
-    resourceRid: _Filesystem.ResourceRid,
+    projectRid: _Filesystem.ProjectRid,
 
     $queryParams?: {
-      includeInherited?: boolean | undefined;
+      referenceType?: _Filesystem.ProjectResourceReferenceType | undefined;
       pageSize?: _Core.PageSize | undefined;
       pageToken?: _Core.PageToken | undefined;
     },
   ]
-): Promise<_Filesystem.ListResourceRolesResponse> {
+): Promise<_Filesystem.ListProjectResourceReferencesResponse> {
   return $foundryPlatformFetch($ctx, _list, ...args);
 }
 
 const _add: $FoundryPlatformMethod<
   (
-    resourceRid: _Filesystem.ResourceRid,
-    $body: _Filesystem.AddResourceRolesRequest,
+    projectRid: _Filesystem.ProjectRid,
+    $body: _Filesystem.AddProjectResourceReferencesRequest,
   ) => Promise<void>
-> = [1, "/v2/filesystem/resources/{0}/roles/add", 1];
+> = [1, "/v2/filesystem/projects/{0}/references/add", 1];
 
 /**
+ * Add references to the given project
  *
  *
  * @public
  *
  * Required Scopes: [api:filesystem-write]
- * URL: /v2/filesystem/resources/{resourceRid}/roles/add
+ * URL: /v2/filesystem/projects/{projectRid}/references/add
  */
 export function add(
   $ctx: $Client | $ClientContext | $OldClient | $OldClientContext,
   ...args: [
-    resourceRid: _Filesystem.ResourceRid,
-    $body: _Filesystem.AddResourceRolesRequest,
+    projectRid: _Filesystem.ProjectRid,
+    $body: _Filesystem.AddProjectResourceReferencesRequest,
   ]
 ): Promise<void> {
   return $foundryPlatformFetch($ctx, _add, ...args);
@@ -92,24 +93,25 @@ export function add(
 
 const _remove: $FoundryPlatformMethod<
   (
-    resourceRid: _Filesystem.ResourceRid,
-    $body: _Filesystem.RemoveResourceRolesRequest,
+    projectRid: _Filesystem.ProjectRid,
+    $body: _Filesystem.RemoveProjectResourceReferencesRequest,
   ) => Promise<void>
-> = [1, "/v2/filesystem/resources/{0}/roles/remove", 1];
+> = [1, "/v2/filesystem/projects/{0}/references/remove", 1];
 
 /**
+ * Remove references from the given project
  *
  *
  * @public
  *
  * Required Scopes: [api:filesystem-write]
- * URL: /v2/filesystem/resources/{resourceRid}/roles/remove
+ * URL: /v2/filesystem/projects/{projectRid}/references/remove
  */
 export function remove(
   $ctx: $Client | $ClientContext | $OldClient | $OldClientContext,
   ...args: [
-    resourceRid: _Filesystem.ResourceRid,
-    $body: _Filesystem.RemoveResourceRolesRequest,
+    projectRid: _Filesystem.ProjectRid,
+    $body: _Filesystem.RemoveProjectResourceReferencesRequest,
   ]
 ): Promise<void> {
   return $foundryPlatformFetch($ctx, _remove, ...args);

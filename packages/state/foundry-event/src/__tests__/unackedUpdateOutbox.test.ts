@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import type { DocumentPublishMessage, EditId } from "@osdk/foundry.pack";
+import type { DocumentPublishMessage, EditId } from "@palantir/pack.core/generatedPlatformSdk";
 import type { Mock } from "vitest";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {

@@ -14,8 +14,12 @@
  * limitations under the License.
  */
 
-import type { DocumentPublishMessage, DocumentUpdateMessage, EditId } from "@osdk/foundry.pack";
 import type { PackAppInternal } from "@palantir/pack.core";
+import type {
+  DocumentPublishMessage,
+  DocumentUpdateMessage,
+  EditId,
+} from "@palantir/pack.core/generatedPlatformSdk";
 import {
   ChannelErrorCode,
   type DocumentId,

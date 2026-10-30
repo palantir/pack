@@ -15,6 +15,8 @@
  */
 
 import type { Logger } from "@osdk/api";
+import { getAuthModule } from "@palantir/pack.auth";
+import { generateId, justOnce, type PackAppInternal } from "@palantir/pack.core";
 import type {
   ActivityCollaborativeUpdate,
   ClientSupportedVersionRange,
@@ -27,9 +29,7 @@ import type {
   DocumentUpdateSubscriptionRequest,
   PresenceCollaborativeUpdate,
   PresencePublishMessage,
-} from "@osdk/foundry.pack";
-import { getAuthModule } from "@palantir/pack.auth";
-import { generateId, justOnce, type PackAppInternal } from "@palantir/pack.core";
+} from "@palantir/pack.core/generatedPlatformSdk";
 import {
   type ChannelError,
   ChannelErrorCode,
@@ -57,7 +57,7 @@ import type {
 } from "./types/EventService.js";
 import { createUnackedUpdateOutbox, type UnackedUpdateOutbox } from "./unackedUpdateOutbox.js";
 
-// TODO: replace with @osdk/foundry.pack types when they land.
+// TODO: replace with generated platform SDK types when they land.
 export interface PresenceSubscriptionOptions {
   readonly ignoreSelfUpdates?: boolean;
 }

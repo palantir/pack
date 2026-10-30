@@ -31,7 +31,7 @@ const publishedVersions = vi.hoisted(() => ({
   getLatestContents: vi.fn(),
 }));
 
-vi.mock("@osdk/foundry.pack", () => ({
+vi.mock("@palantir/pack.core/generatedPlatformSdk", () => ({
   Documents: {},
   DocumentTypes: {},
   PublishedVersions: publishedVersions,

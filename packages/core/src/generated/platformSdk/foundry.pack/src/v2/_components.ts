@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-import type * as _Core from "@osdk/foundry.core/v2";
-import type * as _Filesystem from "@osdk/foundry.filesystem/v2";
+import type * as _Core from "../../../foundry.core/src/public/v2.js";
+import type * as _Filesystem from "../../../foundry.filesystem/src/public/v2.js";
 
 export type LooselyBrandedString<T extends string> = string & {
   __LOOSE_BRAND?: T;

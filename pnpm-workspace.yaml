@@ -10,7 +10,6 @@ catalog:
   "@osdk/api": ^2.54.0
   "@osdk/client": ^2.54.0
   "@osdk/foundry.admin": ^2.56.0
-  "@osdk/foundry.pack": ^2.86.0
   "@osdk/oauth": ^1.14.0
   "@osdk/platform-sdk-generator": ^0.84.0
   "@osdk/react": ^2.54.0

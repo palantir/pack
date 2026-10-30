@@ -15,8 +15,11 @@
  */
 
 import { createPlatformClient } from "@osdk/client";
-import type { CreateDocumentTypeRequest, FileSystemType } from "@osdk/foundry.pack";
-import { DocumentTypes } from "@osdk/foundry.pack";
+import type {
+  CreateDocumentTypeRequest,
+  FileSystemType,
+} from "@palantir/pack.core/generatedPlatformSdk";
+import { DocumentTypes } from "@palantir/pack.core/generatedPlatformSdk";
 import { CommanderError } from "commander";
 import { consola } from "consola";
 import { readFileSync } from "fs";
