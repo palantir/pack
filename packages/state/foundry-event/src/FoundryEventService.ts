@@ -57,7 +57,6 @@ import type {
 } from "./types/EventService.js";
 import { createUnackedUpdateOutbox, type UnackedUpdateOutbox } from "./unackedUpdateOutbox.js";
 
-// TODO: replace with generated platform SDK types when they land.
 export interface PresenceSubscriptionOptions {
   readonly ignoreSelfUpdates?: boolean;
 }
