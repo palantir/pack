@@ -18,6 +18,7 @@ import type { ModuleConfigTuple, PackAppInternal } from "@palantir/pack.core";
 import { createDocumentServiceConfig, type DocumentService } from "@palantir/pack.state.core";
 import { DemoDocumentService, type DemoDocumentServiceOptions } from "./DemoDocumentService.js";
 
+export { DemoSyncDelay, demoSyncDelay } from "./DemoSyncDelay.js";
 export { MetadataStore } from "./MetadataStore.js";
 export { PresenceManager } from "./PresenceManager.js";
 export { DemoDocumentService, type DemoDocumentServiceOptions };

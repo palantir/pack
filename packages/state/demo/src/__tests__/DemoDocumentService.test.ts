@@ -30,7 +30,11 @@ import { getMetadata, Metadata } from "@palantir/pack.document-schema.model-type
 import { DocumentLiveStatus, DocumentLoadStatus, getStateModule } from "@palantir/pack.state.core";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { z } from "zod";
-import { createDemoDocumentServiceConfig } from "../index.js";
+import {
+  createDemoDocumentServiceConfig,
+  type DemoDocumentServiceOptions,
+  DemoSyncDelay,
+} from "../index.js";
 
 const TEST_SECURITY = {
   discretionary: {
@@ -48,10 +52,14 @@ const TEST_DB_PREFIX = `test-${Date.now()}`;
 
 function createTestApp(
   config: Partial<AppConfig & { moduleConfigs: Record<symbol, unknown> }> = {},
+  serviceOptions: DemoDocumentServiceOptions = {},
 ): PackAppInternal {
   const modules = new Map<symbol, unknown>();
 
-  const docConfig = createDemoDocumentServiceConfig({ dbPrefix: TEST_DB_PREFIX });
+  const docConfig = createDemoDocumentServiceConfig({
+    dbPrefix: TEST_DB_PREFIX,
+    ...serviceOptions,
+  });
   const allModuleConfigs = {
     [docConfig[0].key]: docConfig[1],
     ...config.moduleConfigs,
@@ -414,6 +422,41 @@ describe("DemoDocumentService", () => {
 
     unsubscribe1();
     unsubscribe2();
+  });
+
+  it("should hold edits for other tabs until the sync delay has passed", async () => {
+    const syncDelay = new DemoSyncDelay(undefined);
+    const stateModule = getStateModule(createTestApp({}, { syncDelay }));
+    const schema = createSchemaWithRecords();
+    const docRef = await stateModule.createDocument({
+      documentTypeName: "TestType",
+      name: "Sync Delay Test",
+      ontologyRid: "test-ontology-rid",
+      security: TEST_SECURITY,
+    }, schema);
+    const postMessage = vi.spyOn(BroadcastChannel.prototype, "postMessage");
+    const sentUpdates = () =>
+      postMessage.mock.calls.filter(([message]) => message?.type === "update");
+
+    try {
+      syncDelay.setDelayMs(5000);
+      await stateModule.setCollectionRecord(docRef.getRecords(schema.User), "user1" as RecordId, {
+        age: 30,
+        email: "delay@example.com",
+        id: "user1",
+        name: "Delayed User",
+      });
+
+      expect(sentUpdates()).toHaveLength(0);
+      expect(syncDelay.pendingCount).toBeGreaterThan(0);
+
+      syncDelay.flush();
+
+      expect(sentUpdates().length).toBeGreaterThan(0);
+      expect(syncDelay.pendingCount).toBe(0);
+    } finally {
+      postMessage.mockRestore();
+    }
   });
 
   it("should handle activity events", async () => {

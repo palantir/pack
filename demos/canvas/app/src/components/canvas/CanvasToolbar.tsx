@@ -15,6 +15,7 @@
  */
 
 import type { VersionedDocRef } from "@demo/canvas.sdk";
+import { isDemoEnv } from "@palantir/pack.app";
 import type { PublishedVersionId } from "@palantir/pack.document-schema.model-types";
 import { useDocMetadata } from "@palantir/pack.state.react";
 import type { ChangeEvent } from "react";
@@ -25,6 +26,7 @@ import { ActivityPanel } from "./ActivityPanel.js";
 import styles from "./CanvasToolbar.module.css";
 import { EditCanvasDialog } from "./EditCanvasDialog.js";
 import { PublishVersionButton } from "./PublishVersionButton.js";
+import { SyncDelayControl } from "./SyncDelayControl.js";
 import { VersionsPanel } from "./VersionsPanel.js";
 
 export interface CanvasToolbarProps {
@@ -156,6 +158,7 @@ export const CanvasToolbar = memo(function CanvasToolbar({
       </div>
 
       <div className={styles.toolGroupRight}>
+        {isDemoEnv() && <SyncDelayControl />}
         <PublishVersionButton liveDraftRef={doc} />
         <VersionsPanel liveDraftRef={doc} onOpenVersion={onOpenVersion} />
         <ActivityPanel docRef={doc} />

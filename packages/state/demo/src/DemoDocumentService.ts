@@ -58,6 +58,7 @@ import {
 import { Base64 } from "js-base64";
 import { IndexeddbPersistence } from "y-indexeddb";
 import * as Y from "yjs";
+import { type DemoSyncDelay, demoSyncDelay } from "./DemoSyncDelay.js";
 import { MetadataStore } from "./MetadataStore.js";
 import { PresenceManager } from "./PresenceManager.js";
 
@@ -89,6 +90,8 @@ function getOrCreateClientId(): string {
 export interface DemoDocumentServiceOptions {
   readonly dbPrefix?: string;
   readonly clearOnInit?: boolean;
+  /** Simulated latency for edits sent to other tabs. Defaults to {@link demoSyncDelay}. */
+  readonly syncDelay?: DemoSyncDelay;
 }
 
 interface DemoInternalDoc extends InternalYjsDoc {
@@ -102,6 +105,7 @@ export class DemoDocumentService extends BaseYjsDocumentService<DemoInternalDoc>
   private readonly clientId: string;
   private readonly dbPrefix: string;
   private readonly metadataStore: MetadataStore;
+  private readonly syncDelay: DemoSyncDelay;
 
   constructor(app: PackAppInternal, options: DemoDocumentServiceOptions = {}) {
     super(app, app.config.logger.child({}, { level: "debug", msgPrefix: "DemoDocumentService" }), {
@@ -111,6 +115,7 @@ export class DemoDocumentService extends BaseYjsDocumentService<DemoInternalDoc>
     this.clientId = getOrCreateClientId();
     this.dbPrefix = options.dbPrefix ?? "pack-demo";
     this.metadataStore = new MetadataStore(this.dbPrefix);
+    this.syncDelay = options.syncDelay ?? demoSyncDelay;
   }
 
   private static readonly SCHEMA_VERSION_KEY_PREFIX = "pack-demo-schema-version:";
@@ -183,6 +188,7 @@ export class DemoDocumentService extends BaseYjsDocumentService<DemoInternalDoc>
     const updateHandler = (update: Uint8Array, origin: unknown) => {
       if (origin === "remote") return;
 
+      let activity: { event: ActivityEvent; presenceManager: PresenceManager } | undefined;
       if (isEditDescription(origin)) {
         if (!internalDoc.presenceManager) {
           internalDoc.presenceManager = new PresenceManager(
@@ -208,12 +214,15 @@ export class DemoDocumentService extends BaseYjsDocumentService<DemoInternalDoc>
           isRead: false,
         };
 
-        internalDoc.presenceManager.broadcastActivity(event);
+        activity = { event, presenceManager: internalDoc.presenceManager };
       }
 
-      channel.postMessage({
-        type: "update",
-        data: Base64.fromUint8Array(update),
+      this.syncDelay.enqueue(docRef.id, () => {
+        activity?.presenceManager.broadcastActivity(activity.event);
+        channel.postMessage({
+          type: "update",
+          data: Base64.fromUint8Array(update),
+        });
       });
     };
 
@@ -551,8 +560,11 @@ export class DemoDocumentService extends BaseYjsDocumentService<DemoInternalDoc>
 
   protected onDataSubscriptionClosed(
     internalDoc: DemoInternalDoc,
-    _docRef: DocumentRef,
+    docRef: DocumentRef,
   ): void {
+    // Send delayed edits while the channel is still open, so other tabs still get them.
+    this.syncDelay.flushKey(docRef.id);
+
     if (internalDoc.updateHandler) {
       internalDoc.yDoc.off("update", internalDoc.updateHandler);
       internalDoc.updateHandler = undefined;
