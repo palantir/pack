@@ -13,4 +13,4 @@
 "@palantir/pack.state.react": patch
 ---
 
-Fix subpath exports (`"./*"`) so Node loads `build/esm/public/*.js` and `build/cjs/public/*.cjs`. They pointed at `build/js/public/*.js` and `build/cjs/public/*.js`, which the build never writes.
+Fix imports of package subpaths, such as `@palantir/pack.core/generatedPlatformSdk`. The `"./*"` entry in each package's `exports` pointed at `build/js/public/*.js` and `build/cjs/public/*.js`, which the build never writes. It now points at `build/esm/public/*.js` and `build/cjs/public/*.cjs`.

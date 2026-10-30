@@ -13,7 +13,7 @@ coverage
 # Test outputs
 test-output/
 
-# api-gateway IR downloaded by scripts/getOpenApiIr.sh
+# Scratch files from scripts/generatePlatformSdk.mjs (downloaded IR, generator output)
 /tmp/
 
 # IDE files

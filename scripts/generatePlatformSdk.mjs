@@ -26,8 +26,8 @@
 // SDK, so pick the oldest version that has the endpoints PACK needs.
 //
 // Gotham stacks serve the Pack API through gotham-objects-gateway, which bundles api-gateway. Pass the
-// gotham-objects-gateway release that bundles that api-gateway version (its release notes say
-// "Upgrade api-gateway to <version>"). It is an optional dependency: it only applies on stacks that
+// first gotham-objects-gateway release that includes that api-gateway version (look for an "Upgrade
+// api-gateway to <version>" commit). It is an optional dependency, so it only applies on stacks that
 // run gotham-objects-gateway.
 
 import { execFileSync } from "node:child_process";
@@ -37,8 +37,8 @@ import { fileURLToPath } from "node:url";
 
 const REPO_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const SDK_DIR = path.join(REPO_DIR, "packages/core/src/generated/platformSdk");
-// The packages that use the SDK. Each declares its api-gateway minimum in its "sls" block, the way
-// the npm @osdk/foundry.pack dependency used to declare it for them.
+// The packages that use the SDK. Each declares the minimum backend versions in its "sls" block, as
+// the npm @osdk/foundry.pack dependency used to do for them.
 const PACKAGES_USING_SDK = [
   "packages/state/foundry",
   "packages/state/foundry-event",
@@ -56,8 +56,9 @@ if (apiGatewayVersion == null || gothamObjectsGatewayVersion == null) {
   process.exit(1);
 }
 
-// 1. Download the api-gateway IR and generate the Pack namespace plus the namespaces it imports.
-//    The generator writes the api-gateway minimum into the first package's "sls" block.
+// 1. Download api-gateway's description of its APIs (the IR), and generate the Pack API plus the APIs
+//    it uses (foundry.core, foundry.filesystem). The generator also writes the api-gateway minimum
+//    into the first package's "sls" block.
 const firstPackageJson = path.join(REPO_DIR, PACKAGES_USING_SDK[0], "package.json");
 run("bash", [
   "scripts/getOpenApiIr.sh",
@@ -81,13 +82,13 @@ run("pnpm", [
   firstPackageJson,
 ]);
 
-// 2. The generator links namespaces by package name (e.g. "@osdk/foundry.core/v2"), which only
-//    resolves through its tsconfig.paths.json. Rewrite those imports to relative paths, so the code
-//    and the .d.ts files PACK publishes resolve on their own.
+// 2. The generated folders import each other by npm package name (e.g. "@osdk/foundry.core/v2"),
+//    and those names only resolve through the generator's tsconfig.paths.json. Rewrite them as
+//    relative paths, so the code and the type files PACK publishes work without it.
 rewriteNamespaceImports(OUTPUT_DIR);
 for (const file of listFiles(OUTPUT_DIR)) {
   if (path.basename(file) === "package.json") {
-    fs.rmSync(file); // per-namespace package.json files name npm packages that don't exist here
+    fs.rmSync(file); // the generator writes one per folder; PACK doesn't use them
   }
 }
 
@@ -122,7 +123,7 @@ function readArg(name) {
 function withSls(packageJson, sls) {
   const { sls: _previous, ...rest } = packageJson;
   const entries = Object.entries(rest);
-  // monorepolint wants "sls" right before "type", matching the generator's own placement.
+  // Keep "sls" right before "type"; monorepolint checks the field order.
   const typeIndex = entries.findIndex(([key]) => key === "type");
   entries.splice(typeIndex === -1 ? entries.length : typeIndex, 0, ["sls", sls]);
   return Object.fromEntries(entries);

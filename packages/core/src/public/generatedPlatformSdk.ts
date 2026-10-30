@@ -15,5 +15,6 @@
  */
 
 // The generated platform SDK: the Pack API client that PACK packages use instead of npm
-// @osdk/foundry.pack. scripts/generatePlatformSdk.mjs writes it into src/generated/platformSdk.
+// @osdk/foundry.pack. It lives in src/generated/platformSdk; regenerate it with
+// `pnpm platform-sdk:generate` (see scripts/generatePlatformSdk.mjs).
 export * from "../generated/platformSdk/foundry.pack/src/index.js";
