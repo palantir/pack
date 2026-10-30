@@ -30,6 +30,7 @@ import type {
   IModelDef,
   IRealTimeDocumentSchema,
   ISchemaMeta,
+  IUnionDef,
 } from "../../lib/pack-docschema-api/pack-docschema-ir/index.js";
 
 /**
@@ -77,6 +78,7 @@ function convertModelDef(model: IModelDef): ModelDef {
         description: orUndefined(model.union.description),
         variants: { ...model.union.variants },
         metadata: convertSchemaMeta(model.union.metadata),
+        variantMetadata: convertVariantMetadata(model.union.variantMetadata),
       };
     default: {
       const _exhaustive: never = model;
@@ -196,6 +198,19 @@ function convertSchemaMeta(meta: ISchemaMeta): SchemaMetadata {
     deprecatedFromVersion: orUndefined(meta.deprecatedFromVersion),
     deprecatedMessage: orUndefined(meta.deprecatedMessage),
   };
+}
+
+function convertVariantMetadata(
+  variantMetadata: IUnionDef["variantMetadata"],
+): Record<string, SchemaMetadata> | undefined {
+  if (variantMetadata == null) {
+    return undefined;
+  }
+  return Object.fromEntries(
+    Object.entries(variantMetadata).map((
+      [variantKey, meta],
+    ) => [variantKey, convertSchemaMeta(meta)]),
+  );
 }
 
 function orUndefined<T>(value: T | null | undefined): T | undefined {

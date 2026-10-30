@@ -94,11 +94,16 @@ function getModelValueSchemaVersion(
   }
 
   if (isUnionUpgradeRegistry(entry)) {
-    const variantModelName = getUnionVariantModelName(entry, value)
-      ?? getUnionVariantModelName(entry, currentValue);
-    return variantModelName == null
-      ? context.defaultVersion
-      : getModelValueSchemaVersion(variantModelName, value, context, currentValue);
+    const variantKey = getUnionVariantKey(entry, value) ?? getUnionVariantKey(entry, currentValue);
+    const variantModelName = variantKey == null ? undefined : entry.variants[variantKey];
+    if (variantKey == null || variantModelName == null) {
+      return context.defaultVersion;
+    }
+    // A variant added after its record existed: the record's fields alone would give an older version.
+    return Math.max(
+      entry.variantAddedInVersions?.[variantKey] ?? context.defaultVersion,
+      getModelValueSchemaVersion(variantModelName, value, context, currentValue),
+    );
   }
 
   return getRecordFieldsSchemaVersion(modelName, value, context, currentValue);
@@ -204,7 +209,7 @@ function getFieldTypeValueSchemaVersion(
   }
 }
 
-function getUnionVariantModelName(
+function getUnionVariantKey(
   entry: UnionUpgradeRegistry,
   value: unknown,
 ): string | undefined {
@@ -214,7 +219,9 @@ function getUnionVariantModelName(
   }
 
   const variantKey = state[entry.discriminant];
-  return typeof variantKey === "string" ? entry.variants[variantKey] : undefined;
+  return typeof variantKey === "string" && Object.hasOwn(entry.variants, variantKey)
+    ? variantKey
+    : undefined;
 }
 
 function getFieldAddedInVersion(fieldDef: FieldDef, defaultVersion: number): number {

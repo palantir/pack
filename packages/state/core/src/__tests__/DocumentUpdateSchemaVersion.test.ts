@@ -93,6 +93,32 @@ describe("DocumentUpdateSchemaVersion", () => {
     ).toBe(2);
   });
 
+  it("uses the version a variant was added in when its record is older", () => {
+    const schemaWithAddedVariant = {
+      [Metadata]: {
+        minSupportedVersion: 1,
+        upgrades: {
+          ...upgrades,
+          NodeShape: {
+            modelName: "NodeShape",
+            discriminant: "shapeType",
+            variants: { box: "ShapeBox", circle: "ShapeCircle" },
+            variantAddedInVersions: { circle: 2 },
+          },
+        },
+        version: 3,
+      },
+    } as DocumentSchema;
+
+    // ShapeCircle's only field is from v1, but the circle variant was added in v2.
+    expect(
+      getModelDataSchemaVersion(schemaWithAddedVariant, "NodeShape", {
+        radius: 1,
+        shapeType: "circle",
+      }),
+    ).toBe(2);
+  });
+
   it("resolves a partial nested union from the current value", () => {
     expect(
       getPartialModelDataSchemaVersion(
