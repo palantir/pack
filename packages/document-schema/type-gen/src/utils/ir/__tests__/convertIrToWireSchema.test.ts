@@ -132,6 +132,29 @@ describe("convertIrToWireSchema", () => {
     expect(shape.discriminant).toBe("shapeType");
     expect(shape.variants).toEqual({ circle: "Circle", square: "Square" });
     expect("union" in shape).toBe(false); // no conjure nesting
+    expect(JSON.parse(JSON.stringify(shape))).not.toHaveProperty("variantMetadata");
+  });
+
+  it("should pass through the version each later-added variant was added in", () => {
+    const union: IUnionDef = {
+      key: "Shape",
+      discriminant: "type",
+      name: "Shape",
+      variants: { circle: "Circle", square: "Square" },
+      metadata: { addedInVersion: 1 },
+      variantMetadata: { square: { addedInVersion: 2 } },
+    };
+    const ir: IRealTimeDocumentSchema = {
+      name: "Test",
+      description: "Test",
+      version: 2,
+      primaryModelKeys: ["Shape"],
+      models: { Shape: { type: "union", union } as IModelDef },
+    };
+
+    const shape = convertIrToWireSchema(ir).models["Shape"] as { type: "union" } & UnionDef;
+
+    expect(shape.variantMetadata).toEqual({ square: { addedInVersion: 2 } });
   });
 
   it("should convert value field type with FieldValueType wrapper", () => {

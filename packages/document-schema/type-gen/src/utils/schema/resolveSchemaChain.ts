@@ -132,6 +132,7 @@ function collectSchemaDefinitions(input: SchemaDefinition): SchemaDefinition[] {
 function deriveProvenance(schemas: readonly SchemaDefinition[]): SchemaProvenance[] {
   const firstModelVersions = new Map<string, FullSchemaVersion>();
   const firstFieldVersions = new Map<string, Map<string, FullSchemaVersion>>();
+  const firstVariantVersions = new Map<string, Map<string, FullSchemaVersion>>();
 
   return schemas.map(schema => {
     const currentVersion = { major: schema.version, minor: getSchemaMinorVersion(schema) };
@@ -139,6 +140,8 @@ function deriveProvenance(schemas: readonly SchemaDefinition[]): SchemaProvenanc
     const modelMinorVersions: Record<string, number> = {};
     const fieldVersions: Record<string, Record<string, number>> = {};
     const fieldMinorVersions: Record<string, Record<string, number>> = {};
+    const variantVersions: Record<string, Record<string, number>> = {};
+    const variantMinorVersions: Record<string, Record<string, number>> = {};
 
     for (const [modelKey, modelDef] of Object.entries(schema.models)) {
       if (!firstModelVersions.has(modelKey)) {
@@ -150,7 +153,32 @@ function deriveProvenance(schemas: readonly SchemaDefinition[]): SchemaProvenanc
         modelMinorVersions[modelKey] = modelVersion.minor;
       }
 
-      if (modelDef.type !== "record") continue;
+      if (modelDef.type === "union") {
+        let variantVersionsForModel = firstVariantVersions.get(modelKey);
+        if (variantVersionsForModel == null) {
+          variantVersionsForModel = new Map<string, FullSchemaVersion>();
+          firstVariantVersions.set(modelKey, variantVersionsForModel);
+        }
+
+        const variants: Record<string, number> = {};
+        const minorVariants: Record<string, number> = {};
+        for (const variantName of Object.keys(modelDef.variants)) {
+          if (!variantVersionsForModel.has(variantName)) {
+            variantVersionsForModel.set(variantName, currentVersion);
+          }
+          const variantVersion = variantVersionsForModel.get(variantName)!;
+          variants[variantName] = variantVersion.major;
+          if (variantVersion.minor > 0) {
+            minorVariants[variantName] = variantVersion.minor;
+          }
+        }
+
+        variantVersions[modelKey] = variants;
+        if (Object.keys(minorVariants).length > 0) {
+          variantMinorVersions[modelKey] = minorVariants;
+        }
+        continue;
+      }
 
       let fieldVersionsForModel = firstFieldVersions.get(modelKey);
       if (fieldVersionsForModel == null) {
@@ -184,6 +212,8 @@ function deriveProvenance(schemas: readonly SchemaDefinition[]): SchemaProvenanc
       modelVersions,
       fieldMinorVersions,
       modelMinorVersions,
+      variantVersions,
+      variantMinorVersions,
       deprecations: "deprecations" in schema ? schema.deprecations : undefined,
     };
   });

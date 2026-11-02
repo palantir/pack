@@ -121,3 +121,24 @@ describe("generateInternalFromChain minor versions", () => {
     expect(result.internalTypes).toContain("readonly label?: string;");
   });
 });
+
+describe("generateInternalFromChain union variants", () => {
+  it("records the version of a variant added after the union", () => {
+    const Circle = defineRecord("Circle", { docs: "", fields: { radius: P.Double } });
+    const Square = defineRecord("Square", { docs: "", fields: { side: P.Double } });
+    const v1 = defineSchema({
+      Circle,
+      Square,
+      Shape: P.defineUnion("Shape", { docs: "", variants: { circle: Circle } }),
+    });
+    const v2 = nextSchema(v1)
+      .addSchemaUpdate(defineSchemaUpdate("addSquare", schema => ({
+        Shape: schema.Shape.addVariant("square", Square).build(),
+      })))
+      .build();
+
+    const result = generateInternalFromChain(resolveSchemaChain(v2));
+
+    expect(result.upgrades).toContain("variantAddedInVersions: {\n    \"square\": 2,\n  },");
+  });
+});

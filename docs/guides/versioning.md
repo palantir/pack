@@ -144,7 +144,7 @@ How it differs from a major version:
 | ------------------ | ------------------------------------------- | ---------------------------------------------------- |
 | Writing new fields | Only once the operational version reaches 2 | Right away, while `doc.version` is 1                 |
 | Older apps         | Must upgrade before the new fields are used | Keep editing; they ignore the new fields             |
-| Allowed changes    | Any supported change                        | Add fields, new records or unions                    |
+| Allowed changes    | Any supported change                        | Add fields, union variants, new records or unions    |
 | Generated types    | A new `_v2` set of types                    | The new fields are added to the existing `_v1` types |
 
 Because older apps on the same major keep editing during a minor version, they never write the new fields. A new required field works the same as in a major version: give it a default in `DocumentModel(...)`, keyed by the minor version, and the read lens fills it in for records written by older apps:
@@ -161,7 +161,7 @@ In a minor version:
 
 - New fields can't use `derivedFrom`: older apps keep editing the source field and never update the derived one.
 - Fields can't be deprecated: newer apps stop writing the field while older apps still read it.
-- Union variants can't be added or removed. The server doesn't accept new variants on an existing union yet.
+- Union variants can't be removed. Adding one is fine: older apps read it as an [unknown variant](#unknown-variants) and keep it when they save.
 
 `build()` throws if a minor version breaks one of these rules; use a major version instead. No version guard is needed for minor-version fields — write them in the existing branch for that major:
 

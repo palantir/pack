@@ -109,15 +109,16 @@ export interface SchemaVersionBuilder<T extends ModelDefs> {
   ): SchemaVersionBuilder<T & S>;
   /** Attach explicit field migrations, supplementing the `derivedFrom` sugar on `addField`. */
   withMigrations(migrations: VersionMigrations): SchemaVersionBuilder<T>;
-  /** Produce the finished {@link VersionedSchema}. In a minor version, throws for `derivedFrom`, new deprecations, and union variant changes. */
+  /** Produce the finished {@link VersionedSchema}. In a minor version, throws for `derivedFrom`, new deprecations, and removed union variants. */
   build(): VersionedSchema<T>;
 }
 
 /** Options for {@link nextSchema}. */
 export interface NextSchemaOptions {
   /**
-   * `"major"` (default) bumps 1.x to 2.0. `"minor"` bumps 1.0 to 1.1 and may only add fields and
-   * new models, since apps on older minor versions of the same major keep editing the document.
+   * `"major"` (default) bumps 1.x to 2.0. `"minor"` bumps 1.0 to 1.1 and may only add fields,
+   * union variants, and new models, since apps on older minor versions of the same major keep
+   * editing the document.
    */
   readonly bump?: "major" | "minor";
 }
@@ -201,8 +202,9 @@ function getMinorVersion(schema: SchemaDefinition): number {
  * Throw for changes that break older apps on the same major, which keep editing during a minor:
  * - `derivedFrom`: older apps edit the source field and never update the derived one.
  * - New deprecations: newer apps stop writing a field that older apps still read.
- * - Adding or removing union variants.
- * New fields, even required ones, are fine: their upgrade function fills them in on read.
+ * - Removing union variants.
+ * New fields, even required ones, are fine: their upgrade function fills them in on read. So are
+ * new union variants: older apps read them as unknown and keep them when they save.
  */
 function assertMinorVersionChanges(
   previous: SchemaDefinition,
@@ -224,18 +226,6 @@ function assertMinorVersionChanges(
         throw new Error(
           `Union "${modelKey}" cannot remove variants in minor version ${versionLabel}:`
             + ` ${removedVariants.join(", ")}.`,
-        );
-      }
-      // TODO: allow once the server accepts new variants and we send each variant's version.
-      // Older apps already read a new variant as unknown and keep it when they save.
-      const addedVariants = Object.keys(def.variants).filter(
-        variantName => !Object.hasOwn(previousDef.variants, variantName),
-      );
-      if (addedVariants.length > 0) {
-        throw new Error(
-          `Union "${modelKey}" cannot add variants in minor version ${versionLabel}:`
-            + ` ${addedVariants.join(", ")}.`
-            + " The server doesn't accept new variants on an existing union yet.",
         );
       }
     }
@@ -352,7 +342,7 @@ class SchemaVersionBuilderImpl<T extends ModelDefs> implements SchemaVersionBuil
  * calls and finish with `build()`.
  *
  * By default this is a major version (1.x to 2.0). Pass `{ bump: "minor" }` for a minor version
- * (1.0 to 1.1), which may only add fields and new models.
+ * (1.0 to 1.1), which may only add fields, union variants, and new models.
  *
  * @example
  * ```ts

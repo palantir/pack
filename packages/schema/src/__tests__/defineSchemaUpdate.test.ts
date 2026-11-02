@@ -602,14 +602,14 @@ describe("nextSchema minor versions", () => {
     ).toThrow("Field \"Box.color\" cannot be deprecated in minor version 1.1.");
   });
 
-  it("should reject adding a union variant in a minor version", () => {
-    expect(() =>
-      nextSchema(schemaV1, { bump: "minor" })
-        .addSchemaUpdate(defineSchemaUpdate("addCircle", schema => ({
-          Shape: schema.Shape.addVariant("circle", Circle).build(),
-        })))
-        .build()
-    ).toThrow("Union \"Shape\" cannot add variants in minor version 1.1: circle.");
+  it("should allow adding a union variant in a minor version", () => {
+    const schemaV1_1 = nextSchema(schemaV1, { bump: "minor" })
+      .addSchemaUpdate(defineSchemaUpdate("addCircle", schema => ({
+        Shape: schema.Shape.addVariant("circle", Circle).build(),
+      })))
+      .build();
+
+    expect(Object.keys(schemaV1_1.models.Shape.variants)).toContain("circle");
   });
 
   it("should reject removing a union variant in a minor version", () => {

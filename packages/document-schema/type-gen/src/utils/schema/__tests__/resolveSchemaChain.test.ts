@@ -140,6 +140,33 @@ describe("resolveSchemaChain — union provenance", () => {
       expect(union.union.metadata.addedInVersion).toBe(1);
     }
   });
+
+  it("records the version of a variant added after the union, and only that variant", () => {
+    const Circle = defineRecord("Circle", { docs: "", fields: { radius: P.Double } });
+    const Square = defineRecord("Square", { docs: "", fields: { side: P.Double } });
+    const shapes = defineSchema({
+      Circle,
+      Square,
+      Shape: P.defineUnion("Shape", { docs: "", variants: { circle: Circle } }),
+    });
+    const addSquare = nextSchema(shapes)
+      .addSchemaUpdate(defineSchemaUpdate("addSquare", schema => ({
+        Shape: schema.Shape.addVariant("square", Square).build(),
+      })))
+      .build();
+    const v3 = nextSchema(addSquare).build();
+
+    const { chain } = resolveSchemaChain(v3);
+    const unions = chain.map(entry => {
+      const model = entry.ir.models.Shape!;
+      if (model.type !== "union") throw new Error("Shape should be a union");
+      return model.union;
+    });
+
+    expect(unions[0]).not.toHaveProperty("variantMetadata");
+    expect(unions[1]!.variantMetadata).toEqual({ square: { addedInVersion: 2 } });
+    expect(unions[2]!.variantMetadata).toEqual({ square: { addedInVersion: 2 } });
+  });
 });
 
 describe("resolveSchemaChain minor versions", () => {
