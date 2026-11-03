@@ -36,6 +36,7 @@ export const LayerFolderUpgrades: UpgradeRegistry<"LayerFolder"> = {
 export const LayerItemUpgrades: UpgradeRegistry<"LayerItem"> = {
   modelName: "LayerItem",
   allFields: {
+    name: { type: { kind: "optional", inner: { kind: "primitive" } }, addedInVersion: 4 },
     visible: { type: { kind: "primitive" }, addedInVersion: 4 },
   },
   steps: [

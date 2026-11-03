@@ -85,10 +85,11 @@ export interface LayerFolder_v4 {
 }
 
 /**
- * Layers panel state for a shape or stroke, stored under the id `layer-<item id>`.
+ * Layers panel state for a shape or stroke, stored under the id `layer-<item id>`. Unnamed items are labelled by their type.
  */
 export interface LayerItem_v4 {
   readonly visible: boolean;
+  readonly name?: string;
 }
 
 /**

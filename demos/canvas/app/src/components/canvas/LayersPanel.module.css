@@ -42,9 +42,14 @@
   padding: 0;
 }
 
+.item {
+  position: relative;
+}
+
 .row {
   align-items: center;
   border-bottom: 1px solid #f0f0f0;
+  cursor: grab;
   display: flex;
   gap: 4px;
   min-height: 32px;
@@ -53,6 +58,27 @@
 
 .hidden {
   opacity: 0.5;
+}
+
+.dropInside {
+  background-color: rgba(45, 114, 210, 0.15);
+}
+
+.dropLine {
+  background-color: #2d72d2;
+  height: 2px;
+  pointer-events: none;
+  position: absolute;
+  right: 0;
+  z-index: 1;
+}
+
+.dropLineAbove {
+  top: -1px;
+}
+
+.dropLineBelow {
+  bottom: -1px;
 }
 
 .icon {
@@ -68,6 +94,11 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.nameInput {
+  flex: 1;
+  min-width: 0;
 }
 
 .select {

@@ -2037,7 +2037,7 @@
             "record": {
               "key": "LayerItem",
               "name": "LayerItem",
-              "description": "Layers panel state for a shape or stroke, stored under the id `layer-<item id>`.",
+              "description": "Layers panel state for a shape or stroke, stored under the id `layer-<item id>`. Unnamed items are labelled by their type.",
               "fields": [
                 {
                   "key": "visible",
@@ -2052,6 +2052,21 @@
                   "metadata": {
                     "addedInVersion": 4
                   }
+                },
+                {
+                  "key": "name",
+                  "name": "name",
+                  "fieldType": {
+                    "value": {
+                      "string": {},
+                      "type": "string"
+                    },
+                    "type": "value"
+                  },
+                  "metadata": {
+                    "addedInVersion": 4
+                  },
+                  "isOptional": true
                 }
               ]
             },

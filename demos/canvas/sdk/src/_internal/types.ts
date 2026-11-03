@@ -22,6 +22,7 @@ export interface LayerFolder__Internal {
 
 /** Internal representation containing all fields across all schema versions. */
 export interface LayerItem__Internal {
+  readonly name?: (string | undefined);
   readonly visible?: boolean;
 }
 
@@ -122,6 +123,7 @@ export interface LayerFolder__v4 {
 
 /** Internal representation of LayerItem at schema version 4. */
 export interface LayerItem__v4 {
+  readonly name?: (string | undefined);
   readonly visible: boolean;
 }
 

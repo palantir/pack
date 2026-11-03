@@ -60,7 +60,8 @@ export const LayerFolderSchema_v4 = z.object({
 }).passthrough() satisfies ZodType<LayerFolder_v4>;
 
 export const LayerItemSchema_v4 = z.object({
-  visible: z.boolean()
+  visible: z.boolean(),
+  name: z.string().optional()
 }).passthrough() satisfies ZodType<LayerItem_v4>;
 
 export const LayerRootSchema_v4 = z.object({

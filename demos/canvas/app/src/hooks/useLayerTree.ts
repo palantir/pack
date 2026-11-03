@@ -47,12 +47,14 @@ export type LayerItemNode =
   | {
     readonly kind: "shape";
     readonly id: RecordId;
+    readonly name: string | undefined;
     readonly ref: RecordRef<typeof NodeShapeModel>;
     readonly visible: boolean;
   }
   | {
     readonly kind: "stroke";
     readonly id: RecordId;
+    readonly name: string | undefined;
     readonly ref: RecordRef<typeof FreehandStrokeModel>;
     readonly visible: boolean;
   };
@@ -81,14 +83,17 @@ export interface LayerTree {
   readonly childIdsByParentId: ReadonlyMap<RecordId, readonly RecordId[]>;
 }
 
-export type LayerDirection = "backward" | "forward";
+/** Where a moved layer lands relative to a target layer: in front of it, behind it, or inside it (a folder). */
+export type LayerDropPosition = "above" | "below" | "inside";
 
 export interface LayerActions {
   readonly addFolder: (parentId: RecordId) => void;
   /** Deletes the folder and moves its contents into its parent, in its place. */
   readonly deleteFolder: (folderId: RecordId) => void;
-  readonly moveLayer: (id: RecordId, direction: LayerDirection) => void;
+  /** Moving inside a folder puts the layer on top of the folder's contents. */
+  readonly moveLayer: (id: RecordId, targetId: RecordId, position: LayerDropPosition) => void;
   readonly moveToFolder: (id: RecordId, folderId: RecordId) => void;
+  readonly rename: (node: LayerNode, name: string) => void;
   readonly setVisible: (node: LayerNode, visible: boolean) => void;
 }
 
@@ -136,19 +141,31 @@ export function useLayerActions(doc: VersionedDocRef, tree: LayerTree): LayerAct
   );
 
   const moveLayer = useCallback(
-    (id: RecordId, direction: LayerDirection) => {
+    (id: RecordId, targetId: RecordId, position: LayerDropPosition) => {
       const parentId = tree.parentIdById.get(id);
-      if (parentId == null) return;
+      const targetParentId = position === "inside" ? targetId : tree.parentIdById.get(targetId);
+      if (
+        parentId == null || targetParentId == null || !canMoveLayer(tree, id, targetId, position)
+      ) {
+        return;
+      }
 
-      const siblingIds = [...getChildIds(tree, parentId)];
-      const index = siblingIds.indexOf(id);
-      const targetIndex = direction === "forward" ? index + 1 : index - 1;
-      const targetId = siblingIds[targetIndex];
-      if (index === -1 || targetId == null) return;
+      const oldSiblingIds = getChildIds(tree, targetParentId);
+      const siblingIds = oldSiblingIds.filter(childId => childId !== id);
+      // Drawing order is bottom first, so a layer dropped above its target goes after it.
+      const index = position === "inside"
+        ? siblingIds.length
+        : siblingIds.indexOf(targetId) + (position === "above" ? 1 : 0);
+      const newSiblingIds = [...siblingIds.slice(0, index), id, ...siblingIds.slice(index)];
+      // Skip dropping a layer back where it was, so it doesn't overwrite concurrent reorders.
+      if (newSiblingIds.every((childId, i) => childId === oldSiblingIds[i])) return;
 
-      siblingIds[targetIndex] = id;
-      siblingIds[index] = targetId;
-      editLayers(doc, doc => setChildIds(doc, parentId, siblingIds));
+      editLayers(doc, doc => {
+        if (parentId !== targetParentId) {
+          setChildIds(doc, parentId, getChildIds(tree, parentId).filter(childId => childId !== id));
+        }
+        setChildIds(doc, targetParentId, newSiblingIds);
+      });
     },
     [doc, tree],
   );
@@ -166,23 +183,36 @@ export function useLayerActions(doc: VersionedDocRef, tree: LayerTree): LayerAct
     [doc, tree],
   );
 
-  const setVisible = useCallback(
-    (node: LayerNode, visible: boolean) => {
-      editLayers(doc, doc => {
-        if (node.kind === "folder") {
-          const folderRef = doc.getRecords(LayerFolderModel).get(node.id);
-          if (folderRef != null) {
-            void doc.updateRecord(folderRef, { visible });
-          }
-        } else {
-          void doc.setRecord(LayerItemModel, getLayerItemId(node.id), { visible });
-        }
-      });
-    },
+  const rename = useCallback(
+    (node: LayerNode, name: string) => editLayers(doc, doc => updateLayer(doc, node, { name })),
     [doc],
   );
 
-  return { addFolder, deleteFolder, moveLayer, moveToFolder, setVisible };
+  const setVisible = useCallback(
+    (node: LayerNode, visible: boolean) =>
+      editLayers(doc, doc => updateLayer(doc, node, { visible })),
+    [doc],
+  );
+
+  return { addFolder, deleteFolder, moveLayer, moveToFolder, rename, setVisible };
+}
+
+/** Whether a layer can move there: not onto itself, nor into itself or its own contents. */
+export function canMoveLayer(
+  tree: LayerTree,
+  id: RecordId,
+  targetId: RecordId,
+  position: LayerDropPosition,
+): boolean {
+  if (id === targetId || !tree.parentIdById.has(id)) return false;
+  if (position === "inside" && !tree.childIdsByParentId.has(targetId)) return false;
+
+  let ancestorId = position === "inside" ? targetId : tree.parentIdById.get(targetId);
+  while (ancestorId != null && ancestorId !== LAYER_ROOT_ID) {
+    if (ancestorId === id) return false;
+    ancestorId = tree.parentIdById.get(ancestorId);
+  }
+  return ancestorId === LAYER_ROOT_ID;
 }
 
 /** Every folder in the tree, in panel order (top first), with its nesting depth. */
@@ -223,16 +253,18 @@ function buildLayerTree(
       };
     }
 
-    const visible = items.get(getLayerItemId(id))?.visible ?? true;
+    const item = items.get(getLayerItemId(id));
+    const name = item?.name;
+    const visible = item?.visible ?? true;
     const shapeRef = shapeRefById.get(id);
     if (shapeRef != null) {
       parentIdById.set(id, parentId);
-      return { id, kind: "shape", ref: shapeRef, visible };
+      return { id, kind: "shape", name, ref: shapeRef, visible };
     }
     const strokeRef = strokeRefById.get(id);
     if (strokeRef != null) {
       parentIdById.set(id, parentId);
-      return { id, kind: "stroke", ref: strokeRef, visible };
+      return { id, kind: "stroke", name, ref: strokeRef, visible };
     }
     // Deleted, possibly by another user; dropped from the list on its parent's next edit.
     return undefined;
@@ -286,6 +318,28 @@ function getLayerItemId(itemId: RecordId): RecordId {
 
 function getChildIds(tree: LayerTree, parentId: RecordId): readonly RecordId[] {
   return tree.childIdsByParentId.get(parentId) ?? [];
+}
+
+// Updates rather than replaces an existing LayerItem, so changing one field keeps the others.
+function updateLayer(
+  doc: VersionedDocRef_v4,
+  node: LayerNode,
+  update: { readonly name?: string; readonly visible?: boolean },
+): void {
+  if (node.kind === "folder") {
+    const folderRef = doc.getRecords(LayerFolderModel).get(node.id);
+    if (folderRef != null) {
+      void doc.updateRecord(folderRef, update);
+    }
+    return;
+  }
+  const itemId = getLayerItemId(node.id);
+  const itemRef = doc.getRecords(LayerItemModel).get(itemId);
+  if (itemRef != null) {
+    void doc.updateRecord(itemRef, update);
+  } else {
+    void doc.setRecord(LayerItemModel, itemId, { visible: node.visible, ...update });
+  }
 }
 
 function editLayers(doc: VersionedDocRef, edit: (doc: VersionedDocRef_v4) => void): void {

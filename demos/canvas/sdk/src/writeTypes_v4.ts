@@ -59,6 +59,7 @@ export type LayerFolderUpdate_v4 = {
 
 export type LayerItemUpdate_v4 = {
   readonly visible?: boolean;
+  readonly name?: string;
 };
 
 export type LayerRootUpdate_v4 = {

@@ -19,6 +19,7 @@ export const LayerFolderInternalSchema = z.object({
 }).passthrough();
 
 export const LayerItemInternalSchema = z.object({
+  name: z.string().optional(),
   visible: z.boolean().optional(),
 }).passthrough();
 

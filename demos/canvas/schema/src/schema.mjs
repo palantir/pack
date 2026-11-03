@@ -223,9 +223,11 @@ const addLayerModels = S.defineSchemaUpdate("addLayerModels", () => {
   });
 
   const LayerItem = S.defineRecord("LayerItem", {
-    docs: "Layers panel state for a shape or stroke, stored under the id `layer-<item id>`.",
+    docs:
+      "Layers panel state for a shape or stroke, stored under the id `layer-<item id>`. Unnamed items are labelled by their type.",
     fields: {
       visible: S.Boolean,
+      name: S.Optional(S.String),
     },
   });
 
