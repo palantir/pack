@@ -115,6 +115,9 @@ function recordFieldDefinitionToSchemaType(
     if (recordFieldDefinition === "resourceRef") {
       return { type: "resourceRef" };
     }
+    if (recordFieldDefinition === "resourceRefV2") {
+      return { type: "resourceRefV2" };
+    }
     if (recordFieldDefinition === "docRef") {
       return { type: "docRef" };
     }

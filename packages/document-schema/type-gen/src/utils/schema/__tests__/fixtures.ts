@@ -95,7 +95,10 @@ export const twoVersionRequiredAdditiveSchema: SchemaDefinition = nextSchema(
   singleVersionSchemaNarrow,
 ).addSchemaUpdate(addOpacityRequiredUpdate).build();
 
-/** Schema with ref fields: tests import paths for record refs, ResourceRef, DocumentRef, UserRef */
+/**
+ * Schema with ref fields: tests import paths for record refs, ResourceRef, DocumentRef, UserRef,
+ * and the stored shape of ResourceRefV2.
+ */
 const CircleRecord = defineRecord("Circle", {
   docs: "A circle",
   fields: {
@@ -103,6 +106,7 @@ const CircleRecord = defineRecord("Circle", {
   },
 });
 
+// eslint-disable-next-line @typescript-eslint/no-deprecated -- existing fields must still generate
 const ResourceRefField: P.ResourceRef = { type: "resourceRef" };
 const DocRef: P.DocRef = { type: "docRef" };
 const UserRefField: P.UserRef = { type: "userRef" };
@@ -118,6 +122,8 @@ export const refFieldsSchema: SchemaDefinition = defineSchema({
       attachment: DocRef,
       owner: P.Optional(UserRefField),
       resource: ResourceRefField,
+      resourceV2: P.Optional(P.ResourceRefV2),
+      resourcesV2: P.Array(P.ResourceRefV2),
     },
   }),
 });

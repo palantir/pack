@@ -203,6 +203,7 @@ function getFieldTypeValueSchemaVersion(
       return maxVersion;
     }
     case "primitive":
+    case "packRef":
       return context.defaultVersion;
     case "optional":
       return context.defaultVersion;

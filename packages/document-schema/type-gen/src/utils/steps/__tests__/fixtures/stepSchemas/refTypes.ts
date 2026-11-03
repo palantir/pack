@@ -24,6 +24,9 @@ const refTypes = {
       "resourceRef": {
         "type": "resourceRef",
       },
+      "resourceRefV2": {
+        "type": "resourceRefV2",
+      },
       "optionalDocRef": {
         "type": "optional",
         "item": {

@@ -24,6 +24,7 @@ import {
   type UpgradeRegistryMap,
 } from "@palantir/pack.document-schema.model-types";
 import * as Y from "yjs";
+import { isStoredPackRef } from "../upgrade/PackRef.js";
 import { resolveAndApplyLens } from "../upgrade/UpgradeLens.js";
 import { addDocumentUpdateSchemaVersionToTransaction } from "./DocumentUpdateSchemaVersion.js";
 
@@ -151,6 +152,8 @@ function populateYMapFromState(
           yArray.push([item]);
         });
         yMap.set(key, yArray);
+      } else if (isStoredPackRef(value)) {
+        yMap.set(key, value);
       } else if (typeof value === "object" && value != null) {
         const nestedMap = new Y.Map();
         populateYMapFromState(nestedMap, value as Model);
@@ -180,6 +183,8 @@ function updateYMapFromPartialState(
           yArray.push([item]);
         });
         yMap.set(key, yArray);
+      } else if (isStoredPackRef(value)) {
+        yMap.set(key, value);
       } else if (typeof value === "object" && value != null) {
         // For nested objects, we need to handle partial updates
         const existingValue = yMap.get(key);
