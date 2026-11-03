@@ -1,5 +1,23 @@
 # @palantir/pack.document-schema.type-gen
 
+## 0.34.0
+
+### Minor Changes
+
+- 8810d4c: Use the generated platform SDK instead of npm `@osdk/foundry.pack`. PACK now generates the Pack API client itself into `@palantir/pack.core` (imported as `@palantir/pack.core/generatedPlatformSdk`), and `state.foundry`, `state.foundry-event`, and `document-schema.type-gen` use it. It is generated from api-gateway 1.1885.0, which adds union variant metadata (`variantMetadata`) and `Documents.recordView`. These packages now require api-gateway 1.1885.0 or newer, and gotham-objects-gateway 2.955.0 or newer on stacks that run it.
+- 9e646b9: Record the version each union variant was added in. When a union gains a variant in a later schema version, the IR and the schema that `ir asset`, `ir update-schema`, and `ir deploy` send include `variantMetadata` for that variant. Unions that never gained a variant are unchanged. A minor version can now add union variants; older apps read them as unknown and keep them when they save. A write that uses an added variant is tagged with at least the version that added the variant, even when the variant's record is older.
+
+  If a third-party document type was first deployed after one of its unions had already gained a variant, the server recorded that variant at the union's version. The next `ir update-schema` then fails because the variant's version changed. Run that update once with `--force-overwrite`.
+
+### Patch Changes
+
+- Updated dependencies [8810d4c]
+- Updated dependencies [8810d4c]
+- Updated dependencies [9e646b9]
+  - @palantir/pack.core@0.34.0
+  - @palantir/pack.document-schema.model-types@0.34.0
+  - @palantir/pack.schema@0.34.0
+
 ## 0.33.0
 
 ### Minor Changes
