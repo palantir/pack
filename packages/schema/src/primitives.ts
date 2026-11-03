@@ -23,8 +23,8 @@ export const TypeKind = {
   OBJECT_REF: "objectRef",
   OPTIONAL: "optional",
   REF: "ref",
+  RESOURCE_IDENTIFIER_REF: "resourceIdentifierRef",
   RESOURCE_REF: "resourceRef",
-  RESOURCE_REF_V2: "resourceRefV2",
   STRING: "string",
   UNKNOWN: "unknown",
   USER_REF: "userRef",
@@ -92,8 +92,8 @@ export type ResourceRef = {
   readonly type: typeof TypeKind.RESOURCE_REF;
 };
 
-export type ResourceRefV2 = {
-  readonly type: typeof TypeKind.RESOURCE_REF_V2;
+export type ResourceIdentifierRef = {
+  readonly type: typeof TypeKind.RESOURCE_IDENTIFIER_REF;
 };
 
 export type UserRef = {
@@ -110,7 +110,7 @@ export type Type =
   | ObjectRef
   // eslint-disable-next-line @typescript-eslint/no-deprecated -- existing fields still use it
   | ResourceRef
-  | ResourceRefV2
+  | ResourceIdentifierRef
   | Optional
   | Ref
   | String
@@ -128,8 +128,8 @@ export const Unknown: Unknown = { type: TypeKind.UNKNOWN };
 /**
  * A reference to a Foundry resource, stored as a plain RID string.
  *
- * @deprecated Use {@link ResourceRefV2} for new fields. Peering can only translate
- * `ResourceRefV2` values; a plain string looks like any other string.
+ * @deprecated Use {@link ResourceIdentifierRef} for new fields. Peering can only translate
+ * `ResourceIdentifierRef` values; a plain string looks like any other string.
  */
 // eslint-disable-next-line @typescript-eslint/no-deprecated -- the declaration itself
 export const ResourceRef: ResourceRef = { type: TypeKind.RESOURCE_REF };
@@ -137,7 +137,9 @@ export const ResourceRef: ResourceRef = { type: TypeKind.RESOURCE_REF };
  * A reference to a Foundry resource, held as a RID string. Unlike `ResourceRef`, the SDK stores it
  * as a tagged object, so peering can find and translate it across stacks.
  */
-export const ResourceRefV2: ResourceRefV2 = { type: TypeKind.RESOURCE_REF_V2 };
+export const ResourceIdentifierRef: ResourceIdentifierRef = {
+  type: TypeKind.RESOURCE_IDENTIFIER_REF,
+};
 function unwrapOneOptional(t: TypeBase): TypeBase {
   return t.type === TypeKind.OPTIONAL && "item" in t ? (t as { item: TypeBase }).item : t;
 }

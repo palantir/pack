@@ -30,21 +30,21 @@ import { getRecordSnapshot, setRecord, updateRecord } from "../service/YjsSchema
 import { toStoredValue } from "../upgrade/UnknownVariant.js";
 
 const primitive: FieldDef = { type: { kind: "primitive" } };
-const resourceRefV2: FieldTypeDescriptor = { kind: "packRef", refType: "resourceRef" };
+const resourceIdentifierRef: FieldTypeDescriptor = { kind: "packRef", refType: "resourceRef" };
 
 const upgrades: UpgradeRegistryMap = {
   Binding: {
     modelName: "Binding",
     allFields: {
       resource: primitive,
-      resourceV2: { type: { kind: "optional", inner: resourceRefV2 } },
+      resourceIdentifier: { type: { kind: "optional", inner: resourceIdentifierRef } },
     },
     steps: [],
   },
   Tile: {
     modelName: "Tile",
     allFields: {
-      resources: { type: { kind: "array", element: resourceRefV2 } },
+      resources: { type: { kind: "array", element: resourceIdentifierRef } },
       target: { type: { kind: "modelRef", model: "Target" } },
     },
     steps: [],
@@ -52,7 +52,7 @@ const upgrades: UpgradeRegistryMap = {
   Target: { modelName: "Target", discriminant: "type", variants: { resource: "ResourceTarget" } },
   ResourceTarget: {
     modelName: "ResourceTarget",
-    allFields: { type: primitive, rid: { type: resourceRefV2 } },
+    allFields: { type: primitive, rid: { type: resourceIdentifierRef } },
     steps: [],
   },
 };
@@ -80,24 +80,24 @@ function recordUpdates(yDoc: Y.Doc): Array<Array<{ key: string | null; content: 
   return updates;
 }
 
-describe("ResourceRefV2", () => {
+describe("ResourceIdentifierRef", () => {
   it("stores the ref string as one tagged value, so each update carries the whole ref", () => {
     const yDoc = new Y.Doc();
     const updates = recordUpdates(yDoc);
 
-    save(yDoc, "Binding", recordId, { resource: "ri.a", resourceV2: "ri.a" });
+    save(yDoc, "Binding", recordId, { resource: "ri.a", resourceIdentifier: "ri.a" });
 
-    expect(updates[0]).toContainEqual({ key: "resourceV2", content: tagged("ri.a") });
+    expect(updates[0]).toContainEqual({ key: "resourceIdentifier", content: tagged("ri.a") });
     // The plain ResourceRef next to it is unchanged.
     expect(updates[0]).toContainEqual({ key: "resource", content: "ri.a" });
   });
 
   it("replaces the whole ref on a partial update", () => {
     const yDoc = new Y.Doc();
-    save(yDoc, "Binding", recordId, { resource: "ri.a", resourceV2: "ri.a" });
+    save(yDoc, "Binding", recordId, { resource: "ri.a", resourceIdentifier: "ri.a" });
     const updates = recordUpdates(yDoc);
 
-    const partial = toStoredValue(schema, "Binding", { resourceV2: "ri.b" });
+    const partial = toStoredValue(schema, "Binding", { resourceIdentifier: "ri.b" });
     updateRecord(yDoc, "Binding", recordId, partial);
 
     // A replacement carries no key, only the value, so the value alone must say it is a ref.

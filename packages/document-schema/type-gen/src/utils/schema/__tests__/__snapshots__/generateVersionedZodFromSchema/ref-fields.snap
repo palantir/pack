@@ -22,8 +22,8 @@ export const DrawingSchema_v1 = z
     attachment: z.string(),
     owner: z.string().optional(),
     resource: z.string(),
-    resourceV2: z.string().optional(),
-    resourcesV2: z.array(z.string()),
+    resourceIdentifier: z.string().optional(),
+    resourceIdentifiers: z.array(z.string()),
   })
   .passthrough() satisfies ZodType<Drawing_v1>;
 

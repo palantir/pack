@@ -170,7 +170,7 @@ export const ${modelName}Model: ${modelName}Model = {
     for (const field of model.record.fields) {
       if (field.fieldType.type === "value") {
         const valueType = field.fieldType.value.type;
-        if (valueType === "resourceRef" || valueType === "resourceRefV2") {
+        if (valueType === "resourceRef" || valueType === "resourceIdentifierRef") {
           externalRefFields.push([field.key, "resourceRef"]);
         } else if (valueType === "docRef") {
           externalRefFields.push([field.key, "docRef"]);

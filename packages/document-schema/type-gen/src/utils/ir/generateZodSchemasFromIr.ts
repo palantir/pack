@@ -388,7 +388,7 @@ class ZodSchemaGenerator {
         return "z.unknown()";
 
       case "resourceRef":
-      case "resourceRefV2":
+      case "resourceIdentifierRef":
       case "docRef":
       case "mediaRef":
       case "object":

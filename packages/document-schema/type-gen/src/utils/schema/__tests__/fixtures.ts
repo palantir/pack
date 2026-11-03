@@ -97,7 +97,7 @@ export const twoVersionRequiredAdditiveSchema: SchemaDefinition = nextSchema(
 
 /**
  * Schema with ref fields: tests import paths for record refs, ResourceRef, DocumentRef, UserRef,
- * and the stored shape of ResourceRefV2.
+ * and the stored shape of ResourceIdentifierRef.
  */
 const CircleRecord = defineRecord("Circle", {
   docs: "A circle",
@@ -122,8 +122,8 @@ export const refFieldsSchema: SchemaDefinition = defineSchema({
       attachment: DocRef,
       owner: P.Optional(UserRefField),
       resource: ResourceRefField,
-      resourceV2: P.Optional(P.ResourceRefV2),
-      resourcesV2: P.Array(P.ResourceRefV2),
+      resourceIdentifier: P.Optional(P.ResourceIdentifierRef),
+      resourceIdentifiers: P.Array(P.ResourceIdentifierRef),
     },
   }),
 });

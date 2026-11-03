@@ -267,7 +267,7 @@ export function convertTypeToFieldTypeUnion(
       return convertTypeToFieldTypeUnion(schemaType.item as P.Type, nameToExportKey);
 
     case "resourceRef":
-    case "resourceRefV2":
+    case "resourceIdentifierRef":
     case "boolean":
     case "docRef":
     case "double":
@@ -300,8 +300,8 @@ function convertTypeToFieldValueUnion(
         resourceRids: [],
       });
 
-    case "resourceRefV2":
-      return IFieldValueUnion.resourceRefV2({
+    case "resourceIdentifierRef":
+      return IFieldValueUnion.resourceIdentifierRef({
         resourceRids: [],
       });
 

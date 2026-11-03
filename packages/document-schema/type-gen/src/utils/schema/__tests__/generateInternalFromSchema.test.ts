@@ -42,7 +42,7 @@ describe("generateInternalFromChain", () => {
     );
   });
 
-  it("ref fields, including ResourceRefV2's stored shape and descriptor", async () => {
+  it("ref fields, including ResourceIdentifierRef's stored shape and descriptor", async () => {
     const result = generateInternalFromChain(resolveSchemaChain(refFieldsSchema));
     await expect(await formatInternalTypesSnapshot(result)).toMatchFileSnapshot(
       path.join(snapshotDir, "ref-fields.snap"),

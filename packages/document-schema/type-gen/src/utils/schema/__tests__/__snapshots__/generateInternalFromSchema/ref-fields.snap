@@ -17,18 +17,18 @@ export interface Drawing__Internal {
   readonly mainShape: unknown;
   readonly owner?: string | undefined;
   readonly resource: string;
-  readonly resourcesV2: readonly {
-    readonly __packRef: 1;
-    readonly __type: 'resourceRef';
-    readonly __ref: string;
-  }[];
-  readonly resourceV2?:
+  readonly resourceIdentifier?:
     | {
         readonly __packRef: 1;
         readonly __type: 'resourceRef';
         readonly __ref: string;
       }
     | undefined;
+  readonly resourceIdentifiers: readonly {
+    readonly __packRef: 1;
+    readonly __type: 'resourceRef';
+    readonly __ref: string;
+  }[];
 }
 
 // ============================================================
@@ -68,17 +68,17 @@ export const DrawingUpgrades: UpgradeRegistry<'Drawing'> = {
       addedInVersion: 1,
     },
     resource: { type: { kind: 'primitive' }, addedInVersion: 1 },
-    resourcesV2: {
-      type: {
-        kind: 'array',
-        element: { kind: 'packRef', refType: 'resourceRef' },
-      },
-      addedInVersion: 1,
-    },
-    resourceV2: {
+    resourceIdentifier: {
       type: {
         kind: 'optional',
         inner: { kind: 'packRef', refType: 'resourceRef' },
+      },
+      addedInVersion: 1,
+    },
+    resourceIdentifiers: {
+      type: {
+        kind: 'array',
+        element: { kind: 'packRef', refType: 'resourceRef' },
       },
       addedInVersion: 1,
     },
@@ -108,20 +108,20 @@ export const DrawingInternalSchema = z
     mainShape: z.unknown(),
     owner: z.string().optional(),
     resource: z.string(),
-    resourcesV2: z.array(
-      z.object({
-        __packRef: z.literal(1),
-        __type: z.literal('resourceRef'),
-        __ref: z.string(),
-      })
-    ),
-    resourceV2: z
+    resourceIdentifier: z
       .object({
         __packRef: z.literal(1),
         __type: z.literal('resourceRef'),
         __ref: z.string(),
       })
       .optional(),
+    resourceIdentifiers: z.array(
+      z.object({
+        __packRef: z.literal(1),
+        __type: z.literal('resourceRef'),
+        __ref: z.string(),
+      })
+    ),
   })
   .passthrough();
 

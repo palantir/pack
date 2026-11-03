@@ -15,8 +15,9 @@
  */
 
 /**
- * How a `ResourceRefV2` value is stored. Apps read and write the ref string; the stored object says
- * it is a ref and of what kind, so peering can find and translate it from the Yjs update alone.
+ * How a `ResourceIdentifierRef` value is stored. Apps read and write the ref string; the stored
+ * object says it is a ref and of what kind, so peering can find and translate it from the Yjs
+ * update alone.
  */
 export interface StoredPackRef {
   readonly __packRef: 1;

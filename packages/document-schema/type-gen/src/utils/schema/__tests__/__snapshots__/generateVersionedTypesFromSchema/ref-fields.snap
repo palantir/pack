@@ -27,8 +27,8 @@ export interface Drawing_v1 {
   readonly attachment: DocumentId;
   readonly owner?: UserId;
   readonly resource: ResourceRid;
-  readonly resourceV2?: ResourceRid;
-  readonly resourcesV2: readonly ResourceRid[];
+  readonly resourceIdentifier?: ResourceRid;
+  readonly resourceIdentifiers: readonly ResourceRid[];
 }
 
 // ============================================================
@@ -55,8 +55,8 @@ export type DrawingUpdate_v1 = {
   readonly attachment?: DocumentId;
   readonly owner?: UserId;
   readonly resource?: ResourceRid;
-  readonly resourceV2?: ResourceRid;
-  readonly resourcesV2?: readonly ResourceRid[];
+  readonly resourceIdentifier?: ResourceRid;
+  readonly resourceIdentifiers?: readonly ResourceRid[];
 };
 
 // ============================================================

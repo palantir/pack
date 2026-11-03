@@ -46,8 +46,8 @@ interface ResourceRefField extends BaseSchemaField {
   readonly type: typeof TypeKind.RESOURCE_REF;
 }
 
-interface ResourceRefV2Field extends BaseSchemaField {
-  readonly type: typeof TypeKind.RESOURCE_REF_V2;
+interface ResourceIdentifierRefField extends BaseSchemaField {
+  readonly type: typeof TypeKind.RESOURCE_IDENTIFIER_REF;
 }
 
 interface DocRefField extends BaseSchemaField {
@@ -89,7 +89,7 @@ type SchemaField =
   | AnyField
   | ArrayField
   | ResourceRefField
-  | ResourceRefV2Field
+  | ResourceIdentifierRefField
   | DocRefField
   | DoubleField
   | MediaRefField
@@ -154,7 +154,7 @@ function detectUsedRefTypes(schema: RuntimeSchema): Set<string> {
         }
         break;
       case TypeKind.RESOURCE_REF:
-      case TypeKind.RESOURCE_REF_V2:
+      case TypeKind.RESOURCE_IDENTIFIER_REF:
         refTypes.add("ResourceRid");
         break;
       case TypeKind.DOC_REF:
@@ -336,7 +336,7 @@ function convertTypeToTypeScript(
       }
       return `readonly ${convertTypeToTypeScript(fieldType.items, schema)}[]`;
     case TypeKind.RESOURCE_REF:
-    case TypeKind.RESOURCE_REF_V2:
+    case TypeKind.RESOURCE_IDENTIFIER_REF:
       return "ResourceRid";
     case TypeKind.DOC_REF:
       return "DocumentId";
