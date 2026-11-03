@@ -10,8 +10,6 @@ A **schema** defines the shape of your documents. You author it in your schema p
 
 A **record** is a named set of typed fields, defined with [`defineRecord`](/api/schema/functions/defineRecord). Field types come from the primitives on the imported namespace — [`String`](/api/schema/variables/String), [`Double`](/api/schema/variables/Double), [`Boolean`](/api/schema/variables/Boolean), [`Optional`](/api/schema/variables/Optional), [`Array`](/api/schema/variables/Array) — or references to other records and unions.
 
-For a reference to a Foundry resource, use [`ResourceIdentifierRef`](/api/schema/variables/ResourceIdentifierRef). The older [`ResourceRef`](/api/schema/variables/ResourceRef) is deprecated, because peering can't translate it when a document is copied to another stack. To move an existing field over, add a `ResourceIdentifierRef` field next to it instead of changing its type, because older clients can't read the new shape.
-
 A **union** is a choice between several record variants, defined with [`defineUnion`](/api/schema/functions/defineUnion).
 
 ## Versions

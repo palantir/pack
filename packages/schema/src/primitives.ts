@@ -108,7 +108,6 @@ export type Type =
   | Double
   | MediaRef
   | ObjectRef
-  // eslint-disable-next-line @typescript-eslint/no-deprecated -- existing fields still use it
   | ResourceRef
   | ResourceIdentifierRef
   | Optional
@@ -125,13 +124,7 @@ export const Double: Double = { type: TypeKind.DOUBLE };
 export const Boolean: Boolean = { type: TypeKind.BOOLEAN };
 /** An opaque, arbitrary JSON value. */
 export const Unknown: Unknown = { type: TypeKind.UNKNOWN };
-/**
- * A reference to a Foundry resource, stored as a plain RID string.
- *
- * @deprecated Use {@link ResourceIdentifierRef} for new fields. Peering can only translate
- * `ResourceIdentifierRef` values; a plain string looks like any other string.
- */
-// eslint-disable-next-line @typescript-eslint/no-deprecated -- the declaration itself
+/** A reference to a Foundry resource, stored as a plain RID string. */
 export const ResourceRef: ResourceRef = { type: TypeKind.RESOURCE_REF };
 /**
  * A reference to a Foundry resource, held as a RID string. Unlike `ResourceRef`, the SDK stores it

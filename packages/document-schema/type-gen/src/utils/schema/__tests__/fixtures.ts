@@ -106,7 +106,6 @@ const CircleRecord = defineRecord("Circle", {
   },
 });
 
-// eslint-disable-next-line @typescript-eslint/no-deprecated -- existing fields must still generate
 const ResourceRefField: P.ResourceRef = { type: "resourceRef" };
 const DocRef: P.DocRef = { type: "docRef" };
 const UserRefField: P.UserRef = { type: "userRef" };
