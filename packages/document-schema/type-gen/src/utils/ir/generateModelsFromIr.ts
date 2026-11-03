@@ -18,7 +18,6 @@ import { formatVariantName } from "@palantir/pack.schema";
 import invariant from "tiny-invariant";
 import type { IRealTimeDocumentSchema } from "../../lib/pack-docschema-api/pack-docschema-ir/index.js";
 import { GENERATED_FILE_HEADER } from "../generatedFileHeader.js";
-import { usesStoredPackRefs } from "./irFieldHelpers.js";
 
 export interface ModelGeneratorOptions {
   typeImportPath?: string;
@@ -171,7 +170,7 @@ export const ${modelName}Model: ${modelName}Model = {
     for (const field of model.record.fields) {
       if (field.fieldType.type === "value") {
         const valueType = field.fieldType.value.type;
-        if (valueType === "resourceRef" || valueType === "resourceIdentifierRef") {
+        if (valueType === "resourceRef") {
           externalRefFields.push([field.key, "resourceRef"]);
         } else if (valueType === "docRef") {
           externalRefFields.push([field.key, "docRef"]);
@@ -227,17 +226,12 @@ ${modelEntries.join(",\n")},
   }
 }
 
+// Legacy path. It emits no upgrade registry, so it doesn't support `resourceIdentifierRef`; use
+// `ir gen-types`.
 export async function generateModelsFromIr(
   schema: IRealTimeDocumentSchema,
   options?: ModelGeneratorOptions,
 ): Promise<string> {
-  // This generator emits no upgrade registry, so the SDK would store these refs as plain strings.
-  if (usesStoredPackRefs(schema)) {
-    throw new Error(
-      "resourceIdentifierRef fields need the versioned SDK generator "
-        + "(`type-gen ir gen-types`, used by @palantir/pack.sdkgen.pack-versioned-template).",
-    );
-  }
   const generator = new ModelGenerator(schema, options);
   return generator.generateModels();
 }

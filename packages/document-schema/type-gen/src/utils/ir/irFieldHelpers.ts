@@ -345,32 +345,6 @@ function convertFieldValueToDescriptor(value: IFieldValueUnion): string {
 // ---------------------------------------------------------------------------
 
 /**
- * Whether any field stores a ref as a tagged object. The SDK tags those on save and unwraps them on
- * read through the upgrade registry, so the generated SDK must include one.
- */
-export function usesStoredPackRefs(ir: IRealTimeDocumentSchema): boolean {
-  return Object.values(ir.models).some(modelDef =>
-    modelDef.type === "record"
-    && modelDef.record.fields.some(field => isStoredPackRefFieldType(field.fieldType))
-  );
-}
-
-function isStoredPackRefFieldType(fieldType: IFieldTypeUnion): boolean {
-  switch (fieldType.type) {
-    case "array":
-      return isStoredPackRefValue(fieldType.array.value);
-    case "value":
-      return isStoredPackRefValue(fieldType.value);
-    default:
-      return false;
-  }
-}
-
-function isStoredPackRefValue(value: IFieldValueUnion): boolean {
-  return value.type === "resourceIdentifierRef";
-}
-
-/**
  * Detect which external ref types (ResourceRef, DocumentRef, MediaRef, ObjectRef,
  * UserRef) are used anywhere in the IR schema.
  */
