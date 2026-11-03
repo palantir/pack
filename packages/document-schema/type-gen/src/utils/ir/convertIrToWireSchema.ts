@@ -141,9 +141,10 @@ function convertFieldValueUnion(value: IFieldValueUnion): FieldValueUnion {
         resourceRids: [...value.resourceRef.resourceRids],
       };
     case "resourceIdentifierRef":
-      // TODO: emit `resourceIdentifierRef` once api-gateway's public API has it and the platform
-      // SDK is regenerated from that release.
-      throw new Error("resourceIdentifierRef isn't supported by the platform yet.");
+      return {
+        type: "resourceIdentifierRef",
+        resourceRids: [...value.resourceIdentifierRef.resourceRids],
+      };
     case "boolean":
       return { type: "boolean", defaultValue: orUndefined(value.boolean.defaultValue) };
     case "datetime":
