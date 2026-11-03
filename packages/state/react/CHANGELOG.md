@@ -1,5 +1,21 @@
 # @palantir/pack.state.react
 
+## 0.34.0
+
+### Minor Changes
+
+- 8810d4c: Fix imports of package subpaths, such as `@palantir/pack.core/generatedPlatformSdk`. The `"./*"` entry in each package's `exports` pointed at `build/js/public/*.js` and `build/cjs/public/*.js`, which the build never writes. It now points at `build/esm/public/*.js` and `build/cjs/public/*.cjs`.
+
+### Patch Changes
+
+- Updated dependencies [8810d4c]
+- Updated dependencies [8810d4c]
+- Updated dependencies [9e646b9]
+  - @palantir/pack.auth@0.34.0
+  - @palantir/pack.core@0.34.0
+  - @palantir/pack.document-schema.model-types@0.34.0
+  - @palantir/pack.state.core@0.34.0
+
 ## 0.33.0
 
 ### Patch Changes

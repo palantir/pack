@@ -1,5 +1,23 @@
 # @palantir/pack.state.foundry
 
+## 0.34.0
+
+### Minor Changes
+
+- 8810d4c: Fix imports of package subpaths, such as `@palantir/pack.core/generatedPlatformSdk`. The `"./*"` entry in each package's `exports` pointed at `build/js/public/*.js` and `build/cjs/public/*.js`, which the build never writes. It now points at `build/esm/public/*.js` and `build/cjs/public/*.cjs`.
+- 8810d4c: Use the generated platform SDK instead of npm `@osdk/foundry.pack`. PACK now generates the Pack API client itself into `@palantir/pack.core` (imported as `@palantir/pack.core/generatedPlatformSdk`), and `state.foundry`, `state.foundry-event`, and `document-schema.type-gen` use it. It is generated from api-gateway 1.1885.0, which adds union variant metadata (`variantMetadata`) and `Documents.recordView`. These packages now require api-gateway 1.1885.0 or newer, and gotham-objects-gateway 2.955.0 or newer on stacks that run it.
+
+### Patch Changes
+
+- Updated dependencies [8810d4c]
+- Updated dependencies [8810d4c]
+- Updated dependencies [9e646b9]
+  - @palantir/pack.auth@0.34.0
+  - @palantir/pack.core@0.34.0
+  - @palantir/pack.document-schema.model-types@0.34.0
+  - @palantir/pack.state.core@0.34.0
+  - @palantir/pack.state.foundry-event@0.34.0
+
 ## 0.33.0
 
 ### Minor Changes

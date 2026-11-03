@@ -1,5 +1,11 @@
 # @palantir/pack.sdkgen.demo-template
 
+## 0.5.0
+
+### Minor Changes
+
+- 9e646b9: Point the `"./*"` entry in each sdkgen template's `exports` at `build/esm/public/*.js` and `build/cjs/public/*.cjs`, matching the other PACK packages. It pointed at `build/js/public/*.js` and `build/cjs/public/*.js`, which the build never writes.
+
 ## 0.4.0
 
 ### Minor Changes
