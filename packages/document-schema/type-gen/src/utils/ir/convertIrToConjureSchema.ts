@@ -122,6 +122,10 @@ function toFieldValueType(value: IFieldValueUnion): unknown {
  * {@link convertIrToWireSchema}) rather than forward an invalid double to the first-party API.
  */
 function convertFieldValueUnion(value: IFieldValueUnion): unknown {
+  if (value.type === "resourceIdentifierRef") {
+    // TODO: pass it through once backpack's API has `resourceIdentifierRef`.
+    throw new Error("resourceIdentifierRef isn't supported by the platform yet.");
+  }
   if (value.type === "double") {
     return {
       type: "double",

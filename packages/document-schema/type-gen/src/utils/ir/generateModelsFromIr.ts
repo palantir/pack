@@ -18,6 +18,7 @@ import { formatVariantName } from "@palantir/pack.schema";
 import invariant from "tiny-invariant";
 import type { IRealTimeDocumentSchema } from "../../lib/pack-docschema-api/pack-docschema-ir/index.js";
 import { GENERATED_FILE_HEADER } from "../generatedFileHeader.js";
+import { usesStoredPackRefs } from "./irFieldHelpers.js";
 
 export interface ModelGeneratorOptions {
   typeImportPath?: string;
@@ -230,6 +231,13 @@ export async function generateModelsFromIr(
   schema: IRealTimeDocumentSchema,
   options?: ModelGeneratorOptions,
 ): Promise<string> {
+  // This generator emits no upgrade registry, so the SDK would store these refs as plain strings.
+  if (usesStoredPackRefs(schema)) {
+    throw new Error(
+      "resourceIdentifierRef fields need the versioned SDK generator "
+        + "(`type-gen ir gen-types`, used by @palantir/pack.sdkgen.pack-versioned-template).",
+    );
+  }
   const generator = new ModelGenerator(schema, options);
   return generator.generateModels();
 }
