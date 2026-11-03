@@ -35,6 +35,10 @@ export type DocumentState<S extends DocumentSchema> = {
 export interface DocumentSchemaMetadata {
   readonly version: number;
   readonly minSupportedVersion?: number;
+  /**
+   * Each model's field types and version steps. Despite the name, it's used for more than
+   * upgrades: unknown union variants and stored refs are converted with it too.
+   */
   readonly upgrades?: UpgradeRegistryMap;
   /**
    * Typed forward functions, supplied by the app at boot via the generated

@@ -19,6 +19,7 @@ import { describe, expect, it } from "vitest";
 import { generateModelMetadataFromChain } from "../generateModelMetadataFromSchema.js";
 import { resolveSchemaChain } from "../resolveSchemaChain.js";
 import {
+  refFieldsSchema,
   singleVersionSchema,
   threeVersionChainSchema,
   twoVersionDerivedFieldsSchema,
@@ -34,6 +35,14 @@ describe("generateModelMetadataFromChain", () => {
     const result = generateModelMetadataFromChain(resolveSchemaChain(singleVersionSchema));
     await expect(await formatModelMetadataSnapshot(result)).toMatchFileSnapshot(
       path.join(snapshotDir, "single-version.snap"),
+    );
+  });
+
+  it("ref fields in a one-version schema get the upgrade registry", async () => {
+    // Without it, the SDK would store resourceIdentifierRef values as plain strings.
+    const result = generateModelMetadataFromChain(resolveSchemaChain(refFieldsSchema));
+    await expect(await formatModelMetadataSnapshot(result)).toMatchFileSnapshot(
+      path.join(snapshotDir, "ref-fields.snap"),
     );
   });
 

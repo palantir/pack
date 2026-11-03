@@ -140,6 +140,11 @@ function convertFieldValueUnion(value: IFieldValueUnion): FieldValueUnion {
         type: "resourceRef",
         resourceRids: [...value.resourceRef.resourceRids],
       };
+    case "resourceIdentifierRef":
+      return {
+        type: "resourceIdentifierRef",
+        resourceRids: [...value.resourceIdentifierRef.resourceRids],
+      };
     case "boolean":
       return { type: "boolean", defaultValue: orUndefined(value.boolean.defaultValue) };
     case "datetime":

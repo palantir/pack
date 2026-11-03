@@ -20,6 +20,13 @@ import type { IFieldValueUnion } from "../../lib/pack-docschema-api/pack-docsche
 import type { IRealTimeDocumentSchema } from "../../lib/pack-docschema-api/pack-docschema-ir/realTimeDocumentSchema.js";
 import { versionedSchemaName, versionedTypeName } from "../schema/runtimeSchema.js";
 
+// A `resourceIdentifierRef` value as stored in Yjs. Apps see the RID string; internal types see
+// this object.
+const STORED_PACK_REF_TS =
+  `{ readonly __packRef: 1; readonly __type: "resourceRef"; readonly __ref: string }`;
+const STORED_PACK_REF_ZOD =
+  `z.object({ __packRef: z.literal(1), __type: z.literal("resourceRef"), __ref: z.string() })`;
+
 // ---------------------------------------------------------------------------
 // Public read-type TypeScript conversion
 // ---------------------------------------------------------------------------
@@ -58,6 +65,7 @@ function convertFieldValueToTypeScript(
     // Ref fields hold the bare id, so emit the id type — not the <X>Ref handle, which is
     // an object and would contradict the `string` / `z.string()` internal representation.
     case "resourceRef":
+    case "resourceIdentifierRef":
       return "ResourceRid";
     case "boolean":
       return "boolean";
@@ -121,6 +129,7 @@ function convertFieldValueToZodSchema(
     case "boolean":
       return "z.boolean()";
     case "resourceRef":
+    case "resourceIdentifierRef":
     case "datetime":
     case "docRef":
     case "mediaRef":
@@ -203,6 +212,8 @@ function convertFieldValueToInternalTs(value: IFieldValueUnion): string {
     case "text":
     case "userRef":
       return "string";
+    case "resourceIdentifierRef":
+      return STORED_PACK_REF_TS;
     case "modelRef":
     case "unmanagedJson":
       return "unknown";
@@ -268,6 +279,8 @@ function convertFieldValueToInternalZod(value: IFieldValueUnion): string {
     case "text":
     case "userRef":
       return "z.string()";
+    case "resourceIdentifierRef":
+      return STORED_PACK_REF_ZOD;
     case "modelRef":
     case "unmanagedJson":
       return "z.unknown()";
@@ -320,6 +333,8 @@ function convertFieldValueToDescriptor(value: IFieldValueUnion): string {
       const modelKey = value.modelRef.modelTypes[0]!;
       return `{ kind: "modelRef", model: "${modelKey}" }`;
     }
+    case "resourceIdentifierRef":
+      return `{ kind: "packRef", refType: "resourceRef" }`;
     default:
       return `{ kind: "primitive" }`;
   }
@@ -361,6 +376,7 @@ function scanFieldTypeForRefs(fieldType: IFieldTypeUnion, out: Set<string>): voi
 function scanFieldValueForRefs(value: IFieldValueUnion, out: Set<string>): void {
   switch (value.type) {
     case "resourceRef":
+    case "resourceIdentifierRef":
       out.add("ResourceRid");
       break;
     case "docRef":
@@ -429,6 +445,7 @@ export function findExternalRefType(fieldType: IFieldTypeUnion): string | undefi
 function findExternalRefValueType(value: IFieldValueUnion): string | undefined {
   switch (value.type) {
     case "resourceRef":
+    case "resourceIdentifierRef":
       return "resourceRef";
     case "docRef":
       return "docRef";

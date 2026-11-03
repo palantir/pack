@@ -23,6 +23,7 @@ export const TypeKind = {
   OBJECT_REF: "objectRef",
   OPTIONAL: "optional",
   REF: "ref",
+  RESOURCE_IDENTIFIER_REF: "resourceIdentifierRef",
   RESOURCE_REF: "resourceRef",
   STRING: "string",
   UNKNOWN: "unknown",
@@ -91,6 +92,10 @@ export type ResourceRef = {
   readonly type: typeof TypeKind.RESOURCE_REF;
 };
 
+export type ResourceIdentifierRef = {
+  readonly type: typeof TypeKind.RESOURCE_IDENTIFIER_REF;
+};
+
 export type UserRef = {
   readonly type: typeof TypeKind.USER_REF;
 };
@@ -104,6 +109,7 @@ export type Type =
   | MediaRef
   | ObjectRef
   | ResourceRef
+  | ResourceIdentifierRef
   | Optional
   | Ref
   | String
@@ -118,8 +124,15 @@ export const Double: Double = { type: TypeKind.DOUBLE };
 export const Boolean: Boolean = { type: TypeKind.BOOLEAN };
 /** An opaque, arbitrary JSON value. */
 export const Unknown: Unknown = { type: TypeKind.UNKNOWN };
-/** A reference to a Foundry resource. */
+/** A reference to a Foundry resource, stored as a plain RID string. */
 export const ResourceRef: ResourceRef = { type: TypeKind.RESOURCE_REF };
+/**
+ * A reference to a Foundry resource, held as a RID string. Unlike `ResourceRef`, the SDK stores it
+ * as a tagged object, so peering can find and translate it across stacks.
+ */
+export const ResourceIdentifierRef: ResourceIdentifierRef = {
+  type: TypeKind.RESOURCE_IDENTIFIER_REF,
+};
 function unwrapOneOptional(t: TypeBase): TypeBase {
   return t.type === TypeKind.OPTIONAL && "item" in t ? (t as { item: TypeBase }).item : t;
 }

@@ -22,6 +22,7 @@ import type {
   UpgradeRegistryEntry,
   UpgradeRegistryMap,
 } from "@palantir/pack.document-schema.model-types";
+import { isStoredPackRef } from "./PackRef.js";
 import { wrapUnknownVariant } from "./UnknownVariant.js";
 
 function isUnionRegistry(entry: UpgradeRegistryEntry): entry is UnionUpgradeRegistry {
@@ -117,6 +118,8 @@ function fieldTypeNeedsReadLens(
   switch (type.kind) {
     case "primitive":
       return false;
+    case "packRef":
+      return true;
     case "modelRef": {
       const subEntry = allRegistries[type.model];
       return subEntry != null && registryNeedsReadLens(subEntry, allRegistries, visited);
@@ -219,6 +222,8 @@ export function applyLensToValue(
   switch (type.kind) {
     case "primitive":
       return value;
+    case "packRef":
+      return isStoredPackRef(value) ? value.__ref : value;
     case "modelRef": {
       const subEntry = allRegistries[type.model];
       if (!subEntry) return value;

@@ -24,6 +24,7 @@ import {
   nestedOptionalsSchema,
   nestedUnionSchema,
   optionalToRequiredFieldSchema,
+  refFieldsSchema,
   singleVersionSchema,
   twoVersionDerivedFieldsSchema,
   twoVersionFieldRemovalSchema,
@@ -38,6 +39,13 @@ describe("generateInternalFromChain", () => {
     const result = generateInternalFromChain(resolveSchemaChain(singleVersionSchema));
     await expect(await formatInternalTypesSnapshot(result)).toMatchFileSnapshot(
       path.join(snapshotDir, "single-version.snap"),
+    );
+  });
+
+  it("ref fields, including ResourceIdentifierRef's stored shape and descriptor", async () => {
+    const result = generateInternalFromChain(resolveSchemaChain(refFieldsSchema));
+    await expect(await formatInternalTypesSnapshot(result)).toMatchFileSnapshot(
+      path.join(snapshotDir, "ref-fields.snap"),
     );
   });
 

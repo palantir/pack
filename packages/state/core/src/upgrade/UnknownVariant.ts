@@ -15,15 +15,18 @@
  */
 
 /*
- * Unknown union variants.
+ * What the SDK changes between an app's values and stored values.
  *
- * A newer app can save a variant this app doesn't know, e.g. a `triangle` shape when this app
- * only knows `box` and `circle`:
+ * Unknown union variants. A newer app can save a variant this app doesn't know, e.g. a `triangle`
+ * shape when this app only knows `box` and `circle`:
  * - On read, the SDK wraps it: `{ shapeType: "unknown", rawValue: <the triangle> }`.
  * - On save or send, the SDK unwraps it, so the triangle is stored unchanged.
  *
  * The unwrap matters when the triangle is inside something this app edits, e.g. a list of
  * shapes: saving the list must not replace the triangle with the wrapper.
+ *
+ * `ResourceIdentifierRef` fields. On save or send, the SDK stores the ref string as a tagged object
+ * (see `PackRef.ts`); on read, the upgrade lens turns it back into the string.
  */
 
 import type {
@@ -34,6 +37,7 @@ import type {
   UpgradeRegistryEntry,
 } from "@palantir/pack.document-schema.model-types";
 import { getMetadata, UNKNOWN_UNION_VARIANT } from "@palantir/pack.document-schema.model-types";
+import { toStoredPackRef } from "./PackRef.js";
 
 type PlainObject = Record<string, unknown>;
 
@@ -44,7 +48,9 @@ export function wrapUnknownVariant(discriminant: string, rawValue: PlainObject):
 
 /**
  * Return a value as it should be saved or sent. Unwraps unknown union variants, e.g.
- * `[box, { shapeType: "unknown", rawValue: triangle }]` becomes `[box, triangle]`.
+ * `[box, { shapeType: "unknown", rawValue: triangle }]` becomes `[box, triangle]`. Also stores
+ * `ResourceIdentifierRef` ref strings as tagged objects: `"ri.a"` becomes
+ * `{ __packRef: 1, __type: "resourceRef", __ref: "ri.a" }`.
  *
  * @param newValue The value the app is saving or sending.
  * @param savedValue For a partial update, the record as already saved. A partial update can leave
@@ -59,18 +65,18 @@ export function toStoredValue<T>(
   // Each model's fields (records) or variants (unions), by model name.
   const allModels = getMetadata(schema).upgrades ?? {};
 
-  function unwrapModel(value: unknown, saved: unknown, name: string): unknown {
+  function toStoredModel(value: unknown, saved: unknown, name: string): unknown {
     const model = allModels[name];
     if (model == null || !isPlainObject(value)) {
       return value;
     }
     const savedObject = isPlainObject(saved) ? saved : undefined;
     return isUnion(model)
-      ? unwrapUnion(value, savedObject, model)
-      : unwrapRecord(value, savedObject, model);
+      ? toStoredUnion(value, savedObject, model)
+      : toStoredRecord(value, savedObject, model);
   }
 
-  function unwrapUnion(
+  function toStoredUnion(
     value: PlainObject,
     saved: PlainObject | undefined,
     union: UnionUpgradeRegistry,
@@ -102,59 +108,64 @@ export function toStoredValue<T>(
     if (isUnion(variantModel)) {
       // A variant that is itself a union keeps its data under `value`.
       return "value" in value
-        ? { ...value, value: unwrapModel(value.value, saved?.value, variantModelName) }
+        ? { ...value, value: toStoredModel(value.value, saved?.value, variantModelName) }
         : value;
     }
-    return unwrapRecord(value, saved, variantModel);
+    return toStoredRecord(value, saved, variantModel);
   }
 
-  function unwrapRecord(
+  function toStoredRecord(
     value: PlainObject,
     saved: PlainObject | undefined,
     record: UpgradeRegistry,
   ): PlainObject {
-    const unwrapped: PlainObject = {};
+    const stored: PlainObject = {};
     for (const [fieldName, fieldValue] of Object.entries(value)) {
       const field = record.allFields[fieldName];
-      unwrapped[fieldName] = field == null
+      stored[fieldName] = field == null
         ? fieldValue
-        : unwrapField(fieldValue, saved?.[fieldName], field.type);
+        : toStoredField(fieldValue, saved?.[fieldName], field.type);
     }
-    return unwrapped;
+    return stored;
   }
 
-  function unwrapField(value: unknown, saved: unknown, type: FieldTypeDescriptor): unknown {
+  function toStoredField(value: unknown, saved: unknown, type: FieldTypeDescriptor): unknown {
     if (value == null) {
       return value;
     }
     switch (type.kind) {
       case "primitive":
         return value;
+      case "packRef":
+        // Apps pass the ref string. Anything else (only possible through a cast) is saved as given.
+        return typeof value === "string" ? toStoredPackRef(type.refType, value) : value;
       case "optional":
-        return unwrapField(value, saved, type.inner);
+        return toStoredField(value, saved, type.inner);
       case "modelRef":
-        return unwrapModel(value, saved, type.model);
+        return toStoredModel(value, saved, type.model);
       case "array":
+        // Plain items are saved as given, so skip copying the list.
+        if (!Array.isArray(value) || type.element.kind === "primitive") {
+          return value;
+        }
         // Each list item has its own discriminant, so no saved value is needed.
-        return Array.isArray(value)
-          ? value.map(item => unwrapField(item, undefined, type.element))
-          : value;
+        return value.map(item => toStoredField(item, undefined, type.element));
       case "map": {
         if (!isPlainObject(value)) {
           return value;
         }
         const savedMap = isPlainObject(saved) ? saved : undefined;
-        const unwrapped: PlainObject = {};
+        const stored: PlainObject = {};
         for (const [key, item] of Object.entries(value)) {
-          unwrapped[key] = unwrapField(item, savedMap?.[key], type.value);
+          stored[key] = toStoredField(item, savedMap?.[key], type.value);
         }
-        return unwrapped;
+        return stored;
       }
     }
   }
 
   // Typed as T for callers; the result can hold variants T doesn't list, e.g. a newer app's triangle.
-  return unwrapModel(newValue, savedValue, modelName) as T;
+  return toStoredModel(newValue, savedValue, modelName) as T;
 }
 
 function isUnion(model: UpgradeRegistryEntry): model is UnionUpgradeRegistry {
