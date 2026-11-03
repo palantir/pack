@@ -144,10 +144,12 @@ export function toStoredValue<T>(
       case "modelRef":
         return toStoredModel(value, saved, type.model);
       case "array":
+        // Plain items are saved as given, so skip copying the list.
+        if (!Array.isArray(value) || type.element.kind === "primitive") {
+          return value;
+        }
         // Each list item has its own discriminant, so no saved value is needed.
-        return Array.isArray(value)
-          ? value.map(item => toStoredField(item, undefined, type.element))
-          : value;
+        return value.map(item => toStoredField(item, undefined, type.element));
       case "map": {
         if (!isPlainObject(value)) {
           return value;

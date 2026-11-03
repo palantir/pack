@@ -11,6 +11,7 @@ import type {
 import { Metadata } from '@palantir/pack.document-schema.model-types';
 import type { ShapeBox } from './types.js';
 import { ShapeBoxSchema } from './schema.js';
+import { ShapeBoxUpgrades } from './_internal/upgrades.js';
 
 export interface ShapeBoxModel extends RecordModel<
   ShapeBox,
@@ -28,6 +29,9 @@ export const DocumentModel = {
   ShapeBox: ShapeBoxModel,
   [Metadata]: {
     version: 1,
+    upgrades: {
+      ShapeBox: ShapeBoxUpgrades,
+    },
   },
 } as const satisfies DocumentSchema;
 

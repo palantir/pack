@@ -163,7 +163,10 @@ function getFieldTypeValueSchemaVersion(
         currentValue,
       );
     case "array":
-      if (!Array.isArray(value)) {
+      // Plain items can't raise the version, so skip walking them.
+      if (
+        !Array.isArray(value) || unwrapOptional(normalizedDescriptor.element).kind === "primitive"
+      ) {
         return context.defaultVersion;
       }
       {

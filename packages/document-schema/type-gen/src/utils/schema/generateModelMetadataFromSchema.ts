@@ -107,10 +107,10 @@ export function generateModelMetadataFromChain(
     output += `import { ${schemaNames.join(", ")} } from "${SCHEMA_REEXPORT_PATH}";\n`;
   }
 
-  // Upgrade imports (only if there are upgrades)
+  // Every SDK gets the upgrade registry. Besides upgrades, the SDK converts unknown union variants
+  // and stored refs with the field types it holds, even in a one-version schema.
   const upgradeNames = [...recordNames, ...unionNames].map(n => upgradesName(n));
-  const needsUpgradeRegistry = stepChain.length > 1 || unionNames.length > 0;
-  if (needsUpgradeRegistry && upgradeNames.length > 0) {
+  if (upgradeNames.length > 0) {
     output += `import { ${upgradeNames.join(", ")} } from "${INTERNAL_UPGRADES_PATH}";\n`;
   }
 
@@ -194,7 +194,7 @@ export function generateModelMetadataFromChain(
   // Build upgrades map (includes both record and union entries)
   let upgradesBlock: string;
   const allUpgradeNames = [...recordNames, ...unionNames];
-  if (needsUpgradeRegistry && allUpgradeNames.length > 0) {
+  if (allUpgradeNames.length > 0) {
     // A variant model uses its union's registry, which finds the variant by its discriminant.
     const upgradeEntries = [
       ...allUpgradeNames.map(n => `        ${n}: ${upgradesName(n)},`),
