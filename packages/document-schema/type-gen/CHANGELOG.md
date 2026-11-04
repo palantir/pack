@@ -1,5 +1,20 @@
 # @palantir/pack.document-schema.type-gen
 
+## 0.35.0
+
+### Minor Changes
+
+- f5c100e: Regenerate the platform SDK from api-gateway 1.1895.0, which adds the `resourceIdentifierRef` field value type (`FieldValueResourceIdentifierRef`). `state.foundry`, `state.foundry-event`, and `document-schema.type-gen` now require api-gateway 1.1895.0 or newer, and gotham-objects-gateway 2.959.0 or newer on stacks that run it.
+- bd7dfef: Add `S.ResourceIdentifierRef`, a resource reference that peering can translate across stacks. Apps read and write it as a `ResourceRid` string, like `S.ResourceRef`. The SDK stores it in Yjs as one tagged value, `{ __packRef: 1, __type: "resourceRef", __ref: "<rid>" }`, so backpack can find each reference from the update alone, without the document's schema. Existing `S.ResourceRef` fields are unchanged.
+
+### Patch Changes
+
+- Updated dependencies [f5c100e]
+- Updated dependencies [bd7dfef]
+  - @palantir/pack.core@0.35.0
+  - @palantir/pack.document-schema.model-types@0.35.0
+  - @palantir/pack.schema@0.35.0
+
 ## 0.34.0
 
 ### Minor Changes

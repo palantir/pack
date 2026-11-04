@@ -1,5 +1,12 @@
 # @palantir/pack.app.react
 
+## 0.35.0
+
+### Patch Changes
+
+- Updated dependencies [f5c100e]
+  - @palantir/pack.core@0.35.0
+
 ## 0.34.0
 
 ### Minor Changes
