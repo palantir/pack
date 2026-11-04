@@ -1,5 +1,16 @@
 # @palantir/pack.state.react
 
+## 0.35.0
+
+### Patch Changes
+
+- Updated dependencies [f5c100e]
+- Updated dependencies [bd7dfef]
+  - @palantir/pack.core@0.35.0
+  - @palantir/pack.document-schema.model-types@0.35.0
+  - @palantir/pack.state.core@0.35.0
+  - @palantir/pack.auth@0.35.0
+
 ## 0.34.0
 
 ### Minor Changes

@@ -1,5 +1,11 @@
 # @palantir/pack.schema
 
+## 0.35.0
+
+### Minor Changes
+
+- bd7dfef: Add `S.ResourceIdentifierRef`, a resource reference that peering can translate across stacks. Apps read and write it as a `ResourceRid` string, like `S.ResourceRef`. The SDK stores it in Yjs as one tagged value, `{ __packRef: 1, __type: "resourceRef", __ref: "<rid>" }`, so backpack can find each reference from the update alone, without the document's schema. Existing `S.ResourceRef` fields are unchanged.
+
 ## 0.34.0
 
 ### Minor Changes
