@@ -873,6 +873,70 @@ describe("Lazy Document Creation", () => {
     expect(snapshot.age).toBeUndefined();
     expect(snapshot.bio).toBeUndefined();
   });
+
+  describe("createRecord", () => {
+    const metadata: DocumentMetadata = {
+      name: "Create Record Test",
+      documentTypeName: "TestType",
+      ontologyRid: "test-ontology-rid",
+      security: TEST_SECURITY,
+    };
+    const userId = "user_create" as RecordId;
+    const userData = {
+      id: "user_create",
+      name: "John Doe",
+      email: "john@example.com",
+      age: 30,
+    };
+
+    it("should create a record, then reject a second create with the same ID", async () => {
+      const stateModule = getStateModule(app);
+      const schema = createSchemaWithRecords();
+      const docRef = await stateModule.createDocument(metadata, schema);
+      const unsubscribe = docRef.onStateChange(() => {});
+      await stateModule.waitForDataLoad(docRef);
+      const usersCollection = docRef.getRecords(schema.User);
+
+      const recordRef = await docRef.createRecord(schema.User, userData as never, userId);
+      expect(recordRef).toBe(usersCollection.get(userId));
+      expect(await recordRef.getSnapshot()).toEqual(userData);
+
+      await expect(
+        docRef.createRecord(schema.User, { ...userData, name: "Jane Doe" } as never, userId),
+      ).rejects.toThrow("Record already exists");
+      expect(await recordRef.getSnapshot()).toEqual(userData);
+
+      unsubscribe();
+    });
+
+    it("should generate a new ID when none is passed", async () => {
+      const stateModule = getStateModule(app);
+      const schema = createSchemaWithRecords();
+      const docRef = await stateModule.createDocument(metadata, schema);
+      const unsubscribe = docRef.onStateChange(() => {});
+      await stateModule.waitForDataLoad(docRef);
+
+      const first = await docRef.createRecord(schema.User, userData as never);
+      const second = await docRef.createRecord(schema.User, userData as never);
+
+      expect(first.id).not.toBe(second.id);
+      expect(docRef.getRecords(schema.User).size).toBe(2);
+      expect(await first.getSnapshot()).toEqual(userData);
+
+      unsubscribe();
+    });
+
+    it("should reject before the document's data has loaded", async () => {
+      const stateModule = getStateModule(app);
+      const schema = createSchemaWithRecords();
+      // No data subscription, so the data never loads.
+      const docRef = await stateModule.createDocument(metadata, schema);
+
+      await expect(docRef.createRecord(schema.User, userData as never, userId))
+        .rejects.toThrow("has not loaded yet");
+      expect(docRef.getRecords(schema.User).has(userId)).toBe(false);
+    });
+  });
 });
 
 describe("InMemoryDocumentService with autoCreateDocuments", () => {

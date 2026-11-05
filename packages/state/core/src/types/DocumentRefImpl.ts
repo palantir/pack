@@ -15,6 +15,7 @@
  */
 
 import type { PackAppInternal } from "@palantir/pack.core";
+import { generateId } from "@palantir/pack.core";
 import type {
   ActivityEvent,
   DocumentId,
@@ -63,6 +64,9 @@ const INVALID_DOC_REF: DocumentRef = Object.freeze(
       throw new Error("Invalid document reference");
     },
     version: 0,
+    createRecord: () => {
+      throw new Error("Invalid document reference");
+    },
     updateRecord: () => {
       throw new Error("Invalid document reference");
     },
@@ -188,6 +192,13 @@ class DocumentRefImpl<T extends DocumentSchema> implements DocumentRef<T> {
 
   get version(): number {
     return this.#stateModule.getDocumentSchemaOperationalVersion(this);
+  }
+
+  createRecord(model: Model, data: unknown, id?: RecordId): Promise<RecordRef> {
+    const recordRef = this.#stateModule.createRecordRef(this, id ?? generateId(), model);
+    return this.#stateModule
+      .createRecord(recordRef, data as ModelData<Model>)
+      .then(() => recordRef);
   }
 
   updateRecord(ref: RecordRef, data: unknown): Promise<void> {

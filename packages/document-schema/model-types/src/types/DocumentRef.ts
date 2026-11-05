@@ -284,7 +284,43 @@ export interface DocumentRef<D extends DocumentSchema = DocumentSchema> {
   readonly version: number;
 
   /**
-   * Update fields on an existing record.
+   * Create a new record and return its ref. Use this to add records; use
+   * {@link updateRecord} to edit them.
+   *
+   * Leave out the ID and PACK generates a unique one. Pass your own ID for a
+   * record you look up by a fixed ID, such as a single settings record, or
+   * when you need the ID before the write, for example inside
+   * {@link withTransaction}.
+   *
+   * Rejects without writing if a record with this ID already exists, or if the
+   * document's data status is not `loaded` (then the app can't see every
+   * existing record). The data loads only while a data subscription, such as
+   * `useRecords` or {@link onStateChange}, is open. If two users create the
+   * same ID at the same moment, neither sees the other's record yet, so one
+   * whole record wins.
+   *
+   * The data parameter is `never` on the base interface — narrow to a
+   * version-specific type before calling this method.
+   *
+   * Rejects without applying the write while the document requires a refresh;
+   * see {@link updateRecord}.
+   *
+   * @example
+   * ```ts
+   * const shapeRef = await doc.createRecord(NodeShapeModel, box); // generated ID
+   * await doc.createRecord(SettingsModel, defaults, "settings"); // your own ID
+   * await doc.createRecord(SettingsModel, defaults, "settings"); // rejects: settings already exists
+   * ```
+   */
+  createRecord(model: Model, data: never, id?: RecordId): Promise<RecordRef>;
+
+  /**
+   * Change fields on an existing record. Use this for edits.
+   *
+   * Only the fields you pass change; other fields are kept, including fields a
+   * newer app version added. Passing `undefined` removes a field. An array is
+   * replaced as a whole, so if two users change the same array at once, one
+   * array wins. Rejects if the record doesn't exist.
    *
    * The data parameter is `never` on the base interface — narrow the ref to a
    * version-specific type (via the generated SDK's `asVersioned` +
@@ -297,7 +333,12 @@ export interface DocumentRef<D extends DocumentSchema = DocumentSchema> {
   updateRecord(ref: RecordRef, data: never): Promise<void>;
 
   /**
-   * Create or replace a record in a collection.
+   * Create a record, or replace every field of an existing one. Prefer
+   * {@link createRecord} to add records and {@link updateRecord} to edit them.
+   *
+   * On an existing ID, this deletes every field and writes the new ones, so
+   * fields you leave out are removed — including fields a newer app version
+   * added — and `{}` clears the record.
    *
    * The data parameter is `never` on the base interface — narrow to a
    * version-specific type before calling this method.
@@ -308,7 +349,8 @@ export interface DocumentRef<D extends DocumentSchema = DocumentSchema> {
   setRecord(model: Model, id: RecordId, data: never): Promise<void>;
 
   /**
-   * Delete a record. Version-agnostic — callable without narrowing.
+   * Delete a record. Does nothing if it doesn't exist. Version-agnostic —
+   * callable without narrowing.
    *
    * Rejects without applying the delete while the document requires a refresh;
    * see {@link updateRecord}.

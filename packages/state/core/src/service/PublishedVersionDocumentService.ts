@@ -165,6 +165,8 @@ class PublishedVersionDocumentService extends BaseYjsDocumentService {
 
   protected onMetadataSubscriptionClosed(): void {}
 
+  override readonly createRecord = rejectReadOnly;
+
   override readonly setRecord = rejectReadOnly;
 
   override readonly updateRecord = rejectReadOnly;

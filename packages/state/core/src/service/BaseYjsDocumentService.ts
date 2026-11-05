@@ -810,6 +810,33 @@ export abstract class BaseYjsDocumentService<TDoc extends InternalYjsDoc = Inter
     return new Error("Refresh to continue editing.", { cause: error });
   }
 
+  readonly createRecord = <R extends Model>(
+    recordRef: RecordRef<R>,
+    state: ModelData<R>,
+  ): Promise<void> => {
+    const internalDoc = this.documents.get(recordRef.docRef.id);
+    invariant(
+      internalDoc != null,
+      `Cannot create record as document not found: ${recordRef.docRef.id}`,
+    );
+
+    // Before the data loads, or after an error leaves it stale, this app can't see every existing record.
+    const { error, load } = internalDoc.dataStatus;
+    if (load !== DocumentLoadStatus.LOADED) {
+      const reason = load === DocumentLoadStatus.ERROR
+        ? "the document's data is in an error state"
+        : "the document's data has not loaded yet";
+      return Promise.reject(
+        new Error(`Cannot create record ${recordRef.id}: ${reason}`, { cause: error }),
+      );
+    }
+    const storageName = getMetadata(recordRef.model).name;
+    if (YjsSchemaMapper.getRecordData(internalDoc.yDoc, storageName, recordRef.id) != null) {
+      return Promise.reject(new Error(`Record already exists: ${recordRef.id}`));
+    }
+    return this.setRecord(recordRef, state);
+  };
+
   readonly setRecord = <R extends Model>(
     recordRef: RecordRef<R>,
     state: ModelData<R>,

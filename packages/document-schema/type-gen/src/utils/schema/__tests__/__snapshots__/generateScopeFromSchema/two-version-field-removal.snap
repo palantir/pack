@@ -23,6 +23,11 @@ export interface VersionedDocRef_v1 extends DocumentRef<DocumentModel> {
     ref: RecordRef<typeof ShapeBoxModel>,
     data: ShapeBoxUpdate_v1
   ): Promise<void>;
+  createRecord(
+    model: typeof ShapeBoxModel,
+    data: ShapeBox_v1,
+    id?: RecordId
+  ): Promise<RecordRef<typeof ShapeBoxModel>>;
   setRecord(
     model: typeof ShapeBoxModel,
     id: RecordId,
@@ -45,6 +50,11 @@ export interface VersionedDocRef_v2 extends DocumentRef<DocumentModel> {
     ref: RecordRef<typeof ShapeBoxModel>,
     data: ShapeBoxUpdate_v2
   ): Promise<void>;
+  createRecord(
+    model: typeof ShapeBoxModel,
+    data: ShapeBox_v2,
+    id?: RecordId
+  ): Promise<RecordRef<typeof ShapeBoxModel>>;
   setRecord(
     model: typeof ShapeBoxModel,
     id: RecordId,

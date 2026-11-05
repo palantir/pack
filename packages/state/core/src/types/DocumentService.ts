@@ -364,6 +364,11 @@ export interface DocumentService {
     record: RecordRef<R>,
   ) => Promise<ModelData<R>>;
 
+  readonly createRecord: <R extends Model>(
+    record: RecordRef<R>,
+    state: ModelData<R>,
+  ) => Promise<void>;
+
   readonly setRecord: <R extends Model>(
     record: RecordRef<R>,
     state: ModelData<R>,

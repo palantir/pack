@@ -29,6 +29,7 @@ import { VersionsPanel } from "./VersionsPanel.js";
 
 export interface CanvasToolbarProps {
   readonly canDelete: boolean;
+  readonly canDraw: boolean;
   readonly currentColor: string;
   readonly currentLabel: string | undefined;
   readonly currentOpacity: number | undefined;
@@ -46,6 +47,7 @@ export interface CanvasToolbarProps {
 
 export const CanvasToolbar = memo(function CanvasToolbar({
   canDelete,
+  canDraw,
   currentColor,
   currentLabel,
   currentOpacity,
@@ -101,6 +103,7 @@ export const CanvasToolbar = memo(function CanvasToolbar({
         </button>
         <button
           className={currentTool === "addBox" ? styles.activeButton : styles.button}
+          disabled={!canDraw}
           onClick={() => onToolChange("addBox")}
           type="button"
         >
@@ -108,6 +111,7 @@ export const CanvasToolbar = memo(function CanvasToolbar({
         </button>
         <button
           className={currentTool === "addCircle" ? styles.activeButton : styles.button}
+          disabled={!canDraw}
           onClick={() => onToolChange("addCircle")}
           type="button"
         >
@@ -116,6 +120,7 @@ export const CanvasToolbar = memo(function CanvasToolbar({
         {doc.version >= 3 && (
           <button
             className={currentTool === "pen" ? styles.activeButton : styles.button}
+            disabled={!canDraw}
             onClick={() => onToolChange("pen")}
             type="button"
           >
