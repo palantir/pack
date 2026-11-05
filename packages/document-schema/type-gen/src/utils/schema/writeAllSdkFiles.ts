@@ -17,6 +17,7 @@
 import { consola } from "consola";
 import fs from "fs-extra";
 import path from "path";
+import { GENERATED_BY_JSON } from "../generatedFileHeader.js";
 import { assertSdkNamesUnique } from "./assertSdkNamesUnique.js";
 import { generateDocumentTypeFromChain } from "./generateDocumentTypeFromSchema.js";
 import { generateIndexFromChain } from "./generateIndexFromSchema.js";
@@ -117,4 +118,8 @@ export async function writeAllSdkFiles(
   const documentTypePath = path.join(outputDir, "documentType.ts");
   await fs.writeFile(documentTypePath, documentTypeContent, "utf8");
   consola.success(`Generated document type: ${documentTypePath}`);
+
+  const generatedByPath = path.join(outputDir, "generatedBy.json");
+  await fs.writeFile(generatedByPath, GENERATED_BY_JSON, "utf8");
+  consola.success(`Generated version record: ${generatedByPath}`);
 }
