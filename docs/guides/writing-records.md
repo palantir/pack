@@ -21,13 +21,11 @@ Writes go inside a [version guard](./versioning.md#version-guards), so they only
 import { asVersioned, matchVersion, ShapeBoxModel } from "@demo/canvas.sdk";
 
 const doc = asVersioned(docRef);
-const id = crypto.randomUUID();
 
-matchVersion(doc, {
-  1: doc =>
-    doc.createRecord(ShapeBoxModel, id, { top: 0, left: 0, color: "red" }),
+const shapeRef = await matchVersion(doc, {
+  1: doc => doc.createRecord(ShapeBoxModel, { top: 0, left: 0, color: "red" }),
   2: doc =>
-    doc.createRecord(ShapeBoxModel, id, { top: 0, left: 0, fillColor: "red" }),
+    doc.createRecord(ShapeBoxModel, { top: 0, left: 0, fillColor: "red" }),
 });
 ```
 
@@ -36,13 +34,15 @@ The rest of this page shows only the calls. Each one runs inside a guard like th
 ## Create a record
 
 ```ts
-await doc.createRecord(ShapeBoxModel, "shape-1", { top: 0, left: 0 }); // creates shape-1
+const shapeRef = await doc.createRecord(ShapeBoxModel, { top: 0, left: 0 }); // PACK generates the ID
+
+await doc.createRecord(ShapeBoxModel, "shape-1", { top: 0, left: 0 }); // your own ID
 await doc.createRecord(ShapeBoxModel, "shape-1", { top: 5, left: 5 }); // rejects: shape-1 already exists
 ```
 
-`createRecord` also rejects until the document's data has loaded, because before then the app can't see the records that already exist. Reading records, for example with `useRecords`, starts the load. `useDocumentStatus(app, docRef)?.data.load` is `"loaded"` once it finishes.
+Both forms return the new record's ref, which you pass to `updateRecord` and `deleteRecord`. Pass your own ID only when you need a fixed one, such as a single settings record, or when you need the ID before the write, for example inside `withTransaction`. If two users create the same ID at the same moment, neither can see the other's record yet, so one whole record wins.
 
-Give each new record a fresh ID, such as `crypto.randomUUID()`. If two users create the same ID at the same moment, neither can see the other's record yet, so one whole record wins.
+`createRecord` also rejects until the document's data has loaded, because before then the app can't see the records that already exist. Reading records, for example with `useRecords`, starts the load. `useDocumentStatus(app, docRef)?.data.load` is `"loaded"` once it finishes.
 
 ## Change fields
 

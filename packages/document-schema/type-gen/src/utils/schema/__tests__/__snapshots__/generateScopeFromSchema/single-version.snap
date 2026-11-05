@@ -23,9 +23,13 @@ export interface VersionedDocRef_v1 extends DocumentRef<DocumentModel> {
   ): Promise<void>;
   createRecord(
     model: typeof ShapeBoxModel,
+    data: ShapeBox_v1
+  ): Promise<RecordRef<typeof ShapeBoxModel>>;
+  createRecord(
+    model: typeof ShapeBoxModel,
     id: RecordId,
     data: ShapeBox_v1
-  ): Promise<void>;
+  ): Promise<RecordRef<typeof ShapeBoxModel>>;
   setRecord(
     model: typeof ShapeBoxModel,
     id: RecordId,

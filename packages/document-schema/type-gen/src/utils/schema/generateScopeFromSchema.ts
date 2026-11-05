@@ -115,12 +115,14 @@ export function generateScopeFromChain(
       }
     }
 
-    // createRecord overloads
+    // createRecord overloads: generated ID, then your own ID
     for (const [modelKey] of Object.entries(ir.models)) {
       const readType = versionedTypeName(modelKey, version);
-      output += `  createRecord(model: typeof ${
-        modelName(modelKey)
-      }, id: RecordId, data: ${readType}): Promise<void>;\n`;
+      const model = modelName(modelKey);
+      output +=
+        `  createRecord(model: typeof ${model}, data: ${readType}): Promise<RecordRef<typeof ${model}>>;\n`;
+      output +=
+        `  createRecord(model: typeof ${model}, id: RecordId, data: ${readType}): Promise<RecordRef<typeof ${model}>>;\n`;
     }
 
     // setRecord overloads

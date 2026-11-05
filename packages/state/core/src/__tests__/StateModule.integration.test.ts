@@ -897,13 +897,31 @@ describe("Lazy Document Creation", () => {
       await stateModule.waitForDataLoad(docRef);
       const usersCollection = docRef.getRecords(schema.User);
 
-      await docRef.createRecord(schema.User, userId, userData as never);
-      expect(await usersCollection.get(userId)!.getSnapshot()).toEqual(userData);
+      const recordRef = await docRef.createRecord(schema.User, userId, userData as never);
+      expect(recordRef).toBe(usersCollection.get(userId));
+      expect(await recordRef.getSnapshot()).toEqual(userData);
 
       await expect(
         docRef.createRecord(schema.User, userId, { ...userData, name: "Jane Doe" } as never),
       ).rejects.toThrow("Record already exists");
-      expect(await usersCollection.get(userId)!.getSnapshot()).toEqual(userData);
+      expect(await recordRef.getSnapshot()).toEqual(userData);
+
+      unsubscribe();
+    });
+
+    it("should generate a new ID when none is passed", async () => {
+      const stateModule = getStateModule(app);
+      const schema = createSchemaWithRecords();
+      const docRef = await stateModule.createDocument(metadata, schema);
+      const unsubscribe = docRef.onStateChange(() => {});
+      await stateModule.waitForDataLoad(docRef);
+
+      const first = await docRef.createRecord(schema.User, userData as never);
+      const second = await docRef.createRecord(schema.User, userData as never);
+
+      expect(first.id).not.toBe(second.id);
+      expect(docRef.getRecords(schema.User).size).toBe(2);
+      expect(await first.getSnapshot()).toEqual(userData);
 
       unsubscribe();
     });

@@ -36,19 +36,31 @@ export interface VersionedDocRef_v1 extends DocumentRef<DocumentModel> {
   ): Promise<void>;
   createRecord(
     model: typeof CircleModel,
+    data: Circle_v1
+  ): Promise<RecordRef<typeof CircleModel>>;
+  createRecord(
+    model: typeof CircleModel,
     id: RecordId,
     data: Circle_v1
-  ): Promise<void>;
+  ): Promise<RecordRef<typeof CircleModel>>;
+  createRecord(
+    model: typeof RectangleModel,
+    data: Rectangle_v1
+  ): Promise<RecordRef<typeof RectangleModel>>;
   createRecord(
     model: typeof RectangleModel,
     id: RecordId,
     data: Rectangle_v1
-  ): Promise<void>;
+  ): Promise<RecordRef<typeof RectangleModel>>;
+  createRecord(
+    model: typeof ShapeModel,
+    data: Shape_v1
+  ): Promise<RecordRef<typeof ShapeModel>>;
   createRecord(
     model: typeof ShapeModel,
     id: RecordId,
     data: Shape_v1
-  ): Promise<void>;
+  ): Promise<RecordRef<typeof ShapeModel>>;
   setRecord(
     model: typeof CircleModel,
     id: RecordId,

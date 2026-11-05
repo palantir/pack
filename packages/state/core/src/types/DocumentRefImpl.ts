@@ -15,6 +15,7 @@
  */
 
 import type { PackAppInternal } from "@palantir/pack.core";
+import { generateId } from "@palantir/pack.core";
 import type {
   ActivityEvent,
   DocumentId,
@@ -193,9 +194,14 @@ class DocumentRefImpl<T extends DocumentSchema> implements DocumentRef<T> {
     return this.#stateModule.getDocumentSchemaOperationalVersion(this);
   }
 
-  createRecord(model: Model, id: RecordId, data: unknown): Promise<void> {
+  createRecord(model: Model, idOrData: unknown, data?: unknown): Promise<RecordRef> {
+    // Called as (model, data) or (model, id, data); generate the ID when none is passed.
+    const hasId = typeof idOrData === "string";
+    const id = hasId ? idOrData : generateId();
     const recordRef = this.#stateModule.createRecordRef(this, id, model);
-    return this.#stateModule.createRecord(recordRef, data as ModelData<Model>);
+    return this.#stateModule
+      .createRecord(recordRef, (hasId ? data : idOrData) as ModelData<Model>)
+      .then(() => recordRef);
   }
 
   updateRecord(ref: RecordRef, data: unknown): Promise<void> {

@@ -40,11 +40,11 @@ export const RecordRefBrand: unique symbol = Symbol("pack:RecordRef");
  *
  * const docRef = app.getDocRef<DocumentSchema>(someDocumentId);
  *
- * // Create a record via the version-narrowed createRecord on DocumentRef.
- * await docRef.createRecord(MyModel, "my-record-id", { myFieldName: "some value", foo: 42 });
+ * // Create a record via the version-narrowed createRecord on DocumentRef. It returns the ref.
+ * const recordRef = await docRef.createRecord(MyModel, { myFieldName: "some value", foo: 42 });
  *
- * // Then get the ref back.
- * const recordRef = docRef.getRecords(MyModel).get("my-record-id");
+ * // Or get the ref of an existing record by its ID.
+ * const sameRef = docRef.getRecords(MyModel).get(recordRef.id);
  */
 export interface RecordRef<M extends Model = Model> {
   readonly docRef: DocumentRef;

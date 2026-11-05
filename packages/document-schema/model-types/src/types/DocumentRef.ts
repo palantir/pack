@@ -284,8 +284,13 @@ export interface DocumentRef<D extends DocumentSchema = DocumentSchema> {
   readonly version: number;
 
   /**
-   * Create a new record. Use this to add records; use {@link updateRecord} to
-   * edit them.
+   * Create a new record and return its ref. Use this to add records; use
+   * {@link updateRecord} to edit them.
+   *
+   * Leave out the ID and PACK generates a unique one. Pass your own ID for a
+   * record you look up by a fixed ID, such as a single settings record, or
+   * when you need the ID before the write, for example inside
+   * {@link withTransaction}.
    *
    * Rejects without writing if a record with this ID already exists, or if the
    * document's data has not loaded yet (until then the app can't see existing
@@ -300,11 +305,18 @@ export interface DocumentRef<D extends DocumentSchema = DocumentSchema> {
    *
    * @example
    * ```ts
-   * await doc.createRecord(NodeShapeModel, "shape-1", box); // creates shape-1
-   * await doc.createRecord(NodeShapeModel, "shape-1", box); // rejects: shape-1 already exists
+   * const shapeRef = await doc.createRecord(NodeShapeModel, box); // generated ID
+   * await doc.createRecord(SettingsModel, "settings", defaults); // your own ID
+   * await doc.createRecord(SettingsModel, "settings", defaults); // rejects: settings already exists
    * ```
    */
-  createRecord(model: Model, id: RecordId, data: never): Promise<void>;
+  createRecord(model: Model, data: never): Promise<RecordRef>;
+
+  /**
+   * Create a new record with your own ID and return its ref. Rejects if a
+   * record with this ID already exists.
+   */
+  createRecord(model: Model, id: RecordId, data: never): Promise<RecordRef>;
 
   /**
    * Change fields on an existing record. Use this for edits.
