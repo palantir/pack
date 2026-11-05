@@ -72,17 +72,3 @@ await doc.deleteRecord(shapeRef);
 ```
 
 `deleteRecord` works the same at every version, so it doesn't need a version guard.
-
-## When two users write at once
-
-Each user's app writes to its own copy of the document, and PACK merges the copies:
-
-| Two users at the same moment...            | Result                                  |
-| ------------------------------------------ | --------------------------------------- |
-| Change different fields of a record        | Both changes are kept                   |
-| Change different fields of a nested object | Both changes are kept                   |
-| Change the same field                      | One value wins                          |
-| Change the same array                      | One whole array wins; the other is lost |
-| Create a record with the same ID           | One whole record wins                   |
-
-To let several users add items to a list at the same time, store each item as its own record instead of in an array.

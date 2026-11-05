@@ -12,7 +12,7 @@ A **Document** is designed to provide a sharable unit of application state, wher
 
 A **Document Type** contains the schema and metadata for the documents. This is used to generate an SDK for building multiplayer, collaborative applications that read and write documents.
 
-Documents are built on top of **CRDTs** (Conflict-free Replicated Data Types), so edits from multiple users merge automatically. When two users change the same field at once, one value wins; see [when two users write at once](../guides/writing-records.md#when-two-users-write-at-once).
+Documents are built on top of **CRDTs** (Conflict-free Replicated Data Types), so edits from multiple users merge automatically. When two users change the same field at once, one value wins.
 
 ## Activity
 
