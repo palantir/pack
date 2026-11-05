@@ -19,7 +19,7 @@ import { CommanderError } from "commander";
 import { consola } from "consola";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "fs";
 import { basename, dirname, extname, join, resolve } from "path";
-import { GENERATED_JSON_COMMENT } from "../../utils/generatedFileHeader.js";
+import { GENERATED_BY_JSON, GENERATED_JSON_COMMENT } from "../../utils/generatedFileHeader.js";
 import { convertIrToWireSchema } from "../../utils/ir/convertIrToWireSchema.js";
 import { formatSchemaVersion } from "../../utils/schema/resolveSchemaChain.js";
 import { resolveIrInput } from "./resolveIrInput.js";
@@ -145,6 +145,11 @@ export function irGenAssetHandler(options: IrGenAssetOptions): void {
       JSON.stringify(compatibilityRangeOutput, null, 2),
       "utf8",
     );
+
+    // Record the type-gen version next to the files it wrote, as SDKs do.
+    for (const dir of new Set([outputDir, compatibilityRangeDir])) {
+      writeFileSync(join(dir, "generatedBy.json"), GENERATED_BY_JSON, "utf8");
+    }
 
     consola.success("Successfully generated document type asset");
     consola.info(`   Output: ${outputPath}`);
