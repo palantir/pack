@@ -223,6 +223,11 @@ export interface StateModule {
     callback: RecordCollectionChangeCallback<M>,
   ) => Unsubscribe;
 
+  readonly createRecord: <R extends Model>(
+    recordRef: RecordRef<R>,
+    state: ModelData<R>,
+  ) => Promise<void>;
+
   readonly setRecord: <R extends Model>(
     recordRef: RecordRef<R>,
     state: ModelData<R>,
@@ -488,6 +493,13 @@ export class StateModuleImpl implements StateModule {
     recordRef: RecordRef<R>,
   ): Promise<ModelData<R>> {
     return this.serviceFor(recordRef.docRef).getRecordSnapshot(recordRef);
+  }
+
+  async createRecord<R extends Model>(
+    recordRef: RecordRef<R>,
+    state: ModelData<R>,
+  ): Promise<void> {
+    return this.serviceFor(recordRef.docRef).createRecord(recordRef, state);
   }
 
   async setRecord<R extends Model>(

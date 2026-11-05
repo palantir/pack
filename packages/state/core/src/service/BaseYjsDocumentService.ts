@@ -810,6 +810,28 @@ export abstract class BaseYjsDocumentService<TDoc extends InternalYjsDoc = Inter
     return new Error("Refresh to continue editing.", { cause: error });
   }
 
+  readonly createRecord = <R extends Model>(
+    recordRef: RecordRef<R>,
+    state: ModelData<R>,
+  ): Promise<void> => {
+    const internalDoc = this.documents.get(recordRef.docRef.id);
+    invariant(
+      internalDoc != null,
+      `Cannot create record as document not found: ${recordRef.docRef.id}`,
+    );
+
+    if (internalDoc.dataStatus.load !== DocumentLoadStatus.LOADED) {
+      return Promise.reject(
+        new Error(`Cannot create record ${recordRef.id}: the document's data has not loaded yet`),
+      );
+    }
+    const storageName = getMetadata(recordRef.model).name;
+    if (YjsSchemaMapper.getRecordData(internalDoc.yDoc, storageName, recordRef.id) != null) {
+      return Promise.reject(new Error(`Record already exists: ${recordRef.id}`));
+    }
+    return this.setRecord(recordRef, state);
+  };
+
   readonly setRecord = <R extends Model>(
     recordRef: RecordRef<R>,
     state: ModelData<R>,

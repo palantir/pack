@@ -38,7 +38,7 @@ export function useFreehandStrokes(doc: VersionedDocRef): UseFreehandStrokesResu
           1: () => {/* FreehandStroke does not exist in v1 */},
           2: () => {/* FreehandStroke does not exist in v2 */},
           3: doc =>
-            doc.setRecord(FreehandStrokeModel, id, {
+            doc.createRecord(FreehandStrokeModel, id, {
               points: JSON.stringify(points),
               color,
             }),

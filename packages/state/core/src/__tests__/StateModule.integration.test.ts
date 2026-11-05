@@ -873,6 +873,52 @@ describe("Lazy Document Creation", () => {
     expect(snapshot.age).toBeUndefined();
     expect(snapshot.bio).toBeUndefined();
   });
+
+  describe("createRecord", () => {
+    const metadata: DocumentMetadata = {
+      name: "Create Record Test",
+      documentTypeName: "TestType",
+      ontologyRid: "test-ontology-rid",
+      security: TEST_SECURITY,
+    };
+    const userId = "user_create" as RecordId;
+    const userData = {
+      id: "user_create",
+      name: "John Doe",
+      email: "john@example.com",
+      age: 30,
+    };
+
+    it("should create a record, then reject a second create with the same ID", async () => {
+      const stateModule = getStateModule(app);
+      const schema = createSchemaWithRecords();
+      const docRef = await stateModule.createDocument(metadata, schema);
+      const unsubscribe = docRef.onStateChange(() => {});
+      await stateModule.waitForDataLoad(docRef);
+      const usersCollection = docRef.getRecords(schema.User);
+
+      await docRef.createRecord(schema.User, userId, userData as never);
+      expect(await usersCollection.get(userId)!.getSnapshot()).toEqual(userData);
+
+      await expect(
+        docRef.createRecord(schema.User, userId, { ...userData, name: "Jane Doe" } as never),
+      ).rejects.toThrow("Record already exists");
+      expect(await usersCollection.get(userId)!.getSnapshot()).toEqual(userData);
+
+      unsubscribe();
+    });
+
+    it("should reject before the document's data has loaded", async () => {
+      const stateModule = getStateModule(app);
+      const schema = createSchemaWithRecords();
+      // No data subscription, so the data never loads.
+      const docRef = await stateModule.createDocument(metadata, schema);
+
+      await expect(docRef.createRecord(schema.User, userId, userData as never))
+        .rejects.toThrow("has not loaded yet");
+      expect(docRef.getRecords(schema.User).has(userId)).toBe(false);
+    });
+  });
 });
 
 describe("InMemoryDocumentService with autoCreateDocuments", () => {

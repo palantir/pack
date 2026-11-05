@@ -55,7 +55,7 @@ export function useCanvasShapes(doc: VersionedDocRef): UseCanvasShapesResult {
         1: doc =>
           doc.withTransaction(
             () => {
-              void doc.setRecord(NodeShapeModel, id, {
+              void doc.createRecord(NodeShapeModel, id, {
                 ...bounds,
                 color,
                 shapeType,
@@ -69,7 +69,7 @@ export function useCanvasShapes(doc: VersionedDocRef): UseCanvasShapesResult {
         2: doc =>
           doc.withTransaction(
             () => {
-              void doc.setRecord(NodeShapeModel, id, v2ShapeData);
+              void doc.createRecord(NodeShapeModel, id, v2ShapeData);
             },
             doc.describeEdit(CanvasActivityModel, {
               activityType: "shapeAdded",
@@ -79,7 +79,7 @@ export function useCanvasShapes(doc: VersionedDocRef): UseCanvasShapesResult {
         3: doc =>
           doc.withTransaction(
             () => {
-              void doc.setRecord(NodeShapeModel, id, {
+              void doc.createRecord(NodeShapeModel, id, {
                 ...v2ShapeData,
                 title: getNewShapeTitle(shapeType),
               });

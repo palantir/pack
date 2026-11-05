@@ -115,6 +115,14 @@ export function generateScopeFromChain(
       }
     }
 
+    // createRecord overloads
+    for (const [modelKey] of Object.entries(ir.models)) {
+      const readType = versionedTypeName(modelKey, version);
+      output += `  createRecord(model: typeof ${
+        modelName(modelKey)
+      }, id: RecordId, data: ${readType}): Promise<void>;\n`;
+    }
+
     // setRecord overloads
     for (const [modelKey] of Object.entries(ir.models)) {
       const readType = versionedTypeName(modelKey, version);
