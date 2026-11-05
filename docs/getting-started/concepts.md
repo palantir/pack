@@ -12,11 +12,11 @@ A **Document** is designed to provide a sharable unit of application state, wher
 
 A **Document Type** contains the schema and metadata for the documents. This is used to generate an SDK for building multiplayer, collaborative applications that read and write documents.
 
-Documents are built on top of **CRDTs** (Conflict-free Replicated Data Types), so concurrent edits from multiple users merge automatically without conflicts.
+Documents are built on top of **CRDTs** (Conflict-free Replicated Data Types), so edits from multiple users merge automatically. When two users change the same field at once, one value wins; see [when two users write at once](../guides/writing-records.md#when-two-users-write-at-once).
 
 ## Activity
 
-Resources and Objects in the Foundry developer platform can change over time, leaving users with the question of "What happened while I was away?". **Activity Events** answer this by tracking changes to resources and document states over time. 
+Resources and Objects in the Foundry developer platform can change over time, leaving users with the question of "What happened while I was away?". **Activity Events** answer this by tracking changes to resources and document states over time.
 
 Activity Events are defined by their schema, which is used to generate an SDK for creating and listing events for some target. Currently, Documents are the only supported target, and can be used to describe each edit to a document.
 
