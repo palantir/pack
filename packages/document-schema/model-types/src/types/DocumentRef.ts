@@ -293,9 +293,11 @@ export interface DocumentRef<D extends DocumentSchema = DocumentSchema> {
    * {@link withTransaction}.
    *
    * Rejects without writing if a record with this ID already exists, or if the
-   * document's data has not loaded yet (until then the app can't see existing
-   * records). If two users create the same ID at the same moment, neither sees
-   * the other's record yet, so one whole record wins.
+   * document's data status is not `loaded` (then the app can't see every
+   * existing record). The data loads only while a data subscription, such as
+   * `useRecords` or {@link onStateChange}, is open. If two users create the
+   * same ID at the same moment, neither sees the other's record yet, so one
+   * whole record wins.
    *
    * The data parameter is `never` on the base interface — narrow to a
    * version-specific type before calling this method.
@@ -306,17 +308,11 @@ export interface DocumentRef<D extends DocumentSchema = DocumentSchema> {
    * @example
    * ```ts
    * const shapeRef = await doc.createRecord(NodeShapeModel, box); // generated ID
-   * await doc.createRecord(SettingsModel, "settings", defaults); // your own ID
-   * await doc.createRecord(SettingsModel, "settings", defaults); // rejects: settings already exists
+   * await doc.createRecord(SettingsModel, defaults, "settings"); // your own ID
+   * await doc.createRecord(SettingsModel, defaults, "settings"); // rejects: settings already exists
    * ```
    */
-  createRecord(model: Model, data: never): Promise<RecordRef>;
-
-  /**
-   * Create a new record with your own ID and return its ref. Rejects if a
-   * record with this ID already exists.
-   */
-  createRecord(model: Model, id: RecordId, data: never): Promise<RecordRef>;
+  createRecord(model: Model, data: never, id?: RecordId): Promise<RecordRef>;
 
   /**
    * Change fields on an existing record. Use this for edits.

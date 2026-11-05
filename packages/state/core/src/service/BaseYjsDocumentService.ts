@@ -820,9 +820,14 @@ export abstract class BaseYjsDocumentService<TDoc extends InternalYjsDoc = Inter
       `Cannot create record as document not found: ${recordRef.docRef.id}`,
     );
 
-    if (internalDoc.dataStatus.load !== DocumentLoadStatus.LOADED) {
+    // Before the data loads, or after an error leaves it stale, this app can't see every existing record.
+    const { error, load } = internalDoc.dataStatus;
+    if (load !== DocumentLoadStatus.LOADED) {
+      const reason = load === DocumentLoadStatus.ERROR
+        ? "the document's data is in an error state"
+        : "the document's data has not loaded yet";
       return Promise.reject(
-        new Error(`Cannot create record ${recordRef.id}: the document's data has not loaded yet`),
+        new Error(`Cannot create record ${recordRef.id}: ${reason}`, { cause: error }),
       );
     }
     const storageName = getMetadata(recordRef.model).name;

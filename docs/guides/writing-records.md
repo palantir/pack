@@ -36,13 +36,13 @@ The rest of this page shows only the calls. Each one runs inside a guard like th
 ```ts
 const shapeRef = await doc.createRecord(ShapeBoxModel, { top: 0, left: 0 }); // PACK generates the ID
 
-await doc.createRecord(ShapeBoxModel, "shape-1", { top: 0, left: 0 }); // your own ID
-await doc.createRecord(ShapeBoxModel, "shape-1", { top: 5, left: 5 }); // rejects: shape-1 already exists
+await doc.createRecord(ShapeBoxModel, { top: 0, left: 0 }, "shape-1"); // your own ID
+await doc.createRecord(ShapeBoxModel, { top: 5, left: 5 }, "shape-1"); // rejects: shape-1 already exists
 ```
 
-Both forms return the new record's ref, which you pass to `updateRecord` and `deleteRecord`. Pass your own ID only when you need a fixed one, such as a single settings record, or when you need the ID before the write, for example inside `withTransaction`. If two users create the same ID at the same moment, neither can see the other's record yet, so one whole record wins.
+Either way, it returns the new record's ref, which you pass to `updateRecord` and `deleteRecord`. Pass your own ID only when you need a fixed one, such as a single settings record, or when you need the ID before the write, for example inside `withTransaction`. If two users create the same ID at the same moment, neither can see the other's record yet, so one whole record wins.
 
-`createRecord` also rejects until the document's data has loaded, because before then the app can't see the records that already exist. Reading records, for example with `useRecords`, starts the load. `useDocumentStatus(app, docRef)?.data.load` is `"loaded"` once it finishes.
+`createRecord` also rejects unless the document's data is loaded, because otherwise the app can't see every record that already exists. Subscribing, for example with `useRecords` or `onStateChange`, starts the load, and the data stays loaded only while a subscription is open. Check that `useDocumentStatus(app, docRef)?.data.load` is `"loaded"` before you create, for example to enable an "Add" button.
 
 ## Change fields
 

@@ -897,12 +897,12 @@ describe("Lazy Document Creation", () => {
       await stateModule.waitForDataLoad(docRef);
       const usersCollection = docRef.getRecords(schema.User);
 
-      const recordRef = await docRef.createRecord(schema.User, userId, userData as never);
+      const recordRef = await docRef.createRecord(schema.User, userData as never, userId);
       expect(recordRef).toBe(usersCollection.get(userId));
       expect(await recordRef.getSnapshot()).toEqual(userData);
 
       await expect(
-        docRef.createRecord(schema.User, userId, { ...userData, name: "Jane Doe" } as never),
+        docRef.createRecord(schema.User, { ...userData, name: "Jane Doe" } as never, userId),
       ).rejects.toThrow("Record already exists");
       expect(await recordRef.getSnapshot()).toEqual(userData);
 
@@ -932,7 +932,7 @@ describe("Lazy Document Creation", () => {
       // No data subscription, so the data never loads.
       const docRef = await stateModule.createDocument(metadata, schema);
 
-      await expect(docRef.createRecord(schema.User, userId, userData as never))
+      await expect(docRef.createRecord(schema.User, userData as never, userId))
         .rejects.toThrow("has not loaded yet");
       expect(docRef.getRecords(schema.User).has(userId)).toBe(false);
     });

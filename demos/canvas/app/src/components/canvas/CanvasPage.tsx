@@ -18,8 +18,8 @@ import type { Toaster } from "@blueprintjs/core";
 import { Callout, OverlayToaster, Position } from "@blueprintjs/core";
 import type { SupportedVersions, VersionedDocRef } from "@demo/canvas.sdk";
 import type { DocumentId, PublishedVersionId } from "@palantir/pack.document-schema.model-types";
-import { isValidDocRef } from "@palantir/pack.state.core";
-import { usePublishedVersionDocRef } from "@palantir/pack.state.react";
+import { DocumentLoadStatus, isValidDocRef } from "@palantir/pack.state.core";
+import { useDocumentStatus, usePublishedVersionDocRef } from "@palantir/pack.state.react";
 import type { KeyboardEvent, MouseEvent } from "react";
 import { useCallback, useEffect, useState } from "react";
 import { useParams, useSearchParams } from "react-router";
@@ -161,6 +161,8 @@ function CanvasEditor({ doc, statusToaster, toaster, onOpenVersion }: CanvasEdit
   const interaction = useCanvasInteraction(doc, broadcastSelection);
   useActivityToast(doc, toaster);
   useStatusErrorToast(app, doc, statusToaster);
+  // createRecord rejects until the data loads, so the drawing tools wait for it.
+  const canDraw = useDocumentStatus(app, doc)?.data.load === DocumentLoadStatus.LOADED;
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
@@ -191,6 +193,7 @@ function CanvasEditor({ doc, statusToaster, toaster, onOpenVersion }: CanvasEdit
     <div className={styles.container} onKeyDown={handleKeyDown} tabIndex={0}>
       <CanvasToolbar
         canDelete={interaction.selectedShapeId != null}
+        canDraw={canDraw}
         currentColor={interaction.currentColor}
         currentLabel={interaction.currentLabel}
         currentOpacity={interaction.currentOpacity}

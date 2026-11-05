@@ -194,13 +194,10 @@ class DocumentRefImpl<T extends DocumentSchema> implements DocumentRef<T> {
     return this.#stateModule.getDocumentSchemaOperationalVersion(this);
   }
 
-  createRecord(model: Model, idOrData: unknown, data?: unknown): Promise<RecordRef> {
-    // Called as (model, data) or (model, id, data); generate the ID when none is passed.
-    const hasId = typeof idOrData === "string";
-    const id = hasId ? idOrData : generateId();
-    const recordRef = this.#stateModule.createRecordRef(this, id, model);
+  createRecord(model: Model, data: unknown, id?: RecordId): Promise<RecordRef> {
+    const recordRef = this.#stateModule.createRecordRef(this, id ?? generateId(), model);
     return this.#stateModule
-      .createRecord(recordRef, (hasId ? data : idOrData) as ModelData<Model>)
+      .createRecord(recordRef, data as ModelData<Model>)
       .then(() => recordRef);
   }
 
