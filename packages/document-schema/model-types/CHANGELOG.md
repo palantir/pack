@@ -1,5 +1,15 @@
 # @palantir/pack.document-schema.model-types
 
+## 0.36.0
+
+### Minor Changes
+
+- 214fed5: Add `docRef.createRecord(model, data, id?)`. It creates a record and returns its ref. PACK generates the ID unless you pass one. It rejects without writing if a record with that ID already exists or the document's data has not loaded yet. Generated SDKs get typed `createRecord` overloads for each schema version. `setRecord` is unchanged; its docs now point to `createRecord` for new records and `updateRecord` for edits.
+
+### Patch Changes
+
+- @palantir/pack.core@0.36.0
+
 ## 0.35.0
 
 ### Minor Changes

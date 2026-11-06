@@ -1,5 +1,19 @@
 # @palantir/pack.document-schema.type-gen
 
+## 0.36.0
+
+### Minor Changes
+
+- 214fed5: Add `docRef.createRecord(model, data, id?)`. It creates a record and returns its ref. PACK generates the ID unless you pass one. It rejects without writing if a record with that ID already exists or the document's data has not loaded yet. Generated SDKs get typed `createRecord` overloads for each schema version. `setRecord` is unchanged; its docs now point to `createRecord` for new records and `updateRecord` for edits.
+- bbdda7b: Generated file headers no longer include the type-gen version, so a PACK upgrade only changes generated files whose content changed. The version is now recorded once in a `generatedBy.json` file, written next to each generated SDK's sources and next to the asset files from `ir asset`.
+
+### Patch Changes
+
+- Updated dependencies [214fed5]
+  - @palantir/pack.document-schema.model-types@0.36.0
+  - @palantir/pack.core@0.36.0
+  - @palantir/pack.schema@0.36.0
+
 ## 0.35.0
 
 ### Minor Changes
