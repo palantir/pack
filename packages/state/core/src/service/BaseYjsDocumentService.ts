@@ -436,7 +436,7 @@ export abstract class BaseYjsDocumentService<TDoc extends InternalYjsDoc = Inter
       return true;
     }
     for (const subs of internalDoc.recordSubscriptions.values()) {
-      if (!subs.changed?.size || !subs.deleted?.size) {
+      if (!isRecordSubscriptionsEmpty(subs)) {
         return true;
       }
     }
@@ -1899,6 +1899,14 @@ export abstract class BaseYjsDocumentService<TDoc extends InternalYjsDoc = Inter
   public getYDocForTesting(docId: DocumentId): Y.Doc | null {
     const internalDoc = this.documents.get(docId);
     return internalDoc ? internalDoc.yDoc : null;
+  }
+
+  /**
+   * @internal
+   */
+  public hasSubscriptionsForTesting(docId: DocumentId): boolean {
+    const internalDoc = this.documents.get(docId);
+    return internalDoc ? this.hasSubscriptions(internalDoc) : false;
   }
 }
 
