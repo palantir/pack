@@ -513,26 +513,26 @@ describe("FoundryEventService", () => {
       );
     });
 
-    it("does not ack tracked updates for updates from other clients", async () => {
+    it("acks tracked updates by editId even when the update carries another client id", async () => {
       const { yDoc, sendServerMessage } = await startSyncedDoc();
 
       yDoc.getMap("Shape").set("shape-1", new Y.Map());
       expect(publishCallsFor("doc-1")).toHaveLength(1);
       const editId = (publishCallsFor("doc-1")[0]![1] as { editId: string }).editId;
 
-      // An update from a different client, even one referencing our editId, is not an ack.
+      // A gap fill or batched save can include our edit under another client's id.
       sendServerMessage({
         baseRevisionId: "1",
         clientId: "other-client",
         clientSupportedVersionRange: { minVersion: 1, maxVersion: 1 },
-        editIds: [editId],
-        revisionId: "2",
+        editIds: ["other-edit", editId],
+        revisionId: "3",
         type: "update",
       });
 
-      // Still unacked, so it is resent.
+      // Acked, so it is not resent.
       vi.advanceTimersByTime(2_000);
-      expect(publishCallsFor("doc-1")).toHaveLength(2);
+      expect(publishCallsFor("doc-1")).toHaveLength(1);
     });
 
     it("stops sending local edits once a refresh is needed, but still takes remote ones", async () => {

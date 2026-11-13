@@ -700,14 +700,14 @@ class FoundryEventServiceImpl implements FoundryEventService {
       case "update":
         const { baseRevisionId, clientId, editIds, revisionId, update } = message;
 
-        // Our own updates are echoed back so we can stop tracking them.
-        if (clientId === session.clientId) {
-          session.outbox?.ack(editIds);
-          // A zero revision indicates a duplicate ack: the server has already processed this update.
-          // This revision's baseRevisionId may have occurred in the past and should not be used to bump session.lastRevisionId.
-          if (Number(revisionId) === 0) {
-            break;
-          }
+        // Every editId in an update was saved by the server, so ack ours whatever clientId the update carries.
+        // Gap fills and batched saves can carry another client's id even when they include our edits.
+        session.outbox?.ack(editIds);
+
+        // A zero revision indicates a duplicate ack: the server has already processed this update.
+        // This revision's baseRevisionId may have occurred in the past and should not be used to bump session.lastRevisionId.
+        if (clientId === session.clientId && Number(revisionId) === 0) {
+          break;
         }
 
         const data = update != null && typeof update.data === "string"
