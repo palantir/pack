@@ -432,8 +432,6 @@ describe("Record schema validation", () => {
     const userRef = stateModule.createRecordRef(docRef, sharedId, schema.User);
     const postRef = stateModule.createRecordRef(docRef, sharedId, schema.Post);
 
-    // Load the doc and corrupt only User "1". Uses the promise read path to
-    // avoid the (pre-existing) cross-model restriction in recordSubscriptions.
     await expect(userRef.getSnapshot()).rejects.toThrow();
     corruptRecord(documentId, sharedId);
     await expect(userRef.getSnapshot()).rejects.toBeInstanceOf(RecordInvalidError);
@@ -455,6 +453,11 @@ describe("Record schema validation", () => {
       userInvalidCount++;
     });
 
+    let postInvalidCount = 0;
+    const unsubscribePost = stateModule.onRecordInvalid(postRef, () => {
+      postInvalidCount++;
+    });
+
     const docService = app.getModule(DOCUMENT_SERVICE_MODULE_KEY);
     const yDoc = (docService as BaseYjsDocumentService).getYDocForTesting(documentId);
     if (!yDoc) throw new Error("Y.Doc not found");
@@ -462,9 +465,19 @@ describe("Record schema validation", () => {
       yDoc.getMap("Post").set(sharedId as string, new Y.Map());
     }, "remote");
 
-    await expect(postRef.getSnapshot()).rejects.toBeInstanceOf(RecordInvalidError);
+    await new Promise(resolve => setTimeout(resolve, 10));
+    expect(postInvalidCount).toBe(1);
     expect(userInvalidCount).toBe(0);
     unsubscribe();
+
+    await stateModule.setRecord(postRef, { id: "1", title: "repaired" });
+    yDoc.transact(() => {
+      yDoc.getMap("Post").set(sharedId as string, new Y.Map());
+    }, "remote");
+    await new Promise(resolve => setTimeout(resolve, 10));
+    expect(postInvalidCount).toBe(2);
+    expect(userInvalidCount).toBe(0);
+    unsubscribePost();
   });
 
   it("notifies a new onInvalid subscriber without re-notifying existing ones", async () => {
