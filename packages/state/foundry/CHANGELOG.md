@@ -1,5 +1,16 @@
 # @palantir/pack.state.foundry
 
+## 0.37.0
+
+### Patch Changes
+
+- Updated dependencies [1503704]
+  - @palantir/pack.state.foundry-event@0.37.0
+  - @palantir/pack.auth@0.37.0
+  - @palantir/pack.core@0.37.0
+  - @palantir/pack.document-schema.model-types@0.37.0
+  - @palantir/pack.state.core@0.37.0
+
 ## 0.36.0
 
 ### Patch Changes

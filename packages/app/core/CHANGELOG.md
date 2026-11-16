@@ -1,5 +1,16 @@
 # @palantir/pack.app
 
+## 0.37.0
+
+### Patch Changes
+
+- @palantir/pack.state.foundry@0.37.0
+- @palantir/pack.auth@0.37.0
+- @palantir/pack.auth.foundry@0.37.0
+- @palantir/pack.core@0.37.0
+- @palantir/pack.state.core@0.37.0
+- @palantir/pack.state.demo@0.37.0
+
 ## 0.36.0
 
 ### Patch Changes
