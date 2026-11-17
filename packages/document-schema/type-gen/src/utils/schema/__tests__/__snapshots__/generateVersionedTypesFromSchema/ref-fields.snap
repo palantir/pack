@@ -6,6 +6,7 @@
 
 import type {
   DocumentId,
+  ObjectId,
   ResourceRid,
   UserId,
 } from '@palantir/pack.document-schema.model-types';
@@ -25,6 +26,7 @@ export interface Drawing_v1 {
   readonly extraShapes: readonly Circle_v1[];
   readonly background?: Circle_v1;
   readonly attachment: DocumentId;
+  readonly linkedObject: ObjectId;
   readonly owner?: UserId;
   readonly resource: ResourceRid;
   readonly resourceIdentifier?: ResourceRid;
@@ -39,6 +41,7 @@ export interface Drawing_v1 {
 
 import type {
   DocumentId,
+  ObjectId,
   ResourceRid,
   UserId,
 } from '@palantir/pack.document-schema.model-types';
@@ -53,6 +56,7 @@ export type DrawingUpdate_v1 = {
   readonly extraShapes?: readonly Circle_v1[];
   readonly background?: Circle_v1;
   readonly attachment?: DocumentId;
+  readonly linkedObject?: ObjectId;
   readonly owner?: UserId;
   readonly resource?: ResourceRid;
   readonly resourceIdentifier?: ResourceRid;

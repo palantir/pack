@@ -14,14 +14,16 @@
  * limitations under the License.
  */
 
+import type { FieldTypeDescriptor } from "@palantir/pack.document-schema.model-types";
+
 /**
- * How a `ResourceIdentifierRef` value is stored. Apps read and write the ref string; the stored
- * object says it is a ref and of what kind, so peering can find and translate it from the Yjs
- * update alone.
+ * How a `ResourceIdentifierRef`, `DocRef`, `UserRef`, or `ObjectRef` value is stored. Apps read
+ * and write the ref string; the stored object says it is a ref and of what kind, so peering can
+ * find and translate it from the Yjs update alone.
  */
 export interface StoredPackRef {
   readonly __packRef: 1;
-  readonly __type: "resourceRef";
+  readonly __type: Extract<FieldTypeDescriptor, { kind: "packRef" }>["refType"];
   readonly __ref: string;
 }
 
