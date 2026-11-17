@@ -31,7 +31,6 @@ export interface Drawing__Internal {
         readonly __ref: string;
       }
     | undefined;
-  readonly resource: string;
   readonly resourceIdentifier?:
     | {
         readonly __packRef: 1;
@@ -92,7 +91,6 @@ export const DrawingUpgrades: UpgradeRegistry<'Drawing'> = {
       },
       addedInVersion: 1,
     },
-    resource: { type: { kind: 'primitive' }, addedInVersion: 1 },
     resourceIdentifier: {
       type: {
         kind: 'optional',
@@ -147,7 +145,6 @@ export const DrawingInternalSchema = z
         __ref: z.string(),
       })
       .optional(),
-    resource: z.string(),
     resourceIdentifier: z
       .object({
         __packRef: z.literal(1),

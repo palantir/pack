@@ -135,11 +135,6 @@ function convertFieldValueType(value: IFieldValueUnion): FieldValueType {
 
 function convertFieldValueUnion(value: IFieldValueUnion): FieldValueUnion {
   switch (value.type) {
-    case "resourceRef":
-      return {
-        type: "resourceRef",
-        resourceRids: [...value.resourceRef.resourceRids],
-      };
     case "resourceIdentifierRef":
       return {
         type: "resourceIdentifierRef",

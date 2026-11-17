@@ -42,10 +42,6 @@ interface ArrayField extends BaseSchemaField {
   readonly items: SchemaField;
 }
 
-interface ResourceRefField extends BaseSchemaField {
-  readonly type: typeof TypeKind.RESOURCE_REF;
-}
-
 interface ResourceIdentifierRefField extends BaseSchemaField {
   readonly type: typeof TypeKind.RESOURCE_IDENTIFIER_REF;
 }
@@ -88,7 +84,6 @@ interface UserRefField extends BaseSchemaField {
 type SchemaField =
   | AnyField
   | ArrayField
-  | ResourceRefField
   | ResourceIdentifierRefField
   | DocRefField
   | DoubleField
@@ -153,7 +148,6 @@ function detectUsedRefTypes(schema: RuntimeSchema): Set<string> {
           scanField(field.items);
         }
         break;
-      case TypeKind.RESOURCE_REF:
       case TypeKind.RESOURCE_IDENTIFIER_REF:
         refTypes.add("ResourceRid");
         break;
@@ -335,7 +329,6 @@ function convertTypeToTypeScript(
         throw new Error("Array field is missing items type");
       }
       return `readonly ${convertTypeToTypeScript(fieldType.items, schema)}[]`;
-    case TypeKind.RESOURCE_REF:
     case TypeKind.RESOURCE_IDENTIFIER_REF:
       return "ResourceRid";
     case TypeKind.DOC_REF:

@@ -21,9 +21,6 @@ const refTypes = {
       "mediaRef": {
         "type": "mediaRef",
       },
-      "resourceRef": {
-        "type": "resourceRef",
-      },
       "resourceIdentifierRef": {
         "type": "resourceIdentifierRef",
       },
@@ -43,18 +40,6 @@ const refTypes = {
         "type": "array",
         "items": {
           "type": "userRef",
-        },
-      },
-      "optionalResourceRef": {
-        "type": "optional",
-        "item": {
-          "type": "resourceRef",
-        },
-      },
-      "resourceRefArray": {
-        "type": "array",
-        "items": {
-          "type": "resourceRef",
         },
       },
     },

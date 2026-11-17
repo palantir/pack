@@ -11,12 +11,9 @@ export interface Document {
   readonly userRef: UserId;
   readonly objectRef: ObjectId;
   readonly mediaRef: MediaId;
-  readonly resourceRef: ResourceRid;
   readonly resourceIdentifierRef: ResourceRid;
   readonly optionalDocRef?: DocumentId;
   readonly docRefArray: readonly DocumentId[];
   readonly userRefArray: readonly UserId[];
-  readonly optionalResourceRef?: ResourceRid;
-  readonly resourceRefArray: readonly ResourceRid[];
 }
 
