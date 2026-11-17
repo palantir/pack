@@ -128,7 +128,7 @@ describe("ResourceIdentifierRef", () => {
 });
 
 describe("DocRef, UserRef, and ObjectRef", () => {
-  const docId = "ri.backpack.main.document.abc";
+  const docId = "ri.document.abc";
   const userId = "0d1fe74e-2b70-4a93-9b1a-80070637788b";
   const objectRid = "ri.phonograph2-objects.main.object.abc";
   const assignmentId = "assignment-1" as RecordId;
@@ -137,7 +137,7 @@ describe("DocRef, UserRef, and ObjectRef", () => {
     const yDoc = new Y.Doc();
     save(yDoc, "Assignment", assignmentId, { doc: docId, owner: userId, linked: objectRid });
 
-    // Backpack only accepts a tagged value whose __type matches the field's kind.
+    // The backend only accepts a tagged value whose __type matches the field's kind.
     expect(yDoc.getMap("Assignment").toJSON()[assignmentId]).toEqual({
       doc: tagged(docId, "docRef"),
       owner: tagged(userId, "userRef"),
