@@ -128,7 +128,7 @@ describe("ResourceIdentifierRef", () => {
 });
 
 describe("DocRef, UserRef, and ObjectRef", () => {
-  const docId = "ri.document.abc";
+  const docId = "ri.backpack.main.document.abc";
   const userId = "0d1fe74e-2b70-4a93-9b1a-80070637788b";
   const objectRid = "ri.phonograph2-objects.main.object.abc";
   const assignmentId = "assignment-1" as RecordId;
