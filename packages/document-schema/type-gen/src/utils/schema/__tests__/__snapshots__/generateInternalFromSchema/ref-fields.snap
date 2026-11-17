@@ -11,11 +11,26 @@ export interface Circle__Internal {
 
 /** Internal representation containing all fields across all schema versions. */
 export interface Drawing__Internal {
-  readonly attachment: string;
+  readonly attachment: {
+    readonly __packRef: 1;
+    readonly __type: 'docRef';
+    readonly __ref: string;
+  };
   readonly background?: unknown | undefined;
   readonly extraShapes: readonly unknown[];
+  readonly linkedObject: {
+    readonly __packRef: 1;
+    readonly __type: 'objectRef';
+    readonly __ref: string;
+  };
   readonly mainShape: unknown;
-  readonly owner?: string | undefined;
+  readonly owner?:
+    | {
+        readonly __packRef: 1;
+        readonly __type: 'userRef';
+        readonly __ref: string;
+      }
+    | undefined;
   readonly resource: string;
   readonly resourceIdentifier?:
     | {
@@ -50,7 +65,10 @@ export const CircleUpgrades: UpgradeRegistry<'Circle'> = {
 export const DrawingUpgrades: UpgradeRegistry<'Drawing'> = {
   modelName: 'Drawing',
   allFields: {
-    attachment: { type: { kind: 'primitive' }, addedInVersion: 1 },
+    attachment: {
+      type: { kind: 'packRef', refType: 'docRef' },
+      addedInVersion: 1,
+    },
     background: {
       type: { kind: 'optional', inner: { kind: 'modelRef', model: 'Circle' } },
       addedInVersion: 1,
@@ -59,12 +77,19 @@ export const DrawingUpgrades: UpgradeRegistry<'Drawing'> = {
       type: { kind: 'array', element: { kind: 'modelRef', model: 'Circle' } },
       addedInVersion: 1,
     },
+    linkedObject: {
+      type: { kind: 'packRef', refType: 'objectRef' },
+      addedInVersion: 1,
+    },
     mainShape: {
       type: { kind: 'modelRef', model: 'Circle' },
       addedInVersion: 1,
     },
     owner: {
-      type: { kind: 'optional', inner: { kind: 'primitive' } },
+      type: {
+        kind: 'optional',
+        inner: { kind: 'packRef', refType: 'userRef' },
+      },
       addedInVersion: 1,
     },
     resource: { type: { kind: 'primitive' }, addedInVersion: 1 },
@@ -102,11 +127,26 @@ export const CircleInternalSchema = z
 
 export const DrawingInternalSchema = z
   .object({
-    attachment: z.string(),
+    attachment: z.object({
+      __packRef: z.literal(1),
+      __type: z.literal('docRef'),
+      __ref: z.string(),
+    }),
     background: z.unknown().optional(),
     extraShapes: z.array(z.unknown()),
+    linkedObject: z.object({
+      __packRef: z.literal(1),
+      __type: z.literal('objectRef'),
+      __ref: z.string(),
+    }),
     mainShape: z.unknown(),
-    owner: z.string().optional(),
+    owner: z
+      .object({
+        __packRef: z.literal(1),
+        __type: z.literal('userRef'),
+        __ref: z.string(),
+      })
+      .optional(),
     resource: z.string(),
     resourceIdentifier: z
       .object({

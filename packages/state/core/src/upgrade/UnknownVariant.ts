@@ -25,8 +25,9 @@
  * The unwrap matters when the triangle is inside something this app edits, e.g. a list of
  * shapes: saving the list must not replace the triangle with the wrapper.
  *
- * `ResourceIdentifierRef` fields. On save or send, the SDK stores the ref string as a tagged object
- * (see `PackRef.ts`); on read, the upgrade lens turns it back into the string.
+ * `ResourceIdentifierRef`, `DocRef`, `UserRef`, and `ObjectRef` fields. On save or send, the SDK
+ * stores the ref string as a tagged object (see `PackRef.ts`); on read, the upgrade lens turns it
+ * back into the string.
  */
 
 import type {
@@ -49,8 +50,8 @@ export function wrapUnknownVariant(discriminant: string, rawValue: PlainObject):
 /**
  * Return a value as it should be saved or sent. Unwraps unknown union variants, e.g.
  * `[box, { shapeType: "unknown", rawValue: triangle }]` becomes `[box, triangle]`. Also stores
- * `ResourceIdentifierRef` ref strings as tagged objects: `"ri.a"` becomes
- * `{ __packRef: 1, __type: "resourceRef", __ref: "ri.a" }`.
+ * `ResourceIdentifierRef`, `DocRef`, `UserRef`, and `ObjectRef` ref strings as tagged objects:
+ * `"ri.a"` becomes `{ __packRef: 1, __type: "resourceRef", __ref: "ri.a" }`.
  *
  * @param newValue The value the app is saving or sending.
  * @param savedValue For a partial update, the record as already saved. A partial update can leave

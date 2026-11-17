@@ -20,6 +20,7 @@ export const DrawingSchema_v1 = z
     extraShapes: z.array(z.lazy((): ZodType<Circle_v1> => CircleSchema_v1)),
     background: z.lazy((): ZodType<Circle_v1> => CircleSchema_v1).optional(),
     attachment: z.string(),
+    linkedObject: z.string(),
     owner: z.string().optional(),
     resource: z.string(),
     resourceIdentifier: z.string().optional(),

@@ -226,8 +226,8 @@ ${modelEntries.join(",\n")},
   }
 }
 
-// Legacy path. It emits no upgrade registry, so it doesn't support `resourceIdentifierRef`; use
-// `ir gen-types`.
+// Legacy path. It emits no upgrade registry, so it doesn't support `resourceIdentifierRef`,
+// `docRef`, `userRef`, or `object`; use `ir gen-types`.
 export async function generateModelsFromIr(
   schema: IRealTimeDocumentSchema,
   options?: ModelGeneratorOptions,

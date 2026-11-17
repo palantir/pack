@@ -32,6 +32,7 @@ export const DrawingModel: DrawingModel = {
   [Metadata]: {
     externalRefFieldTypes: {
       attachment: 'docRef',
+      linkedObject: 'objectRef',
       owner: 'userRef',
       resource: 'resourceRef',
       resourceIdentifier: 'resourceRef',

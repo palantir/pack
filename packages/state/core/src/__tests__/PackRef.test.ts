@@ -33,6 +33,15 @@ const primitive: FieldDef = { type: { kind: "primitive" } };
 const resourceIdentifierRef: FieldTypeDescriptor = { kind: "packRef", refType: "resourceRef" };
 
 const upgrades: UpgradeRegistryMap = {
+  Assignment: {
+    modelName: "Assignment",
+    allFields: {
+      doc: { type: { kind: "packRef", refType: "docRef" } },
+      owner: { type: { kind: "packRef", refType: "userRef" } },
+      linked: { type: { kind: "packRef", refType: "objectRef" } },
+    },
+    steps: [],
+  },
   Binding: {
     modelName: "Binding",
     allFields: {
@@ -59,7 +68,7 @@ const upgrades: UpgradeRegistryMap = {
 const schema = { [Metadata]: { version: 1, upgrades } } as unknown as DocumentSchema;
 
 const recordId = "binding-1" as RecordId;
-const tagged = (id: string) => ({ __packRef: 1, __type: "resourceRef", __ref: id });
+const tagged = (id: string, type = "resourceRef") => ({ __packRef: 1, __type: type, __ref: id });
 
 /** Save as the SDK does: convert to the stored value, then write it to Yjs. */
 function save(yDoc: Y.Doc, modelName: string, id: RecordId, value: object): void {
@@ -115,5 +124,29 @@ describe("ResourceIdentifierRef", () => {
       target: { type: "resource", rid: tagged("ri.c") },
     });
     expect(getRecordSnapshot(yDoc, "Tile", "tile-1" as RecordId, upgrades)).toEqual(tile);
+  });
+});
+
+describe("DocRef, UserRef, and ObjectRef", () => {
+  const docId = "ri.backpack.main.document.abc";
+  const userId = "0d1fe74e-2b70-4a93-9b1a-80070637788b";
+  const objectRid = "ri.phonograph2-objects.main.object.abc";
+  const assignmentId = "assignment-1" as RecordId;
+
+  it("stores each ref tagged with its own __type, and reads the ref string back", () => {
+    const yDoc = new Y.Doc();
+    save(yDoc, "Assignment", assignmentId, { doc: docId, owner: userId, linked: objectRid });
+
+    // Backpack only accepts a tagged value whose __type matches the field's kind.
+    expect(yDoc.getMap("Assignment").toJSON()[assignmentId]).toEqual({
+      doc: tagged(docId, "docRef"),
+      owner: tagged(userId, "userRef"),
+      linked: tagged(objectRid, "objectRef"),
+    });
+    expect(getRecordSnapshot(yDoc, "Assignment", assignmentId, upgrades)).toEqual({
+      doc: docId,
+      owner: userId,
+      linked: objectRid,
+    });
   });
 });
