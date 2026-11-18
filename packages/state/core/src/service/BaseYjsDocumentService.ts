@@ -92,12 +92,7 @@ type SafeParseLike = (data: unknown) => {
   };
 };
 
-/**
- * Identity key for invalid-record tracking. Records are identified by
- * model + id: the same id may exist in different collections of a document,
- * so id alone is not a safe key. JSON encoding avoids delimiter collisions.
- */
-function invalidRecordKey(recordRef: RecordRef): string {
+function recordKey(recordRef: RecordRef): string {
   return JSON.stringify([getMetadata(recordRef.model).name, recordRef.id as string]);
 }
 
@@ -146,7 +141,7 @@ export interface InternalYjsDoc {
   // TODO: add modelName type
   readonly collectionSubscriptions: Map<string, RecordCollectionSubscriptions>;
   readonly metadataSubscribers: Set<DocumentMetadataChangeCallback>;
-  readonly recordSubscriptions: Map<RecordId, RecordSubscribers>;
+  readonly recordSubscriptions: Map<string, RecordSubscribers>;
   readonly docStateSubscribers: Set<DocumentStateChangeCallback>;
   readonly statusSubscribers: Set<DocumentStatusChangeCallback>;
 
@@ -741,7 +736,7 @@ export abstract class BaseYjsDocumentService<TDoc extends InternalYjsDoc = Inter
     error: RecordValidationError,
     callbackToNotify?: RecordInvalidCallback<M>,
   ): void {
-    const key = invalidRecordKey(recordRef);
+    const key = recordKey(recordRef);
     const wasInvalid = internalDoc.invalidRecords.has(key);
     internalDoc.invalidRecords.set(key, error);
 
@@ -757,11 +752,8 @@ export abstract class BaseYjsDocumentService<TDoc extends InternalYjsDoc = Inter
       );
     }
 
-    const recordSubs = internalDoc.recordSubscriptions.get(recordRef.id);
-    if (
-      recordSubs != null
-      && getMetadata(recordSubs.ref.model).name === getMetadata(recordRef.model).name
-    ) {
+    const recordSubs = internalDoc.recordSubscriptions.get(recordKey(recordRef));
+    if (recordSubs != null) {
       const callbacks = callbackToNotify != null ? [callbackToNotify] : recordSubs.invalid ?? [];
       for (const callback of callbacks) {
         try {
@@ -788,7 +780,7 @@ export abstract class BaseYjsDocumentService<TDoc extends InternalYjsDoc = Inter
     internalDoc: TDoc,
     recordRef: RecordRef,
   ): void {
-    if (!internalDoc.invalidRecords.delete(invalidRecordKey(recordRef))) {
+    if (!internalDoc.invalidRecords.delete(recordKey(recordRef))) {
       return;
     }
     this.logger.info("Record passes schema validation again", {
@@ -1156,16 +1148,7 @@ export abstract class BaseYjsDocumentService<TDoc extends InternalYjsDoc = Inter
     const internalDoc = this.documents.get(recordRef.docRef.id);
     invariant(internalDoc != null, "Document not found for record notifications");
 
-    const recordSubs = internalDoc.recordSubscriptions.get(recordRef.id);
-    if (recordSubs != null) {
-      // Verify model consistency
-      invariant(
-        getMetadata(recordSubs.ref.model).name === getMetadata(recordRef.model).name,
-        `Model mismatch when notifying record subscribers for ${recordRef.id}: expected ${
-          getMetadata(recordSubs.ref.model).name
-        }, got ${getMetadata(recordRef.model).name}`,
-      );
-    }
+    const recordSubs = internalDoc.recordSubscriptions.get(recordKey(recordRef));
 
     switch (changeType) {
       case "changed": {
@@ -1396,7 +1379,7 @@ export abstract class BaseYjsDocumentService<TDoc extends InternalYjsDoc = Inter
       if (!currentDoc) return;
 
       if (isRecordSubscriptionsEmpty(recordSubs)) {
-        currentDoc.recordSubscriptions.delete(record.id);
+        currentDoc.recordSubscriptions.delete(recordKey(record));
       }
 
       this.cleanupCollectionListenerIfUnused(currentDoc, record.docRef.id, storageName);
@@ -1434,7 +1417,7 @@ export abstract class BaseYjsDocumentService<TDoc extends InternalYjsDoc = Inter
       if (!currentDoc) return;
 
       if (isRecordSubscriptionsEmpty(recordSubs)) {
-        currentDoc.recordSubscriptions.delete(record.id);
+        currentDoc.recordSubscriptions.delete(recordKey(record));
       }
 
       this.cleanupCollectionListenerIfUnused(currentDoc, record.docRef.id, storageName);
@@ -1482,7 +1465,7 @@ export abstract class BaseYjsDocumentService<TDoc extends InternalYjsDoc = Inter
       if (!currentDoc) return;
 
       if (isRecordSubscriptionsEmpty(recordSubs)) {
-        currentDoc.recordSubscriptions.delete(record.id);
+        currentDoc.recordSubscriptions.delete(recordKey(record));
       }
 
       this.cleanupCollectionListenerIfUnused(currentDoc, record.docRef.id, storageName);
@@ -1540,21 +1523,12 @@ export abstract class BaseYjsDocumentService<TDoc extends InternalYjsDoc = Inter
     internalDoc: TDoc,
     record: RecordRef<M>,
   ): RecordSubscribers<M> {
-    let recordSubs = internalDoc.recordSubscriptions.get(record.id);
+    let recordSubs = internalDoc.recordSubscriptions.get(recordKey(record));
 
     if (!recordSubs) {
       // Create new subscription entry with the record ref
       recordSubs = { ref: record };
-      internalDoc.recordSubscriptions.set(record.id, recordSubs);
-    } else {
-      // Verify model consistency - records with same ID should have same model
-      if (getMetadata(recordSubs.ref.model).name !== getMetadata(record.model).name) {
-        throw new Error(
-          `Model mismatch for record ${record.id}: expected ${
-            getMetadata(recordSubs.ref.model).name
-          }, got ${getMetadata(record.model).name}`,
-        );
-      }
+      internalDoc.recordSubscriptions.set(recordKey(record), recordSubs);
     }
 
     return recordSubs as unknown as RecordSubscribers<M>;

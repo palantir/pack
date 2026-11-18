@@ -23,7 +23,7 @@ import type {
   RecordId,
 } from "@palantir/pack.document-schema.model-types";
 import { Metadata } from "@palantir/pack.document-schema.model-types";
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { z } from "zod";
 import { createDocRef, invalidDocRef, isValidDocRef } from "../types/DocumentRefImpl.js";
 import {
@@ -365,6 +365,65 @@ describe("Ref Stability Tests", () => {
       // Should be safe to call
       unsubscribe1();
       unsubscribe2();
+    });
+  });
+
+  describe("Record subscriptions across models", () => {
+    it("keeps subscribers and unsubscribe cleanup separate for records sharing an id", async () => {
+      const stateModule = getStateModule(app);
+      const docRef = createDocRef(app, "shared-subscriptions" as DocumentId, schema);
+      const id = "shared" as RecordId;
+      const user = stateModule.createRecordRef(docRef, id, User);
+      const post = stateModule.createRecordRef(docRef, id, Post);
+      const userChanged = vi.fn();
+      const postChanged = vi.fn();
+      const userDeleted = vi.fn();
+      const postDeleted = vi.fn();
+      const stopUserChanged = user.onChange(userChanged);
+      const stopPostChanged = post.onChange(postChanged);
+      const stopUserDeleted = user.onDeleted(userDeleted);
+      const stopPostDeleted = post.onDeleted(postDeleted);
+      const userData = { id, name: "User", email: "user@example.com" };
+      const postData = { id, title: "Post", content: "Content", authorId: id };
+
+      await stateModule.setRecord(user, userData);
+      await stateModule.setRecord(post, postData);
+      expect(userChanged).toHaveBeenLastCalledWith(userData, user);
+      expect(postChanged).toHaveBeenLastCalledWith(postData, post);
+      expect(userChanged).toHaveBeenCalledTimes(1);
+      expect(postChanged).toHaveBeenCalledTimes(1);
+
+      await stateModule.deleteRecord(user);
+      expect(userDeleted).toHaveBeenCalledTimes(1);
+      expect(postDeleted).not.toHaveBeenCalled();
+      stopUserChanged();
+      stopUserDeleted();
+      await stateModule.setRecord(post, { ...postData, title: "Updated" });
+      expect(postChanged).toHaveBeenCalledTimes(2);
+      await stateModule.deleteRecord(post);
+      expect(postDeleted).toHaveBeenCalledTimes(1);
+      stopPostChanged();
+      stopPostDeleted();
+    });
+
+    it("can write a different model while only one shared-id record is subscribed", async () => {
+      const stateModule = getStateModule(app);
+      const docRef = createDocRef(app, "shared-write" as DocumentId, schema);
+      const id = "shared" as RecordId;
+      const user = stateModule.createRecordRef(docRef, id, User);
+      const post = stateModule.createRecordRef(docRef, id, Post);
+      const changed = vi.fn();
+      const stop = user.onChange(changed);
+      const stopCollection = docRef.getRecords(Post).onItemsAdded(() => {});
+      await expect(stateModule.setRecord(post, {
+        id,
+        title: "Post",
+        content: "Content",
+        authorId: id,
+      })).resolves.toBeUndefined();
+      expect(changed).not.toHaveBeenCalled();
+      stop();
+      stopCollection();
     });
   });
 
