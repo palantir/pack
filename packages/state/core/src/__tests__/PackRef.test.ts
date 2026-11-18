@@ -45,7 +45,6 @@ const upgrades: UpgradeRegistryMap = {
   Binding: {
     modelName: "Binding",
     allFields: {
-      resource: primitive,
       resourceIdentifier: { type: { kind: "optional", inner: resourceIdentifierRef } },
     },
     steps: [],
@@ -94,16 +93,14 @@ describe("ResourceIdentifierRef", () => {
     const yDoc = new Y.Doc();
     const updates = recordUpdates(yDoc);
 
-    save(yDoc, "Binding", recordId, { resource: "ri.a", resourceIdentifier: "ri.a" });
+    save(yDoc, "Binding", recordId, { resourceIdentifier: "ri.a" });
 
     expect(updates[0]).toContainEqual({ key: "resourceIdentifier", content: tagged("ri.a") });
-    // The plain ResourceRef next to it is unchanged.
-    expect(updates[0]).toContainEqual({ key: "resource", content: "ri.a" });
   });
 
   it("replaces the whole ref on a partial update", () => {
     const yDoc = new Y.Doc();
-    save(yDoc, "Binding", recordId, { resource: "ri.a", resourceIdentifier: "ri.a" });
+    save(yDoc, "Binding", recordId, { resourceIdentifier: "ri.a" });
     const updates = recordUpdates(yDoc);
 
     const partial = toStoredValue(schema, "Binding", { resourceIdentifier: "ri.b" });

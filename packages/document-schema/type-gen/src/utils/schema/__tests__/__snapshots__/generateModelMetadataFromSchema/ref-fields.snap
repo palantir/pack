@@ -34,7 +34,6 @@ export const DrawingModel: DrawingModel = {
       attachment: 'docRef',
       linkedObject: 'objectRef',
       owner: 'userRef',
-      resource: 'resourceRef',
       resourceIdentifier: 'resourceRef',
       resourceIdentifiers: 'resourceRef',
     },

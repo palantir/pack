@@ -250,11 +250,6 @@ describe("convertIrToWireSchema", () => {
       payload: Record<string, unknown>;
     }> = [
       {
-        fn: IFieldValueUnion.resourceRef,
-        type: "resourceRef",
-        payload: { resourceRids: ["rid3"] },
-      },
-      {
         fn: IFieldValueUnion.resourceIdentifierRef,
         type: "resourceIdentifierRef",
         payload: { resourceRids: ["rid4"] },

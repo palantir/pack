@@ -266,7 +266,6 @@ export function convertTypeToFieldTypeUnion(
       // Optional flag is handled at field level; unwrap and recurse on inner type
       return convertTypeToFieldTypeUnion(schemaType.item as P.Type, nameToExportKey);
 
-    case "resourceRef":
     case "resourceIdentifierRef":
     case "boolean":
     case "docRef":
@@ -294,11 +293,6 @@ function convertTypeToFieldValueUnion(
         "Nested arrays are not supported in the IR. "
           + "Wrap the inner array in a record instead.",
       );
-
-    case "resourceRef":
-      return IFieldValueUnion.resourceRef({
-        resourceRids: [],
-      });
 
     case "resourceIdentifierRef":
       return IFieldValueUnion.resourceIdentifierRef({

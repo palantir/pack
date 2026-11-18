@@ -24,7 +24,6 @@ export const TypeKind = {
   OPTIONAL: "optional",
   REF: "ref",
   RESOURCE_IDENTIFIER_REF: "resourceIdentifierRef",
-  RESOURCE_REF: "resourceRef",
   STRING: "string",
   UNKNOWN: "unknown",
   USER_REF: "userRef",
@@ -88,10 +87,6 @@ export type ObjectRef = {
   readonly type: typeof TypeKind.OBJECT_REF;
 };
 
-export type ResourceRef = {
-  readonly type: typeof TypeKind.RESOURCE_REF;
-};
-
 export type ResourceIdentifierRef = {
   readonly type: typeof TypeKind.RESOURCE_IDENTIFIER_REF;
 };
@@ -108,7 +103,6 @@ export type Type =
   | Double
   | MediaRef
   | ObjectRef
-  | ResourceRef
   | ResourceIdentifierRef
   | Optional
   | Ref
@@ -124,11 +118,9 @@ export const Double: Double = { type: TypeKind.DOUBLE };
 export const Boolean: Boolean = { type: TypeKind.BOOLEAN };
 /** An opaque, arbitrary JSON value. */
 export const Unknown: Unknown = { type: TypeKind.UNKNOWN };
-/** A reference to a Foundry resource, stored as a plain RID string. */
-export const ResourceRef: ResourceRef = { type: TypeKind.RESOURCE_REF };
 /**
- * A reference to a Foundry resource, held as a RID string. Unlike `ResourceRef`, the SDK stores it
- * as a tagged object, so peering can find and translate it across stacks.
+ * A reference to a Foundry resource, held as a RID string. The SDK stores it as a tagged object, so
+ * peering can find and translate it across stacks.
  */
 export const ResourceIdentifierRef: ResourceIdentifierRef = {
   type: TypeKind.RESOURCE_IDENTIFIER_REF,

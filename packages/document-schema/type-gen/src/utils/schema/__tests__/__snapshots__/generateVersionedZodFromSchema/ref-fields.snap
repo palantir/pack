@@ -22,7 +22,6 @@ export const DrawingSchema_v1 = z
     attachment: z.string(),
     linkedObject: z.string(),
     owner: z.string().optional(),
-    resource: z.string(),
     resourceIdentifier: z.string().optional(),
     resourceIdentifiers: z.array(z.string()),
   })
