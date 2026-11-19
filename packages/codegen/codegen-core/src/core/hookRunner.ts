@@ -21,21 +21,21 @@
  */
 
 import consola from "consola";
+import { text } from "stream/consumers";
 import { pathToFileURL } from "url";
 import type { GeneratorContext } from "../types/index.js";
 
 async function runHook(): Promise<void> {
   const args = process.argv.slice(2);
 
-  if (args.length < 3) {
-    consola.error("Usage: hookRunner <hookPath> <hookName> <contextJson>");
+  if (args.length < 2) {
+    consola.error("Usage: hookRunner <hookPath> <hookName> (context read from stdin)");
     process.exit(1);
   }
 
-  const [hookPath, hookName, contextJson] = args;
+  const [hookPath, hookName] = args;
   try {
-    // Parse the context
-    const context = JSON.parse(contextJson!) as GeneratorContext;
+    const context = JSON.parse(await text(process.stdin)) as GeneratorContext;
 
     // Import and execute the hook
     const hookUrl = pathToFileURL(hookPath!).href;

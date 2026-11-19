@@ -163,17 +163,17 @@ export class Generator {
             );
           }
 
-          // Serialize context to JSON
+          // Pass the context over stdin, not argv: a large context as one argv string hits
+          // ARG_MAX on any Node, and Node 26 SIGKILLs a process launched with a big argv.
           const contextJson = JSON.stringify(this.context);
 
-          // Run hook as child process in template directory
-          // Use spawnSync for better output streaming
           const result = spawnSync(
             "node",
-            [hookRunnerPath, hookPath, hookName, contextJson],
+            [hookRunnerPath, hookPath, hookName],
             {
               cwd: this.templateDir,
               encoding: "utf8",
+              input: contextJson,
               // 'inherit' for stderr allows errors to stream immediately
               // 'pipe' for stdout so we can capture the result for beforeGenerate
               stdio: ["pipe", "pipe", "inherit"],
@@ -185,7 +185,10 @@ export class Generator {
           }
 
           if (result.status !== 0) {
-            throw new Error(`Hook ${hookName} failed with exit code ${result.status}`);
+            const reason = result.signal != null
+              ? `was killed by signal ${result.signal}`
+              : `failed with exit code ${result.status}`;
+            throw new Error(`Hook ${hookName} ${reason}`);
           }
 
           // Parse result and update context if needed
